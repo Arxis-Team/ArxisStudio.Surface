@@ -379,7 +379,26 @@ class ArxisStudio.Surface.ResizeStartedEventArgs : RoutedEventArgs
     property ResizeDirection Direction { get; }
     property Vector Vector { get; }
 class ArxisStudio.Surface.SurfaceItem : ContentControl
+    avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
+    avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false
+    avalonia LocationProperty -> Location : Point (styled) = 0, 0
     ctor .ctor()
+    event EventHandler<DragCompletedEventArgs> DragCompleted
+    event EventHandler<DragDeltaEventArgs> DragDelta
+    event EventHandler<DragStartedEventArgs> DragStarted
+    event EventHandler<ResizeDeltaEventArgs> ResizeDelta
+    event EventHandler<VectorEventArgs> ResizeCompleted
+    event EventHandler<VectorEventArgs> ResizeStarted
+    field RoutedEvent<DragCompletedEventArgs> DragCompletedEvent
+    field RoutedEvent<DragDeltaEventArgs> DragDeltaEvent
+    field RoutedEvent<DragStartedEventArgs> DragStartedEvent
+    field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
+    field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
+    field RoutedEvent<VectorEventArgs> ResizeStartedEvent
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    property Boolean IsDraggable { get; set; }
+    property Boolean IsSelected { get; set; }
+    property Point Location { get; set; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     ctor .ctor()
 class ArxisStudio.Surface.UiDesigner.AbsolutePanel : Panel
@@ -535,31 +554,13 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property Transform ViewportTransform { get; set; }
 class ArxisStudio.Surface.UiDesigner.DesignEditorItem : SurfaceItem
     avalonia ContentModeProperty -> ContentMode : DesignContentMode (styled) = Annotated
-    avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
-    avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false
-    avalonia LocationProperty -> Location : Point (styled) = 0, 0
     ctor .ctor()
-    event EventHandler<DragCompletedEventArgs> DragCompleted
-    event EventHandler<DragDeltaEventArgs> DragDelta
-    event EventHandler<DragStartedEventArgs> DragStarted
-    event EventHandler<ResizeDeltaEventArgs> ResizeDelta
-    event EventHandler<VectorEventArgs> ResizeCompleted
-    event EventHandler<VectorEventArgs> ResizeStarted
-    field RoutedEvent<DragCompletedEventArgs> DragCompletedEvent
-    field RoutedEvent<DragDeltaEventArgs> DragDeltaEvent
-    field RoutedEvent<DragStartedEventArgs> DragStartedEvent
-    field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
-    field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
-    field RoutedEvent<VectorEventArgs> ResizeStartedEvent
     method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
-    property Boolean IsDraggable { get; set; }
-    property Boolean IsSelected { get; set; }
     property DesignContentMode ContentMode { get; set; }
-    property Point Location { get; set; }
 sealed class ArxisStudio.Surface.UiDesigner.DesignEditorReorderRequestedEventArgs : EventArgs
     ctor .ctor(Control, Int32, Int32, Control)
     property Boolean Handled { get; set; }

@@ -1353,7 +1353,7 @@ public partial class DesignEditor
     /// Возвращает геометрию контейнера в мировых координатах.
     /// </summary>
     /// <remarks>
-    /// Для вложенных контейнеров <see cref="DesignEditorItem.Location"/> задан
+    /// Для вложенных контейнеров <see cref="SurfaceItem.Location"/> задан
     /// относительно родительской панели, поэтому позиция берётся из design-геометрии,
     /// а на неё падает fallback только для контейнеров верхнего уровня.
     /// </remarks>

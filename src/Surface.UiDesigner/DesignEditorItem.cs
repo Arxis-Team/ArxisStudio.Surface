@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Mixins;
@@ -29,8 +29,8 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// ]]></code>
 /// </example>
 [TemplatePart("PART_Border", typeof(Border))]
-[PseudoClasses(":selected", ":dragging", ":resizing")]
-public class DesignEditorItem : SurfaceItem, ISelectable
+[PseudoClasses(":dragging", ":resizing")]
+public class DesignEditorItem : SurfaceItem
 {
     #region Fields
     private readonly Stack<DesignEditorItemState> _states = new();
@@ -38,40 +38,6 @@ public class DesignEditorItem : SurfaceItem, ISelectable
     #endregion
 
     #region Standard Properties
-
-    /// <summary>
-    /// Идентификатор свойства выделения элемента.
-    /// </summary>
-    public static readonly StyledProperty<bool> IsSelectedProperty =
-        SelectingItemsControl.IsSelectedProperty.AddOwner<DesignEditorItem>();
-
-    /// <summary>
-    /// Получает или задает признак выделения элемента.
-    /// </summary>
-    public bool IsSelected
-    {
-        get => GetValue(IsSelectedProperty);
-        set => SetValue(IsSelectedProperty, value);
-    }
-
-    /// <summary>
-    /// Идентификатор свойства позиции элемента на холсте.
-    /// </summary>
-    public static readonly StyledProperty<Point> LocationProperty =
-        AvaloniaProperty.Register<DesignEditorItem, Point>(nameof(Location));
-
-    /// <summary>
-    /// Получает или задает позицию элемента на холсте в локальных координатах родительской панели.
-    /// </summary>
-    /// <remarks>
-    /// Свойство синхронизируется с attached-свойствами <c>Layout.X</c> и <c>Layout.Y</c>.
-    /// Обычно именно его удобнее привязывать к ViewModel.
-    /// </remarks>
-    public Point Location
-    {
-        get => GetValue(LocationProperty);
-        set => SetValue(LocationProperty, value);
-    }
 
     /// <summary>
     /// Идентификатор свойства режима содержимого.
@@ -95,91 +61,6 @@ public class DesignEditorItem : SurfaceItem, ISelectable
         set => SetValue(ContentModeProperty, value);
     }
 
-    /// <summary>
-    /// Идентификатор свойства, определяющего возможность перетаскивания элемента.
-    /// </summary>
-    public static readonly StyledProperty<bool> IsDraggableProperty =
-        AvaloniaProperty.Register<DesignEditorItem, bool>(nameof(IsDraggable), true);
-
-    /// <summary>
-    /// Получает или задает признак, разрешающий перетаскивание элемента мышью.
-    /// </summary>
-    public bool IsDraggable
-    {
-        get => GetValue(IsDraggableProperty);
-        set => SetValue(IsDraggableProperty, value);
-    }
-
-    #endregion
-
-    #region Routed Events
-
-    /// <summary>
-    /// Идентификатор routed event начала перетаскивания.
-    /// </summary>
-    public static readonly RoutedEvent<DragStartedEventArgs> DragStartedEvent =
-        RoutedEvent.Register<DragStartedEventArgs>(nameof(DragStarted), RoutingStrategies.Bubble, typeof(DesignEditorItem));
-
-    /// <summary>
-    /// Идентификатор routed event изменения позиции во время перетаскивания.
-    /// </summary>
-    public static readonly RoutedEvent<DragDeltaEventArgs> DragDeltaEvent =
-        RoutedEvent.Register<DragDeltaEventArgs>(nameof(DragDelta), RoutingStrategies.Bubble, typeof(DesignEditorItem));
-
-    /// <summary>
-    /// Идентификатор routed event завершения перетаскивания.
-    /// </summary>
-    public static readonly RoutedEvent<DragCompletedEventArgs> DragCompletedEvent =
-        RoutedEvent.Register<DragCompletedEventArgs>(nameof(DragCompleted), RoutingStrategies.Bubble, typeof(DesignEditorItem));
-
-    /// <summary>
-    /// Идентификатор routed event изменения размера.
-    /// </summary>
-    public static readonly RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent =
-        RoutedEvent.Register<ResizeDeltaEventArgs>(nameof(ResizeDelta), RoutingStrategies.Bubble, typeof(DesignEditorItem));
-
-    /// <summary>
-    /// Идентификатор routed event начала изменения размера.
-    /// </summary>
-    public static readonly RoutedEvent<VectorEventArgs> ResizeStartedEvent =
-        RoutedEvent.Register<VectorEventArgs>(nameof(ResizeStarted), RoutingStrategies.Bubble, typeof(DesignEditorItem));
-
-    /// <summary>
-    /// Идентификатор routed event завершения изменения размера.
-    /// </summary>
-    public static readonly RoutedEvent<VectorEventArgs> ResizeCompletedEvent =
-        RoutedEvent.Register<VectorEventArgs>(nameof(ResizeCompleted), RoutingStrategies.Bubble, typeof(DesignEditorItem));
-
-    /// <summary>
-    /// Возникает при начале перетаскивания элемента.
-    /// </summary>
-    public event EventHandler<DragStartedEventArgs> DragStarted { add => AddHandler(DragStartedEvent, value); remove => RemoveHandler(DragStartedEvent, value); }
-
-    /// <summary>
-    /// Возникает при изменении позиции элемента во время перетаскивания.
-    /// </summary>
-    public event EventHandler<DragDeltaEventArgs> DragDelta { add => AddHandler(DragDeltaEvent, value); remove => RemoveHandler(DragDeltaEvent, value); }
-
-    /// <summary>
-    /// Возникает после завершения перетаскивания элемента.
-    /// </summary>
-    public event EventHandler<DragCompletedEventArgs> DragCompleted { add => AddHandler(DragCompletedEvent, value); remove => RemoveHandler(DragCompletedEvent, value); }
-
-    /// <summary>
-    /// Возникает при изменении размеров элемента.
-    /// </summary>
-    public event EventHandler<ResizeDeltaEventArgs> ResizeDelta { add => AddHandler(ResizeDeltaEvent, value); remove => RemoveHandler(ResizeDeltaEvent, value); }
-
-    /// <summary>
-    /// Возникает при начале изменения размеров элемента.
-    /// </summary>
-    public event EventHandler<VectorEventArgs> ResizeStarted { add => AddHandler(ResizeStartedEvent, value); remove => RemoveHandler(ResizeStartedEvent, value); }
-
-    /// <summary>
-    /// Возникает после завершения изменения размеров элемента.
-    /// </summary>
-    public event EventHandler<VectorEventArgs> ResizeCompleted { add => AddHandler(ResizeCompletedEvent, value); remove => RemoveHandler(ResizeCompletedEvent, value); }
-
     #endregion
 
     /// <summary>
@@ -189,8 +70,6 @@ public class DesignEditorItem : SurfaceItem, ISelectable
 
     static DesignEditorItem()
     {
-        SelectableMixin.Attach<DesignEditorItem>(IsSelectedProperty);
-        FocusableProperty.OverrideDefaultValue<DesignEditorItem>(true);
         Layout.XProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) => item.SyncLocationFromLayout());
         Layout.YProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) => item.SyncLocationFromLayout());
     }
@@ -204,18 +83,15 @@ public class DesignEditorItem : SurfaceItem, ISelectable
     }
 
     /// <summary>
-    /// Реагирует на изменение свойств контейнера и синхронизирует editor-specific state.
+    /// Реагирует на изменение свойств контейнера и переносит <see cref="SurfaceItem.Location"/>
+    /// в attached-свойства <c>Layout.X</c>/<c>Layout.Y</c>.
     /// </summary>
     /// <param name="change">Аргументы изменения свойства.</param>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == IsSelectedProperty)
-        {
-            UpdatePseudoClasses();
-        }
-        else if (change.Property == LocationProperty)
+        if (change.Property == LocationProperty)
         {
             if (_isUpdatingLocation)
                 return;
@@ -232,8 +108,6 @@ public class DesignEditorItem : SurfaceItem, ISelectable
             }
         }
     }
-
-    private void UpdatePseudoClasses() => PseudoClasses.Set(":selected", IsSelected);
 
     private void SyncLocationFromLayout()
     {
@@ -338,8 +212,4 @@ public class DesignEditorItem : SurfaceItem, ISelectable
 
         CurrentState.OnPointerCaptureLost();
     }
-
-    internal void OnResizeStarted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeStartedEvent, Vector = vector });
-    internal void OnResizeDelta(ResizeDeltaEventArgs e) => RaiseEvent(e);
-    internal void OnResizeCompleted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeCompletedEvent, Vector = vector });
 }

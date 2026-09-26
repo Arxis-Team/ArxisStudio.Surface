@@ -193,7 +193,7 @@ public partial class DesignEditor
     /// в центр видимой области помещается только геометрический центр элемента.
     /// </para>
     /// <para>
-    /// Метод использует текущие <see cref="DesignEditorItem.Location"/> и <see cref="Visual.Bounds"/> элемента.
+    /// Метод использует текущие <see cref="SurfaceItem.Location"/> и <see cref="Visual.Bounds"/> элемента.
     /// Для корректного результата элемент должен принадлежать текущему редактору и иметь актуальный layout.
     /// </para>
     /// </remarks>
@@ -266,7 +266,7 @@ public partial class DesignEditor
     /// Выбрасывается, если <paramref name="item"/> не принадлежит текущему экземпляру <see cref="DesignEditor"/>.
     /// </exception>
     /// <remarks>
-    /// Метод использует текущие <see cref="DesignEditorItem.Location"/> и <see cref="Visual.Bounds"/> элемента
+    /// Метод использует текущие <see cref="SurfaceItem.Location"/> и <see cref="Visual.Bounds"/> элемента
     /// и делегирует расчет геометрии перегрузке <see cref="FitToView(Rect)"/>.
     /// </remarks>
     /// <example>
