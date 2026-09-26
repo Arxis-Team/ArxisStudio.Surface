@@ -34,6 +34,9 @@ public partial class NodeEditor : SurfaceView
         // Соседей-узлы она собирает сама; своих, кроме них, у редактора узлов нет.
         AddService(new SnapService(this, static () => Array.Empty<Rect>()));
 
+        // Миникарта инструментов рисует контейнеры сама, а связи ей отдаёт этот слой.
+        AddService(new LinkMinimapLayer(this));
+
         Ports.Changed += OnPortsChanged;
 
         // Свои команды — впереди встроенных: они отвечают, только когда им есть что делать.
