@@ -27,6 +27,23 @@ public class NodeEditor : SurfaceView
     }
 
     /// <summary>
+    /// Живые порты на поверхности по их ключу.
+    /// </summary>
+    internal PortRegistry Ports { get; } = new();
+
+    /// <summary>
+    /// Отвечает, где на холсте конец связи у порта с этими данными.
+    /// </summary>
+    /// <param name="data">Ключ порта.</param>
+    /// <param name="world">Точка в мировых координатах.</param>
+    /// <returns><see langword="false"/>, если такого порта на поверхности нет или он ещё не разложен.</returns>
+    internal bool TryGetPortAnchor(object data, out Point world)
+    {
+        world = default;
+        return Ports.Find(data) is { } port && port.TryGetAnchor(out world);
+    }
+
+    /// <summary>
     /// Определяет, нужен ли элементу коллекции контейнер <see cref="Node"/>.
     /// </summary>
     /// <param name="item">Элемент источника данных.</param>

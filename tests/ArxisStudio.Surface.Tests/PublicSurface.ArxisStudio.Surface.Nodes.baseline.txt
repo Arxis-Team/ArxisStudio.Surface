@@ -4,3 +4,16 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     ctor .ctor()
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
+class ArxisStudio.Surface.Nodes.Port : ContentControl
+    avalonia DataProperty -> Data : Object (styled) = null
+    avalonia DirectionProperty -> Direction : PortDirection (styled) = Input
+    ctor .ctor()
+    method Void OnApplyTemplate(TemplateAppliedEventArgs)
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    property Object Data { get; set; }
+    property PortDirection Direction { get; set; }
+enum ArxisStudio.Surface.Nodes.PortDirection
+    value Input = 0
+    value Output = 1

@@ -12,6 +12,8 @@
             <SolidColorBrush x:Key="NodeEditor.Node.HoverBorderBrush" Color="#8A96A8" />
             <SolidColorBrush x:Key="NodeEditor.Node.SelectedBorderBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="NodeEditor.Node.Foreground" Color="#1F2328" />
+            <SolidColorBrush x:Key="NodeEditor.Port.PinFill" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="NodeEditor.Port.PinStroke" Color="#5C6577" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -20,6 +22,8 @@
             <SolidColorBrush x:Key="NodeEditor.Node.HoverBorderBrush" Color="#5C6577" />
             <SolidColorBrush x:Key="NodeEditor.Node.SelectedBorderBrush" Color="#1E90FF" />
             <SolidColorBrush x:Key="NodeEditor.Node.Foreground" Color="#E6E8EB" />
+            <SolidColorBrush x:Key="NodeEditor.Port.PinFill" Color="#26292E" />
+            <SolidColorBrush x:Key="NodeEditor.Port.PinStroke" Color="#8A96A8" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -27,5 +31,9 @@
     <Thickness x:Key="NodeEditor.Node.SelectedBorderThickness">2</Thickness>
     <CornerRadius x:Key="NodeEditor.Node.CornerRadius">6</CornerRadius>
     <Thickness x:Key="NodeEditor.Node.Padding">8</Thickness>
+
+    <x:Double x:Key="NodeEditor.Port.PinSize">10</x:Double>
+    <x:Double x:Key="NodeEditor.Port.PinStrokeThickness">1.5</x:Double>
+    <Thickness x:Key="NodeEditor.Port.PinMargin">4,2</Thickness>
 
 </ResourceDictionary>

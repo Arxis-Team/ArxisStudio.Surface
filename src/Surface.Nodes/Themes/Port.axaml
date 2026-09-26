@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:nodes="clr-namespace:ArxisStudio.Surface.Nodes">
+
+    <!--
+        Порт: штырёк и подпись. Штырёк — PART_Pin, его центр и есть конец связи. Вход держит
+        штырёк слева, выход — справа: связь идёт слева направо, из выходов во входы.
+    -->
+    <ControlTheme x:Key="{x:Type nodes:Port}" TargetType="nodes:Port">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource NodeEditor.Node.Foreground}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid Background="{TemplateBinding Background}"
+                      ColumnDefinitions="Auto,*,Auto">
+                    <Ellipse Name="PART_Pin"
+                             Width="{DynamicResource NodeEditor.Port.PinSize}"
+                             Height="{DynamicResource NodeEditor.Port.PinSize}"
+                             Margin="{DynamicResource NodeEditor.Port.PinMargin}"
+                             VerticalAlignment="Center"
+                             Fill="{DynamicResource NodeEditor.Port.PinFill}"
+                             Stroke="{DynamicResource NodeEditor.Port.PinStroke}"
+                             StrokeThickness="{DynamicResource NodeEditor.Port.PinStrokeThickness}" />
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Grid.Column="1"
+                                      VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:output /template/ Ellipse#PART_Pin">
+            <Setter Property="Grid.Column" Value="2" />
+        </Style>
+
+        <Style Selector="^:output /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

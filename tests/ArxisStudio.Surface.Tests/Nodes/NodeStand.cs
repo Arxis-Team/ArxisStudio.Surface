@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -20,6 +21,21 @@ internal sealed class NodeStand
 {
     public static readonly Size NodeSize = new(120, 80);
 
+    /// <summary>
+    /// Узел с одним входом и одним выходом; ключи портов — «имя узла.in» и «имя узла.out».
+    /// </summary>
+    public static IDataTemplate PortedNode { get; } = new FuncDataTemplate<string>((name, _) => new StackPanel
+    {
+        Children =
+        {
+            new TextBlock { Text = name },
+            new Port { Direction = PortDirection.Input, Data = name + ".in", Content = "in" },
+            new Port { Direction = PortDirection.Output, Data = name + ".out", Content = "out" }
+        }
+    }, supportsRecycling: false);
+
+    public static string NodeName(int index) => $"Узел {index}";
+
     private NodeStand(Window window, NodeEditor editor)
     {
         Window = window;
@@ -30,21 +46,21 @@ internal sealed class NodeStand
 
     public NodeEditor Editor { get; }
 
+    public ObservableCollection<object> Items { get; } = new();
+
     public static NodeStand Create(IReadOnlyList<Point> locations, bool snap = false, IDataTemplate? itemTemplate = null)
     {
-        var editor = new NodeEditor
-        {
-            ItemsSource = locations.Select((_, i) => (object)$"Узел {i}").ToList(),
-            ItemTemplate = itemTemplate
-        };
-
+        var editor = new NodeEditor { ItemTemplate = itemTemplate };
         editor.InteractionOptions.IsSnapToGridEnabled = snap;
         editor.InteractionOptions.IsSnapToGuidesEnabled = snap;
 
         var window = new Window { Width = 800, Height = 600, Content = editor };
-        window.Show();
-
         var stand = new NodeStand(window, editor);
+        for (var i = 0; i < locations.Count; i++)
+            stand.Items.Add(NodeName(i));
+
+        editor.ItemsSource = stand.Items;
+        window.Show();
         stand.RunLayout();
 
         for (var i = 0; i < locations.Count; i++)
@@ -60,6 +76,20 @@ internal sealed class NodeStand
     }
 
     public Node Node(int index) => (Node)Editor.ContainerFromIndex(index)!;
+
+    public Port PortOf(int index, PortDirection direction) =>
+        Node(index).GetVisualDescendants().OfType<Port>().Single(p => p.Direction == direction);
+
+    /// <summary>
+    /// Конец связи у порта, посчитанный независимо от редактора: центр штырька в координатах
+    /// панели узлов — а они и есть мировые.
+    /// </summary>
+    public Point PinCentreInWorld(int index, PortDirection direction)
+    {
+        var pin = PortOf(index, direction).GetVisualDescendants().OfType<Control>().Single(c => c.Name == "PART_Pin");
+        var panel = (Visual)Node(index).GetVisualParent()!;
+        return pin.TranslatePoint(new Point(pin.Bounds.Width / 2, pin.Bounds.Height / 2), panel)!.Value;
+    }
 
     public Point CentreOf(int index) => Node(index).Location + new Vector(NodeSize.Width / 2, NodeSize.Height / 2);
 

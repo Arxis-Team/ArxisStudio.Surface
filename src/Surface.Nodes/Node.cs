@@ -7,7 +7,7 @@ namespace ArxisStudio.Surface.Nodes;
 /// Положение, выделение и перетаскивание — ядра (<see cref="SurfaceItem"/>). Свой тип нужен узлу
 /// ради своей темы — Avalonia ищет тему по точному типу — и ради портов, которые лежат в его
 /// содержимом: раскладку узла приложение пишет в <c>ItemTemplate</c> редактора, ставя туда
-/// порты.
+/// <see cref="Port"/>.
 /// </remarks>
 public class Node : SurfaceItem
 {

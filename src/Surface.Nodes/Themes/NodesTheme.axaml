@@ -9,6 +9,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodesResources.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/Node.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/Port.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodeEditor.axaml" />
     </ResourceDictionary.MergedDictionaries>
 
