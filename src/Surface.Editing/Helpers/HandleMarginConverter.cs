@@ -4,7 +4,7 @@ using Avalonia;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
 
-namespace ArxisStudio.Helpers;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Переводит размер ручки в отступ, центрирующий её на краю выделения.

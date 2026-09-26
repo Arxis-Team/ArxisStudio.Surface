@@ -1,6 +1,6 @@
 using System;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Ось, вдоль которой работает пользовательская направляющая.

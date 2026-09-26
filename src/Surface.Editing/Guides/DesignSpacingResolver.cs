@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Avalonia;
 
-namespace ArxisStudio.Guides;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Подсказка о равном зазоре: отрезок, которым он показан.

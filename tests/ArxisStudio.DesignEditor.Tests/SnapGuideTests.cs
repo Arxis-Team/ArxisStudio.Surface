@@ -7,7 +7,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using ArxisStudio.Attached;
 using ArxisStudio.Controls;
-using ArxisStudio.Guides;
+using ArxisStudio.Surface.Editing;
 using ArxisStudio.States;
 using Xunit;
 

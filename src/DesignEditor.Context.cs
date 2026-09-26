@@ -18,7 +18,7 @@ using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Attached.Layout;
 using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
 using ArxisStudio.Controls;
-using ArxisStudio.Guides;
+using ArxisStudio.Surface.Editing;
 using ArxisStudio.Placement;
 using ArxisStudio.States;
 

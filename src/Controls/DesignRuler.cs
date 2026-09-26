@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Controls;
 

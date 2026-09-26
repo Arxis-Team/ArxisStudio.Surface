@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using ArxisStudio;
 using DesignEditor.Demo.Context;
 using DesignEditor.Demo.ViewModels;
+using ArxisStudio.Surface.Editing;
 
 namespace DesignEditor.Demo.Views;
 

@@ -246,7 +246,7 @@ internal sealed class AutomationChannel
             {
                 // Набор направляющих читается у самого редактора: так видно то же,
                 // что видит хост, а не то, что нарисовано.
-                var list = (_editor.Guides ?? Enumerable.Empty<ArxisStudio.DesignGuide>())
+                var list = (_editor.Guides ?? Enumerable.Empty<ArxisStudio.Surface.Editing.DesignGuide>())
                     .Select(g => new Dictionary<string, object?>
                     {
                         ["orientation"] = g.Orientation.ToString(),

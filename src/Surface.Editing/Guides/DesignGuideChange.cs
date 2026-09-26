@@ -1,6 +1,6 @@
 using System;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Вид запрошенного изменения набора направляющих.

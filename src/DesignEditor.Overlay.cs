@@ -19,7 +19,7 @@ using DesignLayout = ArxisStudio.Attached.Layout;
 using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
 using ArxisStudio.Controls;
 using ArxisStudio.Grouping;
-using ArxisStudio.Guides;
+using ArxisStudio.Surface.Editing;
 using ArxisStudio.Placement;
 using ArxisStudio.States;
 

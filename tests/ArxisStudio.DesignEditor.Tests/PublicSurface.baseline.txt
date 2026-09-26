@@ -489,31 +489,6 @@ sealed class ArxisStudio.DesignGroupInfo
     property IReadOnlyList<DesignGroupInfo> Groups { get; }
     property String Id { get; }
     property String Path { get; }
-struct ArxisStudio.DesignGuide : ValueType
-    ctor .ctor(DesignGuideOrientation, Double)
-    method Boolean Equals(DesignGuide)
-    method Boolean Equals(Object)
-    method Boolean op_Equality(DesignGuide, DesignGuide)
-    method Boolean op_Inequality(DesignGuide, DesignGuide)
-    method DesignGuide Horizontal(Double)
-    method DesignGuide Vertical(Double)
-    method Int32 GetHashCode()
-    method String ToString()
-    property DesignGuideOrientation Orientation { get; }
-    property Double Position { get; }
-enum ArxisStudio.DesignGuideChangeKind
-    value Add = 0
-    value Move = 1
-    value Remove = 2
-sealed class ArxisStudio.DesignGuideChangeRequestedEventArgs : EventArgs
-    ctor .ctor(DesignGuideChangeKind, DesignGuide, Nullable<DesignGuide>)
-    property Boolean Handled { get; set; }
-    property DesignGuide Guide { get; }
-    property DesignGuideChangeKind Kind { get; }
-    property Nullable<DesignGuide> Original { get; }
-enum ArxisStudio.DesignGuideOrientation
-    value Horizontal = 1
-    value Vertical = 0
 sealed class ArxisStudio.DesignOrderChange : DesignChange
     ctor .ctor(Control, Int32, Int32)
     property Int32 NewZIndex { get; }
@@ -538,31 +513,6 @@ sealed class ArxisStudio.DesignSelectionTarget
     property Int32 Depth { get; }
     property String DisplayName { get; }
     property String GroupId { get; }
-struct ArxisStudio.Guides.DesignSnapGuide : ValueType
-    ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double, DesignSnapGuideKind)
-    method Boolean Equals(DesignSnapGuide)
-    method Boolean Equals(Object)
-    method Int32 GetHashCode()
-    property DesignSnapGuideKind Kind { get; }
-    property DesignSnapGuideOrientation Orientation { get; }
-    property Double End { get; }
-    property Double Position { get; }
-    property Double Start { get; }
-enum ArxisStudio.Guides.DesignSnapGuideKind
-    value Centre = 1
-    value Edge = 0
-enum ArxisStudio.Guides.DesignSnapGuideOrientation
-    value Horizontal = 1
-    value Vertical = 0
-struct ArxisStudio.Guides.DesignSpacingHint : ValueType
-    ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double)
-    method Boolean Equals(DesignSpacingHint)
-    method Boolean Equals(Object)
-    method Int32 GetHashCode()
-    property DesignSnapGuideOrientation Orientation { get; }
-    property Double End { get; }
-    property Double Position { get; }
-    property Double Start { get; }
 interface ArxisStudio.IDesignEditorContextActionProvider
     method ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(DesignEditor, DesignEditorContextRequest, CancellationToken)
 interface ArxisStudio.IDesignEditorContextPresenter
@@ -605,3 +555,53 @@ class ArxisStudio.Surface.DragStartedEventArgs : RoutedEventArgs
     ctor .ctor(Double, Double)
     property Double HorizontalOffset { get; }
     property Double VerticalOffset { get; }
+struct ArxisStudio.Surface.Editing.DesignGuide : ValueType
+    ctor .ctor(DesignGuideOrientation, Double)
+    method Boolean Equals(DesignGuide)
+    method Boolean Equals(Object)
+    method Boolean op_Equality(DesignGuide, DesignGuide)
+    method Boolean op_Inequality(DesignGuide, DesignGuide)
+    method DesignGuide Horizontal(Double)
+    method DesignGuide Vertical(Double)
+    method Int32 GetHashCode()
+    method String ToString()
+    property DesignGuideOrientation Orientation { get; }
+    property Double Position { get; }
+enum ArxisStudio.Surface.Editing.DesignGuideChangeKind
+    value Add = 0
+    value Move = 1
+    value Remove = 2
+sealed class ArxisStudio.Surface.Editing.DesignGuideChangeRequestedEventArgs : EventArgs
+    ctor .ctor(DesignGuideChangeKind, DesignGuide, Nullable<DesignGuide>)
+    property Boolean Handled { get; set; }
+    property DesignGuide Guide { get; }
+    property DesignGuideChangeKind Kind { get; }
+    property Nullable<DesignGuide> Original { get; }
+enum ArxisStudio.Surface.Editing.DesignGuideOrientation
+    value Horizontal = 1
+    value Vertical = 0
+struct ArxisStudio.Surface.Editing.DesignSnapGuide : ValueType
+    ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double, DesignSnapGuideKind)
+    method Boolean Equals(DesignSnapGuide)
+    method Boolean Equals(Object)
+    method Int32 GetHashCode()
+    property DesignSnapGuideKind Kind { get; }
+    property DesignSnapGuideOrientation Orientation { get; }
+    property Double End { get; }
+    property Double Position { get; }
+    property Double Start { get; }
+enum ArxisStudio.Surface.Editing.DesignSnapGuideKind
+    value Centre = 1
+    value Edge = 0
+enum ArxisStudio.Surface.Editing.DesignSnapGuideOrientation
+    value Horizontal = 1
+    value Vertical = 0
+struct ArxisStudio.Surface.Editing.DesignSpacingHint : ValueType
+    ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double)
+    method Boolean Equals(DesignSpacingHint)
+    method Boolean Equals(Object)
+    method Int32 GetHashCode()
+    property DesignSnapGuideOrientation Orientation { get; }
+    property Double End { get; }
+    property Double Position { get; }
+    property Double Start { get; }

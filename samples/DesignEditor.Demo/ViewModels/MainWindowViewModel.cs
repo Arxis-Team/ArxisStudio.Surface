@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ArxisStudio.Surface.Editing;
 
 namespace DesignEditor.Demo.ViewModels;
 
@@ -30,11 +31,11 @@ public partial class MainWindowViewModel : ObservableObject
     /// остаётся, но пустой холст встречает пользователя без лишних линий. Включается
     /// переключателем <c>guides</c> в шапке.
     /// </remarks>
-    public ObservableCollection<ArxisStudio.DesignGuide> Guides { get; } = new()
+    public ObservableCollection<ArxisStudio.Surface.Editing.DesignGuide> Guides { get; } = new()
     {
-        ArxisStudio.DesignGuide.Vertical(560),
-        ArxisStudio.DesignGuide.Vertical(1180),
-        ArxisStudio.DesignGuide.Horizontal(420),
+        ArxisStudio.Surface.Editing.DesignGuide.Vertical(560),
+        ArxisStudio.Surface.Editing.DesignGuide.Vertical(1180),
+        ArxisStudio.Surface.Editing.DesignGuide.Horizontal(420),
     };
 
     // Коллекция выделенных элементов (Avalonia биндит сюда object)
