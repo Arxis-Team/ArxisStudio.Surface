@@ -323,16 +323,6 @@ public partial class DesignEditor
     }
 
     /// <summary>
-    /// Возникает при запросе удаления выделения с клавиатуры.
-    /// </summary>
-    /// <remarks>
-    /// Редактор не владеет коллекцией элементов и удалять их не может: обработчик
-    /// должен выполнить удаление сам и выставить
-    /// <see cref="DesignEditorDeleteRequestedEventArgs.Handled"/>.
-    /// </remarks>
-    public event EventHandler<DesignEditorDeleteRequestedEventArgs>? DeleteRequested;
-
-    /// <summary>
     /// Возникает, когда пользователь перетащил контрол на новое место среди соседей.
     /// </summary>
     /// <remarks>

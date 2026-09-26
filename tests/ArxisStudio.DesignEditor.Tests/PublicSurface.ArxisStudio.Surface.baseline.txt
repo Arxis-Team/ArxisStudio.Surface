@@ -270,6 +270,27 @@ class ArxisStudio.Surface.SurfaceItem : ContentControl
     property Boolean IsDraggable { get; set; }
     property Boolean IsSelected { get; set; }
     property Point Location { get; set; }
+sealed class ArxisStudio.Surface.SurfaceKeyCommand
+    ctor .ctor(String, Func<SurfaceView, KeyEventArgs, Boolean>, Func<SurfaceView, KeyEventArgs, Boolean>)
+    ctor .ctor(String, KeyGesture, Func<SurfaceView, Boolean>)
+    method Boolean Execute(SurfaceView, KeyEventArgs)
+    method Boolean Matches(SurfaceView, KeyEventArgs)
+    property String Id { get; }
+sealed class ArxisStudio.Surface.SurfaceKeyCommands
+    ctor .ctor()
+    field String ClearSelection = "surface.clearSelection"
+    field String Delete = "surface.delete"
+    field String Nudge = "surface.nudge"
+    field String Redo = "surface.redo"
+    field String SelectAll = "surface.selectAll"
+    field String Undo = "surface.undo"
+    method Boolean Remove(String)
+    method IEnumerator<SurfaceKeyCommand> GetEnumerator()
+    method SurfaceKeyCommand Find(String)
+    method Void Add(SurfaceKeyCommand)
+    method Void Insert(Int32, SurfaceKeyCommand)
+    property Int32 Count { get; }
+    property SurfaceKeyCommand Item { get; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (direct)
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (direct)
@@ -297,6 +318,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     event EventHandler<DesignEditCompletedEventArgs> EditCompleted
     event EventHandler<DesignEditorContextRequestedEventArgs> ContextMenuResolved
     event EventHandler<DesignEditorContextRequestingEventArgs> ContextMenuRequesting
+    event EventHandler<DesignEditorDeleteRequestedEventArgs> DeleteRequested
     event EventHandler<DesignEditorHistoryRequestedEventArgs> RedoRequested
     event EventHandler<DesignEditorHistoryRequestedEventArgs> UndoRequested
     event EventHandler<DesignSelectionChangedEventArgs> DesignSelectionChanged
@@ -317,6 +339,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnKeyDown(KeyEventArgs)
     method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
@@ -346,5 +369,6 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     property Rect SelectedArea { get; set; }
     property SelectionMode SelectionMode { get; set; }
     property SurfaceItem MarqueeScope { get; }
+    property SurfaceKeyCommands KeyCommands { get; }
     property Transform DpiScaledViewportTransform { get; set; }
     property Transform ViewportTransform { get; set; }

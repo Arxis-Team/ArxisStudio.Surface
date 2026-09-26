@@ -30,7 +30,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (attached) = <DesignSpacingHint[]>
     avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (attached) = <DesignGuide[]>
     ctor .ctor()
-    event EventHandler<DesignEditorDeleteRequestedEventArgs> DeleteRequested
     event EventHandler<DesignEditorReorderRequestedEventArgs> ReorderRequested
     event EventHandler<DesignGuideChangeRequestedEventArgs> GuideChangeRequested
     method Boolean BringForward()
@@ -52,7 +51,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     method Void CenterOnSelection()
     method Void FitSelectionToView()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
-    method Void OnKeyDown(KeyEventArgs)
     property Boolean HasGroupSelection { get; }
     property Boolean HasMultipleContainerSelection { get; }
     property Boolean HasMultipleNestedSelection { get; }

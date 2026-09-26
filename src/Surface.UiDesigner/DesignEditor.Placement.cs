@@ -325,7 +325,7 @@ public partial class DesignEditor
     /// <remarks>
     /// Результат не декоративный: им помечается само нажатие. Отказ обработчика
     /// оставляет событие необработанным, и оно всплывает дальше — так же, как
-    /// у <see cref="DeleteRequested"/>. Иначе <c>Handled</c> оказался бы
+    /// у <see cref="SurfaceView.DeleteRequested"/>. Иначе <c>Handled</c> оказался бы
     /// свойством, которое никто не читает.
     /// </remarks>
     internal bool CommitReorder(Control target, int insertBefore)
