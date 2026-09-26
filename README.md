@@ -10,9 +10,10 @@
 - контейнеры элементов с drag-and-drop и resize
 - editor-level overlay-слои для рамок выделения, marquee и selection handles
 - привязку к сетке и выравнивание по краям и центрам соседей с направляющими
+- редактор узлов: порты, связи под узлами, протяжку новой связи, выбор, удаление и перецепление связей
 - систему attached-свойств для позиционирования
 - DPI-aware трансформации для фона, сетки и оверлеев
-- демо-приложение с типовым сценарием интеграции
+- демо-приложения с типовыми сценариями интеграции — дизайнер форм и редактор узлов
 
 ## Как это выглядит
 
@@ -40,7 +41,7 @@
 
 ## Публичная поверхность
 
-Библиотека экспортирует 59 типов в трёх пространствах имён — `ArxisStudio.Surface` (ядро), `ArxisStudio.Surface.Editing` (инструменты) и `ArxisStudio.Surface.UiDesigner` (дизайнер форм), все под одним адресом разметки `https://github.com/Arxis-Team/ArxisStudio.Surface` (ADR 0003). Всё остальное — реализация и может меняться без предупреждения.
+Библиотека экспортирует 77 типов в четырёх пространствах имён — `ArxisStudio.Surface` (ядро), `ArxisStudio.Surface.Editing` (инструменты), `ArxisStudio.Surface.UiDesigner` (дизайнер форм) и `ArxisStudio.Surface.Nodes` (редактор узлов), все под одним адресом разметки `https://github.com/Arxis-Team/ArxisStudio.Surface` (ADR 0003, 0004). Всё остальное — реализация и может меняться без предупреждения.
 
 | Область | Типы |
 |---|---|
@@ -92,7 +93,9 @@
 - `src/Surface/` — `ArxisStudio.Surface`, ядро: холст, viewport, сетка, контейнер, выделение, жесты
 - `src/Surface.Editing/` — `ArxisStudio.Surface.Editing`, инструменты: ручки, привязка, направляющие, линейки
 - `src/Surface.UiDesigner/` — `ArxisStudio.Surface.UiDesigner`, дизайнер форм: `DesignEditor`
-- `samples/DesignEditor.Demo/` — демонстрационное Avalonia-приложение
+- `src/Surface.Nodes/` — `ArxisStudio.Surface.Nodes`, редактор узлов: `NodeEditor`, узлы, порты, связи
+- `samples/DesignEditor.Demo/` — демо дизайнера форм
+- `samples/Nodes.Demo/` — демо редактора узлов
 - `ArxisStudio.Surface.sln` — solution
 
 ### Только ядро
@@ -114,6 +117,59 @@
 ```
 
 Элемент встаёт в свой `SurfaceItem.Location` — его ставит `SurfacePanel`. Ручек и направляющих у ядра нет: выбранный элемент показывает себя рамкой своей темы (ключи `SurfaceItem.SelectionBrush`, `SurfaceItem.HoverBrush`, `SurfaceItem.SelectionThickness`). Наследнику `SurfaceView` без своей темы нужен `StyleKeyOverride => typeof(SurfaceView)`: Avalonia ищет тему по точному типу.
+
+### Редактор узлов
+
+`ArxisStudio.Surface.Nodes` стоит рядом с дизайнером форм, а не над ним (ADR 0004): узлы — `ItemsSource`, связи — `Links`, и связь знает свои концы **данными портов**, а не координатами. Где порт на холсте, редактор находит сам; хост координат концов не хранит.
+
+```xml
+<Application.Resources>
+    <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/ArxisStudioNodeEditorTheme.axaml" />
+</Application.Resources>
+
+<surface:NodeEditor ItemsSource="{Binding Nodes}"
+                    Links="{Binding Links}"
+                    LinkSourceBinding="{Binding From}"
+                    LinkTargetBinding="{Binding To}">
+    <surface:NodeEditor.ItemTemplate>
+        <DataTemplate x:DataType="vm:NodeViewModel">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" />
+                <ItemsControl ItemsSource="{Binding Inputs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PortViewModel">
+                            <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <!-- выходы — так же, с Direction="Output" -->
+            </StackPanel>
+        </DataTemplate>
+    </surface:NodeEditor.ItemTemplate>
+</surface:NodeEditor>
+```
+
+`LinkSourceBinding` и `LinkTargetBinding` — тот же приём, что `DisplayMemberBinding`: элемент коллекции связей остаётся данными приложения, и в разметке эти привязки компилируются — тип данных компилятор берёт у `Links`.
+
+Граф правит приложение, редактор его просит:
+
+```csharp
+editor.ConnectValidating += (_, e) => e.IsAllowed = graph.CanConnect(e.Source, e.Target, e.Link);
+editor.ConnectRequested += (_, e) =>
+{
+    graph.Links.Add(new LinkViewModel(e.Source, e.Target));
+    e.Handled = true;
+};
+editor.ReconnectRequested += (_, e) => e.Handled = graph.Reconnect(e.Link, e.End, e.NewPort);
+editor.LinkDeleteRequested += (_, e) => e.Handled = graph.RemoveLinks(e.Links);
+```
+
+- протяжка от порта — новая связь; источник — всегда выход, в какую сторону ни тянули; порт показывает, примет ли он её (`:accepting`, `:refusing`), ещё до отпускания;
+- щелчок по связи — выбор (с модификатором добавления — переключение), `Delete` — `LinkDeleteRequested`; выбор связей и выбор узлов взаимоисключающие;
+- протяжка тела связи отцепляет ближний конец: на порт того же направления — `ReconnectRequested`, в пустоту — `LinkDeleteRequested`, на свой порт — ничего;
+- `Esc` отменяет протяжку; структурные правки хост кладёт в `SurfaceHistory` своей `ISurfaceChange`, и `Ctrl + Z` отменяет их вместе с перетаскиванием узлов.
+
+Положение узлу хост ставит сам, когда готов контейнер (`ContainerPrepared`): перетаскивание пишет `Location` локальным значением. Рабочий хост со всеми запросами и отменой — `samples/Nodes.Demo`.
 
 ## Основные компоненты
 
