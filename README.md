@@ -95,6 +95,26 @@
 - `samples/DesignEditor.Demo/` — демонстрационное Avalonia-приложение
 - `ArxisStudio.DesignEditor.sln` — solution
 
+### Только ядро
+
+Редактору, которому не нужна семантика форм — графу узлов, свободной графике, — хватает одного `ArxisStudio.Surface`: у ядра своя тема, свой контейнер и своя панель. Холст с сеткой, пан и зум (колесом и щипком), выделение кликом и рамкой, перетаскивание с автопрокруткой у края, клавиатура и контракт изменений работают без дизайнера форм.
+
+```xml
+<Application.Resources>
+    <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceTheme.axaml" />
+</Application.Resources>
+
+<surface:SurfaceView ItemsSource="{Binding Nodes}">
+    <surface:SurfaceView.ItemContainerTheme>
+        <ControlTheme TargetType="surface:SurfaceItem" BasedOn="{StaticResource {x:Type surface:SurfaceItem}}">
+            <Setter Property="Location" Value="{Binding Location}" />
+        </ControlTheme>
+    </surface:SurfaceView.ItemContainerTheme>
+</surface:SurfaceView>
+```
+
+Элемент встаёт в свой `SurfaceItem.Location` — его ставит `SurfacePanel`. Ручек и направляющих у ядра нет: выбранный элемент показывает себя рамкой своей темы (ключи `SurfaceItem.SelectionBrush`, `SurfaceItem.HoverBrush`, `SurfaceItem.SelectionThickness`). Наследнику `SurfaceView` без своей темы нужен `StyleKeyOverride => typeof(SurfaceView)`: Avalonia ищет тему по точному типу.
+
 ## Основные компоненты
 
 ### `DesignEditor`

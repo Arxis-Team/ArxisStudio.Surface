@@ -103,106 +103,12 @@ public partial class DesignEditor
 
     // --- Drag & Drop ---
 
-    private void OnItemsDragStarted(DragStartedEventArgs e)
-    {
-        _groupDragOperation = null;
-
-        if (IsSelecting || CurrentState is EditorPanningState)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        var sourceContainer = e.Source as DesignEditorItem;
-        var items = SelectedItems;
-        if (sourceContainer == null || items == null || items.Count == 0)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        var selectionCapabilities = GetSelectionInteractionCapabilities();
-        if (ShouldBlockNestedGroupDrag(selectionCapabilities))
-        {
-            e.Handled = true;
-            return;
-        }
-
-        var sourceTarget = ResolveInteractionTarget(sourceContainer);
-        var sourceMovePolicy = GetEffectiveMovePolicy(sourceTarget);
-        if (sourceMovePolicy == ArxisStudio.Surface.MovePolicy.None)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        // Все проверки пройдены — жест состоится, открываем единицу редактирования.
-        BeginEdit(DesignEditKind.Move);
-        _groupDragOperation = GroupDragOperation.TryCreate(this, sourceContainer, sourceTarget);
-
-        e.Handled = true;
-    }
-
-    private void OnItemsDragDelta(DragDeltaEventArgs e)
-    {
-        if (IsSelecting || CurrentState is EditorPanningState) return;
-
-        var items = SelectedItems;
-        if (items == null || items.Count == 0) return;
-        var source = e.Source as DesignEditorItem;
-        if (source != null)
-        {
-            if (ShouldBlockNestedGroupDrag(GetSelectionInteractionCapabilities()))
-            {
-                e.Handled = true;
-                return;
-            }
-
-            var sourceTarget = ResolveInteractionTarget(source);
-            if (GetEffectiveMovePolicy(sourceTarget) == ArxisStudio.Surface.MovePolicy.None)
-            {
-                e.Handled = true;
-                return;
-            }
-        }
-
-        if (_groupDragOperation != null &&
-            e.Source is DesignEditorItem sourceContainer &&
-            _groupDragOperation.CanHandle(sourceContainer))
-        {
-            UpdateInteractionOperation(_groupDragOperation, new Vector(e.HorizontalChange, e.VerticalChange));
-
-            e.Handled = true;
-            UpdateSelectionOverlayState();
-            return;
-        }
-
-        var delta = new Vector(e.HorizontalChange, e.VerticalChange);
-
-        foreach (var item in items)
-        {
-            var container = ContainerFromItem(item) as DesignEditorItem;
-            if (container == null && item is DesignEditorItem directItem)
-                container = directItem;
-
-            if (container == null || !container.IsDraggable || ReferenceEquals(container, source))
-                continue;
-
-            var target = ResolveInteractionTarget(container);
-            var position = GetDesignPosition(target);
-            var filteredDelta = ApplyMovePolicy(target, delta);
-            SetDesignPosition(target, position + filteredDelta);
-        }
-        e.Handled = true;
-        UpdateSelectionOverlayState();
-    }
-
-    private void OnItemsDragCompleted(DragCompletedEventArgs e)
-    {
-        CompleteInteractionOperation(ref _groupDragOperation);
-        CommitEdit();
-        e.Handled = true;
-    }
+    /// <inheritdoc />
+    /// <remarks>
+    /// Смешанная группа вложенных target'ов — заблокированные вместе со свободными — не
+    /// двигается вовсе: сдвинуть половину значило бы разорвать то, что выбрано вместе.
+    /// </remarks>
+    private protected override bool BlocksSelectionDrag() => ShouldBlockNestedGroupDrag();
 
     private void OnItemsResizeDelta(ResizeDeltaEventArgs e)
     {

@@ -17,6 +17,9 @@
             <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#F5F7FA" />
             <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#E2E6EC" />
             <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#C9D0DA" />
+
+            <SolidColorBrush x:Key="SurfaceItem.SelectionBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="SurfaceItem.HoverBrush" Color="#660F6CBD" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -27,11 +30,21 @@
             <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#141417" />
             <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#26292E" />
             <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#3E4451" />
+
+            <SolidColorBrush x:Key="SurfaceItem.SelectionBrush" Color="#1E90FF" />
+            <SolidColorBrush x:Key="SurfaceItem.HoverBrush" Color="#661E90FF" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
     <!-- Толщина рамки выделения: одна для рамки жеста и для рамок выбранного. -->
     <x:Double x:Key="DesignEditor.Selection.StrokeThickness">1</x:Double>
+
+    <!--
+        Рамка выбранного контейнера ядра. Толщина — Thickness, а не число: её читает
+        BorderThickness. Дизайнер форм её не показывает — у него рамки и ручки рисует
+        оверлей редактора.
+    -->
+    <Thickness x:Key="SurfaceItem.SelectionThickness">2</Thickness>
 
     <!-- Параметры сетки. CellSize задан в мировых единицах, LineThickness — в пикселях устройства. -->
     <x:Double x:Key="DesignEditor.Grid.CellSize">20</x:Double>

@@ -1,0 +1,73 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface">
+
+    <surface:InverseScaleConverter x:Key="Surface.InverseScaleConverter" />
+    <surface:ScaleDoubleConverter x:Key="Surface.ScaleDoubleConverter" />
+
+    <!--
+        Шаблон ядра: сетка, элементы и рамка выделения во время жеста. Ни ручек, ни
+        направляющих — их приносят слои выше; выбранный элемент показывает себя сам,
+        своей темой (SurfaceItem.axaml). Слои те же и в том же порядке, что у дизайнера
+        форм, поэтому правила про трансформации действуют одинаково: сетка рисует в
+        экранных координатах, элементы и рамка — под ViewportTransform.
+    -->
+    <ControlTheme x:Key="{x:Type surface:SurfaceView}" TargetType="surface:SurfaceView">
+        <Setter Property="Background" Value="{DynamicResource DesignEditor.BackgroundBrush}" />
+        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+                    <Grid>
+                        <surface:DesignGrid Name="PART_Grid"
+                                            ViewportLocation="{TemplateBinding ViewportLocation}"
+                                            ViewportZoom="{TemplateBinding ViewportZoom}"
+                                            IsVisible="{TemplateBinding ShowGrid}" />
+
+                        <Canvas Name="PART_ItemsLayer"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0">
+                            <ItemsPresenter Name="PART_ItemsPresenter">
+                                <ItemsPresenter.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <surface:SurfacePanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=surface:SurfaceView}}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsPresenter.ItemsPanel>
+                            </ItemsPresenter>
+                        </Canvas>
+
+                        <Canvas Name="PART_InteractionOverlayLayer"
+                                IsHitTestVisible="False"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0">
+                            <Rectangle Name="PART_Marquee"
+                                       Stroke="{DynamicResource DesignEditor.MarqueeStrokeBrush}"
+                                       StrokeThickness="{DynamicResource DesignEditor.Selection.StrokeThickness}"
+                                       Fill="{DynamicResource DesignEditor.MarqueeFillBrush}"
+                                       RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Surface.InverseScaleConverter}}"
+                                       RenderTransformOrigin="0,0"
+                                       Canvas.Top="{Binding SelectedArea.Y, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Canvas.Left="{Binding SelectedArea.X, RelativeSource={RelativeSource TemplatedParent}}"
+                                       IsVisible="{TemplateBinding IsSelecting}">
+                                <Rectangle.Width>
+                                    <MultiBinding Converter="{StaticResource Surface.ScaleDoubleConverter}">
+                                        <Binding Path="SelectedArea.Width" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Width>
+                                <Rectangle.Height>
+                                    <MultiBinding Converter="{StaticResource Surface.ScaleDoubleConverter}">
+                                        <Binding Path="SelectedArea.Height" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Height>
+                            </Rectangle>
+                        </Canvas>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

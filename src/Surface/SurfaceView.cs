@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface;
@@ -29,6 +30,20 @@ public partial class SurfaceView : SelectingItemsControl
     {
         ViewportLocationProperty.Changed.AddClassHandler<SurfaceView>((x, _) => x.UpdateTransforms());
         ViewportZoomProperty.Changed.AddClassHandler<SurfaceView>((x, _) => x.UpdateTransforms());
+
+        SurfaceItem.DragStartedEvent.AddClassHandler<SurfaceView>((x, e) => x.OnItemsDragStarted(e));
+        SurfaceItem.DragDeltaEvent.AddClassHandler<SurfaceView>((x, e) => x.OnItemsDragDelta(e));
+        SurfaceItem.DragCompletedEvent.AddClassHandler<SurfaceView>((x, e) => x.OnItemsDragCompleted(e));
+
+        // Индексный слой пишут и мимо редактора — SelectedIndex, SelectedItems хоста.
+        // Выделение обязано опубликоваться и тогда, а сдвиг выбранного — пересобрать его.
+        SurfaceItem.IsSelectedProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
+            item.FindAncestorOfType<SurfaceView>()?.RefreshSelectionOverlay());
+        SurfaceItem.LocationProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
+        {
+            if (item.IsSelected)
+                item.FindAncestorOfType<SurfaceView>()?.RefreshSelectionOverlay();
+        });
     }
 
     /// <summary>
@@ -43,6 +58,10 @@ public partial class SurfaceView : SelectingItemsControl
         _containerInteractionModifiers = _inputGestures.ContainerInteractionModifiers;
         _additiveSelectionModifiers = _inputGestures.AdditiveSelectionModifiers;
         AttachInputGestures(_inputGestures);
+
+        // Рамка и Shift + клик набирают несколько элементов: одиночный режим
+        // SelectingItemsControl заменял бы каждый следующий выбор предыдущим.
+        SelectionMode = SelectionMode.Multiple;
 
         _states.Push(new EditorIdleState(this));
 
@@ -108,6 +127,31 @@ public partial class SurfaceView : SelectingItemsControl
         get => base.SelectionMode;
         set => base.SelectionMode = value;
     }
+
+    /// <summary>
+    /// Определяет, нужен ли элементу коллекции контейнер <see cref="SurfaceItem"/>.
+    /// </summary>
+    /// <param name="item">Элемент источника данных.</param>
+    /// <param name="index">Индекс элемента.</param>
+    /// <param name="recycleKey">Ключ повторного использования контейнера.</param>
+    /// <returns><see langword="true"/>, если элемент сам контейнером не является.</returns>
+    /// <remarks>
+    /// Выделение, жесты и геометрия ядра работают с <see cref="SurfaceItem"/>; без своего
+    /// контейнера поверхность получила бы от <see cref="ItemsControl"/> голый
+    /// <c>ContentPresenter</c>, и ни один элемент нельзя было бы ни выбрать, ни сдвинуть.
+    /// </remarks>
+    protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey)
+        => NeedsContainer<SurfaceItem>(item, out recycleKey);
+
+    /// <summary>
+    /// Создаёт контейнер элемента поверхности.
+    /// </summary>
+    /// <param name="item">Элемент источника данных.</param>
+    /// <param name="index">Индекс элемента.</param>
+    /// <param name="recycleKey">Ключ повторного использования контейнера.</param>
+    /// <returns>Новый <see cref="SurfaceItem"/>.</returns>
+    protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
+        => new SurfaceItem();
 
     /// <summary>
     /// Сетка из шаблона, если она в нём есть.

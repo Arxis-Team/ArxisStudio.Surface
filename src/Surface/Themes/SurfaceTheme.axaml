@@ -2,12 +2,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Тема ядра: ресурсы поверхности и сетка. Подключается сама по себе редактором,
-        которому нужна только поверхность, а дизайнер форм подключает её в своей теме.
+        Тема ядра: ресурсы, сетка, поверхность и её контейнер. Подключается сама по себе
+        редактором, которому нужна только поверхность, а дизайнер форм подключает её в
+        своей теме — его контролы носят свои темы, и темы ядра им не мешают.
     -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceResources.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/DesignGrid.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceItem.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceView.axaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

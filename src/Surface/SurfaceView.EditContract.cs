@@ -72,14 +72,26 @@ public partial class SurfaceView
     }
 
     /// <summary>
-    /// Пересобирает оверлей выделения после того, как геометрия применена снаружи жеста.
+    /// Пересобирает состояние выделения и публикует его.
     /// </summary>
     /// <remarks>
-    /// Оверлей пока живёт у дизайнера форм; ядро только зовёт его в тех же местах,
-    /// что и раньше.
+    /// Ядро публикует выделение само: без этого голая поверхность записывала выбор, но
+    /// не сообщала о нём — <see cref="SelectedDesignTargets"/> оставался пустым, событие
+    /// не приходило, а выбранный контейнер не удерживал нажатие и отдавал его рамке, так
+    /// что перетащить ничего было нельзя. Рамки и ручки ядро не рисует: выбранный
+    /// контейнер показывает себя своей темой.
+    /// <para>
+    /// Дизайнер форм переопределяет метод целиком: у него та же публикация плюс оверлей
+    /// с рамками, кластеры групп и вход в группу.
+    /// </para>
     /// </remarks>
     private protected virtual void RefreshSelectionOverlay()
     {
+        CleanupSelectionTargets();
+
+        var primary = _selectedTargets.Count > 0 ? _selectedTargets[0] : null;
+        var primaryItem = primary as SurfaceItem ?? (primary != null ? FindSurfaceHost(primary) : null);
+        ApplySelectionSnapshot(CreateSelectionTargetsSnapshot(primaryItem, primary));
     }
 
     internal Point GetDesignPosition(Control control)

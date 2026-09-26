@@ -1273,6 +1273,13 @@ public partial class SurfaceView
         if (_selectedTargets.Contains(container))
             return false;
 
+        // Пустая область бывает только у контейнера, внутри которого есть что выбирать.
+        // Если резолвер кандидатов не предлагает вовсе — а ядро так и устроено, — контейнер
+        // сам и есть единица выбора, и нажатие по нему принадлежит ему, а не рамке:
+        // иначе на голой поверхности невыбранный элемент нельзя было бы потащить.
+        if (!TargetResolver.EnumerateCandidates(container).Any())
+            return false;
+
         var worldPoint = GetWorldPosition(viewportPoint);
         return !TryResolveSelectionTargetAtPoint(container, worldPoint, out _);
     }

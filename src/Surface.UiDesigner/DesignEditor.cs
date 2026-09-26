@@ -70,20 +70,7 @@ public partial class DesignEditor : SurfaceView
     {
         FocusableProperty.OverrideDefaultValue<DesignEditor>(true);
 
-        DesignEditorItem.DragStartedEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsDragStarted(e));
-        DesignEditorItem.DragDeltaEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsDragDelta(e));
-        DesignEditorItem.DragCompletedEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsDragCompleted(e));
         DesignEditorItem.ResizeDeltaEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsResizeDelta(e));
-        DesignEditorItem.IsSelectedProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) =>
-        {
-            if (item.FindAncestorOfType<DesignEditor>() is { } editor)
-                editor.UpdateSelectionOverlayState();
-        });
-        DesignEditorItem.LocationProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) =>
-        {
-            if (item.IsSelected && item.FindAncestorOfType<DesignEditor>() is { } editor)
-                editor.UpdateSelectionOverlayState();
-        });
         // Геометрия и политики выбранных targets отслеживаются точечно —
         // подпиской на сами targets, см. SyncSelectedTargetSubscriptions.
         // Раньше здесь висели AddClassHandler<Control> на Bounds, DesignX/DesignY
@@ -102,8 +89,6 @@ public partial class DesignEditor : SurfaceView
         _snap = new SnapService(this, () => GetService<UserGuideService>()?.CollectNeighbours() ?? Array.Empty<Rect>());
         AddService(_snap);
         AddService(new UserGuideService(this));
-
-        SelectionMode = SelectionMode.Multiple;
 
         // Позицию target'а знает его панель, а не ядро: стратегия размещения решает,
         // примет ли содержимое запись. Пометка группы — участник единицы редактирования

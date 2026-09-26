@@ -302,6 +302,12 @@ sealed class ArxisStudio.Surface.SurfaceKeyCommands
     method Void Insert(Int32, SurfaceKeyCommand)
     property Int32 Count { get; }
     property SurfaceKeyCommand Item { get; }
+class ArxisStudio.Surface.SurfacePanel : Panel
+    avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
+    ctor .ctor()
+    method Size ArrangeOverride(Size)
+    method Size MeasureOverride(Size)
+    property Rect Extent { get; set; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (direct)
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (direct)
@@ -333,8 +339,10 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     event EventHandler<DesignEditorHistoryRequestedEventArgs> RedoRequested
     event EventHandler<DesignEditorHistoryRequestedEventArgs> UndoRequested
     event EventHandler<DesignSelectionChangedEventArgs> DesignSelectionChanged
+    method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Boolean SelectDesignTarget(Control, Boolean)
     method Boolean SetDesignGeometry(Control, Rect)
+    method Control CreateContainerForItemOverride(Object, Int32, Object)
     method Point GetPositionForInput(Visual)
     method Point GetWorldPosition(Point)
     method Task RequestContextAsync(CancellationToken)
