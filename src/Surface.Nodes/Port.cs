@@ -103,6 +103,15 @@ public class Port : ContentControl
     internal NodeEditor? Editor => _editor;
 
     /// <summary>
+    /// Где был конец связи внутри узла, когда его сверяли в последний раз.
+    /// </summary>
+    /// <remarks>
+    /// Раскладка узла сверяет с ним нынешнее положение (<see cref="NodeEditor.OnNodeArranged"/>) и
+    /// пересчитывает связи порта, только если он сдвинулся.
+    /// </remarks>
+    internal Point? LastOffset { get; set; }
+
+    /// <summary>
     /// Считает конец связи в мировых координатах.
     /// </summary>
     /// <remarks>
@@ -114,8 +123,20 @@ public class Port : ContentControl
     {
         world = default;
 
-        var node = this.FindAncestorOfType<Node>();
-        if (node == null || Bounds.Width <= 0 || Bounds.Height <= 0)
+        if ((_node ?? this.FindAncestorOfType<Node>()) is not { } node || !TryGetOffsetInNode(node, out var local))
+            return false;
+
+        world = node.Location + (Vector)local;
+        return true;
+    }
+
+    /// <summary>
+    /// Считает конец связи в координатах узла: центр штырька, а без него — середину края порта.
+    /// </summary>
+    internal bool TryGetOffsetInNode(Node node, out Point offset)
+    {
+        offset = default;
+        if (Bounds.Width <= 0 || Bounds.Height <= 0)
             return false;
 
         Point? inNode;
@@ -132,7 +153,7 @@ public class Port : ContentControl
         if (inNode is not { } local)
             return false;
 
-        world = node.Location + (Vector)local;
+        offset = local;
         return true;
     }
 
@@ -227,8 +248,8 @@ public class Port : ContentControl
             UpdateDirectionClasses();
         else if (change.Property == DataProperty || change.Property == DataContextProperty)
             Rekey();
-        else if (change.Property == BoundsProperty)
-            _editor?.RefreshLinksAt(_registeredKey);
+        else if (change.Property == BoundsProperty && _editor != null && _node != null)
+            _editor.OnPortMoved(this, _node);
     }
 
     /// <summary>

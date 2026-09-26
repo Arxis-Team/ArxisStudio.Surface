@@ -39,6 +39,7 @@ enum ArxisStudio.Surface.Nodes.LinkEnd
     value Target = 1
 class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     ctor .ctor()
+    method Size ArrangeOverride(Size)
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null

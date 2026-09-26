@@ -133,6 +133,59 @@ public partial class NodeEditor
     }
 
     /// <summary>
+    /// Пересчитывает связи тех портов узла, что сдвинулись внутри него, — после раскладки узла.
+    /// </summary>
+    /// <remarks>
+    /// Зовётся из раскладки узла, когда его поддерево уже разложено: только тогда положение порта
+    /// внутри узла окончательное. Каждая связь пересчитывается один раз, даже если сдвинулись
+    /// оба её конца.
+    /// </remarks>
+    internal void OnNodeArranged(Node node)
+    {
+        if (!_portsByNode.TryGetValue(node, out var ports))
+            return;
+
+        HashSet<Link>? moved = null;
+        foreach (var port in ports)
+            CollectMoved(port, node, ref moved);
+
+        if (moved == null)
+            return;
+
+        foreach (var link in moved)
+            link.Refresh();
+    }
+
+    /// <summary>
+    /// Сверяет порт, получивший новые границы, — на случай, когда он разложился сам, без узла.
+    /// </summary>
+    /// <remarks>
+    /// Внутри раскладки узла ответ здесь бывает ранним — предки порта ещё без границ, — и тогда
+    /// его поправит <see cref="OnNodeArranged"/> в конце той же раскладки.
+    /// </remarks>
+    internal void OnPortMoved(Port port, Node node)
+    {
+        HashSet<Link>? moved = null;
+        CollectMoved(port, node, ref moved);
+
+        if (moved == null)
+            return;
+
+        foreach (var link in moved)
+            link.Refresh();
+    }
+
+    private void CollectMoved(Port port, Node node, ref HashSet<Link>? moved)
+    {
+        if (!port.TryGetOffsetInNode(node, out var offset) || port.LastOffset == offset)
+            return;
+
+        port.LastOffset = offset;
+        if (port.Key is { } key && _linksByKey.TryGetValue(key, out var links))
+            (moved ??= new HashSet<Link>()).UnionWith(links);
+    }
+
+    /// <summary>
     /// Пересчитывает связи портов узла — каждую один раз, даже если оба её конца на нём.
     /// </summary>
     private void RefreshNodeLinks(Node node)

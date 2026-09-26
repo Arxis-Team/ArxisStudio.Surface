@@ -40,6 +40,33 @@ internal sealed class NodeStand
         }
     }, supportsRecycling: false);
 
+    /// <summary>
+    /// Узел, как его пишет обычный хост: заголовок, под ним списки портов — два входа слева
+    /// («имя.in», «имя.in2»), выход справа («имя.out»).
+    /// </summary>
+    /// <remarks>
+    /// Порт здесь лежит в контейнере списка, а тот — в сетке под заголовком: собственные границы
+    /// порта от сдвига списка внутри узла не меняются.
+    /// </remarks>
+    public static IDataTemplate ListedPorts { get; } = new FuncDataTemplate<string>((name, _) =>
+    {
+        var inputs = new ItemsControl { ItemsSource = new[] { name + ".in", name + ".in2" }, ItemTemplate = PortOf(PortDirection.Input) };
+        var outputs = new ItemsControl { ItemsSource = new[] { name + ".out" }, ItemTemplate = PortOf(PortDirection.Output) };
+        Grid.SetColumn(outputs, 1);
+
+        return new StackPanel
+        {
+            Children =
+            {
+                new TextBlock { Text = name, Name = "Title" },
+                new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), Children = { inputs, outputs } }
+            }
+        };
+    }, supportsRecycling: false);
+
+    private static IDataTemplate PortOf(PortDirection direction) =>
+        new FuncDataTemplate<string>((key, _) => new Port { Direction = direction, Data = key, Content = key }, supportsRecycling: false);
+
     public static string NodeName(int index) => $"Узел {index}";
 
     private NodeStand(Window window, NodeEditor editor)
@@ -91,6 +118,53 @@ internal sealed class NodeStand
 
         stand.RunLayout();
         return stand;
+    }
+
+    /// <summary>
+    /// Стенд, где узлы ставит хост, как обычное приложение: положение задаётся, когда готов
+    /// контейнер, — до первой раскладки, — размера узлу никто не задаёт, а связи есть с самого начала.
+    /// </summary>
+    public static NodeStand CreatePlacedByHost(IReadOnlyList<Point> locations, IDataTemplate itemTemplate, params LinkData[] links)
+    {
+        var editor = new NodeEditor
+        {
+            ItemTemplate = itemTemplate,
+            LinkSourceBinding = new Binding(nameof(LinkData.From)),
+            LinkTargetBinding = new Binding(nameof(LinkData.To))
+        };
+        editor.InteractionOptions.IsSnapToGridEnabled = false;
+        editor.InteractionOptions.IsSnapToGuidesEnabled = false;
+        editor.ContainerPrepared += (_, e) =>
+        {
+            if (e.Container is Node node)
+                node.Location = locations[e.Index];
+        };
+
+        var window = new Window { Width = 800, Height = 600, Content = editor };
+        var stand = new NodeStand(window, editor);
+        for (var i = 0; i < locations.Count; i++)
+            stand.Items.Add(NodeName(i));
+
+        foreach (var link in links)
+            stand.Links.Add(link);
+
+        editor.ItemsSource = stand.Items;
+        editor.Links = stand.Links;
+        window.Show();
+        stand.RunLayout();
+        return stand;
+    }
+
+    /// <summary>
+    /// Центр штырька порта с этим ключом, посчитанный независимо от редактора, — в координатах
+    /// панели узлов, то есть мировых.
+    /// </summary>
+    public Point PinCentreOf(object key)
+    {
+        var port = Editor.GetVisualDescendants().OfType<Port>().Single(p => Equals(p.Data, key));
+        var pin = port.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "PART_Pin");
+        var panel = (Visual)port.FindAncestorOfType<Node>()!.GetVisualParent()!;
+        return pin.TranslatePoint(new Point(pin.Bounds.Width / 2, pin.Bounds.Height / 2), panel)!.Value;
     }
 
     public Node Node(int index) => (Node)Editor.ContainerFromIndex(index)!;
