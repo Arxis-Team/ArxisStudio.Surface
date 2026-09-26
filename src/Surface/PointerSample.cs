@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Снимок движения указателя: чьё, куда и каким по счёту.

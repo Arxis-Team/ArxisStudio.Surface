@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio;
 
@@ -129,7 +130,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// </summary>
     /// <remarks>
     /// <see cref="double.NaN"/> означает «следовать за сеткой»: шаг берётся из
-    /// <see cref="Controls.DesignGrid.CellSize"/> шаблона редактора. Так настройки
+    /// <see cref="DesignGrid.CellSize"/> шаблона редактора. Так настройки
     /// не расходятся: сетка не может обещать одну структуру, а привязка давать другую.
     /// </remarks>
     public double SnapStep

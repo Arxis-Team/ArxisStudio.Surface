@@ -1,12 +1,12 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:ArxisStudio.Controls">
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface">
 
     <!--
         Тема фоновой сетки. Все параметры вынесены в lightweight-ресурсы,
         поэтому шаг, плотность и палитру можно менять без копирования темы.
     -->
-    <ControlTheme x:Key="{x:Type controls:DesignGrid}" TargetType="controls:DesignGrid">
+    <ControlTheme x:Key="{x:Type surface:DesignGrid}" TargetType="surface:DesignGrid">
         <Setter Property="Background" Value="{DynamicResource DesignEditor.Grid.BackgroundBrush}" />
         <Setter Property="LineBrush" Value="{DynamicResource DesignEditor.Grid.LineBrush}" />
         <Setter Property="MajorLineBrush" Value="{DynamicResource DesignEditor.Grid.MajorLineBrush}" />

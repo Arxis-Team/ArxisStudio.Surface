@@ -1,6 +1,6 @@
 ﻿using Avalonia.Input;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Курсор на время жеста: одна точка применения и одна возврата.

@@ -1,7 +1,7 @@
 using System;
 using Avalonia;
 
-namespace ArxisStudio.Helpers;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Переносит значение свойства одного контрола в свойство другого.

@@ -4,7 +4,7 @@ using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 
-namespace ArxisStudio.Helpers;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Переводит масштаб viewport в обратную трансформацию для оверлеев.

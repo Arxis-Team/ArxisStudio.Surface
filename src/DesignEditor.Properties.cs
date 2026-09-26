@@ -22,6 +22,7 @@ using ArxisStudio.Controls;
 using ArxisStudio.Guides;
 using ArxisStudio.Placement;
 using ArxisStudio.States;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio;
 
@@ -444,7 +445,7 @@ public partial class DesignEditor
     /// </summary>
     /// <remarks>
     /// Сетка входит в шаблон редактора и настраивается через тему
-    /// <see cref="Controls.DesignGrid"/> и ресурсы <c>DesignEditor.Grid.*</c>.
+    /// <see cref="DesignGrid"/> и ресурсы <c>DesignEditor.Grid.*</c>.
     /// Для собственного фона достаточно выключить её и задать <see cref="TemplatedControl.Background"/>.
     /// </remarks>
     public bool ShowGrid

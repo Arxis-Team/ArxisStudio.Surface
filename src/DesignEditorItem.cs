@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using ArxisStudio.States;
 using ArxisStudio.Controls;
 using ArxisStudio.Attached;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio;
 

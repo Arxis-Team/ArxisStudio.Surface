@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 
-namespace ArxisStudio.Controls;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Фоновая сетка поверхности редактора, отрисованная с точностью до физического пикселя.

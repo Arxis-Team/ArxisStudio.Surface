@@ -22,6 +22,7 @@ using ArxisStudio.Controls;
 using ArxisStudio.Guides;
 using ArxisStudio.Placement;
 using ArxisStudio.States;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio;
 

@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using ArxisStudio.Placement;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.States;
 

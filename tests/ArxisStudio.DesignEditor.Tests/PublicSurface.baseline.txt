@@ -53,27 +53,6 @@ class ArxisStudio.Controls.AbsolutePanel : Panel
     method Size ArrangeOverride(Size)
     method Size MeasureOverride(Size)
     property Rect Extent { get; set; }
-class ArxisStudio.Controls.DesignGrid : Control
-    avalonia BackgroundProperty -> Background : IBrush (styled) = null
-    avalonia CellSizeProperty -> CellSize : Double (styled) = 20
-    avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
-    avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
-    avalonia MajorIntervalProperty -> MajorInterval : Int32 (styled) = 5
-    avalonia MajorLineBrushProperty -> MajorLineBrush : IBrush (styled) = null
-    avalonia MinCellSizeProperty -> MinCellSize : Double (styled) = 6
-    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
-    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
-    ctor .ctor()
-    method Void Render(DrawingContext)
-    property Double CellSize { get; set; }
-    property Double LineThickness { get; set; }
-    property Double MinCellSize { get; set; }
-    property Double ViewportZoom { get; set; }
-    property IBrush Background { get; set; }
-    property IBrush LineBrush { get; set; }
-    property IBrush MajorLineBrush { get; set; }
-    property Int32 MajorInterval { get; set; }
-    property Point ViewportLocation { get; set; }
 class ArxisStudio.Controls.DesignRuler : Control
     avalonia BackgroundProperty -> Background : IBrush (styled) = null
     avalonia EditorProperty -> Editor : DesignEditor (styled) = null
@@ -559,19 +538,6 @@ sealed class ArxisStudio.DesignSelectionTarget
     property Int32 Depth { get; }
     property String DisplayName { get; }
     property String GroupId { get; }
-class ArxisStudio.DragCompletedEventArgs : RoutedEventArgs
-    ctor .ctor(Double, Double, Boolean)
-    property Boolean Canceled { get; }
-    property Double HorizontalChange { get; }
-    property Double VerticalChange { get; }
-class ArxisStudio.DragDeltaEventArgs : RoutedEventArgs
-    ctor .ctor(Double, Double)
-    property Double HorizontalChange { get; }
-    property Double VerticalChange { get; }
-class ArxisStudio.DragStartedEventArgs : RoutedEventArgs
-    ctor .ctor(Double, Double)
-    property Double HorizontalOffset { get; }
-    property Double VerticalOffset { get; }
 struct ArxisStudio.Guides.DesignSnapGuide : ValueType
     ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double, DesignSnapGuideKind)
     method Boolean Equals(DesignSnapGuide)
@@ -605,3 +571,37 @@ interface ArxisStudio.IDesignGroupStore
     event EventHandler GroupsChanged
     method String GetGroup(Control)
     method Void SetGroup(Control, String)
+class ArxisStudio.Surface.DesignGrid : Control
+    avalonia BackgroundProperty -> Background : IBrush (styled) = null
+    avalonia CellSizeProperty -> CellSize : Double (styled) = 20
+    avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
+    avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
+    avalonia MajorIntervalProperty -> MajorInterval : Int32 (styled) = 5
+    avalonia MajorLineBrushProperty -> MajorLineBrush : IBrush (styled) = null
+    avalonia MinCellSizeProperty -> MinCellSize : Double (styled) = 6
+    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
+    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
+    ctor .ctor()
+    method Void Render(DrawingContext)
+    property Double CellSize { get; set; }
+    property Double LineThickness { get; set; }
+    property Double MinCellSize { get; set; }
+    property Double ViewportZoom { get; set; }
+    property IBrush Background { get; set; }
+    property IBrush LineBrush { get; set; }
+    property IBrush MajorLineBrush { get; set; }
+    property Int32 MajorInterval { get; set; }
+    property Point ViewportLocation { get; set; }
+class ArxisStudio.Surface.DragCompletedEventArgs : RoutedEventArgs
+    ctor .ctor(Double, Double, Boolean)
+    property Boolean Canceled { get; }
+    property Double HorizontalChange { get; }
+    property Double VerticalChange { get; }
+class ArxisStudio.Surface.DragDeltaEventArgs : RoutedEventArgs
+    ctor .ctor(Double, Double)
+    property Double HorizontalChange { get; }
+    property Double VerticalChange { get; }
+class ArxisStudio.Surface.DragStartedEventArgs : RoutedEventArgs
+    ctor .ctor(Double, Double)
+    property Double HorizontalOffset { get; }
+    property Double VerticalOffset { get; }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using ArxisStudio.Controls;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio;
 

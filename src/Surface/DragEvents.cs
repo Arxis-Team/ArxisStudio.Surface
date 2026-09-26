@@ -1,6 +1,6 @@
 ﻿using Avalonia.Interactivity;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Содержит данные о начале операции перетаскивания.

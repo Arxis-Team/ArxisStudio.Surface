@@ -2,7 +2,7 @@
 using Avalonia;
 using Avalonia.Data.Converters;
 
-namespace ArxisStudio.Helpers
+namespace ArxisStudio.Surface
 {
     /// <summary>
     /// Умножает число на коэффициент масштаба.
