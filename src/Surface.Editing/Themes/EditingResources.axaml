@@ -15,6 +15,10 @@
             <SolidColorBrush x:Key="DesignEditor.Ruler.BackgroundBrush" Color="#F3F3F5" />
             <SolidColorBrush x:Key="DesignEditor.Ruler.TickBrush" Color="#8A8A93" />
             <SolidColorBrush x:Key="DesignEditor.Ruler.LabelBrush" Color="#5B5B64" />
+            <SolidColorBrush x:Key="SurfaceMinimap.Background" Color="#E6F3F3F5" />
+            <SolidColorBrush x:Key="SurfaceMinimap.ItemFill" Color="#9AA3B0" />
+            <SolidColorBrush x:Key="SurfaceMinimap.ViewportStroke" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="SurfaceMinimap.ViewportFill" Color="#1A0F6CBD" />
 
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryFill" Color="Transparent" />
@@ -41,6 +45,10 @@
             <SolidColorBrush x:Key="DesignEditor.Ruler.BackgroundBrush" Color="#25252A" />
             <SolidColorBrush x:Key="DesignEditor.Ruler.TickBrush" Color="#6E6E78" />
             <SolidColorBrush x:Key="DesignEditor.Ruler.LabelBrush" Color="#9A9AA4" />
+            <SolidColorBrush x:Key="SurfaceMinimap.Background" Color="#E625252A" />
+            <SolidColorBrush x:Key="SurfaceMinimap.ItemFill" Color="#5C6577" />
+            <SolidColorBrush x:Key="SurfaceMinimap.ViewportStroke" Color="#4DA3FF" />
+            <SolidColorBrush x:Key="SurfaceMinimap.ViewportFill" Color="#1A4DA3FF" />
 
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryBrush" Color="#0099FF" />
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryFill" Color="Transparent" />
@@ -100,5 +108,6 @@
 
     <Cursor x:Key="DesignEditor.Ruler.CursorHorizontal">SizeNorthSouth</Cursor>
     <Cursor x:Key="DesignEditor.Ruler.CursorVertical">SizeWestEast</Cursor>
+    <Cursor x:Key="SurfaceMinimap.Cursor">Hand</Cursor>
 
 </ResourceDictionary>

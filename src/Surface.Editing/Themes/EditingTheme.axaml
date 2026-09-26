@@ -9,6 +9,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingResources.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/DesignRuler.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/SurfaceMinimap.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/SelectionAdorner.axaml" />
     </ResourceDictionary.MergedDictionaries>
 

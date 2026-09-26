@@ -163,6 +163,26 @@ static class ArxisStudio.Surface.Editing.SurfaceGuides
     method Void SetShowRulers(AvaloniaObject, Boolean)
     method Void SetShowSnapGuides(AvaloniaObject, Boolean)
     method Void SetUserGuides(AvaloniaObject, IReadOnlyList<DesignGuide>)
+class ArxisStudio.Surface.Editing.SurfaceMinimap : Control
+    avalonia BackgroundProperty -> Background : IBrush (styled) = null
+    avalonia EditorProperty -> Editor : SurfaceView (styled) = null
+    avalonia ItemFillProperty -> ItemFill : IBrush (styled) = null
+    avalonia ViewportFillProperty -> ViewportFill : IBrush (styled) = null
+    avalonia ViewportStrokeProperty -> ViewportStroke : IBrush (styled) = null
+    ctor .ctor()
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
+    method Void OnPointerMoved(PointerEventArgs)
+    method Void OnPointerPressed(PointerPressedEventArgs)
+    method Void OnPointerReleased(PointerReleasedEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    method Void Render(DrawingContext)
+    property IBrush Background { get; set; }
+    property IBrush ItemFill { get; set; }
+    property IBrush ViewportFill { get; set; }
+    property IBrush ViewportStroke { get; set; }
+    property SurfaceView Editor { get; set; }
 static class ArxisStudio.Surface.Editing.SurfaceSnapping
     avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<DesignSnapGuide> (attached) = <DesignSnapGuide[]>
     avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (attached) = <DesignSpacingHint[]>

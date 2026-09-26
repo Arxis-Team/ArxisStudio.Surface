@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing">
+
+    <!-- Миникарта рисует себя сама; тема задаёт кисти и курсор. Фон полупрозрачный: карту ставят поверх холста. -->
+    <ControlTheme x:Key="{x:Type editing:SurfaceMinimap}" TargetType="editing:SurfaceMinimap">
+        <Setter Property="Background" Value="{DynamicResource SurfaceMinimap.Background}" />
+        <Setter Property="ItemFill" Value="{DynamicResource SurfaceMinimap.ItemFill}" />
+        <Setter Property="ViewportStroke" Value="{DynamicResource SurfaceMinimap.ViewportStroke}" />
+        <Setter Property="ViewportFill" Value="{DynamicResource SurfaceMinimap.ViewportFill}" />
+        <Setter Property="Cursor" Value="{DynamicResource SurfaceMinimap.Cursor}" />
+    </ControlTheme>
+</ResourceDictionary>
