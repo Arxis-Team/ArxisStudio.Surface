@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,48 +74,6 @@ public partial class DesignEditor
         get => base.SelectionMode;
         set => base.SelectionMode = value;
     }
-
-    /// <summary>
-    /// Идентификатор свойства позиции viewport в мировых координатах.
-    /// </summary>
-    public static readonly StyledProperty<Point> ViewportLocationProperty =
-        AvaloniaProperty.Register<DesignEditor, Point>(nameof(ViewportLocation));
-
-    /// <summary>
-    /// Идентификатор свойства текущего масштаба viewport.
-    /// </summary>
-    public static readonly StyledProperty<double> ViewportZoomProperty =
-        AvaloniaProperty.Register<DesignEditor, double>(nameof(ViewportZoom), 1.0);
-
-    /// <summary>
-    /// Идентификатор свойства минимального допустимого масштаба.
-    /// </summary>
-    public static readonly StyledProperty<double> MinZoomProperty =
-        AvaloniaProperty.Register<DesignEditor, double>(nameof(MinZoom), 0.1);
-
-    /// <summary>
-    /// Идентификатор свойства максимального допустимого масштаба.
-    /// </summary>
-    public static readonly StyledProperty<double> MaxZoomProperty =
-        AvaloniaProperty.Register<DesignEditor, double>(nameof(MaxZoom), 5.0);
-
-    /// <summary>
-    /// Идентификатор трансформации viewport в логических координатах.
-    /// </summary>
-    public static readonly StyledProperty<Transform> ViewportTransformProperty =
-        AvaloniaProperty.Register<DesignEditor, Transform>(nameof(ViewportTransform), new TransformGroup());
-
-    /// <summary>
-    /// Идентификатор трансформации viewport с учетом текущего DPI.
-    /// </summary>
-    public static readonly StyledProperty<Transform> DpiScaledViewportTransformProperty =
-        AvaloniaProperty.Register<DesignEditor, Transform>(nameof(DpiScaledViewportTransform), new TransformGroup());
-
-    /// <summary>
-    /// Идентификатор свойства видимости фоновой сетки.
-    /// </summary>
-    public static readonly StyledProperty<bool> ShowGridProperty =
-        AvaloniaProperty.Register<DesignEditor, bool>(nameof(ShowGrid), true);
 
     /// <summary>
     /// Идентификатор свойства видимости пользовательских направляющих.
@@ -380,81 +338,6 @@ public partial class DesignEditor
         AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasMultipleContainerSelection), o => o.HasMultipleContainerSelection, (o, v) => o.HasMultipleContainerSelection = v);
 
     /// <summary>
-    /// Получает или задает положение viewport в мировых координатах.
-    /// </summary>
-    /// <remarks>
-    /// Значение задает левый верхний угол видимой области в координатах содержимого.
-    /// Обычно изменяется автоматически во время панорамирования или программно для перехода к нужной области.
-    /// </remarks>
-    public Point ViewportLocation
-    {
-        get => GetValue(ViewportLocationProperty);
-        set => SetValue(ViewportLocationProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает текущий коэффициент масштабирования viewport.
-    /// </summary>
-    /// <remarks>
-    /// Значение ограничивается диапазоном между <see cref="MinZoom"/> и <see cref="MaxZoom"/>.
-    /// </remarks>
-    public double ViewportZoom
-    {
-        get => GetValue(ViewportZoomProperty);
-        set => SetValue(ViewportZoomProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает минимальное значение <see cref="ViewportZoom"/>.
-    /// </summary>
-    public double MinZoom
-    {
-        get => GetValue(MinZoomProperty);
-        set => SetValue(MinZoomProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает максимальное значение <see cref="ViewportZoom"/>.
-    /// </summary>
-    public double MaxZoom
-    {
-        get => GetValue(MaxZoomProperty);
-        set => SetValue(MaxZoomProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает трансформацию, применяемую к содержимому viewport.
-    /// </summary>
-    public Transform ViewportTransform
-    {
-        get => GetValue(ViewportTransformProperty);
-        set => SetValue(ViewportTransformProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает DPI-aware трансформацию viewport.
-    /// </summary>
-    public Transform DpiScaledViewportTransform
-    {
-        get => GetValue(DpiScaledViewportTransformProperty);
-        set => SetValue(DpiScaledViewportTransformProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает признак отображения фоновой сетки.
-    /// </summary>
-    /// <remarks>
-    /// Сетка входит в шаблон редактора и настраивается через тему
-    /// <see cref="DesignGrid"/> и ресурсы <c>DesignEditor.Grid.*</c>.
-    /// Для собственного фона достаточно выключить её и задать <see cref="TemplatedControl.Background"/>.
-    /// </remarks>
-    public bool ShowGrid
-    {
-        get => GetValue(ShowGridProperty);
-        set => SetValue(ShowGridProperty, value);
-    }
-
-    /// <summary>
     /// Получает или задает признак отображения пользовательских направляющих.
     /// </summary>
     /// <remarks>
@@ -463,7 +346,7 @@ public partial class DesignEditor
     /// <para>
     /// Спрятанную линию нельзя ни подвинуть, ни вытянуть новую с линейки: жест по
     /// невидимому — худший вид сюрприза. А вот <b>притяжение</b> к ней продолжает
-    /// работать, ровно как у сетки, которую <see cref="ShowGrid"/> тоже только прячет;
+    /// работать, ровно как у сетки, которую <see cref="SurfaceView.ShowGrid"/> тоже только прячет;
     /// выключается оно отдельно, через <c>InteractionOptions.IsSnapToGuidesEnabled</c>.
     /// </para>
     /// </remarks>
@@ -478,7 +361,7 @@ public partial class DesignEditor
     /// </summary>
     /// <remarks>
     /// Прячет только показ: сами выравнивание и интервалы продолжают работать, как сетка
-    /// при выключенном <see cref="ShowGrid"/>. Отключаются они через
+    /// при выключенном <see cref="SurfaceView.ShowGrid"/>. Отключаются они через
     /// <c>InteractionOptions.IsSnapToGuidesEnabled</c> и <c>IsEqualSpacingEnabled</c>.
     /// <para>
     /// Вместе с <see cref="ShowGuides"/> это способ погасить встроенный слой целиком —

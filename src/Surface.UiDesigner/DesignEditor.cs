@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,8 +50,6 @@ public partial class DesignEditor : SurfaceView
 {
     private const double ZoomTolerance = 0.0001;
 
-    private const double FitToViewPadding = 32.0;
-
     private Point _lastMousePosition;
 
     internal KeyModifiers LastInputModifiers { get; private set; }
@@ -100,22 +98,9 @@ public partial class DesignEditor : SurfaceView
     /// </summary>
     private IReadOnlyList<DesignEditorItem>? _containerSnapshot;
 
-    private readonly TranslateTransform _translateTransform = new TranslateTransform();
-
-    private readonly ScaleTransform _scaleTransform = new ScaleTransform();
-
-    private readonly TranslateTransform _dpiTranslateTransform = new TranslateTransform();
-
-    // TopLevel, с которого читается RenderScaling и на который подписан ScalingChanged.
-    // Разрешается один раз при подключении к дереву, чтобы подписка и чтение DPI
-    // не расходились между собой.
-    private TopLevel? _scalingHost;
-
     static DesignEditor()
     {
         FocusableProperty.OverrideDefaultValue<DesignEditor>(true);
-        ViewportLocationProperty.Changed.AddClassHandler<DesignEditor>((x, e) => x.UpdateTransforms());
-        ViewportZoomProperty.Changed.AddClassHandler<DesignEditor>((x, e) => x.UpdateTransforms());
         GuidesProperty.Changed.AddClassHandler<DesignEditor>((x, e) => x.OnGuidesSourceChanged(e));
 
         DesignEditorItem.DragStartedEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsDragStarted(e));
@@ -164,16 +149,6 @@ public partial class DesignEditor : SurfaceView
         _containerInteractionModifiers = _inputGestures.ContainerInteractionModifiers;
         _additiveSelectionModifiers = _inputGestures.AdditiveSelectionModifiers;
         AttachInputGestures(_inputGestures);
-
-        var contentGroup = new TransformGroup();
-        contentGroup.Children.Add(_scaleTransform);
-        contentGroup.Children.Add(_translateTransform);
-        SetCurrentValue(ViewportTransformProperty, contentGroup);
-
-        var dpiGroup = new TransformGroup();
-        dpiGroup.Children.Add(_scaleTransform);
-        dpiGroup.Children.Add(_dpiTranslateTransform);
-        SetCurrentValue(DpiScaledViewportTransformProperty, dpiGroup);
 
         _states.Push(new EditorIdleState(this));
         UpdateSelectionOverlayState();

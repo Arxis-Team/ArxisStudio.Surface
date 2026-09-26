@@ -11,8 +11,8 @@ namespace ArxisStudio.Tests;
 /// DPI-aware трансформация viewport.
 /// </summary>
 /// <remarks>
-/// Редактор публикует две трансформации: точную <see cref="DesignEditor.ViewportTransform"/>
-/// и <see cref="DesignEditor.DpiScaledViewportTransform"/>, у которой смещение округлено
+/// Редактор публикует две трансформации: точную <see cref="SurfaceView.ViewportTransform"/>
+/// и <see cref="SurfaceView.DpiScaledViewportTransform"/>, у которой смещение округлено
 /// до целого физического пикселя — иначе фон и сетка размываются.
 /// <para>
 /// Тесты закрепляют подписку на смену DPI: она резолвится через

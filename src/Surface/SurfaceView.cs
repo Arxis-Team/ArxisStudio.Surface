@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls.Primitives;
+using Avalonia.Media;
 
 namespace ArxisStudio.Surface;
 
@@ -14,6 +16,27 @@ namespace ArxisStudio.Surface;
 /// поведение прежним; пока класс — точка, от которой наследуется редактор форм.
 /// </para>
 /// </remarks>
-public class SurfaceView : SelectingItemsControl
+public partial class SurfaceView : SelectingItemsControl
 {
+    static SurfaceView()
+    {
+        ViewportLocationProperty.Changed.AddClassHandler<SurfaceView>((x, _) => x.UpdateTransforms());
+        ViewportZoomProperty.Changed.AddClassHandler<SurfaceView>((x, _) => x.UpdateTransforms());
+    }
+
+    /// <summary>
+    /// Инициализирует новый экземпляр <see cref="SurfaceView"/>.
+    /// </summary>
+    public SurfaceView()
+    {
+        var contentGroup = new TransformGroup();
+        contentGroup.Children.Add(_scaleTransform);
+        contentGroup.Children.Add(_translateTransform);
+        SetCurrentValue(ViewportTransformProperty, contentGroup);
+
+        var dpiGroup = new TransformGroup();
+        dpiGroup.Children.Add(_scaleTransform);
+        dpiGroup.Children.Add(_dpiTranslateTransform);
+        SetCurrentValue(DpiScaledViewportTransformProperty, dpiGroup);
+    }
 }

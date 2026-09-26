@@ -1,0 +1,281 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Media;
+using Avalonia.VisualTree;
+
+namespace ArxisStudio.Surface;
+
+// Viewport: положение, масштаб, трансформации и их пересчёт под DPI.
+// Часть SurfaceView; общее описание типа — в SurfaceView.cs.
+public partial class SurfaceView
+{
+    private const double FitToViewPadding = 32.0;
+
+    private readonly TranslateTransform _translateTransform = new TranslateTransform();
+
+    private readonly ScaleTransform _scaleTransform = new ScaleTransform();
+
+    private readonly TranslateTransform _dpiTranslateTransform = new TranslateTransform();
+
+    // TopLevel, с которого читается RenderScaling и на который подписан ScalingChanged.
+    // Разрешается один раз при подключении к дереву, чтобы подписка и чтение DPI
+    // не расходились между собой.
+    private TopLevel? _scalingHost;
+
+    /// <summary>
+    /// Идентификатор свойства позиции viewport в мировых координатах.
+    /// </summary>
+    public static readonly StyledProperty<Point> ViewportLocationProperty =
+        AvaloniaProperty.Register<SurfaceView, Point>(nameof(ViewportLocation));
+
+    /// <summary>
+    /// Идентификатор свойства текущего масштаба viewport.
+    /// </summary>
+    public static readonly StyledProperty<double> ViewportZoomProperty =
+        AvaloniaProperty.Register<SurfaceView, double>(nameof(ViewportZoom), 1.0);
+
+    /// <summary>
+    /// Идентификатор свойства минимального допустимого масштаба.
+    /// </summary>
+    public static readonly StyledProperty<double> MinZoomProperty =
+        AvaloniaProperty.Register<SurfaceView, double>(nameof(MinZoom), 0.1);
+
+    /// <summary>
+    /// Идентификатор свойства максимального допустимого масштаба.
+    /// </summary>
+    public static readonly StyledProperty<double> MaxZoomProperty =
+        AvaloniaProperty.Register<SurfaceView, double>(nameof(MaxZoom), 5.0);
+
+    /// <summary>
+    /// Идентификатор трансформации viewport в логических координатах.
+    /// </summary>
+    public static readonly StyledProperty<Transform> ViewportTransformProperty =
+        AvaloniaProperty.Register<SurfaceView, Transform>(nameof(ViewportTransform), new TransformGroup());
+
+    /// <summary>
+    /// Идентификатор трансформации viewport с учетом текущего DPI.
+    /// </summary>
+    public static readonly StyledProperty<Transform> DpiScaledViewportTransformProperty =
+        AvaloniaProperty.Register<SurfaceView, Transform>(nameof(DpiScaledViewportTransform), new TransformGroup());
+
+    /// <summary>
+    /// Идентификатор свойства видимости фоновой сетки.
+    /// </summary>
+    public static readonly StyledProperty<bool> ShowGridProperty =
+        AvaloniaProperty.Register<SurfaceView, bool>(nameof(ShowGrid), true);
+
+    /// <summary>
+    /// Получает или задает положение viewport в мировых координатах.
+    /// </summary>
+    /// <remarks>
+    /// Значение задает левый верхний угол видимой области в координатах содержимого.
+    /// Обычно изменяется автоматически во время панорамирования или программно для перехода к нужной области.
+    /// </remarks>
+    public Point ViewportLocation
+    {
+        get => GetValue(ViewportLocationProperty);
+        set => SetValue(ViewportLocationProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает текущий коэффициент масштабирования viewport.
+    /// </summary>
+    /// <remarks>
+    /// Значение ограничивается диапазоном между <see cref="MinZoom"/> и <see cref="MaxZoom"/>.
+    /// </remarks>
+    public double ViewportZoom
+    {
+        get => GetValue(ViewportZoomProperty);
+        set => SetValue(ViewportZoomProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает минимальное значение <see cref="ViewportZoom"/>.
+    /// </summary>
+    public double MinZoom
+    {
+        get => GetValue(MinZoomProperty);
+        set => SetValue(MinZoomProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает максимальное значение <see cref="ViewportZoom"/>.
+    /// </summary>
+    public double MaxZoom
+    {
+        get => GetValue(MaxZoomProperty);
+        set => SetValue(MaxZoomProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает трансформацию, применяемую к содержимому viewport.
+    /// </summary>
+    public Transform ViewportTransform
+    {
+        get => GetValue(ViewportTransformProperty);
+        set => SetValue(ViewportTransformProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает DPI-aware трансформацию viewport.
+    /// </summary>
+    public Transform DpiScaledViewportTransform
+    {
+        get => GetValue(DpiScaledViewportTransformProperty);
+        set => SetValue(DpiScaledViewportTransformProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает признак отображения фоновой сетки.
+    /// </summary>
+    /// <remarks>
+    /// Сетка входит в шаблон редактора и настраивается через тему
+    /// <see cref="DesignGrid"/> и ресурсы <c>DesignEditor.Grid.*</c>.
+    /// Для собственного фона достаточно выключить её и задать <see cref="TemplatedControl.Background"/>.
+    /// </remarks>
+    public bool ShowGrid
+    {
+        get => GetValue(ShowGridProperty);
+        set => SetValue(ShowGridProperty, value);
+    }
+
+    /// <summary>
+    /// Подключает обработчики, зависящие от visual tree, после присоединения редактора к дереву.
+    /// </summary>
+    /// <param name="e">Аргументы присоединения к visual tree.</param>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        // e.RootVisual в Avalonia 12 не гарантированно TopLevel, поэтому host ищется
+        // подъемом по дереву, а не приведением корня.
+        SetScalingHost(TopLevel.GetTopLevel(this));
+        UpdateTransforms();
+    }
+
+    /// <summary>
+    /// Освобождает обработчики, зависящие от visual tree, перед отсоединением редактора.
+    /// </summary>
+    /// <param name="e">Аргументы отсоединения от visual tree.</param>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        SetScalingHost(null);
+    }
+
+    private void SetScalingHost(TopLevel? topLevel)
+    {
+        if (ReferenceEquals(_scalingHost, topLevel))
+            return;
+
+        if (_scalingHost != null)
+            _scalingHost.ScalingChanged -= OnScreenScalingChanged;
+
+        _scalingHost = topLevel;
+
+        if (_scalingHost != null)
+            _scalingHost.ScalingChanged += OnScreenScalingChanged;
+    }
+
+    private void OnScreenScalingChanged(object? sender, EventArgs e) => UpdateTransforms();
+
+    private void UpdateTransforms()
+    {
+        _scaleTransform.ScaleX = ViewportZoom;
+        _scaleTransform.ScaleY = ViewportZoom;
+
+        double x = -ViewportLocation.X * ViewportZoom;
+        double y = -ViewportLocation.Y * ViewportZoom;
+
+        _translateTransform.X = x;
+        _translateTransform.Y = y;
+
+        // В Avalonia 12 IRenderRoot больше не публичный: RenderScaling берется с TopLevel.
+        // Проверка через "не > 0" отсекает и 0, и NaN: иначе деление ниже дало бы
+        // нечисловой transform для фона и сетки.
+        double renderScaling = _scalingHost?.RenderScaling ?? 1.0;
+        if (!(renderScaling > 0))
+            renderScaling = 1.0;
+
+        _dpiTranslateTransform.X = Math.Round(x * renderScaling) / renderScaling;
+        _dpiTranslateTransform.Y = Math.Round(y * renderScaling) / renderScaling;
+
+        // Группы собраны в конструкторе и содержат эти же трансформации, поэтому
+        // мутации выше видны через них сразу. Пересобирать их заново на каждом кадре
+        // приходилось только ради обратного масштаба оверлеев: тот конвертер снимал
+        // матрицу в момент преобразования и перевычислялся лишь при смене
+        // идентичности значения. Теперь оверлеи привязаны к ViewportZoom напрямую.
+    }
+
+    /// <summary>
+    /// Преобразует экранную точку в мировые координаты холста.
+    /// </summary>
+    /// <param name="screenPoint">Точка в координатах контрола.</param>
+    /// <returns>Точка в координатах содержимого редактора.</returns>
+    /// <example>
+    /// Это полезно, когда нужно разместить новый элемент в позиции курсора с учетом текущего зума и панорамирования.
+    /// </example>
+    public Point GetWorldPosition(Point screenPoint)
+        => (screenPoint / ViewportZoom) + ViewportLocation;
+
+    /// <summary>
+    /// Смещает viewport так, чтобы указанная мировая точка оказалась в центре видимой области редактора.
+    /// </summary>
+    /// <param name="worldPoint">Точка в координатах содержимого редактора.</param>
+    /// <remarks>
+    /// Метод не изменяет <see cref="ViewportZoom"/> и пересчитывает только <see cref="ViewportLocation"/>.
+    /// </remarks>
+    public void CenterOn(Point worldPoint)
+    {
+        var visibleWorldSize = new Size(Bounds.Width / ViewportZoom, Bounds.Height / ViewportZoom);
+        ViewportLocation = new Point(
+            worldPoint.X - (visibleWorldSize.Width / 2),
+            worldPoint.Y - (visibleWorldSize.Height / 2));
+    }
+
+    /// <summary>
+    /// Смещает viewport так, чтобы центр указанной области оказался в центре видимой области редактора.
+    /// </summary>
+    /// <param name="bounds">Прямоугольная область в мировых координатах.</param>
+    /// <remarks>
+    /// Метод не изменяет <see cref="ViewportZoom"/> и использует геометрический центр переданного прямоугольника.
+    /// </remarks>
+    public void CenterOn(Rect bounds)
+    {
+        CenterOn(bounds.Center);
+    }
+
+    /// <summary>
+    /// Изменяет положение и масштаб viewport так, чтобы указанная область целиком поместилась в видимой области редактора.
+    /// </summary>
+    /// <param name="bounds">Прямоугольная область в мировых координатах, которую необходимо вписать в окно.</param>
+    /// <remarks>
+    /// Метод изменяет <see cref="ViewportLocation"/> и <see cref="ViewportZoom"/>.
+    /// <para>
+    /// Для более аккуратного отображения вокруг области добавляется внутренний отступ.
+    /// Итоговый масштаб ограничивается значениями <see cref="MinZoom"/> и <see cref="MaxZoom"/>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code language="csharp"><![CDATA[
+    /// editor.FitToView(new Rect(100, 100, 640, 360));
+    /// ]]></code>
+    /// </example>
+    public void FitToView(Rect bounds)
+    {
+        if (Bounds.Width <= 0 || Bounds.Height <= 0)
+            return;
+
+        var paddedBounds = bounds.Inflate(FitToViewPadding);
+        var targetWidth = Math.Max(1.0, paddedBounds.Width);
+        var targetHeight = Math.Max(1.0, paddedBounds.Height);
+
+        var zoomX = Bounds.Width / targetWidth;
+        var zoomY = Bounds.Height / targetHeight;
+        var newZoom = Math.Min(zoomX, zoomY);
+        newZoom = Math.Max(MinZoom, Math.Min(MaxZoom, newZoom));
+
+        ViewportZoom = newZoom;
+        CenterOn(paddedBounds.Center);
+    }
+}

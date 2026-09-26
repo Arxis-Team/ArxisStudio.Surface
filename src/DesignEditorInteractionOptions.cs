@@ -184,7 +184,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// </summary>
     /// <remarks>
     /// Значение задано в пикселях экрана, а не в мировых единицах, и делится на
-    /// <see cref="DesignEditor.ViewportZoom"/>. Иначе на отдалении направляющая
+    /// <see cref="SurfaceView.ViewportZoom"/>. Иначе на отдалении направляющая
     /// хватала бы элемент с расстояния, на котором пользователь её не видит.
     /// </remarks>
     public double SnapGuideTolerance

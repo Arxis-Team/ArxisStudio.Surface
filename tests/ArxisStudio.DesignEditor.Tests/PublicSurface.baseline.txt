@@ -400,7 +400,27 @@ class ArxisStudio.Surface.SurfaceItem : ContentControl
     property Boolean IsSelected { get; set; }
     property Point Location { get; set; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
+    avalonia DpiScaledViewportTransformProperty -> DpiScaledViewportTransform : Transform (styled) = <TransformGroup>
+    avalonia MaxZoomProperty -> MaxZoom : Double (styled) = 5
+    avalonia MinZoomProperty -> MinZoom : Double (styled) = 0.1
+    avalonia ShowGridProperty -> ShowGrid : Boolean (styled) = true
+    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
+    avalonia ViewportTransformProperty -> ViewportTransform : Transform (styled) = <TransformGroup>
+    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
     ctor .ctor()
+    method Point GetWorldPosition(Point)
+    method Void CenterOn(Point)
+    method Void CenterOn(Rect)
+    method Void FitToView(Rect)
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    property Boolean ShowGrid { get; set; }
+    property Double MaxZoom { get; set; }
+    property Double MinZoom { get; set; }
+    property Double ViewportZoom { get; set; }
+    property Point ViewportLocation { get; set; }
+    property Transform DpiScaledViewportTransform { get; set; }
+    property Transform ViewportTransform { get; set; }
 class ArxisStudio.Surface.UiDesigner.AbsolutePanel : Panel
     avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
     ctor .ctor()
@@ -414,7 +434,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (direct)
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (direct)
     avalonia CursorsProperty -> Cursors : DesignEditorCursors (direct)
-    avalonia DpiScaledViewportTransformProperty -> DpiScaledViewportTransform : Transform (styled) = <TransformGroup>
     avalonia GroupStoreProperty -> GroupStore : IDesignGroupStore (direct)
     avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (direct)
     avalonia GuidesProperty -> Guides : IEnumerable<DesignGuide> (styled) = null
@@ -429,8 +448,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
     avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia MarqueeScopeProperty -> MarqueeScope : DesignEditorItem (direct)
-    avalonia MaxZoomProperty -> MaxZoom : Double (styled) = 5
-    avalonia MinZoomProperty -> MinZoom : Double (styled) = 0.1
     avalonia PrimarySelectionMovePolicyProperty -> PrimarySelectionMovePolicy : MovePolicy (direct)
     avalonia PrimarySelectionPlacementProperty -> PrimarySelectionPlacement : String (direct)
     avalonia PrimarySelectionResizePolicyProperty -> PrimarySelectionResizePolicy : ResizePolicy (direct)
@@ -444,16 +461,12 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia SelectionModeProperty -> SelectionMode : SelectionMode (styled) = Single
     avalonia SelectionProperty -> Selection : ISelectionModel (direct)
     avalonia SelectionRectangleStyleProperty -> SelectionRectangleStyle : ControlTheme (styled) = null
-    avalonia ShowGridProperty -> ShowGrid : Boolean (styled) = true
     avalonia ShowGuidesProperty -> ShowGuides : Boolean (styled) = true
     avalonia ShowRulersProperty -> ShowRulers : Boolean (styled) = true
     avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (styled) = true
     avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<DesignSnapGuide> (direct)
     avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (direct)
     avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (direct)
-    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
-    avalonia ViewportTransformProperty -> ViewportTransform : Transform (styled) = <TransformGroup>
-    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
     ctor .ctor()
     event EventHandler<DesignEditCompletedEventArgs> EditCompleted
     event EventHandler<DesignEditorContextRequestedEventArgs> ContextMenuResolved
@@ -482,23 +495,17 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     method IReadOnlyList<Control> GetGroupMembers(DesignEditorItem, String)
     method IReadOnlyList<DesignGroupInfo> GetGroups(DesignEditorItem)
     method Point GetPositionForInput(Visual)
-    method Point GetWorldPosition(Point)
     method Task RequestContextAsync(CancellationToken)
     method Task RequestContextAsync(DesignEditorContextSource, Point, KeyModifiers, CancellationToken)
     method Void ApplyGeometry(Control, Rect)
     method Void ApplyGroup(Control, String)
     method Void ApplyOrder(Control, Int32)
-    method Void CenterOn(Point)
-    method Void CenterOn(Rect)
     method Void CenterOnItem(DesignEditorItem)
     method Void CenterOnSelection()
     method Void FitSelectionToView()
     method Void FitToView(DesignEditorItem)
-    method Void FitToView(Rect)
     method Void HandleZoom(PointerWheelEventArgs)
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
-    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
-    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnKeyDown(KeyEventArgs)
     method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
@@ -514,7 +521,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property Boolean HasSingleSelection { get; }
     property Boolean IsReordering { get; }
     property Boolean IsSelecting { get; set; }
-    property Boolean ShowGrid { get; set; }
     property Boolean ShowGuides { get; set; }
     property Boolean ShowRulers { get; set; }
     property Boolean ShowSnapGuides { get; set; }
@@ -524,9 +530,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property DesignEditorInteractionOptions InteractionOptions { get; set; }
     property DesignEditorItem MarqueeScope { get; }
     property DesignSelectionTarget PrimarySelectionTarget { get; }
-    property Double MaxZoom { get; set; }
-    property Double MinZoom { get; set; }
-    property Double ViewportZoom { get; set; }
     property IDesignEditorContextPresenter ContextPresenter { get; set; }
     property IDesignGroupStore GroupStore { get; set; }
     property IEnumerable<DesignGuide> Guides { get; set; }
@@ -542,7 +545,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property KeyModifiers ContainerInteractionModifiers { get; set; }
     property MovePolicy PrimarySelectionMovePolicy { get; }
     property Nullable<DesignGuide> GuidePreview { get; }
-    property Point ViewportLocation { get; set; }
     property Rect ItemsExtent { get; set; }
     property Rect ReorderIndicator { get; }
     property Rect SelectedArea { get; set; }
@@ -550,8 +552,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property ResizePolicy PrimarySelectionResizePolicy { get; }
     property SelectionMode SelectionMode { get; set; }
     property String PrimarySelectionPlacement { get; }
-    property Transform DpiScaledViewportTransform { get; set; }
-    property Transform ViewportTransform { get; set; }
 class ArxisStudio.Surface.UiDesigner.DesignEditorItem : SurfaceItem
     avalonia ContentModeProperty -> ContentMode : DesignContentMode (styled) = Annotated
     ctor .ctor()
