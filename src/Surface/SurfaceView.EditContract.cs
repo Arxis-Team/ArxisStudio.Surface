@@ -423,4 +423,56 @@ public partial class SurfaceView
         world = now.World;
         return true;
     }
+
+    /// <summary>
+    /// Возникает, когда пользователь просит отменить последнюю правку.
+    /// </summary>
+    /// <remarks>
+    /// Стек правок принадлежит хосту, поэтому редактор ничего не отменяет сам.
+    /// Без подписчика нажатие остаётся необработанным и всплывает дальше.
+    /// </remarks>
+    public event EventHandler<DesignEditorHistoryRequestedEventArgs>? UndoRequested;
+
+    /// <summary>
+    /// Возникает, когда пользователь просит повторить отменённую правку.
+    /// </summary>
+    public event EventHandler<DesignEditorHistoryRequestedEventArgs>? RedoRequested;
+
+    /// <summary>
+    /// Поднимает запрос к истории правок.
+    /// </summary>
+    /// <param name="handler">Подписчики запроса.</param>
+    /// <returns><see langword="true"/>, если запрос выполнен.</returns>
+    /// <remarks>
+    /// Обход останавливается на первом выполнившем — по той же причине, что у удаления
+    /// и перестановки: второй обработчик отменял бы уже не то, о чём его спросили.
+    /// </remarks>
+    private protected bool TryRequestHistory(EventHandler<DesignEditorHistoryRequestedEventArgs>? handler)
+    {
+        if (handler == null)
+            return false;
+
+        var args = new DesignEditorHistoryRequestedEventArgs();
+        foreach (var invocation in handler.GetInvocationList())
+        {
+            ((EventHandler<DesignEditorHistoryRequestedEventArgs>)invocation)(this, args);
+
+            if (args.Handled)
+                break;
+        }
+
+        return args.Handled;
+    }
+
+    /// <summary>
+    /// Просит подписчиков отменить последнюю правку.
+    /// </summary>
+    /// <returns><see langword="true"/>, если кто-то выполнил отмену.</returns>
+    private protected bool RequestUndo() => TryRequestHistory(UndoRequested);
+
+    /// <summary>
+    /// Просит подписчиков повторить отменённую правку.
+    /// </summary>
+    /// <returns><see langword="true"/>, если кто-то выполнил повтор.</returns>
+    private protected bool RequestRedo() => TryRequestHistory(RedoRequested);
 }

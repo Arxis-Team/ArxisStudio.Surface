@@ -373,6 +373,9 @@ interface ArxisStudio.Surface.IDesignEditorContextActionProvider
     method ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(SurfaceView, DesignEditorContextRequest, CancellationToken)
 interface ArxisStudio.Surface.IDesignEditorContextPresenter
     method Boolean TryShow(SurfaceView, DesignEditorContextRequest, IReadOnlyList<DesignEditorContextAction>)
+interface ArxisStudio.Surface.ISurfaceChange
+    method Void Reapply()
+    method Void Revert()
 enum ArxisStudio.Surface.MovePolicy
     value Both = 3
     value None = 0
@@ -404,6 +407,16 @@ class ArxisStudio.Surface.ResizeStartedEventArgs : RoutedEventArgs
     ctor .ctor(Vector, ResizeDirection, RoutedEvent)
     property ResizeDirection Direction { get; }
     property Vector Vector { get; }
+sealed class ArxisStudio.Surface.SurfaceHistory
+    ctor .ctor(SurfaceView)
+    event EventHandler Changed
+    method Boolean Redo()
+    method Boolean Undo()
+    method Void Clear()
+    method Void Dispose()
+    method Void Push(ISurfaceChange)
+    property Boolean CanRedo { get; }
+    property Boolean CanUndo { get; }
 class ArxisStudio.Surface.SurfaceItem : ContentControl
     avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
     avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false
@@ -456,6 +469,8 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     event EventHandler<DesignEditCompletedEventArgs> EditCompleted
     event EventHandler<DesignEditorContextRequestedEventArgs> ContextMenuResolved
     event EventHandler<DesignEditorContextRequestingEventArgs> ContextMenuRequesting
+    event EventHandler<DesignEditorHistoryRequestedEventArgs> RedoRequested
+    event EventHandler<DesignEditorHistoryRequestedEventArgs> UndoRequested
     event EventHandler<DesignSelectionChangedEventArgs> DesignSelectionChanged
     method Boolean SelectDesignTarget(Control, Boolean)
     method Boolean SetDesignGeometry(Control, Rect)
@@ -538,8 +553,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (attached) = <DesignGuide[]>
     ctor .ctor()
     event EventHandler<DesignEditorDeleteRequestedEventArgs> DeleteRequested
-    event EventHandler<DesignEditorHistoryRequestedEventArgs> RedoRequested
-    event EventHandler<DesignEditorHistoryRequestedEventArgs> UndoRequested
     event EventHandler<DesignEditorReorderRequestedEventArgs> ReorderRequested
     event EventHandler<DesignGuideChangeRequestedEventArgs> GuideChangeRequested
     method Boolean BringForward()

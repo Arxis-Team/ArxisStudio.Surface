@@ -165,13 +165,13 @@ public partial class DesignEditor
     {
         if (Matches(InputGestures.UndoGestures ?? HotkeyConfiguration?.Undo, e))
         {
-            e.Handled = TryRequestHistory(UndoRequested);
+            e.Handled = RequestUndo();
             return e.Handled;
         }
 
         if (Matches(InputGestures.RedoGestures ?? HotkeyConfiguration?.Redo, e))
         {
-            e.Handled = TryRequestHistory(RedoRequested);
+            e.Handled = RequestRedo();
             return e.Handled;
         }
 
@@ -192,32 +192,6 @@ public partial class DesignEditor
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Поднимает запрос к истории правок.
-    /// </summary>
-    /// <param name="handler">Подписчики запроса.</param>
-    /// <returns><see langword="true"/>, если запрос выполнен.</returns>
-    /// <remarks>
-    /// Обход останавливается на первом выполнившем — по той же причине, что у удаления
-    /// и перестановки: второй обработчик отменял бы уже не то, о чём его спросили.
-    /// </remarks>
-    private bool TryRequestHistory(EventHandler<DesignEditorHistoryRequestedEventArgs>? handler)
-    {
-        if (handler == null)
-            return false;
-
-        var args = new DesignEditorHistoryRequestedEventArgs();
-        foreach (var invocation in handler.GetInvocationList())
-        {
-            ((EventHandler<DesignEditorHistoryRequestedEventArgs>)invocation)(this, args);
-
-            if (args.Handled)
-                break;
-        }
-
-        return args.Handled;
     }
 
     private bool TryNudgeSelection(Key key, KeyModifiers modifiers)

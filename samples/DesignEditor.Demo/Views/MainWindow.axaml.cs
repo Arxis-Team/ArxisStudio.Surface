@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -13,7 +13,7 @@ namespace DesignEditor.Demo.Views;
 
 public partial class MainWindow : Window
 {
-    private EditHistory? _history;
+    private SurfaceHistory? _history;
 
     public MainWindow()
     {
@@ -38,8 +38,10 @@ public partial class MainWindow : Window
             // не поднимается: ни таймера, ни подписок, ни файлов.
             Automation.AutomationChannel.TryStart(Program.AutomationDirectory, editor, this);
 
-            // Отмена строится поверх DesignEditor.EditCompleted и ApplyGeometry.
-            _history = new EditHistory(editor);
+            // История — готовый SurfaceHistory: он копит правки редактора, обслуживает
+            // сочетания отмены и повтора, а перестановку, которую выполняет само
+            // приложение, демо кладёт в тот же стек (ReorderChange).
+            _history = new SurfaceHistory(editor);
 
             // Соглашение этого приложения: повтор — Ctrl + X, вдобавок к принятым
             // системой. Библиотека такого не навязывает: у неё по умолчанию стоят
@@ -51,25 +53,6 @@ public partial class MainWindow : Window
                 new KeyGesture(Key.Z, KeyModifiers.Control | KeyModifiers.Shift)
             };
 
-            // Клавиши истории редактор не выполняет сам — стек принадлежит хосту,
-            // поэтому он спрашивает, а Handled говорит, что запрос выполнен.
-            editor.UndoRequested += (_, e) =>
-            {
-                if (!_history!.CanUndo)
-                    return;
-
-                _history.Undo();
-                e.Handled = true;
-            };
-
-            editor.RedoRequested += (_, e) =>
-            {
-                if (!_history!.CanRedo)
-                    return;
-
-                _history.Redo();
-                e.Handled = true;
-            };
             _history.Changed += (_, _) => UpdateHistoryButtons();
             UpdateHistoryButtons();
         }
@@ -195,7 +178,7 @@ public partial class MainWindow : Window
 
         // Правку выполнили здесь — значит, здесь же её и записываем. В поток
         // EditCompleted она не попадает: редактор структурой не распоряжается.
-        _history?.RecordReorder(panel, e.OldIndex, e.NewIndex);
+        _history?.Push(new ReorderChange(panel, e.OldIndex, e.NewIndex));
         e.Handled = true;
 
         // Дерево изменили здесь — здесь же и сообщаем панелям: перестановка и удаление
