@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -131,7 +131,6 @@ public partial class DesignEditor
             case Key.A when ShouldUseContainerInteraction(e.KeyModifiers):
                 e.Handled = TrySelectAll();
                 break;
-
         }
     }
 
@@ -765,29 +764,6 @@ public partial class DesignEditor
         CommitEdit();
     }
 
-    internal void SetLastInputModifiers(KeyModifiers modifiers)
-    {
-        LastInputModifiers = modifiers;
-    }
-
-    internal bool ShouldUseContainerInteraction(KeyModifiers modifiers)
-    {
-        var requiredModifiers = InputGestures.ContainerInteractionModifiers;
-        return requiredModifiers != KeyModifiers.None && modifiers.HasFlag(requiredModifiers);
-    }
-
-    internal bool ShouldUseAdditiveSelection(KeyModifiers modifiers)
-    {
-        var requiredModifiers = InputGestures.AdditiveSelectionModifiers;
-        return requiredModifiers != KeyModifiers.None && modifiers.HasFlag(requiredModifiers);
-    }
-
-    internal bool ShouldStartPan(PointerPointProperties pointerProperties, KeyModifiers modifiers)
-    {
-        return MatchesModifiers(modifiers, InputGestures.PanModifiers)
-               && IsPointerButtonPressed(pointerProperties, InputGestures.PanButton);
-    }
-
     /// <summary>
     /// Определяет, должен ли контейнер уступить нажатие рамке выделения.
     /// </summary>
@@ -796,7 +772,7 @@ public partial class DesignEditor
     /// <param name="modifiers">Модификаторы ввода.</param>
     /// <remarks>
     /// Решение принимает редактор, а не состояние контейнера: политика ввода живёт
-    /// в <see cref="InputGestures"/>, и контейнеру знать о ней незачем. Уступив жест,
+    /// в <see cref="SurfaceView.InputGestures"/>, и контейнеру знать о ней незачем. Уступив жест,
     /// контейнер не захватывает указатель и не помечает событие обработанным,
     /// поэтому нажатие всплывает до редактора обычным маршрутом.
     /// <para>
@@ -819,33 +795,6 @@ public partial class DesignEditor
 
         var worldPoint = GetWorldPosition(viewportPoint);
         return !TryResolveSelectionTargetAtPoint(container, worldPoint, out _);
-    }
-
-    internal bool ShouldStartMarquee(PointerPointProperties pointerProperties, KeyModifiers modifiers)
-    {
-        return MatchesModifiers(modifiers, InputGestures.MarqueeModifiers)
-               && IsPointerButtonPressed(pointerProperties, InputGestures.MarqueeButton);
-    }
-
-    internal bool ShouldHandleZoom(KeyModifiers modifiers)
-    {
-        return MatchesModifiers(modifiers, InputGestures.ZoomModifiers);
-    }
-
-    private static bool MatchesModifiers(KeyModifiers actual, KeyModifiers required)
-    {
-        return required == KeyModifiers.None || actual.HasFlag(required);
-    }
-
-    private static bool IsPointerButtonPressed(PointerPointProperties pointerProperties, DesignEditorPointerButton button)
-    {
-        return button switch
-        {
-            DesignEditorPointerButton.Left => pointerProperties.IsLeftButtonPressed,
-            DesignEditorPointerButton.Middle => pointerProperties.IsMiddleButtonPressed,
-            DesignEditorPointerButton.Right => pointerProperties.IsRightButtonPressed,
-            _ => false
-        };
     }
 
     private bool TryCreateGroupResizeOperation(ResizeDirection direction, out GroupResizeOperation? operation)

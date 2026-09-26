@@ -39,7 +39,7 @@ internal class EditorGuideDraggingState : EditorState
     {
         _pointer.Capture(Editor);
 
-        _cursor.Apply(Editor, Editor.Cursors.ResolveGuide(_original.Orientation));
+        _cursor.Apply(Editor, Editor.Cursors.ResolveGuide(_original.Orientation == DesignGuideOrientation.Vertical));
 
         Editor.SetGuidePreview(_current);
     }

@@ -1,15 +1,14 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Input;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Определяет смысл перетаскивания, начатого на пустой области контейнера.
 /// </summary>
 /// <remarks>
-/// «Пустая область» — точка внутри <see cref="DesignEditorItem"/>, под которой нет
+/// «Пустая область» — точка внутри <see cref="SurfaceItem"/>, под которой нет
 /// ни одного контрола с designer-метаданными <c>Layout</c>.
 /// </remarks>
 public enum ContainerEmptyAreaDragGesture
@@ -57,7 +56,7 @@ public enum DesignEditorPointerButton
 }
 
 /// <summary>
-/// Представляет набор настраиваемых жестов ввода для <see cref="DesignEditor"/>.
+/// Представляет набор настраиваемых жестов ввода для <see cref="SurfaceView"/>.
 /// </summary>
 /// <remarks>
 /// Объект задает политику пользовательского ввода редактора:
@@ -246,7 +245,7 @@ public class DesignEditorInputGestures : AvaloniaObject
 
     /// <summary>
     /// Получает или задает модификаторы, которые принудительно переключают selection, drag и resize
-    /// на уровень <see cref="DesignEditorItem"/>.
+    /// на уровень <see cref="SurfaceItem"/>.
     /// </summary>
     public KeyModifiers ContainerInteractionModifiers
     {
@@ -299,7 +298,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// Получает или задает модификаторы, переключающие стрелки на увеличенный шаг.
     /// </summary>
     /// <remarks>
-    /// Совпадение с <see cref="AdditiveSelectionModifiers"/> конфликта не создаёт:
+    /// Совпадение с <see cref="SurfaceView.AdditiveSelectionModifiers"/> конфликта не создаёт:
     /// это разные каналы ввода — указатель и клавиатура.
     /// </remarks>
     public KeyModifiers LargeNudgeModifiers

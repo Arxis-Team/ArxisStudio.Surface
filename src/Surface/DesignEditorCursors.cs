@@ -1,9 +1,8 @@
 using Avalonia;
 using Avalonia.Input;
-using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Представляет набор курсоров, которыми редактор показывает идущий жест.
@@ -211,9 +210,13 @@ public class DesignEditorCursors : AvaloniaObject
     /// <summary>
     /// Возвращает курсор переноса направляющей с учётом её ориентации.
     /// </summary>
-    /// <param name="orientation">Ориентация переносимой направляющей.</param>
-    internal Cursor ResolveGuide(DesignGuideOrientation orientation) =>
-        orientation == DesignGuideOrientation.Vertical
+    /// <param name="vertical">Направляющая вертикальная, то есть переносится по горизонтали.</param>
+    /// <remarks>
+    /// Флаг, а не ориентация направляющей: направляющие — инструмент слоя редактирования,
+    /// и ядро не называет его типов (ADR 0003).
+    /// </remarks>
+    internal Cursor ResolveGuide(bool vertical) =>
+        vertical
             ? GuideVertical ?? (_defaultGuideVertical ??= new Cursor(StandardCursorType.SizeWestEast))
             : GuideHorizontal ?? (_defaultGuideHorizontal ??= new Cursor(StandardCursorType.SizeNorthSouth));
 }

@@ -1,8 +1,6 @@
-﻿using Avalonia;
-using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
+using Avalonia;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Представляет runtime-настройки взаимодействия редактора, не относящиеся к жестам ввода.
@@ -88,7 +86,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
 
     /// <summary>
     /// Получает или задает признак ограничения изменения размера границами
-    /// владеющего <see cref="DesignEditorItem"/>.
+    /// владеющего <see cref="SurfaceItem"/>.
     /// </summary>
     /// <remarks>
     /// Включено по умолчанию: в дизайнере форм контрол, вылезший за свою форму, —

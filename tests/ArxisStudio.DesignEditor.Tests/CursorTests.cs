@@ -415,8 +415,8 @@ public class CursorTests
             cursors.ResolvePan(),
             cursors.ResolveMarquee(),
             cursors.ResolveReorder(),
-            cursors.ResolveGuide(DesignGuideOrientation.Horizontal),
-            cursors.ResolveGuide(DesignGuideOrientation.Vertical)
+            cursors.ResolveGuide(vertical: false),
+            cursors.ResolveGuide(vertical: true)
         };
 
         Assert.Equal(all.Length, all.Distinct().Count());
@@ -433,8 +433,8 @@ public class CursorTests
         var vertical = new Cursor(StandardCursorType.SizeWestEast);
         cursors.GuideVertical = vertical;
 
-        Assert.Same(vertical, cursors.ResolveGuide(DesignGuideOrientation.Vertical));
-        Assert.NotSame(vertical, cursors.ResolveGuide(DesignGuideOrientation.Horizontal));
+        Assert.Same(vertical, cursors.ResolveGuide(vertical: true));
+        Assert.NotSame(vertical, cursors.ResolveGuide(vertical: false));
     }
 
     // ---- Части --------------------------------------------------------------

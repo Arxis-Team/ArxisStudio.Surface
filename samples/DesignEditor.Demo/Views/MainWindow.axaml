@@ -3,7 +3,6 @@
         xmlns:vm="using:DesignEditor.Demo.ViewModels"
         xmlns:screens="using:DesignEditor.Demo.Views.Screens"
         xmlns:views="using:DesignEditor.Demo.Views"
-        xmlns:arxisStudio="clr-namespace:ArxisStudio;assembly=ArxisStudio.DesignEditor"
         xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
         xmlns:arxisControls="clr-namespace:ArxisStudio.Controls;assembly=ArxisStudio.DesignEditor"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
@@ -95,7 +94,7 @@
                                  ShowGuides="False"
                                  ViewportZoom="{Binding Zoom, Mode=TwoWay}">
             <surface:DesignEditor.InputGestures>
-                <arxisStudio:DesignEditorInputGestures PanButton="Middle"
+                <surface:DesignEditorInputGestures PanButton="Middle"
                                                        PanModifiers="None"
                                                        MarqueeButton="Left"
                                                        MarqueeModifiers="None"
@@ -104,7 +103,7 @@
                                                        AdditiveSelectionModifiers="Shift" />
             </surface:DesignEditor.InputGestures>
             <surface:DesignEditor.InteractionOptions>
-                <arxisStudio:DesignEditorInteractionOptions ZoomStep="1.1"
+                <surface:DesignEditorInteractionOptions ZoomStep="1.1"
                                                            DragStartThreshold="3"
                                                            ResizeMinSize="10" />
             </surface:DesignEditor.InteractionOptions>
@@ -116,7 +115,7 @@
                 есть свой элемент под указателем.
             -->
             <surface:DesignEditor.Cursors>
-                <arxisStudio:DesignEditorCursors Move="SizeAll"
+                <surface:DesignEditorCursors Move="SizeAll"
                                                  Blocked="No"
                                                  Pan="Hand"
                                                  Marquee="Cross"

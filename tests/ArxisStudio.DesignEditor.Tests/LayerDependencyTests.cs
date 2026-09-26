@@ -35,7 +35,6 @@ public class LayerDependencyTests
     /// </summary>
     private static readonly string[] Legacy =
     [
-        "ArxisStudio.ContainerEmptyAreaDragGesture",
         "ArxisStudio.ContextMenuContextPresenter",
         "ArxisStudio.Controls.DesignRuler",
         "ArxisStudio.Controls.SelectionAdorner",
@@ -52,10 +51,6 @@ public class LayerDependencyTests
         "ArxisStudio.DesignEditorContextRequestingEventArgs",
         "ArxisStudio.DesignEditorContextScope",
         "ArxisStudio.DesignEditorContextSource",
-        "ArxisStudio.DesignEditorCursors",
-        "ArxisStudio.DesignEditorInputGestures",
-        "ArxisStudio.DesignEditorInteractionOptions",
-        "ArxisStudio.DesignEditorPointerButton",
         "ArxisStudio.DesignSelectionChangedEventArgs",
         "ArxisStudio.DesignSelectionScope",
         "ArxisStudio.DesignSelectionTarget",

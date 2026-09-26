@@ -38,7 +38,7 @@ public partial class DesignEditor
     /// <param name="isCtrlPressed">Признак добавления к текущему выделению.</param>
     /// <param name="useContainerSelection">
     /// Признак работы на уровне контейнеров. Передаётся явно, а не читается из
-    /// <see cref="LastInputModifiers"/>: режим фиксируется в момент нажатия, иначе
+    /// <see cref="SurfaceView.LastInputModifiers"/>: режим фиксируется в момент нажатия, иначе
     /// отпускание модификатора посреди протяжки меняло бы смысл начатого жеста.
     /// </param>
     internal void CommitSelection(Rect bounds, bool isCtrlPressed, bool useContainerSelection)

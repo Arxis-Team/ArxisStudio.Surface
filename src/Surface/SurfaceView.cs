@@ -29,6 +29,14 @@ public partial class SurfaceView : SelectingItemsControl
     /// </summary>
     public SurfaceView()
     {
+        // Набор создан инициализатором поля и здесь только подхватывается: прежде
+        // конструктор заводил второй и первый выбрасывал, а подписан оказывался
+        // ровно один из двух — ошибиться в такой паре легко и молча.
+        _inputGestureBridge = new InputGestureBridge(this);
+        _containerInteractionModifiers = _inputGestures.ContainerInteractionModifiers;
+        _additiveSelectionModifiers = _inputGestures.AdditiveSelectionModifiers;
+        AttachInputGestures(_inputGestures);
+
         var contentGroup = new TransformGroup();
         contentGroup.Children.Add(_scaleTransform);
         contentGroup.Children.Add(_translateTransform);

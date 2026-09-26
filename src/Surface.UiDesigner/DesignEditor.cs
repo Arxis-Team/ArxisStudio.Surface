@@ -48,12 +48,6 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// </example>
 public partial class DesignEditor : SurfaceView
 {
-    private const double ZoomTolerance = 0.0001;
-
-    private Point _lastMousePosition;
-
-    internal KeyModifiers LastInputModifiers { get; private set; }
-
     private SelectionAdorner? _selectionAdorner;
 
     private SelectionAdorner? _groupSelectionAdorner;
@@ -146,15 +140,9 @@ public partial class DesignEditor : SurfaceView
         // раскладка. Ни одна не расширяет другую.
         AddInteractionPolicy(DesignInteractionLockPolicy.Instance);
         AddInteractionPolicy(PlacementMovePolicy.Instance);
-        // Набор создан инициализатором поля и здесь только подхватывается: прежде
-        // конструктор заводил второй и первый выбрасывал, а подписан оказывался
-        // ровно один из двух — ошибиться в такой паре легко и молча.
-        _inputGestureBridge = new InputGestureBridge(this);
+
         _groupStoreBridge = new GroupStoreBridge(this);
         AttachGroupStore(_groupStore);
-        _containerInteractionModifiers = _inputGestures.ContainerInteractionModifiers;
-        _additiveSelectionModifiers = _inputGestures.AdditiveSelectionModifiers;
-        AttachInputGestures(_inputGestures);
 
         _states.Push(new EditorIdleState(this));
         UpdateSelectionOverlayState();

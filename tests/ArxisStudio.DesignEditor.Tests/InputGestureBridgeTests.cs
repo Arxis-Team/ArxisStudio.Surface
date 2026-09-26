@@ -7,6 +7,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 
@@ -14,8 +15,8 @@ namespace ArxisStudio.Tests;
 /// Плоские свойства модификаторов и набор жестов под ними.
 /// </summary>
 /// <remarks>
-/// <see cref="DesignEditor.ContainerInteractionModifiers"/> и
-/// <see cref="DesignEditor.AdditiveSelectionModifiers"/> оставлены ради совместимости
+/// <see cref="SurfaceView.ContainerInteractionModifiers"/> и
+/// <see cref="SurfaceView.AdditiveSelectionModifiers"/> оставлены ради совместимости
 /// и дублируют <see cref="DesignEditorInputGestures"/>. Значение у них одно — геттер
 /// читает у набора, — а уведомления держатся на ретрансляторе, и вот он без тестов
 /// расходится.

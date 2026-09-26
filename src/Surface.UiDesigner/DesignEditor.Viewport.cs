@@ -29,51 +29,6 @@ namespace ArxisStudio.Surface.UiDesigner;
 public partial class DesignEditor
 {
     /// <summary>
-    /// Возвращает последнюю известную позицию указателя для текущего ввода.
-    /// </summary>
-    /// <param name="relativeTo">Параметр сохранен для совместимости с будущими реализациями.</param>
-    /// <returns>Последняя позиция указателя в координатах редактора.</returns>
-    public Point GetPositionForInput(Visual relativeTo)
-        => _lastMousePosition;
-
-    /// <summary>
-    /// Выполняет масштабирование относительно текущей позиции курсора.
-    /// </summary>
-    /// <param name="e">Аргументы колесика мыши.</param>
-    public void HandleZoom(PointerWheelEventArgs e) => TryHandleZoom(e);
-
-    /// <summary>
-    /// Масштабирует viewport и сообщает, состоялось ли масштабирование.
-    /// </summary>
-    /// <remarks>
-    /// Публичный <see cref="HandleZoom"/> остаётся void ради совместимости;
-    /// ответ нужен только редактору, чтобы решить судьбу <c>e.Handled</c>.
-    /// </remarks>
-    internal bool TryHandleZoom(PointerWheelEventArgs e)
-    {
-        if (!ShouldHandleZoom(e.KeyModifiers))
-            return false;
-
-        var zoomStep = InteractionOptions.ZoomStep > 1.0 ? InteractionOptions.ZoomStep : 1.1;
-        double prevZoom = ViewportZoom;
-        double newZoom = e.Delta.Y > 0 ? prevZoom * zoomStep : prevZoom / zoomStep;
-        newZoom = Math.Max(GetValue(MinZoomProperty), Math.Min(GetValue(MaxZoomProperty), newZoom));
-
-        if (Math.Abs(newZoom - prevZoom) > ZoomTolerance)
-        {
-            Point mousePos = e.GetPosition(this);
-            Vector correction = (Vector)mousePos / prevZoom - (Vector)mousePos / newZoom;
-            ViewportZoom = newZoom;
-            ViewportLocation += correction;
-        }
-
-        // Колесо потреблено даже когда масштаб упёрся в Min/Max: жест был наш,
-        // и отдавать его наружу на границе диапазона значило бы, что у края
-        // зума страница вдруг начинает прокручиваться.
-        return true;
-    }
-
-    /// <summary>
     /// Смещает viewport так, чтобы указанный элемент оказался в центре видимой области редактора.
     /// </summary>
     /// <param name="item">Элемент, который необходимо центрировать в области просмотра.</param>
