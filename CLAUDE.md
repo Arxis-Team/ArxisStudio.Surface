@@ -98,10 +98,9 @@ dotnet pack ArxisStudio.DesignEditor.sln -c Release -o artifacts
 
 ## Слои
 
-Библиотека делится на три слоя — ADR 0003, там же причина и «почему не иначе». Идёт первый этап:
-слои разносятся по папкам и пространствам имён **внутри одной сборки**, и каждый шаг оставляет все
-тесты зелёными. Второй этап — три сборки и переименование в `ArxisStudio.Surface` — начинается только
-после первого.
+Библиотека делится на три слоя — ADR 0003, там же причина и «почему не иначе». Первый этап — слои
+разнесены по папкам и пространствам имён **внутри одной сборки**, каждый шаг оставлял все тесты
+зелёными. Второй этап — три сборки и переименование в `ArxisStudio.Surface` — впереди.
 
 | Слой | Пространство имён | Папка |
 | --- | --- | --- |
@@ -111,54 +110,72 @@ dotnet pack ArxisStudio.DesignEditor.sln -c Release -o artifacts
 
 Ссылки идут только вниз: ядро не называет ни инструменты, ни дизайнер форм, инструменты не называют
 дизайнер форм. Всё, что ядру нужно знать сверху, оно получает через шов. Направление держит
-`LayerDependencyTests` — по пространствам имён, с разбором тел методов; типы, ещё не разнесённые по
-слоям, перечислены в нём явно, и список только сокращается.
+`LayerDependencyTests` — по пространствам имён, с разбором тел методов, — и держит строго: тип вне
+трёх слоёв роняет его так же, как ссылка вверх.
 
 Правило для нового кода: **если код ядра называет `Layout`, `ContentMode`, панель Avalonia или
 группу — он не в ядре.**
 
-Где стоит первый этап. В ядре уже viewport, настройка ввода, машина состояний редактора, выделение
-с рамкой, контракт изменений, политики и контекстное меню — за швами `ISurfaceGeometry`,
-`ISurfaceTargetResolver`, `ISurfaceInteractionPolicy` и `IEditFacet`. В наследии остаются
-инструменты редактирования: адорнеры и resize, групповые операции, состояния контейнера, привязка,
-направляющие и линейки. Их вынос в `Surface.Editing` требует служб, которые подключаются к
-`SurfaceView`, и решения, кому принадлежат свойства вроде `ShowGuides`, — это следующий шаг.
+Первый этап закончен: ни одного типа вне слоёв. Швы ядра и их реализации:
+
+| Шов ядра | Что спрашивает | Дизайнер форм | Инструменты |
+| --- | --- | --- | --- |
+| `ISurfaceGeometry` | где target, можно ли задать позицию, его рамка | `DesignPlacementGeometry` | — |
+| `ISurfaceTargetResolver` | кандидаты внутри контейнера и кто из них выбирается | `NestedTargetResolver` | — |
+| `ISurfaceInteractionPolicy` | что разрешено двигать и тянуть, пересечением | `PlacementMovePolicy` | `DesignInteractionLockPolicy` |
+| `IEditFacet` | что ещё входит в единицу правки | `GroupEditFacet` | — |
+| `ISurfacePositionModifier` | куда встаёт предложенная позиция или край | — | `SnapService` |
+| службы `AddService`/`GetService` | подключаемые инструменты | — | `SnapService`, `UserGuideService` |
+| виртуальные хуки `SurfaceView` | клик по контейнеру, решение о протяжке, контекст, брошенный жест, ключ группы | переопределяет | — |
+
+Свойства инструментов — присоединённые у их классов (`SurfaceSnapping`, `SurfaceGuides`), а
+`DesignEditor` берёт их через `AddOwner`: шаблон и привязки видят их как собственные. Историю ядро
+не ведёт, но даёт готовую — `SurfaceHistory` поверх `ISurfaceChange`.
+
+Что второму этапу стоит знать. В `DesignEditor` осталось общее, а не формовое: сборка оверлея и
+политики адорнеров, обработчики ручек resize, клавиатура (нюдж, выбор всего, удаление), z-order и
+распределение. Слой их — инструменты, и граница соблюдена: `DesignEditor` вправе называть и ядро, и
+инструменты. Но редактору, который не наследует дизайнер форм, их придётся либо вынести в службы,
+либо написать заново; выносить их стоит под первого такого потребителя.
 
 ## Архитектура
 
 ### Где что лежит
 
 Редактор — два класса: `SurfaceView` в ядре (`src/Surface/`) и его наследник `DesignEditor` в
-дизайнере форм (`src/Surface.UiDesigner/`). Оба разбиты на `partial`-файлы по темам; разделение на
-слои идёт по шагам (раздел «Слои»), и то, что ещё не выделено в службы инструментов, живёт в
-`DesignEditor`.
+дизайнере форм (`src/Surface.UiDesigner/`). Оба разбиты на `partial`-файлы по темам. Инструменты
+лежат в `src/Surface.Editing/` службами и контролами.
 
-`SurfaceView` — `SurfaceView.cs`: оба конструктора, переэкспорт индексного выбора. Остальное:
+`SurfaceView` — `SurfaceView.cs`: оба конструктора, переэкспорт индексного выбора, реестр служб,
+сетка из шаблона. Остальное:
 
 | Файл | О чём |
 | --- | --- |
-| `SurfaceView.Viewport.cs` | положение, масштаб, обе трансформации и их DPI, зум колесом, `CenterOn*`/`FitToView` |
+| `SurfaceView.Viewport.cs` | положение, масштаб, обе трансформации и их DPI, зум колесом, `CenterOn*`/`FitToView`, `ItemsExtent` |
 | `SurfaceView.Input.cs` | наборы жестов, опций и курсоров, мост уведомлений набора жестов, решения по модификаторам |
-| `SurfaceView.Gestures.cs` | машина состояний редактора, маршрутизация указателя, рамка, хуки контекста и брошенного жеста |
-| `SurfaceView.Selection.cs` | двухуровневое выделение: запись, чтение, публикация, рамка, перечисление контейнеров |
-| `SurfaceView.EditContract.cs` | швы записи геометрии и `ZIndex`, единица редактирования, отмена и повтор |
+| `SurfaceView.Gestures.cs` | машина состояний, маршрутизация указателя, снимок указателя, поправка позиции, решение о протяжке |
+| `SurfaceView.Selection.cs` | двухуровневое выделение: запись, чтение, публикация, рамка, клик по контейнеру, перечисление контейнеров |
+| `SurfaceView.EditContract.cs` | швы записи геометрии и `ZIndex`, единица редактирования, отмена и повтор, ограничение контейнером |
 | `SurfaceView.Policies.cs` | политика взаимодействия как пересечение участников |
 | `SurfaceView.Context.cs` | контекстные действия: запрос, провайдеры, показ |
 
-Швы ядра — `ISurfaceGeometry`, `ISurfaceTargetResolver`, `ISurfaceInteractionPolicy`, `IEditFacet`;
-их реализации дизайнера форм — `DesignPlacementGeometry`, `NestedTargetResolver`,
-`PlacementMovePolicy`, `GroupEditFacet`, а блокировок — `DesignInteractionLockPolicy` в инструментах.
+Там же: `SurfaceItem` со стеком состояний контейнера, состояния в `States/`, `GroupDragOperation`,
+`SurfaceHistory` в `History/`.
 
-`DesignEditor` — `DesignEditor.cs`: поля, конструктор (ставит швы), контейнеры, `OnApplyTemplate`. Остальное:
+Инструменты (`src/Surface.Editing/`): `Snapping/` — `SnapService` и `SurfaceSnapping`; `Guides/` —
+`UserGuideService`, `SurfaceGuides`, `DesignRuler`, `SnapGuideLayer`, резолверы и модели линий;
+`Resize/` — `ItemResizingState`, `GroupResizeOperation`; `Adorners/` — рамка с ручками и её слой.
+
+`DesignEditor` — `DesignEditor.cs`: поля, конструктор (ставит швы и службы), контейнеры, `OnApplyTemplate`. Остальное:
 
 | Файл | О чём |
 | --- | --- |
 | `DesignEditor.Selection.cs` | правило клика по вложенным target'ам и группам, кандидаты формы, политики адорнеров |
-| `DesignEditor.Properties.cs` | свойства и события, которые ещё не ушли в ядро или в инструменты |
-| `DesignEditor.Gestures.cs` | клавиатура, drag и resize контейнеров и групп, хуки контекста и брошенного жеста |
-| `DesignEditor.Placement.cs` | `TryGetDesignBounds`, ограничение формой, перестановка, распределение |
-| `DesignEditor.Snapping.cs` | привязка к сетке и направляющие |
-| `DesignEditor.Guides.cs` | пользовательские направляющие: набор хоста, попадание, запрос правки, туннельный перехват нажатия |
+| `DesignEditor.Properties.cs` | свойства и события оверлея, групп и перестановки |
+| `DesignEditor.Gestures.cs` | клавиатура, drag и resize контейнеров и групп, решение о протяжке, хуки контекста |
+| `DesignEditor.Placement.cs` | `TryGetDesignBounds`, перестановка, распределение |
+| `DesignEditor.Snapping.cs` | свойства привязки через `AddOwner` и переходники к `SnapService` |
+| `DesignEditor.Guides.cs` | свойства направляющих через `AddOwner` и переходники к `UserGuideService` |
 | `DesignEditor.Viewport.cs` | центрирование и вписывание выделения |
 | `DesignEditor.Context.cs` | перевод выделения под правый клик |
 | `DesignEditor.ZOrder.cs` | `ZIndex` и порядок среди детей панели |
@@ -291,14 +308,14 @@ Group drag намеренно считается по **накопленной w
 
 Обе — стек с `PushState` / `PopState`, и они не связаны друг с другом:
 
-- **Уровень редактора** — `EditorState` (`States/`): `EditorIdleState`, `EditorPanningState`, `EditorSelectingState`. `DesignEditor.OnPointer*` делегирует в `CurrentState`.
-- **Уровень контейнера** — `DesignEditorItemState` (`States/States.cs`): `ItemIdleState`, `ItemDraggingState`, `ItemResizingState`, `ItemReorderingState`. У этого класса есть `ReEnter(...)` — вызывается при возврате из вложенного состояния.
+- **Уровень редактора** — `EditorState` (`src/Surface/States/`): `EditorIdleState`, `EditorPanningState`, `EditorSelectingState` в ядре, `EditorGuideDraggingState` в инструментах. `SurfaceView.OnPointer*` делегирует в `CurrentState`.
+- **Уровень контейнера** — `SurfaceItemState` (`src/Surface/States/SurfaceItemStates.cs`), стек живёт в `SurfaceItem`: `ItemIdleState` и `ItemDraggingState` в ядре, `ItemResizingState` в инструментах, `ItemReorderingState` в дизайнере форм. У базового класса есть `ReEnter(...)` — вызывается при возврате из вложенного состояния, — и `PseudoClass`: состояние само называет псевдокласс, которым контейнер его показывает, потому что контейнер ядра не знает состояний, которые приносят слои выше. Что делать с протяжкой, `ItemIdleState` спрашивает у поверхности (`PlanItemDrag`).
 
-**Захват указателя принадлежит жесту, а не шаблону.** `EditorSelectingState` и `EditorPanningState` захватывают указатель в `Enter` и снимают в `Exit`. Avalonia на нажатии захватывает сама, но достаётся захват тому, что попало под указатель, — в шаблоне это `Border`, и доставка зависела бы от формы шаблона. Главное же — потерю захвата теперь видит редактор: `DesignEditor.OnPointerCaptureLost` разбирает стек до базового состояния, тем же приёмом, что и контейнер.
+**Захват указателя принадлежит жесту, а не шаблону.** `EditorSelectingState` и `EditorPanningState` захватывают указатель в `Enter` и снимают в `Exit`. Avalonia на нажатии захватывает сама, но достаётся захват тому, что попало под указатель, — в шаблоне это `Border`, и доставка зависела бы от формы шаблона. Главное же — потерю захвата теперь видит редактор: `SurfaceView.OnPointerCaptureLost` разбирает стек до базового состояния, тем же приёмом, что и контейнер.
 
 Без этого брошенная рамка оставалась на стеке навсегда и держала `IsSelecting`, а по нему `OnItemsDragStarted` отклонял следующее перетаскивание — при том что контейнер об отказе не узнавал и продолжал писать геометрию каждый кадр с закрытой единицей редактирования. Правка уходила мимо undo. Прежний комментарий в `EditorPanningState`, утверждавший, что захватывать не нужно, и был причиной.
 
-**Базовому состоянию о потере захвата говорят отдельно.** Вложенные состояния узнают о ней через `Exit` — контейнер разбирает стек, — но базовое со стека не снимается никогда, и до появления `DesignEditorItemState.OnPointerCaptureLost` оно о брошенном жесте не узнавало вовсе: `_isPressed` оставалось поднятым, то есть следующее движение указателя над контейнером начинало перетаскивание без нажатия. Заметили это на курсоре запрета, который иначе оставался бы на контейнере навсегда.
+**Базовому состоянию о потере захвата говорят отдельно.** Вложенные состояния узнают о ней через `Exit` — контейнер разбирает стек, — но базовое со стека не снимается никогда, и до появления `SurfaceItemState.OnPointerCaptureLost` оно о брошенном жесте не узнавало вовсе: `_isPressed` оставалось поднятым, то есть следующее движение указателя над контейнером начинало перетаскивание без нажатия. Заметили это на курсоре запрета, который иначе оставался бы на контейнере навсегда.
 
 **Отклонённый жест не пишет геометрию.** `ItemDraggingState` после `DragStarted` спрашивает `HasActiveEdit`: `e.Handled` для этого не годится — редактор ставит его на всех ветках, включая успешную, а открытая единица есть только на успешной. После правки захвата достижимых отказов не осталось, так что проверка стоит как защита шва, а не как исправление живого дефекта.
 
@@ -738,7 +755,7 @@ grep -rn "Children\.\(Add\|Remove\|Insert\|Move\|Clear\)" src/ --include=*.cs
 
 До этого закреплялся только список из 40 типов, и этого не хватило: `SelectDesignTarget` — первый публичный член, добавленный после появления замка, — приехал с девятью дефектами, не уронив ни одного теста, потому что список типов не изменился.
 
-Машины состояний (`ArxisStudio.States.*`), стратегии размещения (`ArxisStudio.Surface.UiDesigner.Placement.*`), резолверы направляющих (`ArxisStudio.Surface.Editing.*Resolver`, `SnapGuideLayer`, свойство `SnapGuides`), `SelectionAdornerLayer`, `SelectionAdornerInfo`, `DesignSurface` и свойства `SecondarySelectionAdorners` — **internal**. Вместе с ними internal стали `CurrentState`, `PushState`, `PopState` на обоих контролах.
+Машины состояний (`*.States.*`), стратегии размещения (`ArxisStudio.Surface.UiDesigner.Placement.*`), резолверы направляющих (`ArxisStudio.Surface.Editing.*Resolver`), швы ядра и службы инструментов, `SelectionAdornerLayer`, `SelectionAdornerInfo`, `DesignSurface` и свойства `SecondarySelectionAdorners` — **internal**. Вместе с ними internal стали `CurrentState`, `PushState`, `PopState` на обоих контролах.
 
 Это работает потому, что AXAML библиотеки компилируется в ту же сборку: internal-типы в шаблонах и `TemplateBinding` к internal-свойствам разрешаются нормально. Прецедент был давно — `DesignSurface` в `ItemsPanelTemplate`.
 

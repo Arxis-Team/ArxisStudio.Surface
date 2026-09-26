@@ -59,7 +59,7 @@
 
 Скрыты намеренно:
 
-- **машины состояний** — `EditorState`, `DesignEditorItemState` и наследники вместе с `CurrentState`, `PushState`, `PopState`;
+- **машины состояний** — `EditorState`, `SurfaceItemState` и наследники вместе с `CurrentState`, `PushState`, `PopState`;
 - **детали overlay** — `SelectionAdornerLayer`, `SelectionAdornerInfo`, `DesignSurface`, свойства `SecondarySelectionAdorners`;
 - **стратегии размещения** — `ArxisStudio.Surface.UiDesigner.Placement.*`: форма ещё должна отлежаться внутри библиотеки, добавить публичный тип позже можно аддитивно.
 
