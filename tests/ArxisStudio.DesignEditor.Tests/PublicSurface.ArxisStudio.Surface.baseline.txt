@@ -85,6 +85,7 @@ class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (styled) = Shift
     avalonia ContainerEmptyAreaDragProperty -> ContainerEmptyAreaDrag : ContainerEmptyAreaDragGesture (styled) = Marquee
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (styled) = Control
+    avalonia KeyboardResizeModifiersProperty -> KeyboardResizeModifiers : KeyModifiers (styled) = Alt
     avalonia LargeNudgeModifiersProperty -> LargeNudgeModifiers : KeyModifiers (styled) = Shift
     avalonia MarqueeButtonProperty -> MarqueeButton : DesignEditorPointerButton (styled) = Left
     avalonia MarqueeModifiersProperty -> MarqueeModifiers : KeyModifiers (styled) = None
@@ -102,6 +103,7 @@ class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
     property IReadOnlyList<KeyGesture> UndoGestures { get; set; }
     property KeyModifiers AdditiveSelectionModifiers { get; set; }
     property KeyModifiers ContainerInteractionModifiers { get; set; }
+    property KeyModifiers KeyboardResizeModifiers { get; set; }
     property KeyModifiers LargeNudgeModifiers { get; set; }
     property KeyModifiers MarqueeModifiers { get; set; }
     property KeyModifiers PanModifiers { get; set; }
@@ -290,6 +292,7 @@ sealed class ArxisStudio.Surface.SurfaceKeyCommands
     field String Delete = "surface.delete"
     field String Nudge = "surface.nudge"
     field String Redo = "surface.redo"
+    field String Resize = "surface.resize"
     field String SelectAll = "surface.selectAll"
     field String Undo = "surface.undo"
     method Boolean Remove(String)

@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -63,12 +63,14 @@ public class KeyCommandTests
         var harness = EditorHarness.Create();
 
         // История первой: её сочетание настраивается, и уступать его стрелкам или букве
-        // нельзя. Остальной порядок прежнего switch.
+        // нельзя. Изменение размера раньше смещения: Alt + стрелка — всё ещё стрелка.
+        // Остальной порядок прежнего switch.
         Assert.Equal(
             new[]
             {
                 SurfaceKeyCommands.Undo,
                 SurfaceKeyCommands.Redo,
+                SurfaceKeyCommands.Resize,
                 SurfaceKeyCommands.Nudge,
                 SurfaceKeyCommands.ClearSelection,
                 SurfaceKeyCommands.Delete,
@@ -124,7 +126,7 @@ public class KeyCommandTests
 
         Assert.Equal(1, replaced);
         Assert.Equal(position, IndexOf(commands, SurfaceKeyCommands.Delete));
-        Assert.Equal(6, commands.Count);
+        Assert.Equal(7, commands.Count);
     }
 
     [AvaloniaFact]
@@ -171,7 +173,7 @@ public class KeyCommandTests
 
         commands.Insert(0, selectAll);
 
-        Assert.Equal(6, commands.Count);
+        Assert.Equal(7, commands.Count);
         Assert.Equal(SurfaceKeyCommands.SelectAll, commands[0].Id);
         Assert.Equal(SurfaceKeyCommands.Undo, commands[1].Id);
     }

@@ -17,8 +17,8 @@ public partial class SurfaceView
     /// Клавиатурные команды поверхности в порядке, в котором они слушают нажатие.
     /// </summary>
     /// <remarks>
-    /// Набор уже содержит встроенные команды — отмену, повтор, смещение стрелками,
-    /// снятие выделения, запрос удаления и выбор всего (идентификаторы — константы
+    /// Набор уже содержит встроенные команды — отмену, повтор, изменение размера и
+    /// смещение стрелками, снятие выделения, запрос удаления и выбор всего (идентификаторы — константы
     /// <see cref="SurfaceKeyCommands"/>). Приложение добавляет свои, заменяет встроенные
     /// по идентификатору или снимает их.
     /// </remarks>
@@ -74,9 +74,15 @@ public partial class SurfaceView
             SurfaceKeyCommands.Redo,
             static (view, e) => MatchesAny(view.InputGestures.RedoGestures ?? view.HotkeyConfiguration?.Redo, e),
             static (view, _) => view.RequestRedo()));
+        // Изменение размера раньше смещения: Alt + стрелка — всё ещё стрелка, и смещение
+        // иначе забрало бы её первым.
+        commands.Add(new SurfaceKeyCommand(
+            SurfaceKeyCommands.Resize,
+            static (view, e) => IsArrow(e.Key) && view.IsKeyboardResize(e.KeyModifiers),
+            static (view, e) => view.TryResizeSelection(e.Key, e.KeyModifiers)));
         commands.Add(new SurfaceKeyCommand(
             SurfaceKeyCommands.Nudge,
-            static (_, e) => e.Key is Key.Left or Key.Right or Key.Up or Key.Down,
+            static (_, e) => IsArrow(e.Key),
             static (view, e) => view.TryNudgeSelection(e.Key, e.KeyModifiers)));
         commands.Add(new SurfaceKeyCommand(
             SurfaceKeyCommands.ClearSelection,
@@ -118,16 +124,97 @@ public partial class SurfaceView
         return false;
     }
 
+    private static bool IsArrow(Key key) => key is Key.Left or Key.Right or Key.Up or Key.Down;
+
+    private bool IsKeyboardResize(KeyModifiers modifiers)
+    {
+        var required = InputGestures.KeyboardResizeModifiers;
+        return required != KeyModifiers.None && modifiers.HasFlag(required);
+    }
+
+    private double KeyboardStep(KeyModifiers modifiers)
+        => MatchesModifiers(modifiers, InputGestures.LargeNudgeModifiers)
+           && InputGestures.LargeNudgeModifiers != KeyModifiers.None
+            ? InteractionOptions.LargeNudgeStep
+            : InteractionOptions.NudgeStep;
+
+    /// <summary>
+    /// Меняет размер выделения стрелкой: клавиатурная замена ручкам.
+    /// </summary>
+    /// <remarks>
+    /// Двигается правый или нижний край — тот, что ручка тянула бы в ту же сторону;
+    /// левый верхний угол стоит, поэтому положение не меняется. Правила те же, что у
+    /// ручки, и по той же причине — один результат, каким бы способом его ни добивались:
+    /// <list type="bullet">
+    /// <item><description>сторона должна быть разрешена политикой изменения размера;</description></item>
+    /// <item><description>содержимое не вырастает за свою форму, а уже вылезшее не ужимается задним числом;</description></item>
+    /// <item><description>предел жеста не даёт схлопнуть элемент, но и не раздувает того, что уже мельче;</description></item>
+    /// <item><description><c>Min</c>/<c>Max</c> контрола сильнее всего — их накладывает шов записи.</description></item>
+    /// </list>
+    /// Привязки нет, как и у смещения: клавиатура задаёт шаг точно. Каждый выбранный
+    /// target меняется сам по себе, а всё нажатие — одна единица редактирования.
+    /// </remarks>
+    private bool TryResizeSelection(Key key, KeyModifiers modifiers)
+    {
+        var targets = SelectedDesignTargets;
+        if (targets.Count == 0)
+            return false;
+
+        var step = KeyboardStep(modifiers);
+        var (dw, dh) = key switch
+        {
+            Key.Right => (step, 0d),
+            Key.Left => (-step, 0d),
+            Key.Down => (0d, step),
+            Key.Up => (0d, -step),
+            _ => (0d, 0d)
+        };
+
+        if (dw == 0 && dh == 0)
+            return false;
+
+        var direction = dw != 0 ? ResizeDirection.Right : ResizeDirection.Bottom;
+        var editorMin = Math.Max(0.0, InteractionOptions.ResizeMinSize);
+
+        BeginEdit(DesignEditKind.Resize);
+
+        for (var i = 0; i < targets.Count; i++)
+        {
+            var target = targets[i].Target;
+            if (!IsResizeAllowed(target, direction))
+                continue;
+
+            var size = GetDesignSize(target);
+            var width = size.Width + dw;
+            var height = size.Height + dh;
+
+            if ((dw > 0 || dh > 0) && TryGetContainmentBounds(target, out var limit))
+            {
+                var position = GetDesignPosition(target);
+                if (dw > 0)
+                    width = Math.Min(width, Math.Max(size.Width, limit.Right - position.X));
+                if (dh > 0)
+                    height = Math.Min(height, Math.Max(size.Height, limit.Bottom - position.Y));
+            }
+
+            width = Math.Max(width, Math.Max(Math.Min(editorMin, size.Width), target.MinWidth));
+            height = Math.Max(height, Math.Max(Math.Min(editorMin, size.Height), target.MinHeight));
+
+            SetDesignSize(target, new Size(width, height));
+        }
+
+        CommitEdit();
+        RefreshSelectionOverlay();
+        return true;
+    }
+
     private bool TryNudgeSelection(Key key, KeyModifiers modifiers)
     {
         var targets = SelectedDesignTargets;
         if (targets.Count == 0)
             return false;
 
-        var step = MatchesModifiers(modifiers, InputGestures.LargeNudgeModifiers)
-            && InputGestures.LargeNudgeModifiers != KeyModifiers.None
-                ? InteractionOptions.LargeNudgeStep
-                : InteractionOptions.NudgeStep;
+        var step = KeyboardStep(modifiers);
 
         var delta = key switch
         {

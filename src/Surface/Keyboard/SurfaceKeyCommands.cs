@@ -25,6 +25,12 @@ public sealed class SurfaceKeyCommands : IReadOnlyList<SurfaceKeyCommand>
     /// <summary>Повтор: поднимает <see cref="SurfaceView.RedoRequested"/>.</summary>
     public const string Redo = "surface.redo";
 
+    /// <summary>
+    /// Изменение размера выделения стрелками с
+    /// <see cref="DesignEditorInputGestures.KeyboardResizeModifiers"/> — клавиатурная замена ручкам.
+    /// </summary>
+    public const string Resize = "surface.resize";
+
     /// <summary>Смещение выделения стрелками.</summary>
     public const string Nudge = "surface.nudge";
 

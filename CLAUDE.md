@@ -176,7 +176,7 @@ internals инструментам и дизайнеру форм, инстру�
 | `SurfaceView.Context.cs` | контекстные действия: запрос, провайдеры, показ |
 | `SurfaceView.AutoPan.cs` | автопрокрутка у края: скорость по глубине в полосе, таймер, шаг с пересчётом жеста |
 | `SurfaceView.Pinch.cs` | масштаб щипком тачпада и пальцами поверх `ZoomAt` |
-| `SurfaceView.Keyboard.cs` | набор клавиатурных команд, их разбор и встроенные команды: история, нюдж, снятие и выбор всего, запрос удаления |
+| `SurfaceView.Keyboard.cs` | набор клавиатурных команд, их разбор и встроенные команды: история, изменение размера, нюдж, снятие и выбор всего, запрос удаления |
 
 Там же: `SurfaceItem` со стеком состояний контейнера, состояния в `States/`, `GroupDragOperation`,
 `SurfaceHistory` в `History/`.
@@ -386,6 +386,8 @@ Group drag намеренно считается по **накопленной w
 ### Клавиатура
 
 Клавиатура — набор команд `SurfaceView.KeyCommands` (`SurfaceKeyCommand`, `src/Surface/Keyboard/`), а не `switch`: по нему же приложение добавляет свои команды, заменяет встроенные по идентификатору и снимает их. Нажатие проходит набор по порядку, и обрабатывает его первая команда, которая его **узнала и выполнилась**. Отказ — не ошибка, а уступка: команда приложения на стрелке, которой сейчас делать нечего, обязана отдать нажатие встроенному смещению, и именно поэтому узнавание и исполнение разделены. Обходится снимок набора, а не он сам: команда вправе поменять набор, пока её исполняют, и живой обход упал бы на первой же такой правке — мутация это подтвердила. История стоит первой, потому что её сочетание настраивается и заранее не известно.
+
+**Изменение размера с клавиатуры** — команда `surface.resize`, клавиатурная замена ручкам (WCAG 2.2, «Dragging Movements»): стрелки с `KeyboardResizeModifiers` (по умолчанию `Alt`) двигают правый или нижний край, левый верхний угол стоит. Стоит она **до** смещения: `Alt` + стрелка — всё ещё стрелка, и смещение иначе забрало бы её первым. Правила переписаны с ручки по одному и каждое закрыто тестом в `KeyboardResizeTests`, потому что результат не должен зависеть от того, чем его добивались: политика стороны, ограничение формой (растущий упирается, уже вылезший задним числом не ужимается), предел жеста, который останавливает сжатие, но не раздувает уже мелкое, и `Min`/`Max` на шве. Привязки нет — как у смещения, клавиатура задаёт шаг точно. Выбранная группа меняется потаргетно, каждый своим размером; масштабировать рамку группы целиком по-прежнему умеют только её ручки. `None` в `KeyboardResizeModifiers` выключает команду: без модификатора изменением размера стала бы каждая стрелка.
 
 `SurfaceView.OnKeyDown` пропускает уже обработанные нажатия — иначе стрелки и Delete отбирались бы у вложенного редактируемого контрола, если фокус в нём.
 
@@ -683,7 +685,7 @@ grep -rn "Children\.\(Add\|Remove\|Insert\|Move\|Clear\)" src/ --include=*.cs
 
 Жесты и числовые параметры не захардкожены, а вынесены в объекты-конфиги, доступные из AXAML/стилей/биндингов:
 
-- `DesignEditorInputGestures` — `PanButton/PanModifiers`, `MarqueeButton/MarqueeModifiers`, `ZoomModifiers`, `ContainerInteractionModifiers`, `AdditiveSelectionModifiers`, `LargeNudgeModifiers`, `SnapBypassModifiers`
+- `DesignEditorInputGestures` — `PanButton/PanModifiers`, `MarqueeButton/MarqueeModifiers`, `ZoomModifiers`, `ContainerInteractionModifiers`, `AdditiveSelectionModifiers`, `LargeNudgeModifiers`, `KeyboardResizeModifiers`, `SnapBypassModifiers`
 - `DesignEditorInteractionOptions` — `ZoomStep`, `DragStartThreshold`, `ResizeMinSize`, `NudgeStep`, `LargeNudgeStep`, `IsSnapToGridEnabled`, `SnapStep`, `IsSnapToGuidesEnabled`, `SnapGuideTolerance`, `IsResizeContainedToParent`, `IsPinchZoomEnabled`, `IsAutoPanEnabled`, `AutoPanEdge`, `AutoPanSpeed`
 
 Колесо помечается обработанным только тогда, когда зум действительно состоялся: `EditorState.OnPointerWheelChanged` возвращает признак, а `TryHandleZoom` отвечает `false`, если `ZoomModifiers` заданы и не нажаты. Безусловный `Handled` съедал колесо и в этом случае, и внешний `ScrollViewer`, внутри которого лежит редактор, переставал прокручиваться вовсе. На границе диапазона зума колесо всё равно считается потреблённым — жест был наш, и отдавать его наружу у края значило бы, что страница вдруг начинает ехать.

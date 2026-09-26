@@ -307,6 +307,31 @@ public class DesignEditorInputGestures : AvaloniaObject
         set => SetValue(LargeNudgeModifiersProperty, value);
     }
 
+    /// <summary>
+    /// Идентификатор свойства модификаторов, переключающих стрелки на изменение размера.
+    /// </summary>
+    public static readonly StyledProperty<KeyModifiers> KeyboardResizeModifiersProperty =
+        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+            nameof(KeyboardResizeModifiers),
+            KeyModifiers.Alt);
+
+    /// <summary>
+    /// Получает или задает модификаторы, с которыми стрелки меняют размер выделения, а не
+    /// двигают его.
+    /// </summary>
+    /// <remarks>
+    /// Клавиатурная замена ручкам (WCAG 2.2, «Dragging Movements»): вправо и вниз
+    /// отодвигают правый и нижний край, влево и вверх — придвигают. Шаг тот же, что у
+    /// смещения, и <see cref="LargeNudgeModifiers"/> вместе с этими модификаторами даёт
+    /// крупный. <see cref="KeyModifiers.None"/> выключает изменение размера с клавиатуры:
+    /// без модификатора им стала бы каждая стрелка.
+    /// </remarks>
+    public KeyModifiers KeyboardResizeModifiers
+    {
+        get => GetValue(KeyboardResizeModifiersProperty);
+        set => SetValue(KeyboardResizeModifiersProperty, value);
+    }
+
     /// <remarks>
     /// По умолчанию <see cref="ContainerEmptyAreaDragGesture.Marquee"/> — конвенция
     /// form designer'ов. Интеграции, которым нужно прежнее поведение, переключают
