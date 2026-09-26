@@ -11,6 +11,8 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/ArxisStudioDesignEditorTheme.axaml"/>
+                <!-- Ядро и инструменты уже пришли с темой дизайнера форм; от редактора узлов — только его словари. -->
+                <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodesTheme.axaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Единая точка входа темы редактора узлов: ядро, инструменты и сам редактор в нужном
+        порядке. Приложение подключает только её.
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceTheme.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodesTheme.axaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

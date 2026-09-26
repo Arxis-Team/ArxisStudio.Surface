@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Тема редактора узлов — только его собственные словари. Ядро и инструменты она не
+        подключает: их подключает точка входа ArxisStudioNodeEditorTheme, а приложение, у
+        которого они уже есть (например, от дизайнера форм), берёт одну эту.
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodesResources.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/Node.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodeEditor.axaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

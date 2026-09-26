@@ -1,0 +1,94 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface;assembly=ArxisStudio.Surface"
+                    xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing;assembly=ArxisStudio.Surface.Editing"
+                    xmlns:nodes="clr-namespace:ArxisStudio.Surface.Nodes">
+
+    <surface:InverseScaleConverter x:Key="NodeEditor.InverseScaleConverter" />
+    <surface:ScaleDoubleConverter x:Key="NodeEditor.ScaleDoubleConverter" />
+
+    <!--
+        Слои снизу вверх: сетка, связи, узлы, протягиваемая связь, рамка, направляющие. Связи —
+        под узлами: узел, лёгший на связь, закрывает её, как на бумаге. Сетка и направляющие
+        рисуют в экранных координатах и трансформации не получают — правило ядра; всё
+        остальное лежит под ViewportTransform, в мировых координатах.
+    -->
+    <ControlTheme x:Key="{x:Type nodes:NodeEditor}" TargetType="nodes:NodeEditor">
+        <Setter Property="Background" Value="{DynamicResource DesignEditor.BackgroundBrush}" />
+        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+                    <Grid>
+                        <surface:DesignGrid Name="PART_Grid"
+                                            ViewportLocation="{TemplateBinding ViewportLocation}"
+                                            ViewportZoom="{TemplateBinding ViewportZoom}"
+                                            IsVisible="{TemplateBinding ShowGrid}" />
+
+                        <Canvas Name="PART_LinksLayer"
+                                IsHitTestVisible="False"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0" />
+
+                        <Canvas Name="PART_ItemsLayer"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0">
+                            <ItemsPresenter Name="PART_ItemsPresenter">
+                                <ItemsPresenter.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <surface:SurfacePanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=nodes:NodeEditor}}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsPresenter.ItemsPanel>
+                            </ItemsPresenter>
+                        </Canvas>
+
+                        <Canvas Name="PART_InteractionOverlayLayer"
+                                IsHitTestVisible="False"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0">
+                            <Rectangle Name="PART_Marquee"
+                                       Stroke="{DynamicResource DesignEditor.MarqueeStrokeBrush}"
+                                       StrokeThickness="{DynamicResource DesignEditor.Selection.StrokeThickness}"
+                                       Fill="{DynamicResource DesignEditor.MarqueeFillBrush}"
+                                       RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource NodeEditor.InverseScaleConverter}}"
+                                       RenderTransformOrigin="0,0"
+                                       Canvas.Top="{Binding SelectedArea.Y, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Canvas.Left="{Binding SelectedArea.X, RelativeSource={RelativeSource TemplatedParent}}"
+                                       IsVisible="{TemplateBinding IsSelecting}">
+                                <Rectangle.Width>
+                                    <MultiBinding Converter="{StaticResource NodeEditor.ScaleDoubleConverter}">
+                                        <Binding Path="SelectedArea.Width" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Width>
+                                <Rectangle.Height>
+                                    <MultiBinding Converter="{StaticResource NodeEditor.ScaleDoubleConverter}">
+                                        <Binding Path="SelectedArea.Height" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Height>
+                            </Rectangle>
+                        </Canvas>
+
+                        <!--
+                            Слою направляющих достаточно знать редактор: положение, масштаб и линии
+                            он берёт у него сам, через присоединённые свойства привязки.
+                        -->
+                        <editing:SnapGuideLayer Name="PART_SnapGuideLayer"
+                                                IsHitTestVisible="False"
+                                                Editor="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                LineBrush="{DynamicResource DesignEditor.SnapGuideBrush}"
+                                                CentreLineBrush="{DynamicResource DesignEditor.SnapGuide.CentreBrush}"
+                                                SpacingBrush="{DynamicResource DesignEditor.SpacingBrush}"
+                                                UserGuideBrush="{DynamicResource DesignEditor.UserGuideBrush}"
+                                                LineDashStyle="{DynamicResource DesignEditor.SnapGuide.DashStyle}"
+                                                UserGuideDashStyle="{DynamicResource DesignEditor.UserGuide.DashStyle}"
+                                                LineThickness="{DynamicResource DesignEditor.SnapGuide.Thickness}" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

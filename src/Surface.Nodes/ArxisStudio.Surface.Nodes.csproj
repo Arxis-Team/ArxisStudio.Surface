@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="../Library.props" />
+
+    <PropertyGroup>
+        <RootNamespace>ArxisStudio.Surface.Nodes</RootNamespace>
+        <Description>Редактор узлов на ArxisStudio.Surface: узлы, порты, связи между портами, протяжка и перецепление связей. Структуру графа правит приложение — редактор выражает намерения запросами.</Description>
+        <PackageTags>avalonia;canvas;editor;nodes;graph;blueprint;ui</PackageTags>
+    </PropertyGroup>
+
+    <!--
+        Рядом с дизайнером форм, а не над ним (ADR 0004): ядро и инструменты — ради привязки
+        к сетке и выравнивания по соседям, — но не UiDesigner. Сёстры друг на друга не ссылаются.
+    -->
+    <ItemGroup>
+        <ProjectReference Include="../Surface/ArxisStudio.Surface.csproj" />
+        <ProjectReference Include="../Surface.Editing/ArxisStudio.Surface.Editing.csproj" />
+    </ItemGroup>
+
+</Project>

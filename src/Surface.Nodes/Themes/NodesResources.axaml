@@ -1,0 +1,31 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Ресурсы редактора узлов. Ключи начинаются с NodeEditor: их переопределяют приложения,
+        и имя ключа — часть контракта темы. Остальное шаблон берёт у ядра и инструментов.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="NodeEditor.Node.Background" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="NodeEditor.Node.BorderBrush" Color="#C9D0DA" />
+            <SolidColorBrush x:Key="NodeEditor.Node.HoverBorderBrush" Color="#8A96A8" />
+            <SolidColorBrush x:Key="NodeEditor.Node.SelectedBorderBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="NodeEditor.Node.Foreground" Color="#1F2328" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="NodeEditor.Node.Background" Color="#26292E" />
+            <SolidColorBrush x:Key="NodeEditor.Node.BorderBrush" Color="#3E4451" />
+            <SolidColorBrush x:Key="NodeEditor.Node.HoverBorderBrush" Color="#5C6577" />
+            <SolidColorBrush x:Key="NodeEditor.Node.SelectedBorderBrush" Color="#1E90FF" />
+            <SolidColorBrush x:Key="NodeEditor.Node.Foreground" Color="#E6E8EB" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <Thickness x:Key="NodeEditor.Node.BorderThickness">1</Thickness>
+    <Thickness x:Key="NodeEditor.Node.SelectedBorderThickness">2</Thickness>
+    <CornerRadius x:Key="NodeEditor.Node.CornerRadius">6</CornerRadius>
+    <Thickness x:Key="NodeEditor.Node.Padding">8</Thickness>
+
+</ResourceDictionary>

@@ -25,13 +25,14 @@ public class LayerDependencyTests
         Core,
         Editing,
         UiDesigner,
+        Nodes,
         Outside,
         Generated
     }
 
     /// <summary>
-    /// Три сборки семейства. Ссылка между ними сборкой уже запрещена только вверх по
-    /// ссылкам проектов, а тест держит слой и внутри сборки — по пространству имён.
+    /// Сборки семейства. Ссылка между ними сборкой уже запрещена только вверх по ссылкам
+    /// проектов, а тест держит слой и внутри сборки — по пространству имён.
     /// </summary>
     private static IReadOnlyList<Assembly> Libraries => PublicSurface.Assemblies;
 
@@ -60,8 +61,8 @@ public class LayerDependencyTests
 
         Assert.True(unresolved.Count == 0, "Не разрешились токены IL:\n" + string.Join("\n", unresolved.Distinct()));
         Assert.True(violations.Count == 0,
-            "Ссылка идёт вверх по слоям. Ядро не называет инструменты и дизайнер форм, инструменты не называют " +
-            "дизайнер форм: нужное сверху ядро получает через шов (ADR 0003).\n" +
+            "Ссылка идёт вверх по слоям или между сёстрами. Ядро не называет слоёв выше, инструменты — дизайнер " +
+            "форм и редактор узлов, а те двое — друг друга: нужное сверху ядро получает через шов (ADR 0003, 0004).\n" +
             string.Join("\n", violations.Distinct().OrderBy(v => v, StringComparer.Ordinal)));
     }
 
@@ -75,7 +76,7 @@ public class LayerDependencyTests
             .ToList();
 
         Assert.True(outside.Count == 0,
-            "Тип вне слоёв. Положите его в ArxisStudio.Surface, .Editing или .UiDesigner (ADR 0003):\n" +
+            "Тип вне слоёв. Положите его в ArxisStudio.Surface, .Editing, .UiDesigner или .Nodes (ADR 0003, 0004):\n" +
             string.Join("\n", outside));
     }
 
@@ -99,6 +100,7 @@ public class LayerDependencyTests
     {
         Layer.Editing => ".Editing",
         Layer.UiDesigner => ".UiDesigner",
+        Layer.Nodes => ".Nodes",
         _ => string.Empty
     };
 
@@ -155,6 +157,9 @@ public class LayerDependencyTests
         if (InNamespace(ns, Root + ".UiDesigner"))
             return Layer.UiDesigner;
 
+        if (InNamespace(ns, Root + ".Nodes"))
+            return Layer.Nodes;
+
         if (InNamespace(ns, Root + ".Editing"))
             return Layer.Editing;
 
@@ -168,6 +173,12 @@ public class LayerDependencyTests
     {
         Layer.Core => to == Layer.Core,
         Layer.Editing => to is Layer.Core or Layer.Editing,
+
+        // Дизайнер форм и редактор узлов — сёстры над ядром и инструментами (ADR 0004).
+        // Прежде здесь стояло «всё остальное — можно», и дизайнер форм вправе был назвать
+        // кого угодно; с четвёртым слоем это стало бы ссылкой между сёстрами.
+        Layer.UiDesigner => to is Layer.Core or Layer.Editing or Layer.UiDesigner,
+        Layer.Nodes => to is Layer.Core or Layer.Editing or Layer.Nodes,
         _ => true
     };
 

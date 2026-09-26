@@ -23,13 +23,14 @@ namespace ArxisStudio.Tests;
 internal static class PublicSurface
 {
     /// <summary>
-    /// Три сборки семейства, у каждой свой слепок (ADR 0003).
+    /// Сборки семейства, у каждой свой слепок (ADR 0003, 0004).
     /// </summary>
     public static IReadOnlyList<Assembly> Assemblies { get; } =
     [
         typeof(ArxisStudio.Surface.SurfaceView).Assembly,
         typeof(ArxisStudio.Surface.Editing.SurfaceGuides).Assembly,
-        typeof(DesignEditor).Assembly
+        typeof(DesignEditor).Assembly,
+        typeof(ArxisStudio.Surface.Nodes.NodeEditor).Assembly
     ];
 
     /// <summary>

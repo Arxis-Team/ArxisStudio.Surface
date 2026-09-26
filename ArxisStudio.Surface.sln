@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArxisStudio.Surface.Editing
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArxisStudio.Surface.UiDesigner", "src\Surface.UiDesigner\ArxisStudio.Surface.UiDesigner.csproj", "{800712E3-B1B5-486E-95C7-E9E8A71C9041}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArxisStudio.Surface.Nodes", "src\Surface.Nodes\ArxisStudio.Surface.Nodes.csproj", "{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -86,6 +88,18 @@ Global
 		{800712E3-B1B5-486E-95C7-E9E8A71C9041}.Release|x64.Build.0 = Release|Any CPU
 		{800712E3-B1B5-486E-95C7-E9E8A71C9041}.Release|x86.ActiveCfg = Release|Any CPU
 		{800712E3-B1B5-486E-95C7-E9E8A71C9041}.Release|x86.Build.0 = Release|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Debug|x64.Build.0 = Debug|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Debug|x86.Build.0 = Debug|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Release|x64.ActiveCfg = Release|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Release|x64.Build.0 = Release|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Release|x86.ActiveCfg = Release|Any CPU
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -96,5 +110,6 @@ Global
 		{E4B80C6F-6F8A-4C97-B502-257AC2F6E7A7} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1D894568-3A57-44FA-AB41-B4F9E1FB6F8D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{800712E3-B1B5-486E-95C7-E9E8A71C9041} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{1E4844F9-0040-4C7F-AE9D-C808E9AB6848} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -11,13 +11,13 @@
 
     <ItemGroup>
         <!-- Avalonia.Headless.XUnit 12.1.1 завязан на xunit.v3, не на v2. -->
-        <PackageReference Include="Avalonia.Headless.XUnit"/>
-        <PackageReference Include="Avalonia.Themes.Fluent"/>
+        <PackageReference Include="Avalonia.Headless.XUnit" />
+        <PackageReference Include="Avalonia.Themes.Fluent" />
         <!-- Загрузка .axaml в рантайме: тот же путь, которым пользуется хост-приложение. -->
-        <PackageReference Include="Avalonia.Markup.Xaml.Loader"/>
-        <PackageReference Include="xunit.v3"/>
-        <PackageReference Include="xunit.runner.visualstudio"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Avalonia.Markup.Xaml.Loader" />
+        <PackageReference Include="xunit.v3" />
+        <PackageReference Include="xunit.runner.visualstudio" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
     </ItemGroup>
 
     <ItemGroup>
@@ -31,8 +31,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Surface\ArxisStudio.Surface.csproj"/>
-        <ProjectReference Include="..\..\src\Surface.Editing\ArxisStudio.Surface.Editing.csproj"/>
-        <ProjectReference Include="..\..\src\Surface.UiDesigner\ArxisStudio.Surface.UiDesigner.csproj"/>
+        <ProjectReference Include="..\..\src\Surface\ArxisStudio.Surface.csproj" />
+        <ProjectReference Include="..\..\src\Surface.Editing\ArxisStudio.Surface.Editing.csproj" />
+        <ProjectReference Include="..\..\src\Surface.UiDesigner\ArxisStudio.Surface.UiDesigner.csproj" />
+        <ProjectReference Include="..\..\src\Surface.Nodes\ArxisStudio.Surface.Nodes.csproj" />
     </ItemGroup>
 </Project>
