@@ -39,6 +39,11 @@ public partial class NodeEditor
     internal LinkCutPreview? CutPreview { get; private set; }
 
     /// <summary>
+    /// Сколько раз разрез сверял отрезок с самой кривой — для стенда стоимости.
+    /// </summary>
+    internal int LinkCutChecks { get; private set; }
+
+    /// <summary>
     /// Собирает связи, которые пересекает отрезок: отсев по рамке связи, затем по кривой.
     /// </summary>
     internal void CollectCrossing(Point a, Point b, HashSet<Link> result)
@@ -53,6 +58,7 @@ public partial class NodeEditor
             if (!link.IsResolved || !link.WorldBounds.Intersects(segment))
                 continue;
 
+            LinkCutChecks++;
             if (link.Geometry.Intersects(a, b))
                 result.Add(link);
         }

@@ -1,11 +1,15 @@
 using System.Diagnostics;
 
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Layout;
+using Avalonia.Media.Imaging;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
 using ArxisStudio.Surface.Nodes;
+using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.Nodes.States;
 
 namespace ArxisStudio.Tests;
@@ -275,5 +279,64 @@ public class NodeGraphCostProbeTests
         var ratio = drag[Large] / drag[Small];
         _output.WriteLine($"кадр дороже в {ratio:F1} раза");
         Assert.True(ratio > 2, $"{drag[Large]:F3} против {drag[Small]:F3}");
+    }
+    [AvaloniaFact]
+    public void A_Cut_Stroke_Checks_Only_The_Links_Its_Frame_Meets()
+    {
+        // Ход разреза проходит все связи, но с самой кривой сверяет только те, чью рамку задел
+        // отрезок: короткий отрезок поперёк одной связи — одна сверка при любом размере графа.
+        // Цена хода через всё окно печатается.
+        foreach (var size in new[] { Small, Large })
+        {
+            var stand = CreateGraph(size);
+            var link = LinkFrom(stand, Dragged);
+            var middle = link.Geometry.At(0.5);
+            var crossing = new HashSet<Link>();
+
+            var before = stand.Editor.LinkCutChecks;
+            stand.Editor.CollectCrossing(middle - new Vector(0, 30), middle + new Vector(0, 30), crossing);
+
+            Assert.Equal(1, stand.Editor.LinkCutChecks - before);
+            Assert.Equal(new[] { link }, crossing);
+
+            var across = MicrosecondsPerCall(
+                () => stand.Editor.CollectCrossing(new Point(610, 0), new Point(610, 600), crossing), calls: 2000);
+            _output.WriteLine($"{stand.Links.Count} связей: ход разреза через окно {across:F2} мкс, перечёркнуто {crossing.Count}");
+        }
+    }
+
+    [AvaloniaFact]
+    public void The_Minimap_Draws_Every_Resolved_Link_At_Any_Size()
+    {
+        // Миникарта перерисовывается после прохода раскладки, то есть на каждом кадре
+        // перетаскивания: её цена ложится на кадр целиком. Печатается перерисовка одной карты.
+        foreach (var size in new[] { Small, Large })
+        {
+            var stand = CreateGraph(size);
+            var map = AddMinimap(stand);
+            stand.Window.CaptureRenderedFrame();
+
+            Assert.Equal(stand.Links.Count, stand.Editor.LinksOnMinimap);
+
+            var bitmap = new RenderTargetBitmap(new PixelSize(200, 150));
+            var redraw = MicrosecondsPerCall(() => bitmap.Render(map), calls: 20) / 1000;
+            _output.WriteLine($"{size} узлов, {stand.Links.Count} связей: перерисовка миникарты {redraw:F3} мс");
+        }
+    }
+
+    private static SurfaceMinimap AddMinimap(NodeStand stand)
+    {
+        stand.Window.Content = null;
+        var map = new SurfaceMinimap
+        {
+            Editor = stand.Editor,
+            Width = 200,
+            Height = 150,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom
+        };
+        stand.Window.Content = new Grid { Children = { stand.Editor, map } };
+        stand.RunLayout();
+        return map;
     }
 }
