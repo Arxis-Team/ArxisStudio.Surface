@@ -144,8 +144,9 @@ public partial class DesignEditor
             Source = e.Source
         };
 
+        // Событие контейнера поднимает само состояние, уже применив геометрию. Второй
+        // раз здесь его не поднимать: хост получал каждое движение дважды.
         _primarySelectionItem.CurrentState.OnResizeDelta(normalizedArgs);
-        _primarySelectionItem.OnResizeDelta(new ResizeDeltaEventArgs(worldDelta, e.Direction, DesignEditorItem.ResizeDeltaEvent));
         UpdateSelectionOverlayState();
         e.Handled = true;
 
@@ -236,8 +237,9 @@ public partial class DesignEditor
             Source = e.Source
         };
 
+        // Событие контейнера поднимает само состояние, уже применив геометрию. Второй
+        // раз здесь его не поднимать: хост получал каждое движение дважды.
         container.CurrentState.OnResizeDelta(normalizedArgs);
-        container.OnResizeDelta(new ResizeDeltaEventArgs(worldDelta, e.Direction, DesignEditorItem.ResizeDeltaEvent));
         UpdateSelectionOverlayState();
         e.Handled = true;
         TrackSecondaryResizeAutoPan(sender, e);

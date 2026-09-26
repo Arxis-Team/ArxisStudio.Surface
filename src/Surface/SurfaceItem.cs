@@ -182,7 +182,6 @@ public class SurfaceItem : ContentControl, ISelectable
     }
 
     internal void OnResizeStarted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeStartedEvent, Vector = vector });
-    internal void OnResizeDelta(ResizeDeltaEventArgs e) => RaiseEvent(e);
     internal void OnResizeCompleted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeCompletedEvent, Vector = vector });
 
     private readonly Stack<SurfaceItemState> _states = new();
