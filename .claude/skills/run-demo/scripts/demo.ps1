@@ -34,7 +34,8 @@ param(
     # которое живёт отдельным окном. Сторож откажет, если сверху чужое окно.
     [switch]$Screen,
 
-    # Поднять MCP-эндпоинт DevTools на 127.0.0.1:5171 (только при -Action start).
+    # Поднять MCP-эндпоинт DevTools на 127.0.0.1:5174 (только при -Action start).
+    # Порт не умолчание AvaDevTools (5171): его занимает студия ArxisStudio.
     # Выключен по умолчанию: порт открывается только когда об этом просят.
     [switch]$Mcp,
 
@@ -432,7 +433,15 @@ switch ($Action) {
         # Только чтение: ввод и заморозка требуют отдельных AVA_DEVTOOLS_MCP_INPUT
         # и AVA_DEVTOOLS_MCP_HOLD, и включать их по умолчанию нельзя — клик из
         # агента выполняет обработчики приложения.
-        if ($Mcp) { $env:AVA_DEVTOOLS_MCP = '1' } else { Remove-Item Env:\AVA_DEVTOOLS_MCP -ErrorAction SilentlyContinue }
+        # Порт задаётся явно: умолчание AvaDevTools (5171) — порт студии ArxisStudio,
+        # и демо рядом с ней не поднялось бы или отвечало бы вместо неё.
+        if ($Mcp) {
+            $env:AVA_DEVTOOLS_MCP = '1'
+            $env:AVA_DEVTOOLS_MCP_PORT = '5174'
+        } else {
+            Remove-Item Env:\AVA_DEVTOOLS_MCP -ErrorAction SilentlyContinue
+            Remove-Item Env:\AVA_DEVTOOLS_MCP_PORT -ErrorAction SilentlyContinue
+        }
 
         $p = Start-Process -FilePath $exe -PassThru `
              -RedirectStandardOutput (Join-Path $logDir 'out.log') `
@@ -446,7 +455,7 @@ switch ($Action) {
             }
             $p.Refresh()
             if ($p.MainWindowHandle -ne [IntPtr]::Zero) {
-                $mcpNote = if ($Mcp) { " mcp=http://127.0.0.1:5171/" } else { "" }
+                $mcpNote = if ($Mcp) { " mcp=http://127.0.0.1:5174/" } else { "" }
                 "started pid=$($p.Id) window='$($p.MainWindowTitle)' logs=$logDir$mcpNote"
                 break
             }

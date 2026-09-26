@@ -102,7 +102,7 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 
 Клавиатура идёт через `keybd_event`, а не `SendKeys`: последний до приложения не доходит, хотя окно и foreground — `Ctrl + A` через него не делал ничего. Мышь работает иначе, потому что `mouse_event` адресуется точкой экрана, а не фокусом.
 
-Ключ `-Mcp` у `start` поднимает MCP-эндпоинт DevTools на `http://127.0.0.1:5171/` — тогда состояние редактора можно читать значениями, а не снимать скриншотами:
+Ключ `-Mcp` у `start` поднимает MCP-эндпоинт DevTools на `http://127.0.0.1:5174/`. Порт не умолчание AvaDevTools: 5171 занимает студия ArxisStudio, 5172 и 5173 — витрины контролов и иконок, поэтому скрипт ставит `AVA_DEVTOOLS_MCP_PORT` сам. Тогда состояние редактора можно читать значениями, а не снимать скриншотами:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action start -Mcp
