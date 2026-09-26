@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,14 +28,6 @@ namespace ArxisStudio.Surface.UiDesigner;
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.
 public partial class DesignEditor
 {
-    private void SetDesignZIndex(Control control, int zIndex)
-    {
-        if (!_suppressEditRecording)
-            _activeEdit?.RecordZIndex(this, control, zIndex);
-
-        control.ZIndex = zIndex;
-    }
-
     /// <summary>
     /// Перемещает выделение на передний план.
     /// </summary>

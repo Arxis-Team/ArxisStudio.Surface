@@ -87,6 +87,9 @@ public class GeometryApiTests
         harness.PlaceContainer(0, new Point(100, 100), new Size(260, 240));
         var field = harness.Find<Avalonia.Controls.TextBox>(0, "Field");
 
+        DesignEditCompletedEventArgs? edit = null;
+        harness.Editor.EditCompleted += (_, e) => edit = e;
+
         Assert.True(harness.Editor.TryGetDesignBounds(field, out var before));
         Assert.True(harness.Editor.SetDesignGeometry(field, new Rect(before.X + 40, before.Y + 40, 120, 44)));
         harness.RunLayout();
@@ -95,6 +98,13 @@ public class GeometryApiTests
         // Высота выше MinHeight контрола: иначе проверялась бы не раскладка, а кламп.
         Assert.Equal(new Size(120, 44), after.Size);
         Assert.Equal(before.Position.Y, after.Position.Y);
+
+        // Отсечка стоит до записи: в контракт попадает только то, что произошло.
+        // Экран сам по себе этого не показывает — панель вернула бы контрол на место
+        // и без отсечки, а стек отмены хранил бы перемещение, которого не было.
+        Assert.NotNull(edit);
+        var change = Assert.IsType<DesignGeometryChange>(Assert.Single(edit.Changes));
+        Assert.Equal(change.OldBounds.Position, change.NewBounds.Position);
     }
 
     [AvaloniaFact]

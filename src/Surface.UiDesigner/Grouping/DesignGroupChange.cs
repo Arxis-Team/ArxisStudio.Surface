@@ -32,4 +32,10 @@ public sealed class DesignGroupChange : DesignChange
     /// Получает группу после изменения.
     /// </summary>
     public string? NewId { get; }
+
+    internal override void ApplyTo(SurfaceView view, bool revert)
+    {
+        if (view is DesignEditor editor)
+            editor.ApplyGroup(Target, revert ? OldId : NewId);
+    }
 }

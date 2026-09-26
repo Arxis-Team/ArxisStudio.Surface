@@ -927,19 +927,6 @@ public partial class DesignEditor
     public event EventHandler<DesignEditorContextRequestedEventArgs>? ContextMenuResolved;
 
     /// <summary>
-    /// Возникает после завершения единицы редактирования — перемещения или изменения размера.
-    /// </summary>
-    /// <remarks>
-    /// Одно событие на жест целиком, а не на кадр: это та гранулярность, в которой
-    /// изменения кладутся в стек undo. Жест, не изменивший геометрию, события не вызывает.
-    /// <para>
-    /// Стек отмены библиотека не ведёт: она отдаёт поток изменений, а хранит его приложение.
-    /// Вернуть состояние можно через <see cref="ApplyGeometry"/>.
-    /// </para>
-    /// </remarks>
-    public event EventHandler<DesignEditCompletedEventArgs>? EditCompleted;
-
-    /// <summary>
     /// Возникает при запросе удаления выделения с клавиатуры.
     /// </summary>
     /// <remarks>

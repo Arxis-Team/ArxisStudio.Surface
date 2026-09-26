@@ -131,8 +131,7 @@ public partial class DesignEditor
     /// </remarks>
     private void SetDesignGroup(Control target, string? id)
     {
-        if (!_suppressEditRecording)
-            _activeEdit?.RecordGroup(this, target, id);
+        RecordEdit(_groupFacet, target, id);
 
         _groupStore.SetGroup(target, id);
     }
@@ -144,7 +143,7 @@ public partial class DesignEditor
     /// <param name="id">Путь группы или <see langword="null"/>.</param>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="target"/> равен <see langword="null"/>.</exception>
     /// <remarks>
-    /// Пара к <see cref="ApplyGeometry"/> и <see cref="ApplyOrder"/>: этим методом отмена
+    /// Пара к <see cref="SurfaceView.ApplyGeometry"/> и <see cref="SurfaceView.ApplyOrder"/>: этим методом отмена
     /// и повтор применяют <see cref="DesignGroupChange"/>, не дописывая стек.
     /// </remarks>
     public void ApplyGroup(Control target, string? id)
@@ -271,7 +270,7 @@ public partial class DesignEditor
     /// <remarks>
     /// Переименование — это смена пометки у всех участников, поэтому идёт через тот же
     /// шов, что и группировка, и одной единицей редактирования: иначе оно не попало бы
-    /// в <see cref="EditCompleted"/> и отмена вернула бы всё, кроме имени группы.
+    /// в <see cref="SurfaceView.EditCompleted"/> и отмена вернула бы всё, кроме имени группы.
     /// <para>
     /// Меняется <b>один сегмент</b>: переезд в другого родителя — это перемещение группы,
     /// отдельное действие. Отклоняется, если имя пустое или содержит разделитель, такой
@@ -330,7 +329,7 @@ public partial class DesignEditor
     /// деревом владеет хост, пометку он вправе поставить в разметке или через
     /// <see cref="DesignGroup.SetId"/>, и узнать об этом редактору неоткуда —
     /// сохранённый снимок молча устарел бы. По той же причине нет и события об изменении
-    /// групп: о своих правках редактор сообщает через <see cref="EditCompleted"/>, а о
+    /// групп: о своих правках редактор сообщает через <see cref="SurfaceView.EditCompleted"/>, а о
     /// чужих сообщить не может.
     /// <para>
     /// Всё дерево снимается за один обход: два раздельных запроса дали бы уровни, снятые

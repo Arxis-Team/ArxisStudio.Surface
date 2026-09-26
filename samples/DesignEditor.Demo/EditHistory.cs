@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Avalonia.Controls;
 using ArxisStudio;
+using ArxisStudio.Surface;
 
 namespace DesignEditor.Demo;
 

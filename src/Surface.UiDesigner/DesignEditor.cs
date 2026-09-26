@@ -62,6 +62,8 @@ public partial class DesignEditor : SurfaceView
 
     private DesignGrid? _grid;
 
+    private readonly GroupEditFacet _groupFacet;
+
     private DesignEditorItem? _primarySelectionItem;
 
     private Control? _primarySelectionControl;
@@ -80,14 +82,6 @@ public partial class DesignEditor : SurfaceView
     private GroupResizeOperation? _groupResizeOperation;
 
     private GroupDragOperation? _groupDragOperation;
-
-    // Текущая единица редактирования. Живёт от начала жеста до его завершения:
-    // все мутации проходят через SetDesignPosition/SetDesignSize и попадают в неё.
-    private DesignEditScope? _activeEdit;
-
-    // Подавляет запись на время программного применения геометрии,
-    // чтобы отмена не превращалась в новое изменение.
-    private bool _suppressEditRecording;
 
     // Соседи, к которым идёт выравнивание в текущем жесте. Снимаются один раз
     // на входе в жест; null означает, что жест не идёт.
@@ -140,6 +134,13 @@ public partial class DesignEditor : SurfaceView
         // и она помечает движение обработанным.
         AddHandler(PointerMovedEvent, OnTrackPointer, RoutingStrategies.Tunnel, handledEventsToo: true);
         SelectionMode = SelectionMode.Multiple;
+
+        // Позицию target'а знает его панель, а не ядро: стратегия размещения решает,
+        // примет ли содержимое запись. Пометка группы — участник единицы редактирования
+        // сверх геометрии, и в контракт изменений она попадает через него.
+        Geometry = new DesignPlacementGeometry(this);
+        _groupFacet = new GroupEditFacet(this);
+        AddEditFacet(_groupFacet);
         // Набор создан инициализатором поля и здесь только подхватывается: прежде
         // конструктор заводил второй и первый выбрасывал, а подписан оказывался
         // ровно один из двух — ошибиться в такой паре легко и молча.
@@ -235,4 +236,7 @@ public partial class DesignEditor : SurfaceView
 
         UpdateSelectionAdornerPolicies();
     }
+
+    /// <inheritdoc />
+    private protected override void RefreshSelectionOverlay() => UpdateSelectionOverlayState();
 }

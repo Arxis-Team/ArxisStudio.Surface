@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,118 +29,6 @@ namespace ArxisStudio.Surface.UiDesigner;
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.
 public partial class DesignEditor
 {
-    internal Point GetDesignPosition(Control control)
-        => GetPlacementStrategy(control).GetPosition(control, this);
-
-    /// <summary>
-    /// Задаёт позицию target'а в design-координатах.
-    /// </summary>
-    /// <remarks>
-    /// Раскладка, которая владеет позицией ребёнка, отсекается здесь, а не выше:
-    /// это единственная точка записи, поэтому только тут можно гарантировать,
-    /// что в контракт изменений не попадёт перемещение, которого не произошло.
-    /// </remarks>
-    internal void SetDesignPosition(Control control, Point position)
-    {
-        var strategy = GetPlacementStrategy(control);
-        if (strategy.MoveSemantics != DesignMoveSemantics.Reposition)
-            return;
-
-        if (!_suppressEditRecording)
-            _activeEdit?.RecordPosition(this, control, position);
-
-        strategy.SetPosition(control, position, this);
-    }
-
-    /// <summary>
-    /// Задает геометрию контрола одной единицей редактирования.
-    /// </summary>
-    /// <param name="target">Контрол.</param>
-    /// <param name="bounds">Желаемая рамка в design-координатах.</param>
-    /// <returns><see langword="true"/>, если изменение принято и опубликовано.</returns>
-    /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="target"/> равен <see langword="null"/>.</exception>
-    /// <remarks>
-    /// Это способ изменить геометрию <b>снаружи жеста</b> — из панели свойств, из
-    /// команды приложения. Идёт через те же швы, что и перетаскивание, поэтому правка
-    /// попадает в <see cref="EditCompleted"/> и отменяется наравне с ней.
-    /// <para>
-    /// Отличие от <see cref="ApplyGeometry"/> принципиальное: тот применяет уже
-    /// записанное изменение и запись подавляет — им отмена и повтор возвращают
-    /// геометрию, не дописывая стек.
-    /// </para>
-    /// <para>
-    /// Приняли не всё: положением может распоряжаться раскладка, а размер ограничивают
-    /// <c>Min</c>/<c>Max</c> контрола и границы формы. Отсекается это на швах, поэтому
-    /// ответ берётся у контракта изменений, а не перечитыванием design-координат —
-    /// те отстают на проход диспетчера и сразу после записи ещё старые.
-    /// </para>
-    /// </remarks>
-    public bool SetDesignGeometry(Control target, Rect bounds)
-    {
-        if (target == null)
-            throw new ArgumentNullException(nameof(target));
-
-        // Вид правки — по тому, что изменилось: у размера своя единица, как и у жеста.
-        var kind = GetDesignSize(target) == bounds.Size
-            ? DesignEditKind.Move
-            : DesignEditKind.Resize;
-
-        BeginEdit(kind);
-        SetDesignSize(target, bounds.Size);
-        SetDesignPosition(target, bounds.Position);
-
-        var applied = CommitEdit();
-        UpdateSelectionOverlayState();
-        return applied;
-    }
-
-    internal Size GetDesignSize(Control control)
-    {
-        var width = double.IsNaN(control.Width) ? control.Bounds.Width : control.Width;
-        var height = double.IsNaN(control.Height) ? control.Bounds.Height : control.Height;
-        return new Size(width, height);
-    }
-
-    internal void SetDesignSize(Control control, Size size)
-    {
-        var coerced = CoerceDesignSize(control, size);
-
-        if (!_suppressEditRecording)
-            _activeEdit?.RecordSize(this, control, coerced);
-
-        control.Width = coerced.Width;
-        control.Height = coerced.Height;
-    }
-
-    /// <summary>
-    /// Приводит запрошенный размер к ограничениям самого контрола.
-    /// </summary>
-    /// <remarks>
-    /// До появления этого метода редактор писал <c>Width</c>/<c>Height</c> мимо
-    /// <c>MinWidth</c>/<c>MaxWidth</c>: раскладка применяла ограничение уже после,
-    /// и запрошенный размер расходился с фактическим — редактор считал от одного,
-    /// а пользователь видел другое.
-    /// <para>
-    /// При <c>Max &lt; Min</c> побеждает минимум — так же, как в самой Avalonia.
-    /// </para>
-    /// <para>
-    /// Минимум редактора (<see cref="DesignEditorInteractionOptions.ResizeMinSize"/>) сюда
-    /// <b>не входит</b>: он предел жеста, а не свойство контрола. Пока он стоял здесь, его
-    /// получала любая запись размера — в том числе та, которой вход в жест фиксирует
-    /// текущий размер, и та, которой отмена возвращает записанный. Контрол мельче порога
-    /// раздувался от простого нажатия на ручку, а отмена не возвращала его обратно.
-    /// </para>
-    /// </remarks>
-    internal Size CoerceDesignSize(Control control, Size size)
-    {
-        return new Size(
-            ClampSize(size.Width, control.MinWidth, control.MaxWidth),
-            ClampSize(size.Height, control.MinHeight, control.MaxHeight));
-    }
-
-    private static double ClampSize(double value, double min, double max)
-        => Math.Max(Math.Min(value, max), min);
-
     /// <summary>
     /// Возвращает прямоугольник, за который target не должен выходить при изменении размера.
     /// </summary>
@@ -355,7 +243,6 @@ public partial class DesignEditor
         double Extent(Rect rect) => xAxis ? rect.Right : rect.Bottom;
         double Size(Rect rect) => xAxis ? rect.Width : rect.Height;
     }
-
 
     internal ArxisStudio.Surface.ResizePolicy GetResizePolicy(Control control)
     {

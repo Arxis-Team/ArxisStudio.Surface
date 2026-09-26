@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 

@@ -14,7 +14,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// библиотека разметки. Пока запрос не помечен <see cref="Handled"/>,
 /// порядок остаётся прежним.
 /// <para>
-/// Это структурная правка, поэтому она не попадает в <see cref="DesignEditor.EditCompleted"/>:
+/// Это структурная правка, поэтому она не попадает в <see cref="SurfaceView.EditCompleted"/>:
 /// там живёт геометрия и порядок перекрытия — то, чем редактор распоряжается сам.
 /// </para>
 /// </remarks>

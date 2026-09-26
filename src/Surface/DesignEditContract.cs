@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Определяет вид завершённого изменения в редакторе.
@@ -27,7 +26,7 @@ public enum DesignEditKind
     /// <remarks>
     /// Именно перекрытия, то есть <c>ZIndex</c>. Перестановка среди детей панели
     /// сюда не попадает вовсе — это структурная правка, и редактор о ней только
-    /// просит через <see cref="DesignEditor.ReorderRequested"/>. Одно слово на два
+    /// просит через <c>DesignEditor.ReorderRequested</c>. Одно слово на два
     /// разных действия уже путало: обработчик, написанный на «изменился порядок»,
     /// молча ловил половину случаев.
     /// </remarks>
@@ -37,7 +36,7 @@ public enum DesignEditKind
     /// Изменение принадлежности к design-time группе.
     /// </summary>
     /// <remarks>
-    /// Группа — пометка на контролах (<see cref="DesignGroup"/>), а не узел дерева:
+    /// Группа — пометка на контролах (<c>DesignGroup</c>), а не узел дерева:
     /// редактор его не правит. Поэтому у группировки есть шов записи и единица редактирования,
     /// в отличие от перестановки среди соседей, которая структурна и уходит запросом.
     /// </remarks>
@@ -48,8 +47,8 @@ public enum DesignEditKind
 /// Базовое описание изменения одного design target.
 /// </summary>
 /// <remarks>
-/// Приложению не обязательно разбирать конкретный тип: <see cref="DesignEditor.Revert"/>
-/// и <see cref="DesignEditor.Reapply"/> принимают любое изменение, поэтому стек отмены
+/// Приложению не обязательно разбирать конкретный тип: <see cref="SurfaceView.Revert"/>
+/// и <see cref="SurfaceView.Reapply"/> принимают любое изменение, поэтому стек отмены
 /// пишется единообразно.
 /// </remarks>
 public abstract class DesignChange
@@ -65,6 +64,19 @@ public abstract class DesignChange
     /// Получает изменённый контрол.
     /// </summary>
     public Control Target { get; }
+
+    /// <summary>
+    /// Применяет изменение к поверхности: возвращает состояние до него или после.
+    /// </summary>
+    /// <remarks>
+    /// Изменение применяет себя само, поэтому у ядра нет закрытого списка видов правки:
+    /// правку, которую завёл слой выше, <see cref="SurfaceView.Revert"/> отменяет той же
+    /// дорогой. Вид, которого поверхность не знает, ничего не делает — так же, как и
+    /// до этого шва.
+    /// </remarks>
+    internal virtual void ApplyTo(SurfaceView view, bool revert)
+    {
+    }
 }
 
 /// <summary>
@@ -91,6 +103,9 @@ public sealed class DesignOrderChange : DesignChange
     /// Получает порядок перекрытия после изменения.
     /// </summary>
     public int NewZIndex { get; }
+
+    internal override void ApplyTo(SurfaceView view, bool revert)
+        => view.ApplyOrder(Target, revert ? OldZIndex : NewZIndex);
 }
 
 /// <summary>
@@ -129,9 +144,9 @@ public sealed class DesignEditorDeleteRequestedEventArgs : EventArgs
 /// </summary>
 /// <remarks>
 /// Границы заданы в design-координатах: тех же, в которых работают
-/// <c>Layout.DesignX</c>/<c>DesignY</c> и <see cref="DesignEditor.SelectionBounds"/>.
+/// <c>Layout.DesignX</c>/<c>DesignY</c> и <c>DesignEditor.SelectionBounds</c>.
 /// Их достаточно, чтобы вернуть target в прежнее состояние через
-/// <see cref="DesignEditor.ApplyGeometry"/>.
+/// <see cref="SurfaceView.ApplyGeometry"/>.
 /// </remarks>
 public sealed class DesignGeometryChange : DesignChange
 {
@@ -157,6 +172,9 @@ public sealed class DesignGeometryChange : DesignChange
     /// Получает геометрию после изменения.
     /// </summary>
     public Rect NewBounds { get; }
+
+    internal override void ApplyTo(SurfaceView view, bool revert)
+        => view.ApplyGeometry(Target, revert ? OldBounds : NewBounds);
 }
 
 /// <summary>

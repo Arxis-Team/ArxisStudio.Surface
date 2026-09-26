@@ -7,6 +7,7 @@ using DesignEditor.Demo.Context;
 using DesignEditor.Demo.ViewModels;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace DesignEditor.Demo.Views;
 

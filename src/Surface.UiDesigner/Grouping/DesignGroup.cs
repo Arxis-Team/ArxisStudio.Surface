@@ -61,7 +61,7 @@ public static class DesignGroup
     /// <param name="value">Идентификатор группы или <see langword="null"/>.</param>
     /// <remarks>
     /// Прямая запись группу меняет, но мимо контракта изменений: в
-    /// <see cref="DesignEditor.EditCompleted"/> она не попадёт и отменить её будет нечем.
+    /// <see cref="SurfaceView.EditCompleted"/> она не попадёт и отменить её будет нечем.
     /// Редактор увидит её, только если пользуется библиотечным хранилищем
     /// <see cref="DesignGroupAttachedStore"/>; со своим хранилищем это свойство ему не видно.
     /// Из редактора пользоваться надо <see cref="DesignEditor.GroupSelection"/> и

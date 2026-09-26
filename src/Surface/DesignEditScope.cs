@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Накапливает изменения геометрии в пределах одного жеста.
@@ -25,8 +24,8 @@ internal sealed class DesignEditScope
         public int BeforeZIndex;
         public int ZIndex;
 
-        public string? BeforeGroup;
-        public string? Group;
+        // Значения участников: до жеста и заданное. Порядок — порядок участников у поверхности.
+        public (object? Before, object? After)[] Facets = [];
     }
 
     private const double Tolerance = 0.01;
@@ -38,17 +37,31 @@ internal sealed class DesignEditScope
 
     public DesignEditKind Kind { get; }
 
-    public void RecordPosition(DesignEditor editor, Control target, Point position)
-        => Touch(editor, target).Position = position;
+    private IReadOnlyList<IEditFacet> _facets = [];
 
-    public void RecordSize(DesignEditor editor, Control target, Size size)
-        => Touch(editor, target).Size = size;
+    public void RecordPosition(SurfaceView view, Control target, Point position)
+        => Touch(view, target).Position = position;
 
-    public void RecordZIndex(DesignEditor editor, Control target, int zIndex)
-        => Touch(editor, target).ZIndex = zIndex;
+    public void RecordSize(SurfaceView view, Control target, Size size)
+        => Touch(view, target).Size = size;
 
-    public void RecordGroup(DesignEditor editor, Control target, string? id)
-        => Touch(editor, target).Group = id;
+    public void RecordZIndex(SurfaceView view, Control target, int zIndex)
+        => Touch(view, target).ZIndex = zIndex;
+
+    public void RecordFacet(SurfaceView view, IEditFacet facet, Control target, object? value)
+    {
+        var entry = Touch(view, target);
+        for (var i = 0; i < _facets.Count; i++)
+        {
+            if (ReferenceEquals(_facets[i], facet))
+            {
+                entry.Facets[i].After = value;
+                return;
+            }
+        }
+
+        throw new InvalidOperationException("Участник не зарегистрирован у поверхности.");
+    }
 
     /// <summary>
     /// Собирает итоговый список изменений, отбрасывая те, что вернулись к исходному.
@@ -74,24 +87,39 @@ internal sealed class DesignEditScope
                     new DesignOrderChange(target, entry.BeforeZIndex, entry.ZIndex));
             }
 
-            // Ordinal: идентификатор группы — не текст на языке пользователя.
-            if (!string.Equals(entry.Group, entry.BeforeGroup, StringComparison.Ordinal))
+            for (var i = 0; i < _facets.Count; i++)
             {
-                (changes ??= new List<DesignChange>()).Add(
-                    new DesignGroupChange(target, entry.BeforeGroup, entry.Group));
+                var (was, now) = entry.Facets[i];
+                if (!_facets[i].AreEqual(was, now))
+                {
+                    (changes ??= new List<DesignChange>()).Add(
+                        _facets[i].CreateChange(target, was, now));
+                }
             }
         }
 
         return changes ?? (IReadOnlyList<DesignChange>)Array.Empty<DesignChange>();
     }
 
-    private Entry Touch(DesignEditor editor, Control target)
+    private Entry Touch(SurfaceView view, Control target)
     {
         if (_entries.TryGetValue(target, out var existing))
             return existing;
 
-        var position = editor.GetDesignPosition(target);
-        var size = editor.GetDesignSize(target);
+        // Состав участников снимается на первом касании: он принадлежит поверхности
+        // и за время жеста не меняется.
+        if (_entries.Count == 0)
+            _facets = view.EditFacets;
+
+        var position = view.GetDesignPosition(target);
+        var size = view.GetDesignSize(target);
+
+        var facets = new (object? Before, object? After)[_facets.Count];
+        for (var i = 0; i < facets.Length; i++)
+        {
+            var value = _facets[i].Read(target);
+            facets[i] = (value, value);
+        }
 
         var entry = new Entry
         {
@@ -100,8 +128,7 @@ internal sealed class DesignEditScope
             Size = size,
             BeforeZIndex = target.ZIndex,
             ZIndex = target.ZIndex,
-            BeforeGroup = editor.GetGroupOf(target),
-            Group = editor.GetGroupOf(target)
+            Facets = facets
         };
 
         _entries[target] = entry;
