@@ -89,7 +89,9 @@
 
 ## Структура решения
 
-- `src/` — библиотека контролов
+- `src/Surface/` — `ArxisStudio.Surface`, ядро: холст, viewport, сетка, контейнер, выделение, жесты
+- `src/Surface.Editing/` — `ArxisStudio.Surface.Editing`, инструменты: ручки, привязка, направляющие, линейки
+- `src/Surface.UiDesigner/` — `ArxisStudio.Surface.UiDesigner`, дизайнер форм: `DesignEditor`
 - `samples/DesignEditor.Demo/` — демонстрационное Avalonia-приложение
 - `ArxisStudio.DesignEditor.sln` — solution
 
@@ -740,7 +742,7 @@ foreach (var change in edit.Changes)
 
 ### 1. Подключите библиотеку
 
-Добавьте `ProjectReference` или `PackageReference` на `ArxisStudio.DesignEditor`.
+Добавьте `ProjectReference` или `PackageReference` на `ArxisStudio.Surface.UiDesigner` — ядро и инструменты приедут с ним зависимостями.
 
 ### 2. Подключите темы контролов
 
@@ -750,17 +752,18 @@ foreach (var change in edit.Changes)
 <Application.Resources>
     <ResourceDictionary>
         <ResourceDictionary.MergedDictionaries>
-            <ResourceInclude Source="avares://ArxisStudio.DesignEditor/Themes/ArxisStudioDesignEditorTheme.axaml" />
+            <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/ArxisStudioDesignEditorTheme.axaml" />
         </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
 </Application.Resources>
 ```
 
-Структура тем библиотеки теперь разделена на слои:
+Тема разделена по сборкам, и точка входа собирает их снизу вверх:
 
-- `Themes/ArxisStudioDesignEditorTheme.axaml` — единая точка входа темы библиотеки
-- `Themes/Resources/DesignEditorResources.axaml` — lightweight styling resources
-- `Themes/Styles/*.axaml` — `ControlTheme` конкретных контролов
+- `ArxisStudio.Surface.UiDesigner/Themes/ArxisStudioDesignEditorTheme.axaml` — единая точка входа
+- `ArxisStudio.Surface/Themes/SurfaceTheme.axaml` — фон, рамка выделения, сетка
+- `ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml` — адорнеры выделения, направляющие, линейки
+- в каждой сборке `*Resources.axaml` — lightweight styling resources, и `ControlTheme` её контролов
 
 Это позволяет задавать цвета, толщины, размеры ручек и прочие **значения** через ресурсы, не копируя шаблоны контролов.
 

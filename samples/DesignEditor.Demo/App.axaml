@@ -17,7 +17,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://ArxisStudio.DesignEditor/Themes/ArxisStudioDesignEditorTheme.axaml" />
+                <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/ArxisStudioDesignEditorTheme.axaml" />
                 <ResourceInclude Source="avares://DesignEditor.Demo/Views/Screens/ScreenPalette.axaml" />
             </ResourceDictionary.MergedDictionaries>
 

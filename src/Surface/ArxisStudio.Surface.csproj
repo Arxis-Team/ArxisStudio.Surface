@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="../Library.props" />
+
+    <PropertyGroup>
+        <RootNamespace>ArxisStudio.Surface</RootNamespace>
+        <Description>Ядро семейства ArxisStudio.Surface для Avalonia UI: бесконечная поверхность с панорамированием и зумом, фоновая сетка с уровнями детализации, контейнеры, выделение и рамка, жесты, контракт изменений с готовым стеком отмены. Не знает, что лежит на холсте: форму, узел графа или фигуру.</Description>
+        <PackageTags>avalonia;canvas;infinite-canvas;editor;zoom;pan;selection;ui</PackageTags>
+    </PropertyGroup>
+
+</Project>

@@ -1,8 +1,8 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:surface="clr-namespace:ArxisStudio.Surface"
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface;assembly=ArxisStudio.Surface"
                     xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner"
-                    xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing">
+                    xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing;assembly=ArxisStudio.Surface.Editing">
 
     <surface:InverseScaleConverter x:Key="InverseScaleConverter" />
     <surface:ScaleDoubleConverter x:Key="ScaleDoubleConverter" />

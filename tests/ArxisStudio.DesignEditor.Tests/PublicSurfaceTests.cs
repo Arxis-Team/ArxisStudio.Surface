@@ -26,21 +26,27 @@ namespace ArxisStudio.Tests;
 /// </remarks>
 public class PublicSurfaceTests
 {
-    private const string BaselineResource = "ArxisStudio.Tests.PublicSurface.baseline.txt";
     private const string UpdateVariable = "UPDATE_PUBLIC_SURFACE";
 
-    [Fact]
-    public void Public_Surface_Matches_The_Baseline()
+    /// <summary>
+    /// Сборки семейства по именам: у каждой свой слепок и свой файл baseline.
+    /// </summary>
+    public static TheoryData<string> AssemblyNames { get; } = new(PublicSurface.Assemblies.Select(a => a.GetName().Name!));
+
+    [Theory]
+    [MemberData(nameof(AssemblyNames))]
+    public void Public_Surface_Matches_The_Baseline(string assemblyName)
     {
-        var actual = Normalize(PublicSurface.Build());
+        var assembly = PublicSurface.Assemblies.Single(a => a.GetName().Name == assemblyName);
+        var actual = Normalize(PublicSurface.Build(assembly));
 
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
         {
-            File.WriteAllText(BaselineSourcePath(), actual);
+            File.WriteAllText(BaselineSourcePath(assemblyName), actual);
             return;
         }
 
-        var expected = Normalize(ReadBaseline());
+        var expected = Normalize(ReadBaseline(assemblyName));
 
         if (string.Equals(expected, actual, StringComparison.Ordinal))
             return;
@@ -74,11 +80,14 @@ public class PublicSurfaceTests
         return string.Join("\n\n", report);
     }
 
-    private static string ReadBaseline()
+    private static string BaselineFileName(string assemblyName) => $"PublicSurface.{assemblyName}.baseline.txt";
+
+    private static string ReadBaseline(string assemblyName)
     {
-        using var stream = typeof(PublicSurfaceTests).Assembly.GetManifestResourceStream(BaselineResource)
+        var resource = "ArxisStudio.Tests." + BaselineFileName(assemblyName);
+        using var stream = typeof(PublicSurfaceTests).Assembly.GetManifestResourceStream(resource)
                            ?? throw new InvalidOperationException(
-                               $"Ресурс {BaselineResource} не найден. Ожидается EmbeddedResource в тестовом проекте.");
+                               $"Ресурс {resource} не найден. Ожидается EmbeddedResource в тестовом проекте.");
 
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
@@ -92,8 +101,8 @@ public class PublicSurfaceTests
     /// компиляция и прогон идут на одной машине, а режим обновления там и не нужен.
     /// Чтение при сравнении идёт из встроенного ресурса и от путей не зависит.
     /// </remarks>
-    private static string BaselineSourcePath([CallerFilePath] string? thisFile = null) =>
-        Path.Combine(Path.GetDirectoryName(thisFile)!, "PublicSurface.baseline.txt");
+    private static string BaselineSourcePath(string assemblyName, [CallerFilePath] string? thisFile = null) =>
+        Path.Combine(Path.GetDirectoryName(thisFile)!, BaselineFileName(assemblyName));
 
     private static string Normalize(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd('\n');
 

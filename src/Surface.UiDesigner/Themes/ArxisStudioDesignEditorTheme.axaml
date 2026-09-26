@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Единая точка входа темы дизайнера форм.
+        Подключайте этот словарь в приложении вместо ручного merge отдельных файлов:
+        он собирает темы ядра, инструментов и самого дизайнера в нужном порядке.
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceTheme.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerResources.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/DesignEditorItem.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/DesignEditor.axaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

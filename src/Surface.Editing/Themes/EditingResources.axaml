@@ -1,18 +1,13 @@
-﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Variant-aware palette библиотеки.
-        Здесь лежат lightweight styling resources, которые можно переопределять
-        без копирования ControlTheme конкретных контролов.
+        Ресурсы инструментов редактирования: рамки и ручки выделения, направляющие,
+        интервалы и линейки. Ключи сохранили прежние имена (DesignEditor.*): их
+        переопределяют приложения, и имя ключа — часть контракта темы.
     -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <!-- Базовая палитра редактора для светлой темы. -->
-            <SolidColorBrush x:Key="DesignEditor.BackgroundBrush" Color="#F5F7FA" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeStrokeBrush" Color="#0F6CBD" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeFillBrush" Color="#190F6CBD" />
-            <SolidColorBrush x:Key="DesignEditor.ReorderIndicatorBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="DesignEditor.SnapGuideBrush" Color="#D6006C" />
             <SolidColorBrush x:Key="DesignEditor.SnapGuide.CentreBrush" Color="#7A4DD6" />
             <SolidColorBrush x:Key="DesignEditor.SpacingBrush" Color="#E0561C" />
@@ -36,21 +31,9 @@
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleLockedBorderBrush" Color="#8A8F98" />
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePointerOverBackground" Color="#0F6CBD" />
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePressedBackground" Color="#0B5A9C" />
-
-            <SolidColorBrush x:Key="DesignEditorItem.BorderBrush" Color="#0F6CBD" />
-            <SolidColorBrush x:Key="DesignEditorItem.HighlightBrush" Color="#0F6CBD" Opacity="0.16" />
-
-            <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#F5F7FA" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#E2E6EC" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#C9D0DA" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
-            <!-- Базовая палитра редактора для темной темы. -->
-            <SolidColorBrush x:Key="DesignEditor.BackgroundBrush" Color="#1E1E1E" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeStrokeBrush" Color="#1E90FF" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeFillBrush" Color="#1A1E90FF" />
-            <SolidColorBrush x:Key="DesignEditor.ReorderIndicatorBrush" Color="#1E90FF" />
             <SolidColorBrush x:Key="DesignEditor.SnapGuideBrush" Color="#FF4FA3" />
             <SolidColorBrush x:Key="DesignEditor.SnapGuide.CentreBrush" Color="#A98BFF" />
             <SolidColorBrush x:Key="DesignEditor.SpacingBrush" Color="#FF9A5C" />
@@ -74,25 +57,10 @@
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleLockedBorderBrush" Color="#9CA3AF" />
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePointerOverBackground" Color="#0099FF" />
             <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePressedBackground" Color="#007ACC" />
-
-            <SolidColorBrush x:Key="DesignEditorItem.BorderBrush" Color="DodgerBlue" />
-            <SolidColorBrush x:Key="DesignEditorItem.HighlightBrush" Color="DodgerBlue" Opacity="0.2" />
-
-            <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#141417" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#26292E" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#3E4451" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
-    <!-- Инвариантные геометрические ресурсы, не зависящие от ThemeVariant. -->
-    <x:Double x:Key="DesignEditor.Selection.StrokeThickness">1</x:Double>
     <x:Double x:Key="DesignEditor.SelectionAdorner.HandleSize">8</x:Double>
-
-    <!-- Параметры сетки. CellSize задан в мировых единицах, LineThickness — в пикселях устройства. -->
-    <x:Double x:Key="DesignEditor.Grid.CellSize">20</x:Double>
-    <x:Int32 x:Key="DesignEditor.Grid.MajorInterval">5</x:Int32>
-    <x:Double x:Key="DesignEditor.Grid.LineThickness">1</x:Double>
-    <x:Double x:Key="DesignEditor.Grid.MinCellSize">6</x:Double>
 
     <!-- Направляющие. Толщина задана в пикселях устройства, как и у сетки. -->
     <x:Double x:Key="DesignEditor.SnapGuide.Thickness">1</x:Double>
@@ -132,16 +100,5 @@
 
     <Cursor x:Key="DesignEditor.Ruler.CursorHorizontal">SizeNorthSouth</Cursor>
     <Cursor x:Key="DesignEditor.Ruler.CursorVertical">SizeWestEast</Cursor>
-
-    <Thickness x:Key="DesignEditorItem.BorderThickness">0</Thickness>
-
-    <!--
-        Непрозрачность рамки контейнера в покое. Ноль — рамка видна только при
-        наведении, как и было. Больше нуля — контейнер очерчен постоянно, и это
-        не стоит ни пикселя раскладки: рамка оверлейная, она рисуется поверх края
-        содержимого, а не оборачивает его.
-    -->
-    <x:Double x:Key="DesignEditorItem.OutlineOpacity">0</x:Double>
-    <CornerRadius x:Key="DesignEditorItem.CornerRadius">0</CornerRadius>
 
 </ResourceDictionary>

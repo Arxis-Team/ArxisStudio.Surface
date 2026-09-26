@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Input;
-using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Surface;
 

@@ -21,7 +21,7 @@ dotnet build ArxisStudio.DesignEditor.sln
 
 - закрыть вкладку превью в Rider;
 - `taskkill //PID <pid> //F` — pid берётся из текста ошибки;
-- проверить код в обход: `dotnet build src/ArxisStudio.DesignEditor.csproj`.
+- проверить код в обход: `dotnet build src/Surface.UiDesigner/ArxisStudio.Surface.UiDesigner.csproj`.
 
 ### 2. Запустить
 

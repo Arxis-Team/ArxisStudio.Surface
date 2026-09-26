@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="../Library.props" />
+
+    <PropertyGroup>
+        <RootNamespace>ArxisStudio.Surface.Editing</RootNamespace>
+        <Description>Инструменты редактирования для ArxisStudio.Surface: рамки и ручки изменения размера, привязка к сетке, направляющие выравнивания и равные интервалы, пользовательские направляющие и линейки.</Description>
+        <PackageTags>avalonia;canvas;editor;snapping;guides;rulers;resize;ui</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../Surface/ArxisStudio.Surface.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Тема инструментов редактирования: рамки и ручки выделения, направляющие, линейки.
+        Ядро она не подключает: редактор собирает темы нужных ему слоёв сам, а дизайнер
+        форм подключает их вместе в своей теме.
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingResources.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/DesignRuler.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/SelectionAdorner.axaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

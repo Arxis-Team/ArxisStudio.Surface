@@ -29,7 +29,11 @@ public class LayerDependencyTests
         Generated
     }
 
-    private static Assembly Library => typeof(ArxisStudio.Surface.UiDesigner.DesignEditor).Assembly;
+    /// <summary>
+    /// Три сборки семейства. Ссылка между ними сборкой уже запрещена только вверх по
+    /// ссылкам проектов, а тест держит слой и внутри сборки — по пространству имён.
+    /// </summary>
+    private static IReadOnlyList<Assembly> Libraries => PublicSurface.Assemblies;
 
     [Fact]
     public void Layers_Reference_Only_Downwards()
@@ -45,7 +49,7 @@ public class LayerDependencyTests
 
             foreach (var reference in IlReferenceScanner.References(type, unresolved))
             {
-                if (reference.Target.Assembly != Library)
+                if (!Libraries.Contains(reference.Target.Assembly))
                     continue;
 
                 var to = LayerOf(TopLevel(reference.Target));
@@ -76,6 +80,29 @@ public class LayerDependencyTests
     }
 
     [Fact]
+    public void Every_Type_Lives_In_The_Assembly_Of_Its_Layer()
+    {
+        // Слой задаёт пространство имён, пакет — сборка. Разойдись они, и тип ядра,
+        // оставленный в сборке дизайнера форм, был бы недоступен Nodes, хотя по
+        // имени принадлежит ядру.
+        var misplaced = TopLevelTypes()
+            .Where(type => LayerOf(type) is not Layer.Outside)
+            .Where(type => type.Assembly.GetName().Name != Root + LayerSuffix(LayerOf(type)))
+            .Select(type => $"{type.FullName} лежит в {type.Assembly.GetName().Name}")
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(misplaced.Count == 0, "Тип лежит не в сборке своего слоя:\n" + string.Join("\n", misplaced));
+    }
+
+    private static string LayerSuffix(Layer layer) => layer switch
+    {
+        Layer.Editing => ".Editing",
+        Layer.UiDesigner => ".UiDesigner",
+        _ => string.Empty
+    };
+
+    [Fact]
     public void Scanner_Sees_References_Made_Only_In_A_Method_Body()
     {
         // Самопроверка сканера. Ссылка на Target есть только внутри тела метода:
@@ -96,7 +123,7 @@ public class LayerDependencyTests
     {
         // Три пространства открыты под одним адресом разметки, и одинаковое
         // короткое имя в двух из них сделало бы разметку неоднозначной.
-        var clashes = Library.GetExportedTypes()
+        var clashes = Libraries.SelectMany(assembly => assembly.GetExportedTypes())
             .Where(type => type.Namespace is { } ns && (ns == Root || ns.StartsWith(Root + ".", StringComparison.Ordinal)))
             .GroupBy(type => type.Name, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
@@ -107,7 +134,8 @@ public class LayerDependencyTests
     }
 
     private static IEnumerable<Type> TopLevelTypes() =>
-        Library.GetTypes().Where(type => type.DeclaringType is null && LayerOf(type) != Layer.Generated);
+        Libraries.SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type.DeclaringType is null && LayerOf(type) != Layer.Generated);
 
     private static Type TopLevel(Type type)
     {

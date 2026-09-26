@@ -1,30 +1,34 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
+    <!--
+        Общее у трёх библиотек семейства ArxisStudio.Surface (ADR 0003): ядро, инструменты
+        редактирования и дизайнер форм. Каждая — отдельная сборка и отдельный пакет,
+        а направление ссылок между ними держат ProjectReference: сборка слоя ниже не
+        ссылается на слой выше, поэтому ссылку вверх не даст написать компилятор.
+    -->
     <PropertyGroup>
         <!-- Avalonia 12 больше не поставляет netstandard2.0-сборки: минимальный TFM — net8.0. -->
         <TargetFramework>net8.0</TargetFramework>
-        <RootNamespace>ArxisStudio</RootNamespace>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <!--
-        Единственный упаковываемый проект решения: тесты и демо отключены
-        в Directory.Build.props.
+        Тесты и демо непакуемы — это задано в Directory.Build.props; библиотеки
+        включают упаковку здесь.
 
-        Версия 0.x осознанно. Публичная поверхность закреплена слепком, но всё ещё
-        меняется — этап ядра выделения её уже правил, — а 1.0 обещает обратную
+        Версия 0.x осознанно. Публичная поверхность закреплена слепками, но всё ещё
+        меняется — разделение на слои её уже правило, — а 1.0 обещает обратную
         совместимость, которую сейчас обещать нечем.
+
+        Адреса репозитория прежние: переименование на GitHub — отдельный шаг.
     -->
     <PropertyGroup>
         <IsPackable>true</IsPackable>
-        <PackageId>ArxisStudio.DesignEditor</PackageId>
         <Version>0.1.0</Version>
         <Authors>ArxisStudio</Authors>
         <Company>ArxisStudio</Company>
         <Copyright>Copyright (c) 2026 ArxisStudio</Copyright>
-        <Product>ArxisStudio.DesignEditor</Product>
-        <Description>Библиотека контролов Avalonia UI для построения визуальных редакторов, form designer'ов и layout editor'ов: бесконечная поверхность с панорамированием и зумом, фоновая сетка, двухуровневое выделение, перетаскивание и изменение размеров, привязка к сетке и направляющие выравнивания.</Description>
-        <PackageTags>avalonia;designer;form-designer;gui-builder;layout-editor;canvas;diagram;ui</PackageTags>
+        <Product>ArxisStudio.Surface</Product>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/Arxis-Team/ArxisStudio.DesignEditor</PackageProjectUrl>
@@ -53,7 +57,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="../README.md" Pack="true" PackagePath="/"/>
+        <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="/"/>
     </ItemGroup>
 
 </Project>

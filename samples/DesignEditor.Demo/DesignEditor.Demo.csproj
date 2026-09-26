@@ -20,6 +20,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\ArxisStudio.DesignEditor.csproj" />
+      <ProjectReference Include="..\..\src\Surface.UiDesigner\ArxisStudio.Surface.UiDesigner.csproj" />
     </ItemGroup>
 </Project>

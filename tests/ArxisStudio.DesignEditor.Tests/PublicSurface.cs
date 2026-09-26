@@ -23,13 +23,23 @@ namespace ArxisStudio.Tests;
 internal static class PublicSurface
 {
     /// <summary>
-    /// Собирает слепок в детерминированном порядке.
+    /// Три сборки семейства, у каждой свой слепок (ADR 0003).
     /// </summary>
-    public static string Build()
+    public static IReadOnlyList<Assembly> Assemblies { get; } =
+    [
+        typeof(ArxisStudio.Surface.SurfaceView).Assembly,
+        typeof(ArxisStudio.Surface.Editing.SurfaceGuides).Assembly,
+        typeof(DesignEditor).Assembly
+    ];
+
+    /// <summary>
+    /// Собирает слепок сборки в детерминированном порядке.
+    /// </summary>
+    public static string Build(Assembly assembly)
     {
         var builder = new StringBuilder();
 
-        foreach (var type in ExportedTypes())
+        foreach (var type in ExportedTypes(assembly))
         {
             builder.Append(TypeHeader(type)).Append('\n');
 
@@ -41,10 +51,15 @@ internal static class PublicSurface
     }
 
     /// <summary>
-    /// Экспортируемые типы без сгенерированных компилятором AXAML.
+    /// Экспортируемые типы всех трёх сборок — для стражей, которым всё равно, где тип лежит.
     /// </summary>
-    public static IEnumerable<Type> ExportedTypes() =>
-        typeof(DesignEditor).Assembly
+    public static IEnumerable<Type> ExportedTypes() => Assemblies.SelectMany(ExportedTypes);
+
+    /// <summary>
+    /// Экспортируемые типы сборки без сгенерированных компилятором AXAML.
+    /// </summary>
+    public static IEnumerable<Type> ExportedTypes(Assembly assembly) =>
+        assembly
             .GetExportedTypes()
             .Where(type => !type.FullName!.StartsWith("CompiledAvaloniaXaml", StringComparison.Ordinal))
             .OrderBy(type => type.FullName, StringComparer.Ordinal);

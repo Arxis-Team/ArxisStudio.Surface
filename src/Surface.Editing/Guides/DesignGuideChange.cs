@@ -1,5 +1,4 @@
 using System;
-using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Surface.Editing;
 
@@ -28,7 +27,7 @@ public enum DesignGuideChangeKind
 /// где была.
 /// <para>
 /// Обход подписчиков останавливается на первом выполнившем запрос. Причина та же, что
-/// у <see cref="DesignEditorReorderRequestedEventArgs"/>: запрос описывает набор, снятый
+/// у <c>DesignEditorReorderRequestedEventArgs</c>: запрос описывает набор, снятый
 /// до правки, и следующему обработчику он говорил бы о состоянии, которого уже нет.
 /// </para>
 /// </remarks>

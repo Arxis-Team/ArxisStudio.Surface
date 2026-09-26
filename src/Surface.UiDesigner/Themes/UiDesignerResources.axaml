@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Ресурсы дизайнера форм: контейнер формы и индикатор точки вставки при перестановке.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="DesignEditor.ReorderIndicatorBrush" Color="#0F6CBD" />
+
+            <SolidColorBrush x:Key="DesignEditorItem.BorderBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="DesignEditorItem.HighlightBrush" Color="#0F6CBD" Opacity="0.16" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="DesignEditor.ReorderIndicatorBrush" Color="#1E90FF" />
+
+            <SolidColorBrush x:Key="DesignEditorItem.BorderBrush" Color="DodgerBlue" />
+            <SolidColorBrush x:Key="DesignEditorItem.HighlightBrush" Color="DodgerBlue" Opacity="0.2" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <Thickness x:Key="DesignEditorItem.BorderThickness">0</Thickness>
+
+    <!--
+        Непрозрачность рамки контейнера в покое. Ноль — рамка видна только при
+        наведении, как и было. Больше нуля — контейнер очерчен постоянно, и это
+        не стоит ни пикселя раскладки: рамка оверлейная, она рисуется поверх края
+        содержимого, а не оборачивает его.
+    -->
+    <x:Double x:Key="DesignEditorItem.OutlineOpacity">0</x:Double>
+    <CornerRadius x:Key="DesignEditorItem.CornerRadius">0</CornerRadius>
+
+</ResourceDictionary>

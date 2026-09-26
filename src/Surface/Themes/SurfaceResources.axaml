@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Ресурсы ядра: фон поверхности, рамка выделения и сетка.
+        Здесь лежат lightweight styling resources, которые можно переопределять
+        без копирования ControlTheme конкретных контролов. Ключи сохранили прежние
+        имена (DesignEditor.*): их переопределяют приложения, и имя ключа — часть
+        контракта темы, а не указание на слой.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="DesignEditor.BackgroundBrush" Color="#F5F7FA" />
+            <SolidColorBrush x:Key="DesignEditor.MarqueeStrokeBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="DesignEditor.MarqueeFillBrush" Color="#190F6CBD" />
+
+            <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#F5F7FA" />
+            <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#E2E6EC" />
+            <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#C9D0DA" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="DesignEditor.BackgroundBrush" Color="#1E1E1E" />
+            <SolidColorBrush x:Key="DesignEditor.MarqueeStrokeBrush" Color="#1E90FF" />
+            <SolidColorBrush x:Key="DesignEditor.MarqueeFillBrush" Color="#1A1E90FF" />
+
+            <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#141417" />
+            <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#26292E" />
+            <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#3E4451" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Толщина рамки выделения: одна для рамки жеста и для рамок выбранного. -->
+    <x:Double x:Key="DesignEditor.Selection.StrokeThickness">1</x:Double>
+
+    <!-- Параметры сетки. CellSize задан в мировых единицах, LineThickness — в пикселях устройства. -->
+    <x:Double x:Key="DesignEditor.Grid.CellSize">20</x:Double>
+    <x:Int32 x:Key="DesignEditor.Grid.MajorInterval">5</x:Int32>
+    <x:Double x:Key="DesignEditor.Grid.LineThickness">1</x:Double>
+    <x:Double x:Key="DesignEditor.Grid.MinCellSize">6</x:Double>
+
+</ResourceDictionary>

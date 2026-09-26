@@ -25,12 +25,14 @@
             Baseline публичной поверхности читается из встроенного ресурса, а не с диска:
             прогон не должен зависеть от того, где лежат исходники.
         -->
-        <EmbeddedResource Include="PublicSurface.baseline.txt">
-            <LogicalName>ArxisStudio.Tests.PublicSurface.baseline.txt</LogicalName>
+        <EmbeddedResource Include="PublicSurface.*.baseline.txt">
+            <LogicalName>ArxisStudio.Tests.%(Filename)%(Extension)</LogicalName>
         </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\ArxisStudio.DesignEditor.csproj"/>
+        <ProjectReference Include="..\..\src\Surface\ArxisStudio.Surface.csproj"/>
+        <ProjectReference Include="..\..\src\Surface.Editing\ArxisStudio.Surface.Editing.csproj"/>
+        <ProjectReference Include="..\..\src\Surface.UiDesigner\ArxisStudio.Surface.UiDesigner.csproj"/>
     </ItemGroup>
 </Project>

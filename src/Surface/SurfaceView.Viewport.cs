@@ -4,7 +4,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Surface;
 

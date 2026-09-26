@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Utilities;
-using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Surface;
 
@@ -189,7 +188,7 @@ public partial class SurfaceView
 
     /// <summary>
     /// Получает или задает модификаторы клавиатуры, которые принудительно переключают selection,
-    /// drag и resize на уровень <see cref="DesignEditorItem"/>.
+    /// drag и resize на уровень <see cref="SurfaceItem"/>.
     /// </summary>
     /// <remarks>
     /// Совместимое сокращенное свойство над <see cref="InputGestures"/>.
