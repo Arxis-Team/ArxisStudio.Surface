@@ -151,15 +151,15 @@ public partial class NodeEditor
 
         foreach (var link in _links)
         {
-            if (!link.IsResolved)
+            // Отсев по рамке, посчитанной при пересчёте концов: она уже включает всю толщину
+            // линии, и проход по связям не читает ни одного свойства Avalonia. Толщина нужна
+            // только тем немногим, что прошли отсев.
+            if (!link.IsResolved || !link.WorldBounds.Inflate(tolerance).Contains(world))
                 continue;
 
+            LinkDistanceChecks++;
             var reach = tolerance + (link.StrokeThickness / 2);
-            var geometry = link.Geometry;
-            if (!geometry.Bounds.Inflate(reach).Contains(world))
-                continue;
-
-            var distance = geometry.DistanceTo(world);
+            var distance = link.Geometry.DistanceTo(world);
             if (distance <= reach && distance < bestDistance)
             {
                 best = link;
@@ -169,6 +169,11 @@ public partial class NodeEditor
 
         return best;
     }
+
+    /// <summary>
+    /// Сколько раз попадание мерило точное расстояние до кривой — для стенда стоимости.
+    /// </summary>
+    internal int LinkDistanceChecks { get; private set; }
 
     internal void OnLinkAttached(Link link) => _links.Add(link);
 

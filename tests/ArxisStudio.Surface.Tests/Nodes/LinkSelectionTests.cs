@@ -94,6 +94,20 @@ public class LinkSelectionTests
     }
 
     [AvaloniaFact]
+    public void The_Tolerance_Reaches_Past_The_Ends_Of_The_Curve()
+    {
+        // У концов кривая выходит на край своей рамки: отсев по рамке обязан пропустить точку,
+        // до которой от кривой не дальше допуска, и за краем. Спрашивается сам поиск — щелчок
+        // у конца достался бы узлу, к порту которого связь пришла.
+        var stand = Create();
+        var link = stand.Nodes.LinkOf(stand.First);
+
+        Assert.Same(link, stand.Editor.HitTestLink(link.SourceAnchor - new Vector(5, 0)));
+        Assert.Same(link, stand.Editor.HitTestLink(link.TargetAnchor + new Vector(5, 0)));
+        Assert.Null(stand.Editor.HitTestLink(link.TargetAnchor + new Vector(12, 0)));
+    }
+
+    [AvaloniaFact]
     public void The_Tolerance_Is_In_Screen_Pixels()
     {
         // На отдалении 0,5 пять пикселей экрана — десять мировых единиц: допуск, не поделённый

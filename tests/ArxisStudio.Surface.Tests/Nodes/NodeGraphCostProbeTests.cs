@@ -15,12 +15,16 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Стенд, по числам которого решается, нужны ли пространственный индекс и виртуализация (ADR 0004).
-/// Графы по 200 и 2000 узлов — цепочка, где выход каждого узла ведёт во вход следующего, — и
-/// сравниваются они друг с другом, как в <see cref="MarqueeCostProbeTests"/>.
+/// Графы по 200 и 2000 узлов рядами по <see cref="Columns"/>, в каждом ряду — цепочка, где выход
+/// узла ведёт во вход следующего.
 /// <para>
-/// Детерминированное утверждается точно: пересчёт связей за кадр перетаскивания — счётчиком.
-/// Время — только отношениями: абсолютные миллисекунды зависят от машины, и потолок по ним либо
-/// ничего не ловит, либо мигает. Числа при этом печатаются — прогон здесь и есть их источник.
+/// Утверждается то, что не зависит от машины и от JIT: сколько связей пересчитывается за кадр и
+/// скольким поиск меряет точное расстояние — счётчиками. Время утверждается только там, где оно
+/// в миллисекундах, и только отношением. Поиски стоят микросекунды, и их отношение здесь не
+/// держится: первый замер в процессе идёт по неоптимизированному коду даже после прогрева, и
+/// отношение гуляло от 0,4 до 10. Их время печатается — прогон и есть источник чисел, — а
+/// тесты идут в отладочной сборке, где наш код не оптимизирован вовсе, так что для решений числа
+/// берутся из прогона с <c>-c Release</c>.
 /// </para>
 /// </remarks>
 public class NodeGraphCostProbeTests
@@ -41,6 +45,12 @@ public class NodeGraphCostProbeTests
     private const int Runs = 5;
 
     /// <summary>
+    /// Прогрев по времени, а не по числу вызовов: оптимизированный код метода среда ставит, когда
+    /// JIT какое-то время не занят новыми методами, и короткий прогрев числом вызовов кончался раньше.
+    /// </summary>
+    private static readonly TimeSpan Warmup = TimeSpan.FromMilliseconds(300);
+
+    /// <summary>
     /// Узел, за который тянут: третий ряд, третий столбец — в окне, с соседями по цепочке с обеих
     /// сторон и вдали от краёв.
     /// </summary>
@@ -51,40 +61,70 @@ public class NodeGraphCostProbeTests
     /// </remarks>
     private const int Dragged = 2 * Columns + 2;
 
+    /// <summary>
+    /// Пустой холст в окне: просвет между вторым и третьим рядами, куда не заходит ни одна связь.
+    /// </summary>
+    private static readonly Point Gap = new(600, 205);
+
     private static NodeStand CreateGraph(int nodes)
     {
         var locations = Enumerable.Range(0, nodes)
             .Select(i => new Point(i % Columns * 160, i / Columns * 110))
             .ToList();
 
+        // Цепочка не переходит с ряда на ряд: такая связь накрывает рамкой весь граф по ширине
+        // (A_Long_Backward_Link_Is_Framed_Across_The_Whole_Width), и замеры мерили бы её.
         var stand = NodeStand.Create(locations, itemTemplate: NodeStand.PortedNode);
         for (var i = 0; i + 1 < nodes; i++)
-            stand.Links.Add(new LinkData(NodeStand.Out(i), NodeStand.In(i + 1)));
+        {
+            if ((i + 1) % Columns != 0)
+                stand.Links.Add(new LinkData(NodeStand.Out(i), NodeStand.In(i + 1)));
+        }
 
         stand.RunLayout();
         return stand;
     }
 
     /// <summary>
-    /// Медиана времени одного вызова в микросекундах; первый проход прогревает.
+    /// Медиана времени одного вызова в микросекундах, после прогрева.
     /// </summary>
     private static double MicrosecondsPerCall(Action call, int calls)
     {
+        var warmup = Stopwatch.StartNew();
+        do
+        {
+            for (var i = 0; i < calls; i++)
+                call();
+        }
+        while (warmup.Elapsed < Warmup);
+
         var samples = new List<double>();
-        for (var run = 0; run <= Runs; run++)
+        for (var run = 0; run < Runs; run++)
         {
             var watch = Stopwatch.StartNew();
             for (var i = 0; i < calls; i++)
                 call();
 
             watch.Stop();
-            if (run > 0)
-                samples.Add(watch.Elapsed.TotalMilliseconds * 1000 / calls);
+            samples.Add(watch.Elapsed.TotalMilliseconds * 1000 / calls);
         }
 
         samples.Sort();
         return samples[samples.Count / 2];
     }
+
+    /// <summary>
+    /// Скольким связям поиск в этой точке мерил точное расстояние.
+    /// </summary>
+    private static int DistanceChecks(NodeStand stand, Point world)
+    {
+        var before = stand.Editor.LinkDistanceChecks;
+        stand.Editor.HitTestLink(world);
+        return stand.Editor.LinkDistanceChecks - before;
+    }
+
+    private static Link LinkFrom(NodeStand stand, int node) =>
+        stand.LinkOf(stand.Links.OfType<LinkData>().Single(l => Equals(l.From, NodeStand.Out(node))));
 
     /// <summary>
     /// Берёт узел за свободное от портов место и уводит за порог перетаскивания.
@@ -136,73 +176,82 @@ public class NodeGraphCostProbeTests
     }
 
     [AvaloniaFact]
-    public void Hit_Testing_A_Link_Is_A_Linear_Search()
+    public void Only_Links_Framing_The_Point_Pay_For_The_Distance()
     {
-        var times = new Dictionary<int, double>();
+        // Поиск проходит все связи, но у каждой лишь сверяет рамку, посчитанную при пересчёте
+        // концов; точное расстояние до кривой меряется только у тех, чья рамка накрыла точку, —
+        // и их столько же при любом размере графа. Времена печатаются: проход мимо всех связей,
+        // попадание и поиск порта под свободным концом.
         foreach (var size in new[] { Small, Large })
         {
             var stand = CreateGraph(size);
-            var link = stand.LinkOf(stand.Links[Dragged]);
+            var link = LinkFrom(stand, Dragged);
             var on = link.Geometry.At(0.5);
+
             Assert.Same(link, stand.Editor.HitTestLink(on));
+            Assert.Equal(1, DistanceChecks(stand, on));
+            Assert.Equal(0, DistanceChecks(stand, Gap));
 
-            times[size] = MicrosecondsPerCall(() => stand.Editor.HitTestLink(on), calls: 2000);
-            _output.WriteLine($"попадание по связи, {size - 1} связей: {times[size]:F2} мкс");
-        }
+            var scan = MicrosecondsPerCall(() => stand.Editor.HitTestLink(Gap), calls: 2000);
+            var hit = MicrosecondsPerCall(() => stand.Editor.HitTestLink(on), calls: 2000);
 
-        var ratio = times[Large] / times[Small];
-        _output.WriteLine($"отношение: {ratio:F1}");
-        Assert.True(ratio > 4, $"{times[Large]:F2} против {times[Small]:F2}");
-    }
-
-    [AvaloniaFact]
-    public void Finding_The_Port_Under_A_Loose_End_Is_A_Linear_Search()
-    {
-        var times = new Dictionary<int, double>();
-        foreach (var size in new[] { Small, Large })
-        {
-            var stand = CreateGraph(size);
             var from = stand.PinCentreInWorld(0, PortDirection.Output);
             stand.Window.MouseMove(from);
             stand.Window.MouseDown(from, MouseButton.Left);
             var state = Assert.IsType<PendingLinkState>(stand.Editor.CurrentState);
             var near = stand.PinCentreInWorld(Dragged, PortDirection.Input);
             Assert.NotNull(state.FindCandidate(near, out _));
-
-            times[size] = MicrosecondsPerCall(() => state.FindCandidate(near, out _), calls: 2000);
-            _output.WriteLine($"порт под свободным концом, {2 * size} портов: {times[size]:F2} мкс");
-
+            var port = MicrosecondsPerCall(() => state.FindCandidate(near, out _), calls: 2000);
             stand.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
             stand.Window.MouseUp(from, MouseButton.Left);
-        }
 
-        var ratio = times[Large] / times[Small];
-        _output.WriteLine($"отношение: {ratio:F1}");
-        Assert.True(ratio > 4, $"{times[Large]:F2} против {times[Small]:F2}");
+            _output.WriteLine($"{stand.Links.Count} связей: проход мимо всех {scan:F2} мкс, попадание {hit:F2} мкс; "
+                + $"{2 * size} портов: поиск под свободным концом {port:F2} мкс");
+        }
+    }
+
+    [AvaloniaFact]
+    public void A_Long_Backward_Link_Is_Framed_Across_The_Whole_Width()
+    {
+        // Предел отсева по рамке. Связь из конца ряда в начало следующего идёт назад, её плечо —
+        // половина пролёта, и рамка по опорным точкам накрывает граф на всю ширину и шире: в любой
+        // точке полосы между рядами она платит точное расстояние. Индекс по рамкам таких связей не
+        // отсеет — это стоит знать, когда дойдёт до индекса.
+        var stand = CreateGraph(Small);
+        Assert.Equal(0, DistanceChecks(stand, Gap));
+
+        var wrap = new LinkData(NodeStand.Out(2 * Columns - 1), NodeStand.In(2 * Columns));
+        stand.Links.Add(wrap);
+        stand.RunLayout();
+
+        var bounds = stand.LinkOf(wrap).WorldBounds;
+        _output.WriteLine($"рамка обратной связи через ряд: {bounds}");
+        Assert.True(bounds.Width > Columns * 160, $"рамка {bounds.Width:F0} против графа в {Columns * 160}");
+        Assert.Equal(1, DistanceChecks(stand, Gap));
+        Assert.Equal(1, DistanceChecks(stand, new Point(20, 205)));
     }
 
     [AvaloniaFact]
     public void A_Drag_Frame_Grows_With_The_Graph_Though_Its_Links_Do_Not()
     {
         // Связи за кадр пересчитываются только у узла, и всё же кадр растёт вместе с графом:
-        // платят раскладка, проходящая по всем детям обеих панелей, и отрисовка. Утверждается
-        // только рост — кадр малого графа шумит в разы, — а разбивка печатается: по ней решается,
-        // чем лечить, индексом или виртуализацией.
+        // платят раскладка, проходящая по всем детям обеих панелей, и отрисовка. Кадр — это уже
+        // миллисекунды, и рост здесь утверждается; но кадр малого графа шумит в разы, поэтому
+        // порог мягкий, а разбивка печатается: по ней решается, чем лечить.
         var drag = new Dictionary<int, double>();
         foreach (var size in new[] { Small, Large })
         {
             var stand = CreateGraph(size);
-            var empty = new Point(600, 205);
 
             // Наведение: указатель ходит по пустому холсту между рядами.
             var flip = false;
             var hover = MicrosecondsPerCall(() =>
             {
                 flip = !flip;
-                stand.Window.MouseMove(empty + (flip ? new Vector(10, 0) : default));
+                stand.Window.MouseMove(Gap + (flip ? new Vector(10, 0) : default));
             }, calls: 200) / 1000;
-            var linkHit = MicrosecondsPerCall(() => stand.Editor.HitTestLink(empty), calls: 200) / 1000;
-            var treeHit = MicrosecondsPerCall(() => stand.Window.InputHitTest(empty), calls: 200) / 1000;
+            var linkHit = MicrosecondsPerCall(() => stand.Editor.HitTestLink(Gap), calls: 200) / 1000;
+            var treeHit = MicrosecondsPerCall(() => stand.Window.InputHitTest(Gap), calls: 200) / 1000;
 
             var node = stand.Node(Dragged);
             var home = node.Location;
