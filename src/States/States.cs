@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using ArxisStudio.Placement;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.States;
 
@@ -171,7 +172,7 @@ internal class ItemIdleState : DesignEditorItemState
 
             // Пользовательский запрет сильнее любой раскладки — в том числе
             // сильнее перестановки.
-            if (editor.GetMovePolicy(moveTarget) == ArxisStudio.Attached.MovePolicy.None)
+            if (editor.GetMovePolicy(moveTarget) == ArxisStudio.Surface.MovePolicy.None)
             {
                 RefuseDrag(editor, beyondThreshold);
                 return;

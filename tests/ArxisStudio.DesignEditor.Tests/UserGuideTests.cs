@@ -5,10 +5,10 @@ using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
-using ArxisStudio.Attached;
 using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface.Editing;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

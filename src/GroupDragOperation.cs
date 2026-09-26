@@ -67,7 +67,7 @@ internal sealed class GroupDragOperation
             {
                 if (ReferenceEquals(container, sourceContainer) && ReferenceEquals(target, sourceTarget))
                     continue;
-                if (editor.GetEffectiveMovePolicy(target) == ArxisStudio.Attached.MovePolicy.None)
+                if (editor.GetEffectiveMovePolicy(target) == ArxisStudio.Surface.MovePolicy.None)
                     continue;
 
                 targets.Add(new GroupDragTarget(target, editor.GetDesignPosition(target)));

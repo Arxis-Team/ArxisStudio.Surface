@@ -35,19 +35,9 @@ public class LayerDependencyTests
     /// </summary>
     private static readonly string[] Legacy =
     [
-        "ArxisStudio.Attached.DesignGroup",
-        "ArxisStudio.Attached.DesignInteraction",
-        "ArxisStudio.Attached.Layout",
-        "ArxisStudio.Attached.MovePolicy",
-        "ArxisStudio.Attached.ResizePolicy",
         "ArxisStudio.ContainerEmptyAreaDragGesture",
         "ArxisStudio.ContextMenuContextPresenter",
-        "ArxisStudio.Controls.AbsolutePanel",
         "ArxisStudio.Controls.DesignRuler",
-        "ArxisStudio.Controls.DesignSurface",
-        "ArxisStudio.Controls.ResizeDeltaEventArgs",
-        "ArxisStudio.Controls.ResizeDirection",
-        "ArxisStudio.Controls.ResizeStartedEventArgs",
         "ArxisStudio.Controls.SelectionAdorner",
         "ArxisStudio.Controls.SelectionAdornerLayer",
         "ArxisStudio.Controls.SelectionAdornerResizeCompletedEventArgs",
@@ -57,7 +47,6 @@ public class LayerDependencyTests
         "ArxisStudio.Controls.SelectionAdornerRole",
         "ArxisStudio.Controls.SnapGuideLayer",
         "ArxisStudio.DesignChange",
-        "ArxisStudio.DesignContentMode",
         "ArxisStudio.DesignEditCompletedEventArgs",
         "ArxisStudio.DesignEditKind",
         "ArxisStudio.DesignEditScope",

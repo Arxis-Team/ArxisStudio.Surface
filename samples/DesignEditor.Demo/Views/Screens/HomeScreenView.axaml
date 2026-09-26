@@ -1,7 +1,6 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:ArxisStudio.Controls;assembly=ArxisStudio.DesignEditor"
-             xmlns:attached="clr-namespace:ArxisStudio.Attached;assembly=ArxisStudio.DesignEditor"
+             xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
              x:Class="DesignEditor.Demo.Views.Screens.HomeScreenView">
 
     <!-- Главный экран. Плитки лежат в AbsolutePanel, поэтому их можно
@@ -36,9 +35,9 @@
                 </Border>
             </StackPanel>
 
-            <controls:AbsolutePanel Grid.Row="2" Margin="20,16,20,20">
+            <surface:AbsolutePanel Grid.Row="2" Margin="20,16,20,20">
 
-                <Border attached:Layout.X="0" attached:Layout.Y="0" Width="200" Height="120"
+                <Border surface:Layout.X="0" surface:Layout.Y="0" Width="200" Height="120"
                         Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
                     <Grid RowDefinitions="Auto,*,Auto">
                         <TextBlock Text="Освещение" FontSize="12" Foreground="#667085" />
@@ -52,7 +51,7 @@
                     </Grid>
                 </Border>
 
-                <Border attached:Layout.X="216" attached:Layout.Y="0" Width="200" Height="120"
+                <Border surface:Layout.X="216" surface:Layout.Y="0" Width="200" Height="120"
                         Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
                     <Grid RowDefinitions="Auto,*,Auto">
                         <TextBlock Text="Климат" FontSize="12" Foreground="#667085" />
@@ -65,7 +64,7 @@
                     </Grid>
                 </Border>
 
-                <Border attached:Layout.X="432" attached:Layout.Y="0" Width="200" Height="120"
+                <Border surface:Layout.X="432" surface:Layout.Y="0" Width="200" Height="120"
                         Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
                     <Grid RowDefinitions="Auto,*,Auto">
                         <TextBlock Text="Безопасность" FontSize="12" Foreground="#667085" />
@@ -75,7 +74,7 @@
                     </Grid>
                 </Border>
 
-                <Border attached:Layout.X="0" attached:Layout.Y="136" Width="416" Height="140"
+                <Border surface:Layout.X="0" surface:Layout.Y="136" Width="416" Height="140"
                         Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
                     <Grid RowDefinitions="Auto,Auto,*">
                         <TextBlock Text="Потребление за сутки" FontSize="12" Foreground="#667085" />
@@ -92,7 +91,7 @@
                     </Grid>
                 </Border>
 
-                <Border attached:Layout.X="432" attached:Layout.Y="136" Width="200" Height="140"
+                <Border surface:Layout.X="432" surface:Layout.Y="136" Width="200" Height="140"
                         Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
                     <StackPanel Spacing="10">
                         <TextBlock Text="Сцены" FontSize="12" Foreground="#667085" />
@@ -102,18 +101,18 @@
                             сразу при запуске, до всякой группировки мышью.
                         -->
                         <Button Content="Доброе утро" HorizontalAlignment="Stretch" Background="#EEF1F5"
-                                attached:DesignGroup.Id="scenes"
+                                surface:DesignGroup.Id="scenes"
                                 Foreground="#16191D" BorderThickness="0" CornerRadius="8" />
                         <Button Content="Ушёл из дома" HorizontalAlignment="Stretch" Background="#EEF1F5"
-                                attached:DesignGroup.Id="scenes"
+                                surface:DesignGroup.Id="scenes"
                                 Foreground="#16191D" BorderThickness="0" CornerRadius="8" />
                         <Button Content="Ночь" HorizontalAlignment="Stretch" Background="#EEF1F5"
-                                attached:DesignGroup.Id="scenes"
+                                surface:DesignGroup.Id="scenes"
                                 Foreground="#16191D" BorderThickness="0" CornerRadius="8" />
                     </StackPanel>
                 </Border>
 
-            </controls:AbsolutePanel>
+            </surface:AbsolutePanel>
         </Grid>
     </Border>
     </ThemeVariantScope>

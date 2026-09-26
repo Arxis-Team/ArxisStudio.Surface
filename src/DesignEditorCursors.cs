@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Input;
+using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio;
@@ -114,7 +115,7 @@ public class DesignEditorCursors : AvaloniaObject
     /// </summary>
     /// <remarks>
     /// Ставится, когда перетаскивание не начнётся: у target'а
-    /// <see cref="Attached.MovePolicy.None"/> или в группе смешаны заблокированные
+    /// <see cref="MovePolicy.None"/> или в группе смешаны заблокированные
     /// и свободные участники. Это то же правило, по которому редактор не предлагает
     /// жест, который ничего не делает, — только выраженное курсором.
     /// </remarks>

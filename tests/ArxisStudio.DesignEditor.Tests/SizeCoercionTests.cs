@@ -6,6 +6,7 @@ using Avalonia.Input;
 using ArxisStudio.Controls;
 using ArxisStudio.States;
 using Xunit;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 

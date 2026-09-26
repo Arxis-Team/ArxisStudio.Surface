@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Placement;
 

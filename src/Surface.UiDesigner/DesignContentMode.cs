@@ -1,4 +1,4 @@
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Определяет, как редактор находит редактируемые элементы внутри контейнера.

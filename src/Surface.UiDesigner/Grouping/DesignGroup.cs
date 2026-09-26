@@ -1,7 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using ArxisStudio.Surface.Editing;
 
-namespace ArxisStudio.Attached;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Принадлежность контрола design-time группе.

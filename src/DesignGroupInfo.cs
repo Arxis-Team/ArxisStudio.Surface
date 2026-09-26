@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia.Controls;
 using ArxisStudio.Grouping;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
@@ -10,7 +11,7 @@ namespace ArxisStudio;
 /// </summary>
 /// <remarks>
 /// Снимок, снятый в момент запроса: группа — это пометка на контролах
-/// (<see cref="Attached.DesignGroup"/>), а деревом владеет хост, поэтому редактор
+/// (<see cref="DesignGroup"/>), а деревом владеет хост, поэтому редактор
 /// не может ни закэшировать состав, ни узнать о правке, которой не делал.
 /// Отсюда и способ получения — запрос <see cref="DesignEditor.GetGroups"/>, а не
 /// свойство со снимком, как у выделения.

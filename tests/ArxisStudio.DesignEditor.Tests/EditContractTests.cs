@@ -6,6 +6,7 @@ using ArxisStudio.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 
@@ -146,8 +147,8 @@ public class EditContractTests
         harness.RunLayout();
 
         var restored = new Rect(
-            ArxisStudio.Attached.Layout.GetDesignX(change.Target),
-            ArxisStudio.Attached.Layout.GetDesignY(change.Target),
+            ArxisStudio.Surface.UiDesigner.Layout.GetDesignX(change.Target),
+            ArxisStudio.Surface.UiDesigner.Layout.GetDesignY(change.Target),
             change.Target.Bounds.Width,
             change.Target.Bounds.Height);
 
@@ -186,8 +187,8 @@ public class EditContractTests
     {
         harness.RunLayout();
         return new Point(
-            ArxisStudio.Attached.Layout.GetDesignX(target),
-            ArxisStudio.Attached.Layout.GetDesignY(target));
+            ArxisStudio.Surface.UiDesigner.Layout.GetDesignX(target),
+            ArxisStudio.Surface.UiDesigner.Layout.GetDesignY(target));
     }
 
     /// <summary>

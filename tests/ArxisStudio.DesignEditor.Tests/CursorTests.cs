@@ -6,10 +6,11 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using ArxisStudio.Attached;
 using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface.Editing;
+using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

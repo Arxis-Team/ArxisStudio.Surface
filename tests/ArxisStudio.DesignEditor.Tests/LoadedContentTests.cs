@@ -10,6 +10,8 @@ using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using Xunit;
+using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 
@@ -236,7 +238,7 @@ public class LoadedContentTests
         // Стратегии размещения работают с загруженной формой без изменений:
         // корень разметки — StackPanel, значит перестановка, а не координаты.
         Assert.Equal("Stack", harness.Editor.PrimarySelectionPlacement);
-        Assert.Equal(ArxisStudio.Attached.MovePolicy.None, harness.Editor.PrimarySelectionMovePolicy);
+        Assert.Equal(ArxisStudio.Surface.MovePolicy.None, harness.Editor.PrimarySelectionMovePolicy);
     }
 
     [AvaloniaFact]

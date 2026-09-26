@@ -1,10 +1,9 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using ArxisStudio.Attached;
 using Avalonia.VisualTree;
 
-namespace ArxisStudio.Controls;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Представляет панель с абсолютным позиционированием дочерних элементов.

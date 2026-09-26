@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Placement;
 
@@ -29,7 +30,7 @@ internal enum DesignMoveSemantics
 /// </summary>
 /// <remarks>
 /// Существует потому, что <c>Layout.X</c>/<c>Layout.Y</c> читает единственная панель —
-/// <see cref="ArxisStudio.Controls.AbsolutePanel"/>. Для всех остальных родителей
+/// <see cref="AbsolutePanel"/>. Для всех остальных родителей
 /// запись позиции уходит в пустоту, а редактор обязан либо сменить смысл жеста,
 /// либо его не предлагать. Таблица возможностей снята с Avalonia в
 /// <c>LayoutHonourProbeTests</c>.

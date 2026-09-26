@@ -1,58 +1,9 @@
-static class ArxisStudio.Attached.DesignGroup
-    avalonia IdProperty -> Id : String (attached) = null
-    method String GetId(AvaloniaObject)
-    method Void SetId(AvaloniaObject, String)
-static class ArxisStudio.Attached.DesignInteraction
-    avalonia MovePolicyProperty -> MovePolicy : MovePolicy (attached) = Both
-    avalonia ResizePolicyProperty -> ResizePolicy : ResizePolicy (attached) = All
-    method MovePolicy GetMovePolicy(AvaloniaObject)
-    method ResizePolicy GetResizePolicy(AvaloniaObject)
-    method Void SetMovePolicy(AvaloniaObject, MovePolicy)
-    method Void SetResizePolicy(AvaloniaObject, ResizePolicy)
-static class ArxisStudio.Attached.Layout
-    avalonia DesignXProperty -> DesignX : Double (attached) = 0
-    avalonia DesignYProperty -> DesignY : Double (attached) = 0
-    avalonia IsTrackedProperty -> IsTracked : Boolean (attached) = false
-    avalonia XProperty -> X : Double (attached) = NaN
-    avalonia YProperty -> Y : Double (attached) = NaN
-    method Boolean GetIsTracked(AvaloniaObject)
-    method Double GetDesignX(AvaloniaObject)
-    method Double GetDesignY(AvaloniaObject)
-    method Double GetX(AvaloniaObject)
-    method Double GetY(AvaloniaObject)
-    method Void SetDesignX(AvaloniaObject, Double)
-    method Void SetDesignY(AvaloniaObject, Double)
-    method Void SetIsTracked(AvaloniaObject, Boolean)
-    method Void SetX(AvaloniaObject, Double)
-    method Void SetY(AvaloniaObject, Double)
-    method Void Track(Control)
-    method Void Untrack(Control)
-enum ArxisStudio.Attached.MovePolicy
-    value Both = 3
-    value None = 0
-    value X = 1
-    value Y = 2
-enum ArxisStudio.Attached.ResizePolicy
-    value All = 15
-    value Bottom = 8
-    value Horizontal = 5
-    value Left = 1
-    value None = 0
-    value Right = 4
-    value Top = 2
-    value Vertical = 10
 enum ArxisStudio.ContainerEmptyAreaDragGesture
     value Marquee = 1
     value MoveContainer = 0
 sealed class ArxisStudio.ContextMenuContextPresenter
     ctor .ctor()
     method Boolean TryShow(DesignEditor, DesignEditorContextRequest, IReadOnlyList<DesignEditorContextAction>)
-class ArxisStudio.Controls.AbsolutePanel : Panel
-    avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
-    ctor .ctor()
-    method Size ArrangeOverride(Size)
-    method Size MeasureOverride(Size)
-    property Rect Extent { get; set; }
 class ArxisStudio.Controls.DesignRuler : Control
     avalonia BackgroundProperty -> Background : IBrush (styled) = null
     avalonia EditorProperty -> Editor : DesignEditor (styled) = null
@@ -74,23 +25,6 @@ class ArxisStudio.Controls.DesignRuler : Control
     property IBrush LabelBrush { get; set; }
     property IBrush TickBrush { get; set; }
     property Orientation Orientation { get; set; }
-class ArxisStudio.Controls.ResizeDeltaEventArgs : RoutedEventArgs
-    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
-    property ResizeDirection Direction { get; }
-    property Vector Delta { get; }
-enum ArxisStudio.Controls.ResizeDirection
-    value Bottom = 1
-    value BottomLeft = 6
-    value BottomRight = 7
-    value Left = 2
-    value Right = 3
-    value Top = 0
-    value TopLeft = 4
-    value TopRight = 5
-class ArxisStudio.Controls.ResizeStartedEventArgs : RoutedEventArgs
-    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
-    property ResizeDirection Direction { get; }
-    property Vector Vector { get; }
 class ArxisStudio.Controls.SelectionAdorner : TemplatedControl
     avalonia AdornerBrushProperty -> AdornerBrush : IBrush (styled) = <ImmutableSolidColorBrush>
     avalonia FillProperty -> Fill : IBrush (styled) = <ImmutableSolidColorBrush>
@@ -162,9 +96,6 @@ class ArxisStudio.Controls.SnapGuideLayer : Control
 abstract class ArxisStudio.DesignChange
     ctor .ctor(Control)
     property Control Target { get; }
-enum ArxisStudio.DesignContentMode
-    value Annotated = 0
-    value Loaded = 1
 sealed class ArxisStudio.DesignEditCompletedEventArgs : EventArgs
     ctor .ctor(DesignEditKind, IReadOnlyList<DesignChange>)
     property DesignEditKind Kind { get; }
@@ -580,6 +511,13 @@ sealed class ArxisStudio.Surface.Editing.DesignGuideChangeRequestedEventArgs : E
 enum ArxisStudio.Surface.Editing.DesignGuideOrientation
     value Horizontal = 1
     value Vertical = 0
+static class ArxisStudio.Surface.Editing.DesignInteraction
+    avalonia MovePolicyProperty -> MovePolicy : MovePolicy (attached) = Both
+    avalonia ResizePolicyProperty -> ResizePolicy : ResizePolicy (attached) = All
+    method MovePolicy GetMovePolicy(AvaloniaObject)
+    method ResizePolicy GetResizePolicy(AvaloniaObject)
+    method Void SetMovePolicy(AvaloniaObject, MovePolicy)
+    method Void SetResizePolicy(AvaloniaObject, ResizePolicy)
 struct ArxisStudio.Surface.Editing.DesignSnapGuide : ValueType
     ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double, DesignSnapGuideKind)
     method Boolean Equals(DesignSnapGuide)
@@ -605,3 +543,65 @@ struct ArxisStudio.Surface.Editing.DesignSpacingHint : ValueType
     property Double End { get; }
     property Double Position { get; }
     property Double Start { get; }
+enum ArxisStudio.Surface.MovePolicy
+    value Both = 3
+    value None = 0
+    value X = 1
+    value Y = 2
+class ArxisStudio.Surface.ResizeDeltaEventArgs : RoutedEventArgs
+    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
+    property ResizeDirection Direction { get; }
+    property Vector Delta { get; }
+enum ArxisStudio.Surface.ResizeDirection
+    value Bottom = 1
+    value BottomLeft = 6
+    value BottomRight = 7
+    value Left = 2
+    value Right = 3
+    value Top = 0
+    value TopLeft = 4
+    value TopRight = 5
+enum ArxisStudio.Surface.ResizePolicy
+    value All = 15
+    value Bottom = 8
+    value Horizontal = 5
+    value Left = 1
+    value None = 0
+    value Right = 4
+    value Top = 2
+    value Vertical = 10
+class ArxisStudio.Surface.ResizeStartedEventArgs : RoutedEventArgs
+    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
+    property ResizeDirection Direction { get; }
+    property Vector Vector { get; }
+class ArxisStudio.Surface.UiDesigner.AbsolutePanel : Panel
+    avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
+    ctor .ctor()
+    method Size ArrangeOverride(Size)
+    method Size MeasureOverride(Size)
+    property Rect Extent { get; set; }
+enum ArxisStudio.Surface.UiDesigner.DesignContentMode
+    value Annotated = 0
+    value Loaded = 1
+static class ArxisStudio.Surface.UiDesigner.DesignGroup
+    avalonia IdProperty -> Id : String (attached) = null
+    method String GetId(AvaloniaObject)
+    method Void SetId(AvaloniaObject, String)
+static class ArxisStudio.Surface.UiDesigner.Layout
+    avalonia DesignXProperty -> DesignX : Double (attached) = 0
+    avalonia DesignYProperty -> DesignY : Double (attached) = 0
+    avalonia IsTrackedProperty -> IsTracked : Boolean (attached) = false
+    avalonia XProperty -> X : Double (attached) = NaN
+    avalonia YProperty -> Y : Double (attached) = NaN
+    method Boolean GetIsTracked(AvaloniaObject)
+    method Double GetDesignX(AvaloniaObject)
+    method Double GetDesignY(AvaloniaObject)
+    method Double GetX(AvaloniaObject)
+    method Double GetY(AvaloniaObject)
+    method Void SetDesignX(AvaloniaObject, Double)
+    method Void SetDesignY(AvaloniaObject, Double)
+    method Void SetIsTracked(AvaloniaObject, Boolean)
+    method Void SetX(AvaloniaObject, Double)
+    method Void SetY(AvaloniaObject, Double)
+    method Void Track(Control)
+    method Void Untrack(Control)

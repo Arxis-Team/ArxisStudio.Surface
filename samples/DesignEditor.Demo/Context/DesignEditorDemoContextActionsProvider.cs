@@ -4,9 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ArxisStudio;
-using ArxisStudio.Attached;
 using Avalonia.Controls;
 using DesignEditor.Demo.ViewModels;
+using ArxisStudio.Surface;
+using ArxisStudio.Surface.Editing;
 
 namespace DesignEditor.Demo.Context;
 

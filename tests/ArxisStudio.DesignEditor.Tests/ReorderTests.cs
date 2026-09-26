@@ -7,9 +7,11 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using ArxisStudio.Attached;
 using Xunit;
-using DesignLayout = ArxisStudio.Attached.Layout;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using ArxisStudio.Surface.Editing;
+using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

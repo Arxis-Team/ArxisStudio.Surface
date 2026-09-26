@@ -9,9 +9,10 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using ArxisStudio;
-using ArxisStudio.Attached;
 using DesignEditor.Demo.ViewModels;
 using Editor = ArxisStudio.DesignEditor;
+using ArxisStudio.Surface;
+using ArxisStudio.Surface.Editing;
 
 namespace DesignEditor.Demo.Views;
 

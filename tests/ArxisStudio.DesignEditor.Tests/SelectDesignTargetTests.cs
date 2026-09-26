@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Xunit;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

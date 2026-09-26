@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
@@ -36,7 +37,7 @@ public enum DesignEditKind
     /// Изменение принадлежности к design-time группе.
     /// </summary>
     /// <remarks>
-    /// Группа — пометка на контролах (<see cref="Attached.DesignGroup"/>), а не узел дерева:
+    /// Группа — пометка на контролах (<see cref="DesignGroup"/>), а не узел дерева:
     /// редактор его не правит. Поэтому у группировки есть шов записи и единица редактирования,
     /// в отличие от перестановки среди соседей, которая структурна и уходит запросом.
     /// </remarks>

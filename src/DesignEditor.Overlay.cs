@@ -15,8 +15,8 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Attached.Layout;
-using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Controls;
 using ArxisStudio.Grouping;
 using ArxisStudio.Surface.Editing;
@@ -306,8 +306,8 @@ public partial class DesignEditor
         if (primaryControl == null)
         {
             PrimarySelectionPlacement = null;
-            PrimarySelectionMovePolicy = ArxisStudio.Attached.MovePolicy.None;
-            PrimarySelectionResizePolicy = ArxisStudio.Attached.ResizePolicy.None;
+            PrimarySelectionMovePolicy = ArxisStudio.Surface.MovePolicy.None;
+            PrimarySelectionResizePolicy = ArxisStudio.Surface.ResizePolicy.None;
             return;
         }
 

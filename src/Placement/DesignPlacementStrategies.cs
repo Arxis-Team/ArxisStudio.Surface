@@ -1,7 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using ArxisStudio.Controls;
-using DesignLayout = ArxisStudio.Attached.Layout;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Placement;
 

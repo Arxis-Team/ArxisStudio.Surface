@@ -9,10 +9,10 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Media;
-using ArxisStudio.Attached;
 using ArxisStudio.Controls;
 using Xunit;
-using DesignLayout = ArxisStudio.Attached.Layout;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

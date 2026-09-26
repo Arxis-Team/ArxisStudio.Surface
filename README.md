@@ -652,7 +652,7 @@ foreach (var change in edit.Changes)
 
 ### `DesignInteraction`
 
-`ArxisStudio.Attached.DesignInteraction` предоставляет attached-политики редактирования для designer targets:
+`ArxisStudio.Surface.Editing.DesignInteraction` предоставляет attached-политики редактирования для designer targets:
 
 - `DesignInteraction.ResizePolicy` — какие стороны/направления разрешены для resize (`None`, `Left`, `Top`, `Right`, `Bottom`, `Horizontal`, `Vertical`, `All`)
 - `DesignInteraction.MovePolicy` — по каким осям разрешено перемещение (`None`, `X`, `Y`, `Both`)
@@ -713,7 +713,7 @@ foreach (var change in edit.Changes)
 
 ### `Layout`
 
-`ArxisStudio.Attached.Layout` предоставляет attached-свойства позиционирования:
+`ArxisStudio.Surface.UiDesigner.Layout` предоставляет attached-свойства позиционирования:
 
 - `Layout.X` / `Layout.Y` — локальные координаты относительно непосредственного родителя
 - `Layout.DesignX` / `Layout.DesignY` — глобальные координаты относительно поверхности дизайна

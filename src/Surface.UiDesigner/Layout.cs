@@ -7,7 +7,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 
-namespace ArxisStudio.Attached;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Предоставляет присоединенные свойства для позиционирования элементов на поверхности редактора.

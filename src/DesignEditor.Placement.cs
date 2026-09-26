@@ -15,13 +15,14 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Attached.Layout;
-using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Placement;
 using ArxisStudio.States;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
@@ -316,7 +317,7 @@ public partial class DesignEditor
         items.Sort((a, b) => Position(a.Bounds).CompareTo(Position(b.Bounds)));
 
         // Крайние задают отрезок и не двигаются, поэтому их политика роли не играет.
-        var axis = xAxis ? ArxisStudio.Attached.MovePolicy.X : ArxisStudio.Attached.MovePolicy.Y;
+        var axis = xAxis ? ArxisStudio.Surface.MovePolicy.X : ArxisStudio.Surface.MovePolicy.Y;
         for (var i = 1; i < items.Count - 1; i++)
         {
             if (!GetEffectiveMovePolicy(items[i].Target).HasFlag(axis))
@@ -357,12 +358,12 @@ public partial class DesignEditor
     }
 
 
-    internal ArxisStudio.Attached.ResizePolicy GetResizePolicy(Control control)
+    internal ArxisStudio.Surface.ResizePolicy GetResizePolicy(Control control)
     {
         return DesignInteraction.GetResizePolicy(control);
     }
 
-    internal ArxisStudio.Attached.MovePolicy GetMovePolicy(Control control)
+    internal ArxisStudio.Surface.MovePolicy GetMovePolicy(Control control)
     {
         return DesignInteraction.GetMovePolicy(control);
     }
@@ -381,15 +382,15 @@ public partial class DesignEditor
     /// что физически работает; политика пользователя только сужает. Ни одна не расширяет
     /// другую, иначе редактор снова начал бы предлагать жест, который ничего не делает.
     /// </remarks>
-    internal ArxisStudio.Attached.MovePolicy GetEffectiveMovePolicy(Control control)
+    internal ArxisStudio.Surface.MovePolicy GetEffectiveMovePolicy(Control control)
     {
         var user = GetMovePolicy(control);
-        if (user == ArxisStudio.Attached.MovePolicy.None)
-            return ArxisStudio.Attached.MovePolicy.None;
+        if (user == ArxisStudio.Surface.MovePolicy.None)
+            return ArxisStudio.Surface.MovePolicy.None;
 
         return GetPlacementStrategy(control).MoveSemantics == DesignMoveSemantics.Reposition
             ? user
-            : ArxisStudio.Attached.MovePolicy.None;
+            : ArxisStudio.Surface.MovePolicy.None;
     }
 
     internal Vector ApplyMovePolicy(Control control, Vector delta)
@@ -414,7 +415,7 @@ public partial class DesignEditor
         for (var i = 0; i < selectedTargetCount; i++)
         {
             var movePolicy = GetEffectiveMovePolicy(selectedTargets[i].Target);
-            if (movePolicy == ArxisStudio.Attached.MovePolicy.None)
+            if (movePolicy == ArxisStudio.Surface.MovePolicy.None)
                 hasAnyMoveLockedTarget = true;
             else
                 hasAnyMoveEnabledTarget = true;
@@ -443,29 +444,29 @@ public partial class DesignEditor
         return ShouldBlockNestedGroupDrag(GetSelectionInteractionCapabilities());
     }
 
-    private static Vector ApplyMovePolicy(Vector delta, ArxisStudio.Attached.MovePolicy policy)
+    private static Vector ApplyMovePolicy(Vector delta, ArxisStudio.Surface.MovePolicy policy)
     {
-        var x = policy.HasFlag(ArxisStudio.Attached.MovePolicy.X) ? delta.X : 0d;
-        var y = policy.HasFlag(ArxisStudio.Attached.MovePolicy.Y) ? delta.Y : 0d;
+        var x = policy.HasFlag(ArxisStudio.Surface.MovePolicy.X) ? delta.X : 0d;
+        var y = policy.HasFlag(ArxisStudio.Surface.MovePolicy.Y) ? delta.Y : 0d;
         return new Vector(x, y);
     }
 
-    private static bool IsResizeAllowed(ArxisStudio.Attached.ResizePolicy policy, ResizeDirection direction)
+    private static bool IsResizeAllowed(ArxisStudio.Surface.ResizePolicy policy, ResizeDirection direction)
     {
         return direction switch
         {
-            ResizeDirection.Left => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Left),
-            ResizeDirection.Top => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Top),
-            ResizeDirection.Right => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Right),
-            ResizeDirection.Bottom => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Bottom),
-            ResizeDirection.TopLeft => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Top) &&
-                                       policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Left),
-            ResizeDirection.TopRight => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Top) &&
-                                        policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Right),
-            ResizeDirection.BottomLeft => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Bottom) &&
-                                          policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Left),
-            ResizeDirection.BottomRight => policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Bottom) &&
-                                           policy.HasFlag(ArxisStudio.Attached.ResizePolicy.Right),
+            ResizeDirection.Left => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Left),
+            ResizeDirection.Top => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Top),
+            ResizeDirection.Right => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Right),
+            ResizeDirection.Bottom => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Bottom),
+            ResizeDirection.TopLeft => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Top) &&
+                                       policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Left),
+            ResizeDirection.TopRight => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Top) &&
+                                        policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Right),
+            ResizeDirection.BottomLeft => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Bottom) &&
+                                          policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Left),
+            ResizeDirection.BottomRight => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Bottom) &&
+                                           policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Right),
             _ => false
         };
     }

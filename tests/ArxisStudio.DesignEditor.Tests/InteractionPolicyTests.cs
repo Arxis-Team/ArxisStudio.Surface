@@ -1,9 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using ArxisStudio.Attached;
 using ArxisStudio.Controls;
 using Xunit;
+using ArxisStudio.Surface;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Tests;
 

@@ -3,11 +3,11 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using ArxisStudio.Attached;
 using ArxisStudio.Controls;
 using ArxisStudio.States;
 using Xunit;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

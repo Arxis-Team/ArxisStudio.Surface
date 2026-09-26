@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Headless.XUnit;
-using ArxisStudio.Attached;
 using Xunit;
+using ArxisStudio.Surface.Editing;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 

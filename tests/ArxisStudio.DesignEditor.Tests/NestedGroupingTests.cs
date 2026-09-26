@@ -9,11 +9,12 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using ArxisStudio.Attached;
 using ArxisStudio.Controls;
 using ArxisStudio.Grouping;
 using Xunit;
-using DesignLayout = ArxisStudio.Attached.Layout;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 

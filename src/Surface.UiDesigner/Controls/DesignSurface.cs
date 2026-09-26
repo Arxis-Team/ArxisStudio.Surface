@@ -1,9 +1,9 @@
-﻿namespace ArxisStudio.Controls;
+﻿namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Специализированная панель, используемая как корневой холст в <see cref="DesignEditor"/>.
 /// <para>
-/// Служит маркером для системы <see cref="ArxisStudio.Attached.Layout"/>.
+/// Служит маркером для системы <see cref="Layout"/>.
 /// Глобальные координаты (DesignX/DesignY) рассчитываются относительно ближайшего родителя этого типа,
 /// игнорируя вложенные пользовательские <see cref="AbsolutePanel"/>.
 /// </para>

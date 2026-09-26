@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Controls;
 
@@ -203,7 +204,7 @@ internal class SelectionAdornerLayer : Panel
             child.MovePolicy = info.MovePolicy;
             child.IsHitTestVisible = info.ShowHandles &&
                                      info.IsInteractive &&
-                                     info.ResizePolicy != ArxisStudio.Attached.ResizePolicy.None;
+                                     info.ResizePolicy != ArxisStudio.Surface.ResizePolicy.None;
             desiredChildren.Add(child);
         }
 

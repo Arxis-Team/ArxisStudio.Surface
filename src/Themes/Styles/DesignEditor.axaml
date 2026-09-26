@@ -2,7 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:ArxisStudio"
                     xmlns:controls="clr-namespace:ArxisStudio.Controls"
-                    xmlns:surface="clr-namespace:ArxisStudio.Surface">
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface"
+                    xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner">
 
     <surface:InverseScaleConverter x:Key="InverseScaleConverter" />
     <surface:ScaleDoubleConverter x:Key="ScaleDoubleConverter" />
@@ -44,7 +45,7 @@
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <controls:DesignSurface Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=local:DesignEditor}}" />
+                                        <uidesigner:DesignSurface Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=local:DesignEditor}}" />
                                     </ItemsPanelTemplate>
                                 </ItemsPresenter.ItemsPanel>
                             </ItemsPresenter>

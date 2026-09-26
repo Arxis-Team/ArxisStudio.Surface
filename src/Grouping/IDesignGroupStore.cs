@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia.Controls;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
@@ -16,7 +17,7 @@ namespace ArxisStudio;
 /// окно, а грамматика пути становится частью формата документа. См. ADR 0002.
 /// <para>
 /// Умолчание — <see cref="DesignGroupAttachedStore"/>: пометка живёт в attached-свойстве
-/// <see cref="Attached.DesignGroup"/> на самом контроле и сохраняется тем же способом, что и
+/// <see cref="DesignGroup"/> на самом контроле и сохраняется тем же способом, что и
 /// <c>Layout.X</c>/<c>Y</c>. Своё хранилище задаёт тот, кому эта цена не подходит.
 /// </para>
 /// <para>

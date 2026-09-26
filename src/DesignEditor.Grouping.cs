@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Utilities;
 using ArxisStudio.Grouping;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
@@ -329,7 +330,7 @@ public partial class DesignEditor
     /// <remarks>
     /// Состав считается по дереву в момент вызова. Кэшировать его редактору нечем:
     /// деревом владеет хост, пометку он вправе поставить в разметке или через
-    /// <see cref="Attached.DesignGroup.SetId"/>, и узнать об этом редактору неоткуда —
+    /// <see cref="DesignGroup.SetId"/>, и узнать об этом редактору неоткуда —
     /// сохранённый снимок молча устарел бы. По той же причине нет и события об изменении
     /// групп: о своих правках редактор сообщает через <see cref="EditCompleted"/>, а о
     /// чужих сообщить не может.

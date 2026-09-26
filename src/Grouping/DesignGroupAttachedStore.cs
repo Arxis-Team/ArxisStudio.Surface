@@ -1,11 +1,12 @@
 ﻿using System;
 using Avalonia.Controls;
-using DesignGroupAttached = ArxisStudio.Attached.DesignGroup;
+using DesignGroupAttached = ArxisStudio.Surface.UiDesigner.DesignGroup;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
 /// <summary>
-/// Хранилище групп в attached-свойстве <see cref="Attached.DesignGroup"/>.
+/// Хранилище групп в attached-свойстве <see cref="DesignGroup"/>.
 /// </summary>
 /// <remarks>
 /// Умолчание редактора и единственная реализация, которую библиотека приносит с собой: пометка

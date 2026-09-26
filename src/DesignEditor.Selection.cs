@@ -15,12 +15,13 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Attached.Layout;
-using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Placement;
 using ArxisStudio.States;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 
@@ -317,10 +318,10 @@ public partial class DesignEditor
     {
         var primaryResizePolicy = _primarySelectionControl != null
             ? GetResizePolicy(_primarySelectionControl)
-            : ArxisStudio.Attached.ResizePolicy.None;
+            : ArxisStudio.Surface.ResizePolicy.None;
         var primaryMovePolicy = _primarySelectionControl != null
             ? GetEffectiveMovePolicy(_primarySelectionControl)
-            : ArxisStudio.Attached.MovePolicy.None;
+            : ArxisStudio.Surface.MovePolicy.None;
 
         if (_selectionAdorner != null)
         {
@@ -328,8 +329,8 @@ public partial class DesignEditor
             _selectionAdorner.MovePolicy = primaryMovePolicy;
         }
 
-        var groupResizePolicy = ArxisStudio.Attached.ResizePolicy.None;
-        var groupMovePolicy = ArxisStudio.Attached.MovePolicy.None;
+        var groupResizePolicy = ArxisStudio.Surface.ResizePolicy.None;
+        var groupMovePolicy = ArxisStudio.Surface.MovePolicy.None;
 
         // Условие обязано совпадать с тем, по которому шаблон показывает рамку.
         // Locked-визуал — это не отдельное оформление, а adorner с политиками
@@ -337,8 +338,8 @@ public partial class DesignEditor
         // и ручки у неё неинтерактивны. Одна причина на оба симптома.
         if (ShowsGroupFrame && SelectedDesignTargets.Count > 1)
         {
-            groupResizePolicy = ArxisStudio.Attached.ResizePolicy.All;
-            groupMovePolicy = ArxisStudio.Attached.MovePolicy.Both;
+            groupResizePolicy = ArxisStudio.Surface.ResizePolicy.All;
+            groupMovePolicy = ArxisStudio.Surface.MovePolicy.Both;
 
             foreach (var selectedTarget in SelectedDesignTargets)
             {

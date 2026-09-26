@@ -16,8 +16,8 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Attached.Layout;
-using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Placement;
@@ -436,7 +436,7 @@ public partial class DesignEditor
 
         var sourceTarget = ResolveInteractionTarget(sourceContainer);
         var sourceMovePolicy = GetEffectiveMovePolicy(sourceTarget);
-        if (sourceMovePolicy == ArxisStudio.Attached.MovePolicy.None)
+        if (sourceMovePolicy == ArxisStudio.Surface.MovePolicy.None)
         {
             e.Handled = true;
             return;
@@ -465,7 +465,7 @@ public partial class DesignEditor
             }
 
             var sourceTarget = ResolveInteractionTarget(source);
-            if (GetEffectiveMovePolicy(sourceTarget) == ArxisStudio.Attached.MovePolicy.None)
+            if (GetEffectiveMovePolicy(sourceTarget) == ArxisStudio.Surface.MovePolicy.None)
             {
                 e.Handled = true;
                 return;

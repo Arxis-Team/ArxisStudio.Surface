@@ -16,8 +16,8 @@ using Avalonia.Utilities;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Attached.Layout;
-using DesignInteraction = ArxisStudio.Attached.DesignInteraction;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Placement;
@@ -202,15 +202,15 @@ public partial class DesignEditor
     /// <summary>
     /// Идентификатор свойства действующей политики перемещения primary target.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, ArxisStudio.Attached.MovePolicy> PrimarySelectionMovePolicyProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, ArxisStudio.Attached.MovePolicy>(
+    public static readonly DirectProperty<DesignEditor, ArxisStudio.Surface.MovePolicy> PrimarySelectionMovePolicyProperty =
+        AvaloniaProperty.RegisterDirect<DesignEditor, ArxisStudio.Surface.MovePolicy>(
             nameof(PrimarySelectionMovePolicy), o => o.PrimarySelectionMovePolicy);
 
     /// <summary>
     /// Идентификатор свойства действующей политики изменения размера primary target.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, ArxisStudio.Attached.ResizePolicy> PrimarySelectionResizePolicyProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, ArxisStudio.Attached.ResizePolicy>(
+    public static readonly DirectProperty<DesignEditor, ArxisStudio.Surface.ResizePolicy> PrimarySelectionResizePolicyProperty =
+        AvaloniaProperty.RegisterDirect<DesignEditor, ArxisStudio.Surface.ResizePolicy>(
             nameof(PrimarySelectionResizePolicy), o => o.PrimarySelectionResizePolicy);
 
     /// <summary>
@@ -722,7 +722,7 @@ public partial class DesignEditor
         private set => SetAndRaise(PrimarySelectionPlacementProperty, ref _primarySelectionPlacement, value);
     }
 
-    private ArxisStudio.Attached.MovePolicy _primarySelectionMovePolicy;
+    private ArxisStudio.Surface.MovePolicy _primarySelectionMovePolicy;
 
     /// <summary>
     /// Получает действующую политику перемещения primary target.
@@ -731,13 +731,13 @@ public partial class DesignEditor
     /// Именно действующую, а не заданную: это <c>политика пользователя &amp; возможности
     /// раскладки</c>, то есть то, что редактор реально позволит сделать.
     /// </remarks>
-    public ArxisStudio.Attached.MovePolicy PrimarySelectionMovePolicy
+    public ArxisStudio.Surface.MovePolicy PrimarySelectionMovePolicy
     {
         get => _primarySelectionMovePolicy;
         private set => SetAndRaise(PrimarySelectionMovePolicyProperty, ref _primarySelectionMovePolicy, value);
     }
 
-    private ArxisStudio.Attached.ResizePolicy _primarySelectionResizePolicy;
+    private ArxisStudio.Surface.ResizePolicy _primarySelectionResizePolicy;
 
     /// <summary>
     /// Получает действующую политику изменения размера primary target.
@@ -747,7 +747,7 @@ public partial class DesignEditor
     /// применяется до выравнивания. Ограничивают размер <c>Min</c>/<c>Max</c>
     /// самого контрола и границы формы, а не родительская раскладка.
     /// </remarks>
-    public ArxisStudio.Attached.ResizePolicy PrimarySelectionResizePolicy
+    public ArxisStudio.Surface.ResizePolicy PrimarySelectionResizePolicy
     {
         get => _primarySelectionResizePolicy;
         private set => SetAndRaise(PrimarySelectionResizePolicyProperty, ref _primarySelectionResizePolicy, value);

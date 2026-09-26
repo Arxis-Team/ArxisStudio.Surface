@@ -6,7 +6,7 @@ using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Avalonia.Threading;
 using Xunit;
-using DesignLayout = ArxisStudio.Attached.Layout;
+using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 
 namespace ArxisStudio.Tests;
 

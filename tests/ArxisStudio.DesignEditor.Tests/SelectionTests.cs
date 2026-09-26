@@ -111,7 +111,7 @@ public class SelectionTests
         var startX = harness.Editor.SelectionBounds.X;
 
         // Сдвиг через Layout.X идёт по тому же пути подписки, что и Bounds.
-        ArxisStudio.Attached.Layout.SetX(harness.Nested(0), EditorHarness.NestedOffset + 25);
+        ArxisStudio.Surface.UiDesigner.Layout.SetX(harness.Nested(0), EditorHarness.NestedOffset + 25);
         harness.RunLayout();
 
         Assert.Equal(startX + 25, harness.Editor.SelectionBounds.X, 1);
