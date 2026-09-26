@@ -12,10 +12,19 @@ namespace ArxisStudio.Surface.Nodes;
 /// Слой рядом с дизайнером форм, а не над ним (ADR 0004). Холст, выделение, рамка, перетаскивание
 /// узлов с автопрокруткой, клавиатура и контракт изменений — ядра, без правок; из инструментов
 /// взята привязка к сетке и выравнивание по соседям. Узлы — унаследованный
-/// <see cref="ItemsControl.ItemsSource"/>, каждый в своём контейнере <see cref="Node"/>.
+/// <see cref="ItemsControl.ItemsSource"/>, каждый в своём контейнере <see cref="Node"/>; связи —
+/// <see cref="Links"/>.
 /// </remarks>
-public class NodeEditor : SurfaceView
+public partial class NodeEditor : SurfaceView
 {
+    static NodeEditor()
+    {
+        // Сдвиг узла двигает концы связей его портов; сдвиг порта внутри узла ловит сам порт — по
+        // своим границам. Границ самого узла здесь не слушают намеренно: сдвиг узла меняет и их, и
+        // каждый кадр перетаскивания пересчитывал бы каждую его связь дважды.
+        SurfaceItem.LocationProperty.Changed.AddClassHandler<Node>((node, _) => OnNodeGeometryChanged(node));
+    }
+
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="NodeEditor"/>.
     /// </summary>
@@ -24,6 +33,8 @@ public class NodeEditor : SurfaceView
         // Привязка к сетке и выравнивание по соседям — та же служба, что у дизайнера форм.
         // Соседей-узлы она собирает сама; своих, кроме них, у редактора узлов нет.
         AddService(new SnapService(this, static () => Array.Empty<Rect>()));
+
+        Ports.Changed += OnPortsChanged;
     }
 
     /// <summary>

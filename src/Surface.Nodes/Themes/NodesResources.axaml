@@ -14,6 +14,8 @@
             <SolidColorBrush x:Key="NodeEditor.Node.Foreground" Color="#1F2328" />
             <SolidColorBrush x:Key="NodeEditor.Port.PinFill" Color="#FFFFFF" />
             <SolidColorBrush x:Key="NodeEditor.Port.PinStroke" Color="#5C6577" />
+            <SolidColorBrush x:Key="NodeEditor.Port.ConnectedFill" Color="#5C6577" />
+            <SolidColorBrush x:Key="NodeEditor.Link.Stroke" Color="#8A96A8" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -24,6 +26,8 @@
             <SolidColorBrush x:Key="NodeEditor.Node.Foreground" Color="#E6E8EB" />
             <SolidColorBrush x:Key="NodeEditor.Port.PinFill" Color="#26292E" />
             <SolidColorBrush x:Key="NodeEditor.Port.PinStroke" Color="#8A96A8" />
+            <SolidColorBrush x:Key="NodeEditor.Port.ConnectedFill" Color="#8A96A8" />
+            <SolidColorBrush x:Key="NodeEditor.Link.Stroke" Color="#6E7A8C" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -35,5 +39,7 @@
     <x:Double x:Key="NodeEditor.Port.PinSize">10</x:Double>
     <x:Double x:Key="NodeEditor.Port.PinStrokeThickness">1.5</x:Double>
     <Thickness x:Key="NodeEditor.Port.PinMargin">4,2</Thickness>
+
+    <x:Double x:Key="NodeEditor.Link.Thickness">2</x:Double>
 
 </ResourceDictionary>

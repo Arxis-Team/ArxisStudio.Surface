@@ -2,12 +2,18 @@ using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using ArxisStudio.Surface.Nodes;
 
 namespace ArxisStudio.Tests;
+
+/// <summary>
+/// Связь, как её держит приложение: данные двух портов.
+/// </summary>
+internal sealed record LinkData(object From, object To);
 
 /// <summary>
 /// Стенд редактора узлов: окно 800 × 600 и голый <see cref="NodeEditor"/> над заданными узлами.
@@ -48,9 +54,20 @@ internal sealed class NodeStand
 
     public ObservableCollection<object> Items { get; } = new();
 
+    public ObservableCollection<object> Links { get; } = new();
+
+    public static string Out(int index) => NodeName(index) + ".out";
+
+    public static string In(int index) => NodeName(index) + ".in";
+
     public static NodeStand Create(IReadOnlyList<Point> locations, bool snap = false, IDataTemplate? itemTemplate = null)
     {
-        var editor = new NodeEditor { ItemTemplate = itemTemplate };
+        var editor = new NodeEditor
+        {
+            ItemTemplate = itemTemplate,
+            LinkSourceBinding = new Binding(nameof(LinkData.From)),
+            LinkTargetBinding = new Binding(nameof(LinkData.To))
+        };
         editor.InteractionOptions.IsSnapToGridEnabled = snap;
         editor.InteractionOptions.IsSnapToGuidesEnabled = snap;
 
@@ -60,6 +77,7 @@ internal sealed class NodeStand
             stand.Items.Add(NodeName(i));
 
         editor.ItemsSource = stand.Items;
+        editor.Links = stand.Links;
         window.Show();
         stand.RunLayout();
 
@@ -76,6 +94,25 @@ internal sealed class NodeStand
     }
 
     public Node Node(int index) => (Node)Editor.ContainerFromIndex(index)!;
+
+    public LinkData Connect(int from, int to)
+    {
+        var link = new LinkData(Out(from), In(to));
+        Links.Add(link);
+        RunLayout();
+        return link;
+    }
+
+    /// <summary>
+    /// Живая связь редактора для элемента коллекции.
+    /// </summary>
+    public Link LinkOf(object item) =>
+        Editor.GetVisualDescendants().OfType<Link>().Single(l => ReferenceEquals(l, item) || ReferenceEquals(l.DataContext, item));
+
+    /// <summary>
+    /// Точка на узле, где нет портов, — за неё узел и тянут.
+    /// </summary>
+    public Point GripOf(int index) => Node(index).Location + new Vector(NodeSize.Width / 2, 12);
 
     public Port PortOf(int index, PortDirection direction) =>
         Node(index).GetVisualDescendants().OfType<Port>().Single(p => p.Direction == direction);

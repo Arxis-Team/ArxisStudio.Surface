@@ -1,0 +1,28 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:nodes="clr-namespace:ArxisStudio.Surface.Nodes">
+
+    <!-- Связь рисует себя сама; тема задаёт только перо. -->
+    <ControlTheme x:Key="{x:Type nodes:Link}" TargetType="nodes:Link">
+        <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Link.Stroke}" />
+        <Setter Property="StrokeThickness" Value="{DynamicResource NodeEditor.Link.Thickness}" />
+    </ControlTheme>
+
+    <!--
+        Слой связей — ItemsControl со своей панелью. Шаблон у него свой, а не базовой темы
+        приложения: без шаблона ItemsControl не рисует ничего.
+    -->
+    <ControlTheme x:Key="{x:Type nodes:LinksPresenter}" TargetType="nodes:LinksPresenter">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <nodes:LinkPanel />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ItemsPresenter Name="PART_ItemsPresenter"
+                                ItemsPanel="{TemplateBinding ItemsPanel}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

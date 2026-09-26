@@ -1,17 +1,44 @@
+class ArxisStudio.Surface.Nodes.Link : Control
+    avalonia SourceAnchorProperty -> SourceAnchor : Point (direct)
+    avalonia SourceProperty -> Source : Object (styled) = null
+    avalonia StrokeProperty -> Stroke : IBrush (styled) = null
+    avalonia StrokeThicknessProperty -> StrokeThickness : Double (styled) = 2
+    avalonia TargetAnchorProperty -> TargetAnchor : Point (direct)
+    avalonia TargetProperty -> Target : Object (styled) = null
+    ctor .ctor()
+    method Size MeasureOverride(Size)
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    method Void Render(DrawingContext)
+    property Double StrokeThickness { get; set; }
+    property IBrush Stroke { get; set; }
+    property Object Source { get; set; }
+    property Object Target { get; set; }
+    property Point SourceAnchor { get; }
+    property Point TargetAnchor { get; }
 class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     ctor .ctor()
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
+    avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
+    avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
+    avalonia LinksProperty -> Links : IEnumerable (styled) = null
     ctor .ctor()
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
+    property BindingBase LinkSourceBinding { get; set; }
+    property BindingBase LinkTargetBinding { get; set; }
+    property IEnumerable Links { get; set; }
 class ArxisStudio.Surface.Nodes.Port : ContentControl
     avalonia DataProperty -> Data : Object (styled) = null
     avalonia DirectionProperty -> Direction : PortDirection (styled) = Input
+    avalonia IsConnectedProperty -> IsConnected : Boolean (direct)
     ctor .ctor()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    property Boolean IsConnected { get; }
     property Object Data { get; set; }
     property PortDirection Direction { get; set; }
 enum ArxisStudio.Surface.Nodes.PortDirection

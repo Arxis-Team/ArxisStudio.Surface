@@ -33,9 +33,17 @@ public class Port : ContentControl
     public static readonly StyledProperty<object?> DataProperty =
         AvaloniaProperty.Register<Port, object?>(nameof(Data));
 
+    /// <summary>
+    /// Идентификатор свойства, показывающего, что к порту идёт хотя бы одна связь.
+    /// </summary>
+    public static readonly DirectProperty<Port, bool> IsConnectedProperty =
+        AvaloniaProperty.RegisterDirect<Port, bool>(nameof(IsConnected), o => o.IsConnected);
+
     private NodeEditor? _editor;
+    private Node? _node;
     private object? _registeredKey;
     private Control? _pin;
+    private bool _isConnected;
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="Port"/>.
@@ -64,6 +72,23 @@ public class Port : ContentControl
     {
         get => GetValue(DataProperty);
         set => SetValue(DataProperty, value);
+    }
+
+    /// <summary>
+    /// Получает значение, показывающее, что к порту идёт хотя бы одна связь из
+    /// <see cref="NodeEditor.Links"/>.
+    /// </summary>
+    /// <remarks>
+    /// Тема показывает его псевдоклассом <c>:connected</c> — закрашенным штырьком.
+    /// </remarks>
+    public bool IsConnected
+    {
+        get => _isConnected;
+        internal set
+        {
+            if (SetAndRaise(IsConnectedProperty, ref _isConnected, value))
+                PseudoClasses.Set(":connected", value);
+        }
     }
 
     /// <summary>
@@ -122,6 +147,11 @@ public class Port : ContentControl
     {
         base.OnAttachedToVisualTree(e);
         _editor = this.FindAncestorOfType<NodeEditor>();
+        _node = this.FindAncestorOfType<Node>();
+
+        if (_editor != null && _node != null)
+            _editor.AttachPort(this, _node);
+
         Rekey();
     }
 
@@ -133,8 +163,13 @@ public class Port : ContentControl
         if (_editor != null && _registeredKey != null)
             _editor.Ports.Unregister(_registeredKey, this);
 
+        if (_editor != null && _node != null)
+            _editor.DetachPort(this, _node);
+
         _registeredKey = null;
+        _node = null;
         _editor = null;
+        IsConnected = false;
     }
 
     /// <inheritdoc />
@@ -146,6 +181,8 @@ public class Port : ContentControl
             UpdateDirectionClasses();
         else if (change.Property == DataProperty || change.Property == DataContextProperty)
             Rekey();
+        else if (change.Property == BoundsProperty)
+            _editor?.RefreshLinksAt(_registeredKey);
     }
 
     /// <summary>

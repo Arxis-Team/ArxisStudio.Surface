@@ -30,6 +30,10 @@
             </ControlTemplate>
         </Setter>
 
+        <Style Selector="^:connected /template/ Ellipse#PART_Pin">
+            <Setter Property="Fill" Value="{DynamicResource NodeEditor.Port.ConnectedFill}" />
+        </Style>
+
         <Style Selector="^:output /template/ Ellipse#PART_Pin">
             <Setter Property="Grid.Column" Value="2" />
         </Style>
