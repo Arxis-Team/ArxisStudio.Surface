@@ -307,22 +307,34 @@ public partial class SurfaceView
             return false;
 
         var zoomStep = InteractionOptions.ZoomStep > 1.0 ? InteractionOptions.ZoomStep : 1.1;
-        double prevZoom = ViewportZoom;
-        double newZoom = e.Delta.Y > 0 ? prevZoom * zoomStep : prevZoom / zoomStep;
-        newZoom = Math.Max(GetValue(MinZoomProperty), Math.Min(GetValue(MaxZoomProperty), newZoom));
-
-        if (Math.Abs(newZoom - prevZoom) > ZoomTolerance)
-        {
-            Point mousePos = e.GetPosition(this);
-            Vector correction = (Vector)mousePos / prevZoom - (Vector)mousePos / newZoom;
-            ViewportZoom = newZoom;
-            ViewportLocation += correction;
-        }
+        var zoom = e.Delta.Y > 0 ? ViewportZoom * zoomStep : ViewportZoom / zoomStep;
+        ZoomAt(zoom, e.GetPosition(this));
 
         // Колесо потреблено даже когда масштаб упёрся в Min/Max: жест был наш,
         // и отдавать его наружу на границе диапазона значило бы, что у края
         // зума страница вдруг начинает прокручиваться.
         return true;
+    }
+
+    /// <summary>
+    /// Меняет масштаб так, что точка холста под указанной точкой экрана остаётся на месте.
+    /// </summary>
+    /// <param name="zoom">Новый масштаб; ограничивается <see cref="MinZoom"/> и <see cref="MaxZoom"/>.</param>
+    /// <param name="origin">Неподвижная точка в координатах редактора.</param>
+    /// <remarks>
+    /// Правило одно на колесо, щипок тачпада и щипок пальцами: масштаб растёт вокруг того
+    /// места, на которое смотрит человек, а не вокруг угла холста.
+    /// </remarks>
+    public void ZoomAt(double zoom, Point origin)
+    {
+        var prevZoom = ViewportZoom;
+        var newZoom = Math.Max(MinZoom, Math.Min(MaxZoom, zoom));
+        if (Math.Abs(newZoom - prevZoom) <= ZoomTolerance)
+            return;
+
+        var correction = (Vector)origin / prevZoom - (Vector)origin / newZoom;
+        ViewportZoom = newZoom;
+        ViewportLocation += correction;
     }
 
     /// <summary>

@@ -24,6 +24,19 @@ public class DesignEditorInteractionOptions : AvaloniaObject
             1.1);
 
     /// <summary>
+    /// Идентификатор свойства, включающего масштабирование щипком.
+    /// </summary>
+    /// <remarks>
+    /// Щипок тачпада и двумя пальцами на сенсорном экране. Модификаторов он не
+    /// спрашивает: <c>ZoomModifiers</c> отличают масштаб от прокрутки колесом, а щипок
+    /// ни с чем не спутать. По умолчанию: <see langword="true"/>.
+    /// </remarks>
+    public static readonly StyledProperty<bool> IsPinchZoomEnabledProperty =
+        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+            nameof(IsPinchZoomEnabled),
+            true);
+
+    /// <summary>
     /// Идентификатор свойства порога старта перетаскивания в пикселях.
     /// </summary>
     /// <remarks>По умолчанию: <c>3.0</c>.</remarks>
@@ -48,6 +61,15 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     {
         get => GetValue(ZoomStepProperty);
         set => SetValue(ZoomStepProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает значение, включающее масштабирование щипком.
+    /// </summary>
+    public bool IsPinchZoomEnabled
+    {
+        get => GetValue(IsPinchZoomEnabledProperty);
+        set => SetValue(IsPinchZoomEnabledProperty, value);
     }
 
     /// <summary>

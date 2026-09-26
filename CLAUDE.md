@@ -174,6 +174,7 @@ internals инструментам и дизайнеру форм, инстру�
 | `SurfaceView.EditContract.cs` | швы записи геометрии и `ZIndex`, единица редактирования, отмена и повтор, ограничение контейнером |
 | `SurfaceView.Policies.cs` | политика взаимодействия как пересечение участников |
 | `SurfaceView.Context.cs` | контекстные действия: запрос, провайдеры, показ |
+| `SurfaceView.Pinch.cs` | масштаб щипком тачпада и пальцами поверх `ZoomAt` |
 | `SurfaceView.Keyboard.cs` | набор клавиатурных команд, их разбор и встроенные команды: история, нюдж, снятие и выбор всего, запрос удаления |
 
 Там же: `SurfaceItem` со стеком состояний контейнера, состояния в `States/`, `GroupDragOperation`,
@@ -682,9 +683,17 @@ grep -rn "Children\.\(Add\|Remove\|Insert\|Move\|Clear\)" src/ --include=*.cs
 Жесты и числовые параметры не захардкожены, а вынесены в объекты-конфиги, доступные из AXAML/стилей/биндингов:
 
 - `DesignEditorInputGestures` — `PanButton/PanModifiers`, `MarqueeButton/MarqueeModifiers`, `ZoomModifiers`, `ContainerInteractionModifiers`, `AdditiveSelectionModifiers`, `LargeNudgeModifiers`, `SnapBypassModifiers`
-- `DesignEditorInteractionOptions` — `ZoomStep`, `DragStartThreshold`, `ResizeMinSize`, `NudgeStep`, `LargeNudgeStep`, `IsSnapToGridEnabled`, `SnapStep`, `IsSnapToGuidesEnabled`, `SnapGuideTolerance`, `IsResizeContainedToParent`
+- `DesignEditorInteractionOptions` — `ZoomStep`, `DragStartThreshold`, `ResizeMinSize`, `NudgeStep`, `LargeNudgeStep`, `IsSnapToGridEnabled`, `SnapStep`, `IsSnapToGuidesEnabled`, `SnapGuideTolerance`, `IsResizeContainedToParent`, `IsPinchZoomEnabled`
 
 Колесо помечается обработанным только тогда, когда зум действительно состоялся: `EditorState.OnPointerWheelChanged` возвращает признак, а `TryHandleZoom` отвечает `false`, если `ZoomModifiers` заданы и не нажаты. Безусловный `Handled` съедал колесо и в этом случае, и внешний `ScrollViewer`, внутри которого лежит редактор, переставал прокручиваться вовсе. На границе диапазона зума колесо всё равно считается потреблённым — жест был наш, и отдавать его наружу у края значило бы, что страница вдруг начинает ехать.
+
+Все пути масштаба сходятся в `ZoomAt(zoom, origin)`: точка холста под `origin` остаётся на месте, масштаб ограничен `MinZoom`/`MaxZoom`. Путей три, и числа у них разного смысла — сверено с исходниками Avalonia 12, а не угадано (`SurfaceView.Pinch.cs`):
+
+- **колесо** — шаг `ZoomStep` на щелчок; сюда же приходит щипок точного тачпада на Windows — как колесо с `Ctrl`;
+- **щипок тачпада** (`PointerTouchPadGestureMagnifyEvent`, macOS) — в `Delta` **приращение за событие**, поэтому масштаб умножается на `1 + Δ`;
+- **щипок пальцами** (`PinchGestureRecognizer`, только касание и перо) — `Scale` **накоплен от начала жеста**, поэтому считается от масштаба в начале щипка, а не от текущего: иначе два события 1,5 и 2 дали бы 3 вместо 2. Точка холста между пальцами в начале остаётся между ними весь жест, так что щипок заодно панорамирует.
+
+Щипок модификаторов не спрашивает: `ZoomModifiers` отличают масштаб от прокрутки колесом, а щипок ни с чем не спутать. Выключается он `IsPinchZoomEnabled`, и выключенный события не забирает. Настоящего касания headless не умеет, поэтому `PinchZoomTests` поднимают события руками с теми аргументами, что даёт платформа. **На живом сенсорном экране щипок не проверялся:** распознаватель захватывает оба касания, когда ложится второй палец, и первый палец к этому моменту мог начать рамку — её закрывает потеря захвата, как любой брошенный жест, но что при этом успеет выбраться, покажет только живое касание.
 
 Решения о жестах принимать через `ShouldStartPan` / `ShouldStartMarquee` / `ShouldHandleZoom` / `ShouldUseContainerInteraction` / `ShouldUseAdditiveSelection` / `ShouldDeferPressToMarquee`, а не сравнением `KeyModifiers` на месте. Политику интерпретирует редактор — состояния контейнера её не читают, а спрашивают.
 

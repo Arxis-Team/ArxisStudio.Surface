@@ -110,6 +110,7 @@ class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
 class ArxisStudio.Surface.DesignEditorInteractionOptions : AvaloniaObject
     avalonia DragStartThresholdProperty -> DragStartThreshold : Double (styled) = 3
     avalonia IsEqualSpacingEnabledProperty -> IsEqualSpacingEnabled : Boolean (styled) = true
+    avalonia IsPinchZoomEnabledProperty -> IsPinchZoomEnabled : Boolean (styled) = true
     avalonia IsResizeContainedToParentProperty -> IsResizeContainedToParent : Boolean (styled) = true
     avalonia IsSnapToGridEnabledProperty -> IsSnapToGridEnabled : Boolean (styled) = true
     avalonia IsSnapToGuidesEnabledProperty -> IsSnapToGuidesEnabled : Boolean (styled) = true
@@ -121,6 +122,7 @@ class ArxisStudio.Surface.DesignEditorInteractionOptions : AvaloniaObject
     avalonia ZoomStepProperty -> ZoomStep : Double (styled) = 1.1
     ctor .ctor()
     property Boolean IsEqualSpacingEnabled { get; set; }
+    property Boolean IsPinchZoomEnabled { get; set; }
     property Boolean IsResizeContainedToParent { get; set; }
     property Boolean IsSnapToGridEnabled { get; set; }
     property Boolean IsSnapToGuidesEnabled { get; set; }
@@ -347,6 +349,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void OnPointerWheelChanged(PointerWheelEventArgs)
     method Void Reapply(DesignChange)
     method Void Revert(DesignChange)
+    method Void ZoomAt(Double, Point)
     property Boolean IsSelecting { get; set; }
     property Boolean ShowGrid { get; set; }
     property DesignEditorCursors Cursors { get; set; }

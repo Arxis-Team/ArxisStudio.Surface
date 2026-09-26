@@ -51,6 +51,8 @@ public partial class SurfaceView : SelectingItemsControl
         // и она помечает движение обработанным.
         AddHandler(PointerMovedEvent, OnTrackPointer, RoutingStrategies.Tunnel, handledEventsToo: true);
 
+        AttachPinchZoom();
+
         var contentGroup = new TransformGroup();
         contentGroup.Children.Add(_scaleTransform);
         contentGroup.Children.Add(_translateTransform);
