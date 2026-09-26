@@ -2,7 +2,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;

@@ -5,7 +5,6 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using Xunit;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.Editing;

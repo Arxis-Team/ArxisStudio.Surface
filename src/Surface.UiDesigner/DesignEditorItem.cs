@@ -6,7 +6,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using ArxisStudio.States;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface;
 
 namespace ArxisStudio.Surface.UiDesigner;

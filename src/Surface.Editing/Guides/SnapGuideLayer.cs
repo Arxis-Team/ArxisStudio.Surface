@@ -1,13 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using ArxisStudio.Surface.Editing;
-using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.Controls;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Слой направляющих, отрисованных с точностью до физического пикселя.
@@ -64,8 +61,8 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Идентификатор свойства редактора, за которым следит слой.
     /// </summary>
-    public static readonly StyledProperty<DesignEditor?> EditorProperty =
-        AvaloniaProperty.Register<SnapGuideLayer, DesignEditor?>(nameof(Editor));
+    public static readonly StyledProperty<SurfaceView?> EditorProperty =
+        AvaloniaProperty.Register<SnapGuideLayer, SurfaceView?>(nameof(Editor));
 
     /// <summary>
     /// Идентификатор свойства видимости линий выравнивания и подсказок об интервалах.
@@ -208,7 +205,7 @@ public class SnapGuideLayer : Control
     /// оттуда, и их нельзя рассинхронизировать. Слой внутри шаблона получает то же самое
     /// привязками и <c>Editor</c> не использует.
     /// </remarks>
-    public DesignEditor? Editor
+    public SurfaceView? Editor
     {
         get => GetValue(EditorProperty);
         set => SetValue(EditorProperty, value);
@@ -486,19 +483,19 @@ public class SnapGuideLayer : Control
         _editorSubscription?.Dispose();
         _editorSubscription = null;
 
-        if (e.NewValue is not DesignEditor editor)
+        if (e.NewValue is not SurfaceView editor)
         {
             InvalidateVisual();
             return;
         }
 
         _editorSubscription = PropertyMirror.Combine(
-            PropertyMirror.Bind(editor, DesignEditor.ViewportLocationProperty, this, ViewportLocationProperty),
-            PropertyMirror.Bind(editor, DesignEditor.ViewportZoomProperty, this, ViewportZoomProperty),
-            PropertyMirror.Bind(editor, DesignEditor.SnapGuidesProperty, this, GuidesProperty!),
-            PropertyMirror.Bind(editor, DesignEditor.UserGuidesProperty, this, UserGuidesProperty!),
-            PropertyMirror.Bind(editor, DesignEditor.GuidePreviewProperty, this, GuidePreviewProperty),
-            PropertyMirror.Bind(editor, DesignEditor.SpacingHintsProperty, this, SpacingHintsProperty!));
+            PropertyMirror.Bind(editor, SurfaceView.ViewportLocationProperty, this, ViewportLocationProperty),
+            PropertyMirror.Bind(editor, SurfaceView.ViewportZoomProperty, this, ViewportZoomProperty),
+            PropertyMirror.Bind(editor, SurfaceSnapping.SnapGuidesProperty, this, GuidesProperty!),
+            PropertyMirror.Bind(editor, SurfaceGuides.UserGuidesProperty, this, UserGuidesProperty!),
+            PropertyMirror.Bind(editor, SurfaceGuides.GuidePreviewProperty, this, GuidePreviewProperty),
+            PropertyMirror.Bind(editor, SurfaceSnapping.SpacingHintsProperty, this, SpacingHintsProperty!));
 
         // Переносятся данные, но не выключатели показа. ShowGuides и ShowSnapGuides
         // существуют, чтобы погасить встроенный слой; если бы их подхватывал и слой

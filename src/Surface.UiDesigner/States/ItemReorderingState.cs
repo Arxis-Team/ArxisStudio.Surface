@@ -4,7 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface;
 using ArxisStudio.States;
 

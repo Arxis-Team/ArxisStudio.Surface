@@ -404,4 +404,21 @@ public partial class SurfaceView
 
         FitToView(new Rect(item.Location, item.Bounds.Size));
     }
+
+    /// <summary>
+    /// Идентификатор свойства прямоугольника, охватывающего все размещенные элементы.
+    /// </summary>
+    public static readonly DirectProperty<SurfaceView, Rect> ItemsExtentProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, Rect>(nameof(ItemsExtent), o => o.ItemsExtent, (o, v) => o.ItemsExtent = v);
+
+    private Rect _itemsExtent;
+
+    /// <summary>
+    /// Получает или задает прямоугольник, охватывающий все дочерние элементы редактора.
+    /// </summary>
+    public Rect ItemsExtent
+    {
+        get => _itemsExtent;
+        set => SetAndRaise(ItemsExtentProperty, ref _itemsExtent, value);
+    }
 }

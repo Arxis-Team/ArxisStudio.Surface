@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.UiDesigner;

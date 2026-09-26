@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface;
 

@@ -1,267 +1,165 @@
-﻿using System;
-using System.Collections.Specialized;
-using System.Collections;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Presenters;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Selection;
-using Avalonia.Input;
-using Avalonia.Logging;
-using Avalonia.Media;
-using Avalonia.Styling;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
-using ArxisStudio.Surface.UiDesigner.Placement;
-using ArxisStudio.States;
 
 namespace ArxisStudio.Surface.UiDesigner;
 
-// Пользовательские направляющие: источник, притяжение к ним и жест перемещения.
+// Пользовательские направляющие и выключатели показа инструментов: свойства слоя
+// редактирования (SurfaceGuides), которые дизайнер форм берёт себе, и служба,
+// которая за ними стоит (UserGuideService).
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.
 public partial class DesignEditor
 {
     /// <summary>
-    /// Обрабатывает смену коллекции пользовательских направляющих.
+    /// Идентификатор свойства видимости пользовательских направляющих.
     /// </summary>
-    /// <param name="e">Аргументы смены свойства.</param>
-    private void OnGuidesSourceChanged(AvaloniaPropertyChangedEventArgs e)
-    {
-        if (e.OldValue is INotifyCollectionChanged oldNotify)
-            oldNotify.CollectionChanged -= OnGuidesCollectionChanged;
-
-        if (e.NewValue is INotifyCollectionChanged newNotify)
-            newNotify.CollectionChanged += OnGuidesCollectionChanged;
-
-        RebuildUserGuides();
-    }
-
-    private void OnGuidesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        => RebuildUserGuides();
+    public static readonly AttachedProperty<bool> ShowGuidesProperty =
+        SurfaceGuides.ShowGuidesProperty.AddOwner<DesignEditor>();
 
     /// <summary>
-    /// Пересобирает снимок пользовательских направляющих.
+    /// Идентификатор свойства видимости линий выравнивания.
     /// </summary>
-    /// <remarks>
-    /// Снимок сравнивается с текущим той же дисциплиной, что и выделение: совпавший
-    /// не публикуется вовсе. Хост вправе переприсвоить эквивалентную коллекцию,
-    /// и перерисовывать слой из-за этого не за чем.
-    /// </remarks>
-    private void RebuildUserGuides()
-    {
-        var source = Guides;
-        var next = source == null
-            ? Array.Empty<DesignGuide>()
-            : source.ToArray();
-
-        if (next.Length == _userGuides.Count)
-        {
-            var same = true;
-            for (var i = 0; i < next.Length; i++)
-            {
-                if (next[i] == _userGuides[i])
-                    continue;
-
-                same = false;
-                break;
-            }
-
-            if (same)
-                return;
-        }
-
-        UserGuides = next;
-    }
+    public static readonly AttachedProperty<bool> ShowSnapGuidesProperty =
+        SurfaceGuides.ShowSnapGuidesProperty.AddOwner<DesignEditor>();
 
     /// <summary>
-    /// Добавляет пользовательские направляющие в список соседей.
+    /// Идентификатор свойства видимости линеек.
+    /// </summary>
+    public static readonly AttachedProperty<bool> ShowRulersProperty =
+        SurfaceGuides.ShowRulersProperty.AddOwner<DesignEditor>();
+
+    /// <summary>
+    /// Идентификатор свойства пользовательских направляющих.
+    /// </summary>
+    public static readonly AttachedProperty<IEnumerable<DesignGuide>?> GuidesProperty =
+        SurfaceGuides.GuidesProperty.AddOwner<DesignEditor>();
+
+    /// <summary>
+    /// Идентификатор свойства направляющей, показываемой во время её перемещения.
+    /// </summary>
+    public static readonly AttachedProperty<DesignGuide?> GuidePreviewProperty =
+        SurfaceGuides.GuidePreviewProperty.AddOwner<DesignEditor>();
+
+    /// <summary>
+    /// Идентификатор свойства снимка пользовательских направляющих.
+    /// </summary>
+    public static readonly AttachedProperty<IReadOnlyList<DesignGuide>> UserGuidesProperty =
+        SurfaceGuides.UserGuidesProperty.AddOwner<DesignEditor>();
+
+    private UserGuideService UserGuides_ => GetService<UserGuideService>()!;
+
+    /// <summary>
+    /// Получает или задает признак отображения пользовательских направляющих.
     /// </summary>
     /// <remarks>
-    /// Направляющая приходит в резолвер прямоугольником нулевой толщины: тогда её
-    /// ближний край, центр и дальний край совпадают, и правило «каждый кандидат
-    /// с каждым» само сводится к одному сравнению. Отдельной ветки под неё не нужно.
+    /// Прячет линии, но не трогает набор: <see cref="Guides"/> остаётся как был,
+    /// и включение возвращает всё на место. Это выключатель показа, а не удаление.
     /// <para>
-    /// Протяжённость берётся у содержимого редактора: она влияет только на длину
-    /// линии, показанной во время жеста, — саму направляющую слой рисует через
-    /// весь viewport независимо от этого прямоугольника.
+    /// Спрятанную линию нельзя ни подвинуть, ни вытянуть новую с линейки: жест по
+    /// невидимому — худший вид сюрприза. А вот <b>притяжение</b> к ней продолжает
+    /// работать, ровно как у сетки, которую <see cref="SurfaceView.ShowGrid"/> тоже только прячет;
+    /// выключается оно отдельно, через <c>InteractionOptions.IsSnapToGuidesEnabled</c>.
     /// </para>
     /// </remarks>
-    private void AddUserGuideNeighbours(List<Rect> neighbours)
+    public bool ShowGuides
     {
-        var guides = _userGuides;
-        if (guides.Count == 0)
-            return;
-
-        var extent = ItemsExtent;
-        for (var i = 0; i < guides.Count; i++)
-        {
-            var guide = guides[i];
-            neighbours.Add(guide.Orientation == DesignGuideOrientation.Vertical
-                ? new Rect(guide.Position, extent.Y, 0, extent.Height)
-                : new Rect(extent.X, guide.Position, extent.Width, 0));
-        }
+        get => GetValue(ShowGuidesProperty);
+        set => SetValue(ShowGuidesProperty, value);
     }
 
     /// <summary>
-    /// Радиус захвата направляющей указателем, в пикселях экрана.
+    /// Получает или задает признак отображения линий выравнивания и подсказок об интервалах.
     /// </summary>
     /// <remarks>
-    /// В пикселях, а не в мировых единицах, по той же причине, что и
-    /// <c>SnapGuideTolerance</c>: попасть в линию надо там, где она видна.
+    /// Прячет только показ: сами выравнивание и интервалы продолжают работать, как сетка
+    /// при выключенном <see cref="SurfaceView.ShowGrid"/>. Отключаются они через
+    /// <c>InteractionOptions.IsSnapToGuidesEnabled</c> и <c>IsEqualSpacingEnabled</c>.
+    /// <para>
+    /// Вместе с <see cref="ShowGuides"/> это способ погасить встроенный слой целиком —
+    /// то, что нужно хосту, который рисует направляющие сам, поставив свой
+    /// <see cref="SnapGuideLayer"/> или собственный контрол поверх редактора.
+    /// </para>
     /// </remarks>
-    private const double GuideGrabPixels = 4.0;
+    public bool ShowSnapGuides
+    {
+        get => GetValue(ShowSnapGuidesProperty);
+        set => SetValue(ShowSnapGuidesProperty, value);
+    }
 
     /// <summary>
-    /// Получает признак того, что запрос на изменение направляющих кто-то слушает.
+    /// Получает или задает признак отображения линеек.
     /// </summary>
     /// <remarks>
-    /// Без подписчика жеста нет вовсе — то же правило, что и у перестановки: вести
-    /// линию за курсором, зная, что на отпускании ничего не произойдёт, значит
-    /// обещать пользователю несуществующее.
+    /// Линейка в шаблон редактора не входит — её ставит хост, — поэтому свойство
+    /// не прячет её напрямую, а служит общим выключателем: <see cref="DesignRuler"/>
+    /// следит за ним у своего <c>Editor</c> так же, как за масштабом и положением.
+    /// Одна настройка гасит обе линейки, и хосту не нужно держать свой флаг.
+    /// <para>
+    /// Видимость ставится через <c>SetCurrentValue</c>, поэтому собственная привязка
+    /// хоста к <c>IsVisible</c> переживает переключение.
+    /// </para>
     /// </remarks>
-    internal bool CanRequestGuideChange => GuideChangeRequested != null;
+    public bool ShowRulers
+    {
+        get => GetValue(ShowRulersProperty);
+        set => SetValue(ShowRulersProperty, value);
+    }
 
     /// <summary>
-    /// Ищет направляющую под точкой в координатах редактора.
+    /// Получает или задает пользовательские направляющие.
     /// </summary>
-    /// <param name="viewportPoint">Точка в координатах редактора.</param>
-    /// <param name="guide">Найденная направляющая.</param>
-    /// <returns><see langword="true"/>, если направляющая найдена.</returns>
+    /// <remarks>
+    /// Набором владеет хост: редактор его читает, показывает и притягивает к нему элементы,
+    /// но не создаёт и не удаляет записи сам — как и с деревом контролов.
+    /// <para>
+    /// Коллекция, реализующая <see cref="System.Collections.Specialized.INotifyCollectionChanged"/>,
+    /// отслеживается: добавленная направляющая появляется и в отрисовке, и в притяжении
+    /// без переприсваивания свойства.
+    /// </para>
+    /// </remarks>
+    public IEnumerable<DesignGuide>? Guides
+    {
+        get => GetValue(GuidesProperty);
+        set => SetValue(GuidesProperty, value);
+    }
+
+    /// <summary>
+    /// Получает направляющую, показываемую во время её перемещения.
+    /// </summary>
+    public DesignGuide? GuidePreview => GetValue(GuidePreviewProperty);
+
+    /// <summary>
+    /// Получает снимок пользовательских направляющих.
+    /// </summary>
+    public IReadOnlyList<DesignGuide> UserGuides => GetValue(UserGuidesProperty);
+
+    /// <summary>
+    /// Возникает, когда пользователь просит изменить набор направляющих.
+    /// </summary>
+    /// <remarks>
+    /// Набором владеет хост, поэтому редактор его не правит сам. Пока обработчик
+    /// не выставил <c>Handled</c>, направляющая остаётся там, где была.
+    /// <para>
+    /// Без подписчика жест перемещения направляющей не начинается вовсе.
+    /// </para>
+    /// </remarks>
+    public event EventHandler<DesignGuideChangeRequestedEventArgs>? GuideChangeRequested
+    {
+        add => UserGuides_.ChangeRequested += value;
+        remove => UserGuides_.ChangeRequested -= value;
+    }
+
+    internal bool CanRequestGuideChange => UserGuides_.CanRequestChange;
+
     internal bool TryFindGuideAtPoint(Point viewportPoint, out DesignGuide guide)
-    {
-        guide = default;
+        => UserGuides_.TryFindGuideAtPoint(viewportPoint, out guide);
 
-        // Спрятанную линию не за что хватать: жест по невидимому объекту
-        // выглядит как самопроизвольное поведение редактора.
-        if (!ShowGuides)
-            return false;
+    internal double ResolveGuidePosition(Point viewportPoint, DesignGuideOrientation orientation, Avalonia.Input.KeyModifiers modifiers)
+        => UserGuides_.ResolvePosition(viewportPoint, orientation, modifiers);
 
-        var guides = _userGuides;
-        if (guides.Count == 0)
-            return false;
-
-        var zoom = ViewportZoom;
-        if (!(zoom > 0))
-            return false;
-
-        var world = GetWorldPosition(viewportPoint);
-        var best = double.MaxValue;
-        var found = false;
-
-        for (var i = 0; i < guides.Count; i++)
-        {
-            var candidate = guides[i];
-            var world1D = candidate.Orientation == DesignGuideOrientation.Vertical ? world.X : world.Y;
-            var distance = Math.Abs(world1D - candidate.Position) * zoom;
-
-            if (distance > GuideGrabPixels || distance >= best)
-                continue;
-
-            best = distance;
-            guide = candidate;
-            found = true;
-        }
-
-        return found;
-    }
-
-    /// <summary>
-    /// Переводит точку указателя в координату направляющей.
-    /// </summary>
-    /// <param name="viewportPoint">Точка в координатах редактора.</param>
-    /// <param name="orientation">Ось направляющей.</param>
-    /// <param name="modifiers">Модификаторы текущего ввода.</param>
-    /// <remarks>
-    /// Привязка к сетке действует и здесь: направляющую ставят по макету, а он стоит
-    /// на той же сетке. Модификатор обхода снимает её так же, как и при перетаскивании.
-    /// </remarks>
-    internal double ResolveGuidePosition(Point viewportPoint, DesignGuideOrientation orientation, KeyModifiers modifiers)
-    {
-        var world = GetWorldPosition(viewportPoint);
-        var value = orientation == DesignGuideOrientation.Vertical ? world.X : world.Y;
-
-        return ShouldSnap(modifiers) ? SnapCoordinate(value) : value;
-    }
-
-    /// <summary>
-    /// Поднимает запрос на изменение набора направляющих.
-    /// </summary>
-    /// <param name="kind">Вид изменения.</param>
-    /// <param name="guide">Направляющая после изменения.</param>
-    /// <param name="original">Направляющая до изменения.</param>
-    /// <returns><see langword="true"/>, если запрос выполнен.</returns>
-    /// <remarks>
-    /// Обход подписчиков останавливается на первом выполнившем: запрос описывает набор,
-    /// снятый до правки, и следующему он говорил бы о состоянии, которого уже нет.
-    /// </remarks>
     internal bool RequestGuideChange(DesignGuideChangeKind kind, DesignGuide guide, DesignGuide? original)
-    {
-        var handler = GuideChangeRequested;
-        if (handler == null)
-            return false;
+        => UserGuides_.RequestChange(kind, guide, original);
 
-        var args = new DesignGuideChangeRequestedEventArgs(kind, guide, original);
-        foreach (var entry in handler.GetInvocationList())
-        {
-            ((EventHandler<DesignGuideChangeRequestedEventArgs>)entry)(this, args);
-            if (args.Handled)
-                return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Перехватывает нажатие на направляющую до того, как его увидит содержимое.
-    /// </summary>
-    /// <param name="sender">Источник события.</param>
-    /// <param name="e">Аргументы нажатия.</param>
-    /// <remarks>
-    /// Ничего не делает, пока под указателем нет направляющей: обработчик задуман так,
-    /// чтобы его влияние на обычный ввод было ровно нулевым.
-    /// </remarks>
-    private void OnTunnelPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (!CanRequestGuideChange || e.Handled)
-            return;
-
-        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-            return;
-
-        var point = e.GetPosition(this);
-        if (!TryFindGuideAtPoint(point, out var guide))
-            return;
-
-        // Нажатие дальше не пойдёт, поэтому то, что обычно делает OnPointerPressed,
-        // приходится сделать здесь: без этого жест считал бы позицию и модификаторы
-        // от предыдущего ввода.
-        SetLastInputModifiers(e.KeyModifiers);
-        _lastMousePosition = point;
-
-        if (!IsKeyboardFocusWithin)
-            Focus();
-
-        PushState(new EditorGuideDraggingState(this, e.Pointer, guide));
-        e.Handled = true;
-    }
-
-    /// <summary>
-    /// Показывает направляющую в положении, которое она займёт на отпускании.
-    /// </summary>
-    /// <param name="guide">Направляющая или <see langword="null"/>, чтобы убрать превью.</param>
-    /// <remarks>
-    /// Само перемещение применяется на отпускании, а не покадрово: набором владеет хост,
-    /// и просить его о правке на каждом кадре протяжки значило бы двадцать запросов
-    /// в секунду вместо одного. Превью — то же по смыслу, что индикатор точки вставки
-    /// при перестановке.
-    /// </remarks>
-    internal void SetGuidePreview(DesignGuide? guide) => GuidePreview = guide;
+    internal void SetGuidePreview(DesignGuide? guide) => UserGuides_.SetPreview(guide);
 }

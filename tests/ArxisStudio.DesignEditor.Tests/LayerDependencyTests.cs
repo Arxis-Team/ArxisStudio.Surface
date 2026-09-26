@@ -35,15 +35,12 @@ public class LayerDependencyTests
     /// </summary>
     private static readonly string[] Legacy =
     [
-        "ArxisStudio.Controls.DesignRuler",
-        "ArxisStudio.Controls.SnapGuideLayer",
         "ArxisStudio.GroupDragOperation",
         "ArxisStudio.GroupDragTarget",
         "ArxisStudio.GroupResizeOperation",
         "ArxisStudio.GroupResizeTarget",
         "ArxisStudio.IInteractionOperation",
         "ArxisStudio.States.DesignEditorItemState",
-        "ArxisStudio.States.EditorGuideDraggingState",
         "ArxisStudio.States.ItemDraggingState",
         "ArxisStudio.States.ItemIdleState",
         "ArxisStudio.States.ItemResizingState",

@@ -1,59 +1,3 @@
-class ArxisStudio.Controls.DesignRuler : Control
-    avalonia BackgroundProperty -> Background : IBrush (styled) = null
-    avalonia EditorProperty -> Editor : DesignEditor (styled) = null
-    avalonia IsScaleVisibleProperty -> IsScaleVisible : Boolean (styled) = true
-    avalonia LabelBrushProperty -> LabelBrush : IBrush (styled) = null
-    avalonia LabelFontSizeProperty -> LabelFontSize : Double (styled) = 9
-    avalonia OrientationProperty -> Orientation : Orientation (styled) = Horizontal
-    avalonia TickBrushProperty -> TickBrush : IBrush (styled) = null
-    ctor .ctor()
-    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
-    method Void OnPointerMoved(PointerEventArgs)
-    method Void OnPointerPressed(PointerPressedEventArgs)
-    method Void OnPointerReleased(PointerReleasedEventArgs)
-    method Void Render(DrawingContext)
-    property Boolean IsScaleVisible { get; set; }
-    property DesignEditor Editor { get; set; }
-    property Double LabelFontSize { get; set; }
-    property IBrush Background { get; set; }
-    property IBrush LabelBrush { get; set; }
-    property IBrush TickBrush { get; set; }
-    property Orientation Orientation { get; set; }
-class ArxisStudio.Controls.SnapGuideLayer : Control
-    avalonia CentreLineBrushProperty -> CentreLineBrush : IBrush (styled) = null
-    avalonia EditorProperty -> Editor : DesignEditor (styled) = null
-    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (styled) = null
-    avalonia GuidesProperty -> Guides : IReadOnlyList<DesignSnapGuide> (styled) = null
-    avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
-    avalonia LineDashStyleProperty -> LineDashStyle : IDashStyle (styled) = null
-    avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
-    avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (styled) = true
-    avalonia ShowUserGuidesProperty -> ShowUserGuides : Boolean (styled) = true
-    avalonia SpacingBrushProperty -> SpacingBrush : IBrush (styled) = null
-    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (styled) = null
-    avalonia UserGuideBrushProperty -> UserGuideBrush : IBrush (styled) = null
-    avalonia UserGuideDashStyleProperty -> UserGuideDashStyle : IDashStyle (styled) = null
-    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (styled) = null
-    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
-    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
-    ctor .ctor()
-    method Void Render(DrawingContext)
-    property Boolean ShowSnapGuides { get; set; }
-    property Boolean ShowUserGuides { get; set; }
-    property DesignEditor Editor { get; set; }
-    property Double LineThickness { get; set; }
-    property Double ViewportZoom { get; set; }
-    property IBrush CentreLineBrush { get; set; }
-    property IBrush LineBrush { get; set; }
-    property IBrush SpacingBrush { get; set; }
-    property IBrush UserGuideBrush { get; set; }
-    property IDashStyle LineDashStyle { get; set; }
-    property IDashStyle UserGuideDashStyle { get; set; }
-    property IReadOnlyList<DesignGuide> UserGuides { get; set; }
-    property IReadOnlyList<DesignSnapGuide> Guides { get; set; }
-    property IReadOnlyList<DesignSpacingHint> SpacingHints { get; set; }
-    property Nullable<DesignGuide> GuidePreview { get; set; }
-    property Point ViewportLocation { get; set; }
 enum ArxisStudio.Surface.ContainerEmptyAreaDragGesture
     value Marquee = 1
     value MoveContainer = 0
@@ -285,6 +229,27 @@ static class ArxisStudio.Surface.Editing.DesignInteraction
     method ResizePolicy GetResizePolicy(AvaloniaObject)
     method Void SetMovePolicy(AvaloniaObject, MovePolicy)
     method Void SetResizePolicy(AvaloniaObject, ResizePolicy)
+class ArxisStudio.Surface.Editing.DesignRuler : Control
+    avalonia BackgroundProperty -> Background : IBrush (styled) = null
+    avalonia EditorProperty -> Editor : SurfaceView (styled) = null
+    avalonia IsScaleVisibleProperty -> IsScaleVisible : Boolean (styled) = true
+    avalonia LabelBrushProperty -> LabelBrush : IBrush (styled) = null
+    avalonia LabelFontSizeProperty -> LabelFontSize : Double (styled) = 9
+    avalonia OrientationProperty -> Orientation : Orientation (styled) = Horizontal
+    avalonia TickBrushProperty -> TickBrush : IBrush (styled) = null
+    ctor .ctor()
+    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
+    method Void OnPointerMoved(PointerEventArgs)
+    method Void OnPointerPressed(PointerPressedEventArgs)
+    method Void OnPointerReleased(PointerReleasedEventArgs)
+    method Void Render(DrawingContext)
+    property Boolean IsScaleVisible { get; set; }
+    property Double LabelFontSize { get; set; }
+    property IBrush Background { get; set; }
+    property IBrush LabelBrush { get; set; }
+    property IBrush TickBrush { get; set; }
+    property Orientation Orientation { get; set; }
+    property SurfaceView Editor { get; set; }
 struct ArxisStudio.Surface.Editing.DesignSnapGuide : ValueType
     ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double, DesignSnapGuideKind)
     method Boolean Equals(DesignSnapGuide)
@@ -343,6 +308,60 @@ enum ArxisStudio.Surface.Editing.SelectionAdornerRole
     value Group = 2
     value Primary = 0
     value Secondary = 1
+class ArxisStudio.Surface.Editing.SnapGuideLayer : Control
+    avalonia CentreLineBrushProperty -> CentreLineBrush : IBrush (styled) = null
+    avalonia EditorProperty -> Editor : SurfaceView (styled) = null
+    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (styled) = null
+    avalonia GuidesProperty -> Guides : IReadOnlyList<DesignSnapGuide> (styled) = null
+    avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
+    avalonia LineDashStyleProperty -> LineDashStyle : IDashStyle (styled) = null
+    avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
+    avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (styled) = true
+    avalonia ShowUserGuidesProperty -> ShowUserGuides : Boolean (styled) = true
+    avalonia SpacingBrushProperty -> SpacingBrush : IBrush (styled) = null
+    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (styled) = null
+    avalonia UserGuideBrushProperty -> UserGuideBrush : IBrush (styled) = null
+    avalonia UserGuideDashStyleProperty -> UserGuideDashStyle : IDashStyle (styled) = null
+    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (styled) = null
+    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
+    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
+    ctor .ctor()
+    method Void Render(DrawingContext)
+    property Boolean ShowSnapGuides { get; set; }
+    property Boolean ShowUserGuides { get; set; }
+    property Double LineThickness { get; set; }
+    property Double ViewportZoom { get; set; }
+    property IBrush CentreLineBrush { get; set; }
+    property IBrush LineBrush { get; set; }
+    property IBrush SpacingBrush { get; set; }
+    property IBrush UserGuideBrush { get; set; }
+    property IDashStyle LineDashStyle { get; set; }
+    property IDashStyle UserGuideDashStyle { get; set; }
+    property IReadOnlyList<DesignGuide> UserGuides { get; set; }
+    property IReadOnlyList<DesignSnapGuide> Guides { get; set; }
+    property IReadOnlyList<DesignSpacingHint> SpacingHints { get; set; }
+    property Nullable<DesignGuide> GuidePreview { get; set; }
+    property Point ViewportLocation { get; set; }
+    property SurfaceView Editor { get; set; }
+static class ArxisStudio.Surface.Editing.SurfaceGuides
+    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (attached) = null
+    avalonia GuidesProperty -> Guides : IEnumerable<DesignGuide> (attached) = null
+    avalonia ShowGuidesProperty -> ShowGuides : Boolean (attached) = true
+    avalonia ShowRulersProperty -> ShowRulers : Boolean (attached) = true
+    avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (attached) = true
+    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (attached) = <DesignGuide[]>
+    method Boolean GetShowGuides(AvaloniaObject)
+    method Boolean GetShowRulers(AvaloniaObject)
+    method Boolean GetShowSnapGuides(AvaloniaObject)
+    method IEnumerable<DesignGuide> GetGuides(AvaloniaObject)
+    method IReadOnlyList<DesignGuide> GetUserGuides(AvaloniaObject)
+    method Nullable<DesignGuide> GetGuidePreview(AvaloniaObject)
+    method Void SetGuidePreview(AvaloniaObject, Nullable<DesignGuide>)
+    method Void SetGuides(AvaloniaObject, IEnumerable<DesignGuide>)
+    method Void SetShowGuides(AvaloniaObject, Boolean)
+    method Void SetShowRulers(AvaloniaObject, Boolean)
+    method Void SetShowSnapGuides(AvaloniaObject, Boolean)
+    method Void SetUserGuides(AvaloniaObject, IReadOnlyList<DesignGuide>)
 static class ArxisStudio.Surface.Editing.SurfaceSnapping
     avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<DesignSnapGuide> (attached) = <DesignSnapGuide[]>
     avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (attached) = <DesignSpacingHint[]>
@@ -414,6 +433,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia InputGesturesProperty -> InputGestures : DesignEditorInputGestures (direct)
     avalonia InteractionOptionsProperty -> InteractionOptions : DesignEditorInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
+    avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia MarqueeScopeProperty -> MarqueeScope : SurfaceItem (direct)
     avalonia MaxZoomProperty -> MaxZoom : Double (styled) = 5
     avalonia MinZoomProperty -> MinZoom : Double (styled) = 0.1
@@ -475,6 +495,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     property KeyModifiers AdditiveSelectionModifiers { get; set; }
     property KeyModifiers ContainerInteractionModifiers { get; set; }
     property Point ViewportLocation { get; set; }
+    property Rect ItemsExtent { get; set; }
     property Rect SelectedArea { get; set; }
     property SelectionMode SelectionMode { get; set; }
     property SurfaceItem MarqueeScope { get; }
@@ -491,27 +512,26 @@ enum ArxisStudio.Surface.UiDesigner.DesignContentMode
     value Loaded = 1
 class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia GroupStoreProperty -> GroupStore : IDesignGroupStore (direct)
-    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (direct)
-    avalonia GuidesProperty -> Guides : IEnumerable<DesignGuide> (styled) = null
+    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (attached) = null
+    avalonia GuidesProperty -> Guides : IEnumerable<DesignGuide> (attached) = null
     avalonia HasGroupSelectionProperty -> HasGroupSelection : Boolean (direct)
     avalonia HasMultipleContainerSelectionProperty -> HasMultipleContainerSelection : Boolean (direct)
     avalonia HasMultipleNestedSelectionProperty -> HasMultipleNestedSelection : Boolean (direct)
     avalonia HasMultipleSelectionProperty -> HasMultipleSelection : Boolean (direct)
     avalonia HasSingleSelectionProperty -> HasSingleSelection : Boolean (direct)
     avalonia IsReorderingProperty -> IsReordering : Boolean (direct)
-    avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia PrimarySelectionMovePolicyProperty -> PrimarySelectionMovePolicy : MovePolicy (direct)
     avalonia PrimarySelectionPlacementProperty -> PrimarySelectionPlacement : String (direct)
     avalonia PrimarySelectionResizePolicyProperty -> PrimarySelectionResizePolicy : ResizePolicy (direct)
     avalonia ReorderIndicatorProperty -> ReorderIndicator : Rect (direct)
     avalonia SelectionBoundsProperty -> SelectionBounds : Rect (direct)
     avalonia SelectionRectangleStyleProperty -> SelectionRectangleStyle : ControlTheme (styled) = null
-    avalonia ShowGuidesProperty -> ShowGuides : Boolean (styled) = true
-    avalonia ShowRulersProperty -> ShowRulers : Boolean (styled) = true
-    avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (styled) = true
+    avalonia ShowGuidesProperty -> ShowGuides : Boolean (attached) = true
+    avalonia ShowRulersProperty -> ShowRulers : Boolean (attached) = true
+    avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (attached) = true
     avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<DesignSnapGuide> (attached) = <DesignSnapGuide[]>
     avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (attached) = <DesignSpacingHint[]>
-    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (direct)
+    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (attached) = <DesignGuide[]>
     ctor .ctor()
     event EventHandler<DesignEditorDeleteRequestedEventArgs> DeleteRequested
     event EventHandler<DesignEditorHistoryRequestedEventArgs> RedoRequested
@@ -555,7 +575,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property IReadOnlyList<DesignSpacingHint> SpacingHints { get; }
     property MovePolicy PrimarySelectionMovePolicy { get; }
     property Nullable<DesignGuide> GuidePreview { get; }
-    property Rect ItemsExtent { get; set; }
     property Rect ReorderIndicator { get; }
     property Rect SelectionBounds { get; }
     property ResizePolicy PrimarySelectionResizePolicy { get; }

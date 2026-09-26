@@ -1,11 +1,8 @@
 using Avalonia;
 using Avalonia.Input;
-using ArxisStudio.Surface;
 using ArxisStudio.Surface.States;
-using ArxisStudio.Surface.Editing;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.States;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Состояние перемещения пользовательской направляющей.
@@ -17,10 +14,7 @@ namespace ArxisStudio.States;
 /// </remarks>
 internal class EditorGuideDraggingState : EditorState
 {
-    // Направляющие — инструмент дизайнера форм, пока их служба не выделена
-    // в слой редактирования: состоянию нужен сам редактор, а не только ядро.
-    private new DesignEditor Editor => (DesignEditor)base.Editor;
-
+    private readonly UserGuideService _guides;
     private readonly IPointer _pointer;
     private readonly GestureCursorScope _cursor = new GestureCursorScope();
     private readonly DesignGuide _original;
@@ -30,10 +24,12 @@ internal class EditorGuideDraggingState : EditorState
     /// Инициализирует новый экземпляр <see cref="EditorGuideDraggingState"/>.
     /// </summary>
     /// <param name="editor">Редактор, которому принадлежит состояние.</param>
+    /// <param name="guides">Служба направляющих, которая ведёт набор хоста.</param>
     /// <param name="pointer">Указатель, которым идёт жест.</param>
     /// <param name="guide">Перемещаемая направляющая.</param>
-    public EditorGuideDraggingState(DesignEditor editor, IPointer pointer, DesignGuide guide) : base(editor)
+    public EditorGuideDraggingState(SurfaceView editor, UserGuideService guides, IPointer pointer, DesignGuide guide) : base(editor)
     {
+        _guides = guides;
         _pointer = pointer;
         _original = guide;
         _current = guide;
@@ -46,13 +42,13 @@ internal class EditorGuideDraggingState : EditorState
 
         _cursor.Apply(Editor, Editor.Cursors.ResolveGuide(_original.Orientation == DesignGuideOrientation.Vertical));
 
-        Editor.SetGuidePreview(_current);
+        _guides.SetPreview(_current);
     }
 
     /// <inheritdoc />
     public override void Exit()
     {
-        Editor.SetGuidePreview(null);
+        _guides.SetPreview(null);
         _cursor.Restore();
 
         if (ReferenceEquals(_pointer.Captured, Editor))
@@ -62,9 +58,9 @@ internal class EditorGuideDraggingState : EditorState
     /// <inheritdoc />
     public override void OnPointerMoved(PointerEventArgs e)
     {
-        var position = Editor.ResolveGuidePosition(e.GetPosition(Editor), _original.Orientation, e.KeyModifiers);
+        var position = _guides.ResolvePosition(e.GetPosition(Editor), _original.Orientation, e.KeyModifiers);
         _current = new DesignGuide(_original.Orientation, position);
-        Editor.SetGuidePreview(_current);
+        _guides.SetPreview(_current);
     }
 
     /// <inheritdoc />
@@ -76,9 +72,9 @@ internal class EditorGuideDraggingState : EditorState
         // которым её вытянули, только в обратную сторону, и другого способа
         // избавиться от линии указателем не нужно.
         if (!new Rect(Editor.Bounds.Size).Contains(point))
-            Editor.RequestGuideChange(DesignGuideChangeKind.Remove, _original, _original);
+            _guides.RequestChange(DesignGuideChangeKind.Remove, _original, _original);
         else if (_current != _original)
-            Editor.RequestGuideChange(DesignGuideChangeKind.Move, _current, _original);
+            _guides.RequestChange(DesignGuideChangeKind.Move, _current, _original);
 
         Editor.PopState();
     }

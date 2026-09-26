@@ -18,7 +18,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
@@ -30,24 +29,6 @@ namespace ArxisStudio.Surface.UiDesigner;
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.
 public partial class DesignEditor
 {
-    /// <summary>
-    /// Идентификатор свойства видимости пользовательских направляющих.
-    /// </summary>
-    public static readonly StyledProperty<bool> ShowGuidesProperty =
-        AvaloniaProperty.Register<DesignEditor, bool>(nameof(ShowGuides), true);
-
-    /// <summary>
-    /// Идентификатор свойства видимости линий выравнивания.
-    /// </summary>
-    public static readonly StyledProperty<bool> ShowSnapGuidesProperty =
-        AvaloniaProperty.Register<DesignEditor, bool>(nameof(ShowSnapGuides), true);
-
-    /// <summary>
-    /// Идентификатор свойства видимости линеек.
-    /// </summary>
-    public static readonly StyledProperty<bool> ShowRulersProperty =
-        AvaloniaProperty.Register<DesignEditor, bool>(nameof(ShowRulers), true);
-
     /// <summary>
     /// Идентификатор темы для прямоугольника выделения.
     /// </summary>
@@ -86,41 +67,6 @@ public partial class DesignEditor
     /// </summary>
     public static readonly DirectProperty<DesignEditor, Rect> ReorderIndicatorProperty =
         AvaloniaProperty.RegisterDirect<DesignEditor, Rect>(nameof(ReorderIndicator), o => o.ReorderIndicator);
-
-    /// <summary>
-    /// Идентификатор свойства набора активных направляющих.
-    /// </summary>
-    /// <remarks>
-    /// Свойство internal: форму направляющих ещё рано фиксировать публично, а шаблон
-    /// библиотеки компилируется в ту же сборку и привязывается к нему без ограничений.
-    /// </remarks>
-    /// <summary>
-    /// Идентификатор свойства пользовательских направляющих.
-    /// </summary>
-    public static readonly StyledProperty<IEnumerable<DesignGuide>?> GuidesProperty =
-        AvaloniaProperty.Register<DesignEditor, IEnumerable<DesignGuide>?>(nameof(Guides));
-
-    /// <summary>
-    /// Идентификатор свойства направляющей, показываемой во время её перемещения.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, DesignGuide?> GuidePreviewProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, DesignGuide?>(
-            nameof(GuidePreview),
-            o => o.GuidePreview);
-
-    /// <summary>
-    /// Идентификатор свойства снимка пользовательских направляющих.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, IReadOnlyList<DesignGuide>> UserGuidesProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, IReadOnlyList<DesignGuide>>(
-            nameof(UserGuides),
-            o => o.UserGuides);
-
-    /// <summary>
-    /// Идентификатор свойства прямоугольника, охватывающего все размещенные элементы.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, Rect> ItemsExtentProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, Rect>(nameof(ItemsExtent), o => o.ItemsExtent, (o, v) => o.ItemsExtent = v);
 
     /// <summary>
     /// Идентификатор свойства прямоугольника, охватывающего текущее выделение.
@@ -185,63 +131,6 @@ public partial class DesignEditor
     /// </summary>
     public static readonly DirectProperty<DesignEditor, bool> HasMultipleContainerSelectionProperty =
         AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasMultipleContainerSelection), o => o.HasMultipleContainerSelection, (o, v) => o.HasMultipleContainerSelection = v);
-
-    /// <summary>
-    /// Получает или задает признак отображения пользовательских направляющих.
-    /// </summary>
-    /// <remarks>
-    /// Прячет линии, но не трогает набор: <see cref="Guides"/> остаётся как был,
-    /// и включение возвращает всё на место. Это выключатель показа, а не удаление.
-    /// <para>
-    /// Спрятанную линию нельзя ни подвинуть, ни вытянуть новую с линейки: жест по
-    /// невидимому — худший вид сюрприза. А вот <b>притяжение</b> к ней продолжает
-    /// работать, ровно как у сетки, которую <see cref="SurfaceView.ShowGrid"/> тоже только прячет;
-    /// выключается оно отдельно, через <c>InteractionOptions.IsSnapToGuidesEnabled</c>.
-    /// </para>
-    /// </remarks>
-    public bool ShowGuides
-    {
-        get => GetValue(ShowGuidesProperty);
-        set => SetValue(ShowGuidesProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает признак отображения линий выравнивания и подсказок об интервалах.
-    /// </summary>
-    /// <remarks>
-    /// Прячет только показ: сами выравнивание и интервалы продолжают работать, как сетка
-    /// при выключенном <see cref="SurfaceView.ShowGrid"/>. Отключаются они через
-    /// <c>InteractionOptions.IsSnapToGuidesEnabled</c> и <c>IsEqualSpacingEnabled</c>.
-    /// <para>
-    /// Вместе с <see cref="ShowGuides"/> это способ погасить встроенный слой целиком —
-    /// то, что нужно хосту, который рисует направляющие сам, поставив свой
-    /// <see cref="Controls.SnapGuideLayer"/> или собственный контрол поверх редактора.
-    /// </para>
-    /// </remarks>
-    public bool ShowSnapGuides
-    {
-        get => GetValue(ShowSnapGuidesProperty);
-        set => SetValue(ShowSnapGuidesProperty, value);
-    }
-
-    /// <summary>
-    /// Получает или задает признак отображения линеек.
-    /// </summary>
-    /// <remarks>
-    /// Линейка в шаблон редактора не входит — её ставит хост, — поэтому свойство
-    /// не прячет её напрямую, а служит общим выключателем: <see cref="Controls.DesignRuler"/>
-    /// следит за ним у своего <c>Editor</c> так же, как за масштабом и положением.
-    /// Одна настройка гасит обе линейки, и хосту не нужно держать свой флаг.
-    /// <para>
-    /// Видимость ставится через <c>SetCurrentValue</c>, поэтому собственная привязка
-    /// хоста к <c>IsVisible</c> переживает переключение.
-    /// </para>
-    /// </remarks>
-    public bool ShowRulers
-    {
-        get => GetValue(ShowRulersProperty);
-        set => SetValue(ShowRulersProperty, value);
-    }
 
     /// <summary>
     /// Получает или задает тему визуализации рамки выделения.
@@ -329,62 +218,6 @@ public partial class DesignEditor
     {
         get => _reorderIndicator;
         private set => SetAndRaise(ReorderIndicatorProperty, ref _reorderIndicator, value);
-    }
-
-    private IReadOnlyList<DesignGuide> _userGuides = Array.Empty<DesignGuide>();
-
-    private DesignGuide? _guidePreview;
-
-    /// <summary>
-    /// Получает направляющую, показываемую во время её перемещения.
-    /// </summary>
-    public DesignGuide? GuidePreview
-    {
-        get => _guidePreview;
-        private set => SetAndRaise(GuidePreviewProperty, ref _guidePreview, value);
-    }
-
-    /// <summary>
-    /// Получает или задает пользовательские направляющие.
-    /// </summary>
-    /// <remarks>
-    /// Набором владеет хост: редактор его читает, показывает и притягивает к нему элементы,
-    /// но не создаёт и не удаляет записи сам — как и с деревом контролов.
-    /// <para>
-    /// Коллекция, реализующая <see cref="System.Collections.Specialized.INotifyCollectionChanged"/>,
-    /// отслеживается: добавленная направляющая появляется и в отрисовке, и в притяжении
-    /// без переприсваивания свойства.
-    /// </para>
-    /// </remarks>
-    public IEnumerable<DesignGuide>? Guides
-    {
-        get => GetValue(GuidesProperty);
-        set => SetValue(GuidesProperty, value);
-    }
-
-    /// <summary>
-    /// Получает снимок пользовательских направляющих для шаблона.
-    /// </summary>
-    /// <remarks>
-    /// Отдельное свойство нужно по той же причине, что и у выделения: привязка
-    /// перевычисляется только при смене идентичности значения, а хост вправе держать
-    /// одну и ту же коллекцию и менять её содержимое.
-    /// </remarks>
-    public IReadOnlyList<DesignGuide> UserGuides
-    {
-        get => _userGuides;
-        private set => SetAndRaise(UserGuidesProperty, ref _userGuides, value);
-    }
-
-    private Rect _itemsExtent;
-
-    /// <summary>
-    /// Получает или задает прямоугольник, охватывающий все дочерние элементы редактора.
-    /// </summary>
-    public Rect ItemsExtent
-    {
-        get => _itemsExtent;
-        set => SetAndRaise(ItemsExtentProperty, ref _itemsExtent, value);
     }
 
     private Rect _selectionBounds;
@@ -523,16 +356,4 @@ public partial class DesignEditor
     /// Возникает, когда пользователь просит повторить отменённую правку.
     /// </summary>
     public event EventHandler<DesignEditorHistoryRequestedEventArgs>? RedoRequested;
-
-    /// <summary>
-    /// Возникает, когда пользователь просит изменить набор направляющих.
-    /// </summary>
-    /// <remarks>
-    /// Набором владеет хост, поэтому редактор его не правит сам. Пока обработчик
-    /// не выставил <c>Handled</c>, направляющая остаётся там, где была.
-    /// <para>
-    /// Без подписчика жест перемещения направляющей не начинается вовсе.
-    /// </para>
-    /// </remarks>
-    public event EventHandler<DesignGuideChangeRequestedEventArgs>? GuideChangeRequested;
 }

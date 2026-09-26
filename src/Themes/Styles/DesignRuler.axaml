@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:ArxisStudio.Controls">
+                    xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing">
 
     <!--
         Линейка не имеет шаблона: она рисует шкалу целиком в Render, как сетка
@@ -9,7 +9,7 @@
         Толщина по умолчанию одна на обе ориентации, поэтому угол между линейками
         получается квадратным без отдельной настройки.
     -->
-    <ControlTheme x:Key="{x:Type controls:DesignRuler}" TargetType="controls:DesignRuler">
+    <ControlTheme x:Key="{x:Type editing:DesignRuler}" TargetType="editing:DesignRuler">
         <Setter Property="Background" Value="{DynamicResource DesignEditor.Ruler.BackgroundBrush}" />
         <Setter Property="TickBrush" Value="{DynamicResource DesignEditor.Ruler.TickBrush}" />
         <Setter Property="LabelBrush" Value="{DynamicResource DesignEditor.Ruler.LabelBrush}" />

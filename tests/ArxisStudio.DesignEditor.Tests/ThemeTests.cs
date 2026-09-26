@@ -5,7 +5,6 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface.Editing;

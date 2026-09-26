@@ -9,7 +9,6 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface.UiDesigner;
 using Xunit;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;

@@ -1,7 +1,9 @@
 using System.Collections;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Selection;
+using Avalonia.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using ArxisStudio.Surface.States;
@@ -116,5 +118,44 @@ public partial class SurfaceView : SelectingItemsControl
     {
         base.OnApplyTemplate(e);
         Grid = e.NameScope.Find<DesignGrid>("PART_Grid");
+    }
+
+    private readonly List<object> _services = new();
+
+    /// <summary>
+    /// Подключает службу слоя выше: привязку, направляющие и другие инструменты.
+    /// </summary>
+    /// <remarks>
+    /// Шов композиции (ADR 0003). Дизайнер форм подключает службы наследованием, а
+    /// инструменты редактирования — службами, чтобы их взял и редактор, который не
+    /// наследует семантику форм.
+    /// </remarks>
+    private protected void AddService(object service) => _services.Add(service);
+
+    /// <summary>
+    /// Возвращает подключённую службу указанного типа или <see langword="null"/>.
+    /// </summary>
+    internal T? GetService<T>() where T : class
+    {
+        foreach (var service in _services)
+        {
+            if (service is T typed)
+                return typed;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Запоминает положение и модификаторы нажатия, которое служба забрала себе.
+    /// </summary>
+    /// <remarks>
+    /// Нажатие, перехваченное в фазе туннелирования, до <c>OnPointerPressed</c> не дойдёт,
+    /// а жест, который оно начинает, считает от последнего ввода.
+    /// </remarks>
+    internal void RecordPointerInput(Point position, KeyModifiers modifiers)
+    {
+        _lastMousePosition = position;
+        LastInputModifiers = modifiers;
     }
 }

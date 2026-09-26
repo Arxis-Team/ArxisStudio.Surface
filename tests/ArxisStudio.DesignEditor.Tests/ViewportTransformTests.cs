@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface.Editing;
 

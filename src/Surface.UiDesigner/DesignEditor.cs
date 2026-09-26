@@ -18,7 +18,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
@@ -72,7 +71,6 @@ public partial class DesignEditor : SurfaceView
     static DesignEditor()
     {
         FocusableProperty.OverrideDefaultValue<DesignEditor>(true);
-        GuidesProperty.Changed.AddClassHandler<DesignEditor>((x, e) => x.OnGuidesSourceChanged(e));
 
         DesignEditorItem.DragStartedEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsDragStarted(e));
         DesignEditorItem.DragDeltaEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsDragDelta(e));
@@ -100,11 +98,12 @@ public partial class DesignEditor : SurfaceView
     /// </summary>
     public DesignEditor()
     {
-        // Нажатие на направляющую перехватывается в фазе туннелирования: линия
-        // нарисована поверх всего, значит и жест должна забирать раньше контейнера
-        // под ней. Через всплытие это не сделать — контейнер обработает нажатие
-        // первым, захватит указатель и начнёт своё перетаскивание.
-        AddHandler(PointerPressedEvent, OnTunnelPointerPressed, RoutingStrategies.Tunnel);
+        // Инструменты редактирования подключаются службами (ADR 0003). Служба
+        // направляющих ставит свой туннельный обработчик нажатия первой — так же,
+        // как стоял обработчик редактора до выделения службы.
+        _snap = new SnapService(this, () => GetService<UserGuideService>()?.CollectNeighbours() ?? Array.Empty<Rect>());
+        AddService(_snap);
+        AddService(new UserGuideService(this));
 
         // Положение указателя нужно изменению размера, а ручка о нём не сообщает.
         // Туннель и handledEventsToo: во время жеста указатель захвачен ручкой,

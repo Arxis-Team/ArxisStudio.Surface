@@ -8,7 +8,6 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface;

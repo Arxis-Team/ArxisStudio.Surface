@@ -5,7 +5,6 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
-using ArxisStudio.Controls;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
 

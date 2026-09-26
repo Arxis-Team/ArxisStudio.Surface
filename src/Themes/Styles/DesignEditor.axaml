@@ -1,6 +1,5 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:ArxisStudio.Controls"
                     xmlns:surface="clr-namespace:ArxisStudio.Surface"
                     xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner"
                     xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing">
@@ -169,7 +168,7 @@
                             и получает viewport напрямую: линия остаётся пиксельной на
                             любом масштабе, а растущая вместе с зумом закрывала бы макет.
                         -->
-                        <controls:SnapGuideLayer Name="PART_SnapGuideLayer"
+                        <editing:SnapGuideLayer Name="PART_SnapGuideLayer"
                                                  IsHitTestVisible="False"
                                                  Guides="{TemplateBinding SnapGuides}"
                                                  UserGuides="{TemplateBinding UserGuides}"

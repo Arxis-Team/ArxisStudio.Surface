@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;

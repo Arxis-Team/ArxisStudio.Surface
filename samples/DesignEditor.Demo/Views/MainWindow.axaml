@@ -4,7 +4,6 @@
         xmlns:screens="using:DesignEditor.Demo.Views.Screens"
         xmlns:views="using:DesignEditor.Demo.Views"
         xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
-        xmlns:arxisControls="clr-namespace:ArxisStudio.Controls;assembly=ArxisStudio.DesignEditor"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -76,11 +75,11 @@
                                x:Name="Properties"
                                Editor="{Binding #Editor}" />
 
-        <arxisControls:DesignRuler Grid.Row="0" Grid.Column="2"
+        <surface:DesignRuler Grid.Row="0" Grid.Column="2"
                                    x:Name="TopRuler"
                                    Orientation="Horizontal"
                                    Editor="{Binding #Editor}" />
-        <arxisControls:DesignRuler Grid.Row="1" Grid.Column="1"
+        <surface:DesignRuler Grid.Row="1" Grid.Column="1"
                                    Orientation="Vertical"
                                    Editor="{Binding #Editor}"
                                    IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />

@@ -5,7 +5,6 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using ArxisStudio.Controls;
 
 namespace ArxisStudio.Surface.UiDesigner;
 

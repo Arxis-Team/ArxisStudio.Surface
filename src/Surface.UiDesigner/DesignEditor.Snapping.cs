@@ -23,9 +23,9 @@ public partial class DesignEditor
     public static readonly AttachedProperty<IReadOnlyList<DesignSpacingHint>> SpacingHintsProperty =
         SurfaceSnapping.SpacingHintsProperty.AddOwner<DesignEditor>();
 
-    private SnapService? _snap;
+    private readonly SnapService _snap;
 
-    private SnapService Snap => _snap ??= new SnapService(this, CollectUserGuideNeighbours);
+    private SnapService Snap => _snap;
 
     /// <summary>
     /// Получает линии выравнивания, найденные во время жеста.
@@ -76,11 +76,4 @@ public partial class DesignEditor
         => Snap.ResolveEdge(edge, proposed, xAxis, farEdge, modifiers);
 
     internal void PublishResizeGuides(Rect bounds) => Snap.PublishApplied(bounds);
-
-    private IEnumerable<Rect> CollectUserGuideNeighbours()
-    {
-        var neighbours = new List<Rect>();
-        AddUserGuideNeighbours(neighbours);
-        return neighbours;
-    }
 }

@@ -1,21 +1,18 @@
-﻿using System;
+using System;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using ArxisStudio.Surface;
-using ArxisStudio.Surface.Editing;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.Controls;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Линейка редактора: шкала мировых координат и источник пользовательских направляющих.
 /// </summary>
 /// <remarks>
-/// Линейка не входит в шаблон <see cref="DesignEditor"/>, а ставится хостом рядом с ним.
+/// Линейка не входит в шаблон <see cref="SurfaceView"/>, а ставится хостом рядом с ним.
 /// Причина в координатах: у редактора точка ввода совпадает с точкой viewport'а, и любой
 /// слой, занявший место сверху или слева, сдвинул бы это соответствие. Composition
 /// снаружи оставляет три системы координат редактора нетронутыми.
@@ -25,7 +22,7 @@ namespace ArxisStudio.Controls;
 /// </para>
 /// <para>
 /// Протяжка с линейки создаёт направляющую. Как и её перемещение, создание идёт запросом
-/// <see cref="DesignEditor.GuideChangeRequested"/>: набором владеет хост.
+/// <c>GuideChangeRequested</c>: набором владеет хост.
 /// </para>
 /// </remarks>
 public class DesignRuler : Control
@@ -51,8 +48,8 @@ public class DesignRuler : Control
     /// <summary>
     /// Идентификатор свойства редактора, которому принадлежит линейка.
     /// </summary>
-    public static readonly StyledProperty<DesignEditor?> EditorProperty =
-        AvaloniaProperty.Register<DesignRuler, DesignEditor?>(nameof(Editor));
+    public static readonly StyledProperty<SurfaceView?> EditorProperty =
+        AvaloniaProperty.Register<DesignRuler, SurfaceView?>(nameof(Editor));
 
     /// <summary>
     /// Идентификатор свойства видимости шкалы.
@@ -113,7 +110,7 @@ public class DesignRuler : Control
     /// <summary>
     /// Получает или задает редактор, которому принадлежит линейка.
     /// </summary>
-    public DesignEditor? Editor
+    public SurfaceView? Editor
     {
         get => GetValue(EditorProperty);
         set => SetValue(EditorProperty, value);
@@ -126,7 +123,7 @@ public class DesignRuler : Control
     /// Выключенная шкала оставляет полосу линейки на месте: с неё по-прежнему
     /// вытягиваются направляющие, просто без делений и подписей. Это разные вещи —
     /// «шкала мешает читать макет» и «линейка не нужна вовсе», — и второе выключается
-    /// через <see cref="DesignEditor.ShowRulers"/>.
+    /// через <see cref="SurfaceGuides.ShowRulersProperty"/>.
     /// </remarks>
     public bool IsScaleVisible
     {
@@ -187,16 +184,16 @@ public class DesignRuler : Control
         _viewportSubscription?.Dispose();
         _viewportSubscription = null;
 
-        if (e.NewValue is not DesignEditor editor)
+        if (e.NewValue is not SurfaceView editor)
         {
             InvalidateVisual();
             return;
         }
 
         _viewportSubscription = new CompositeSubscription(
-            editor.GetObservable(DesignEditor.ViewportLocationProperty).Subscribe(new Sink<Point>(this)),
-            editor.GetObservable(DesignEditor.ViewportZoomProperty).Subscribe(new Sink<double>(this)),
-            editor.GetObservable(DesignEditor.ShowRulersProperty).Subscribe(new VisibilitySink(this)));
+            editor.GetObservable(SurfaceView.ViewportLocationProperty).Subscribe(new Sink<Point>(this)),
+            editor.GetObservable(SurfaceView.ViewportZoomProperty).Subscribe(new Sink<double>(this)),
+            editor.GetObservable(SurfaceGuides.ShowRulersProperty).Subscribe(new VisibilitySink(this)));
 
         InvalidateVisual();
     }
@@ -206,11 +203,11 @@ public class DesignRuler : Control
     {
         base.OnPointerPressed(e);
 
-        if (Editor is not { } editor || !editor.CanRequestGuideChange)
+        if (Editor is not { } editor || editor.GetService<UserGuideService>() is not { CanRequestChange: true })
             return;
 
         // Вытягивать линию, которую не покажут, незачем.
-        if (!editor.ShowGuides)
+        if (!SurfaceGuides.GetShowGuides(editor))
             return;
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
@@ -242,7 +239,7 @@ public class DesignRuler : Control
             return;
 
         _dragging = false;
-        editor.SetGuidePreview(null);
+        editor.GetService<UserGuideService>()?.SetPreview(null);
 
         var point = e.GetPosition(editor);
 
@@ -251,8 +248,8 @@ public class DesignRuler : Control
         // направляющей на краю.
         if (new Rect(editor.Bounds.Size).Contains(point))
         {
-            var position = editor.ResolveGuidePosition(point, GuideOrientation, e.KeyModifiers);
-            editor.RequestGuideChange(DesignGuideChangeKind.Add, new DesignGuide(GuideOrientation, position), null);
+            var position = ResolveGuidePosition(editor, point, GuideOrientation, e.KeyModifiers);
+            editor.GetService<UserGuideService>()?.RequestChange(DesignGuideChangeKind.Add, new DesignGuide(GuideOrientation, position), null);
         }
 
         if (ReferenceEquals(e.Pointer.Captured, this))
@@ -268,13 +265,13 @@ public class DesignRuler : Control
             return;
 
         _dragging = false;
-        Editor?.SetGuidePreview(null);
+        Editor?.GetService<UserGuideService>()?.SetPreview(null);
     }
 
-    private void UpdatePreview(DesignEditor editor, PointerEventArgs e)
+    private void UpdatePreview(SurfaceView editor, PointerEventArgs e)
     {
-        var position = editor.ResolveGuidePosition(e.GetPosition(editor), GuideOrientation, e.KeyModifiers);
-        editor.SetGuidePreview(new DesignGuide(GuideOrientation, position));
+        var position = ResolveGuidePosition(editor, e.GetPosition(editor), GuideOrientation, e.KeyModifiers);
+        editor.GetService<UserGuideService>()?.SetPreview(new DesignGuide(GuideOrientation, position));
     }
 
     /// <summary>
@@ -434,5 +431,21 @@ public class DesignRuler : Control
             foreach (var subscription in _subscriptions)
                 subscription.Dispose();
         }
+    }
+
+    /// <summary>
+    /// Переводит точку указателя в координату направляющей.
+    /// </summary>
+    /// <remarks>
+    /// Координату ставит служба направляющих поверхности — с той же привязкой к сетке,
+    /// что и у переноса линии. Поверхность без службы отдаёт мировую координату как есть.
+    /// </remarks>
+    private static double ResolveGuidePosition(SurfaceView editor, Point viewportPoint, DesignGuideOrientation orientation, KeyModifiers modifiers)
+    {
+        if (editor.GetService<UserGuideService>() is { } guides)
+            return guides.ResolvePosition(viewportPoint, orientation, modifiers);
+
+        var world = editor.GetWorldPosition(viewportPoint);
+        return orientation == DesignGuideOrientation.Vertical ? world.X : world.Y;
     }
 }
