@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
-using ArxisStudio.States;
 using Xunit;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.UiDesigner;

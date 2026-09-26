@@ -5,7 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using ArxisStudio.Surface;
-using ArxisStudio.States;
+using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface.UiDesigner.States;
 
@@ -21,7 +21,7 @@ namespace ArxisStudio.Surface.UiDesigner.States;
 /// Пока идёт протяжка, показывается только индикатор точки вставки.
 /// </para>
 /// </remarks>
-internal sealed class ItemReorderingState : DesignEditorItemState
+internal sealed class ItemReorderingState : SurfaceItemState
 {
     private readonly Point _initialPointerPosition;
     private readonly GestureCursorScope _cursor = new GestureCursorScope();
@@ -42,7 +42,7 @@ internal sealed class ItemReorderingState : DesignEditorItemState
     }
 
     /// <inheritdoc />
-    public override void Enter(DesignEditorItemState from)
+    public override void Enter(SurfaceItemState from)
     {
         var editor = Container.FindAncestorOfType<DesignEditor>();
         if (editor == null)

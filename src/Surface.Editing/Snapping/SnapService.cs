@@ -20,7 +20,7 @@ namespace ArxisStudio.Surface.Editing;
 /// служба берёт соседей и куда кладёт результат.
 /// </para>
 /// </remarks>
-internal sealed class SnapService
+internal sealed class SnapService : ISurfacePositionModifier
 {
     private readonly SurfaceView _view;
     private readonly Func<IEnumerable<Rect>> _extraNeighbours;

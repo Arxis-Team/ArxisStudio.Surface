@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -5,6 +6,7 @@ using Avalonia.Controls.Mixins;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface;
 
@@ -18,7 +20,7 @@ namespace ArxisStudio.Surface;
 /// Дизайнер форм наследует контейнер и добавляет к нему режим содержимого и связь
 /// <see cref="Location"/> с attached-свойствами раскладки.
 /// </remarks>
-[PseudoClasses(":selected")]
+[PseudoClasses(":selected", ":dragging", ":resizing")]
 public class SurfaceItem : ContentControl, ISelectable
 {
     #region Standard Properties
@@ -150,6 +152,24 @@ public class SurfaceItem : ContentControl, ISelectable
     }
 
     /// <summary>
+    /// Инициализирует новый экземпляр <see cref="SurfaceItem"/>.
+    /// </summary>
+    public SurfaceItem()
+    {
+        _states.Push(new ItemIdleState(this));
+    }
+
+    /// <summary>
+    /// Можно ли тащить контейнер, который не лежит ни в одной поверхности.
+    /// </summary>
+    /// <remarks>
+    /// Без поверхности жест пишет <see cref="Location"/> напрямую, а её читает не всякая
+    /// панель. Ядро не знает, какая прочтёт, поэтому отвечает «нельзя»; слой, у которого
+    /// своя панель, знает и переопределяет.
+    /// </remarks>
+    internal virtual bool CanMoveWithoutSurface => false;
+
+    /// <summary>
     /// Реагирует на изменение свойств контейнера.
     /// </summary>
     /// <param name="change">Аргументы изменения свойства.</param>
@@ -164,4 +184,81 @@ public class SurfaceItem : ContentControl, ISelectable
     internal void OnResizeStarted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeStartedEvent, Vector = vector });
     internal void OnResizeDelta(ResizeDeltaEventArgs e) => RaiseEvent(e);
     internal void OnResizeCompleted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeCompletedEvent, Vector = vector });
+
+    private readonly Stack<SurfaceItemState> _states = new();
+
+    /// <summary>
+    /// Получает текущее состояние контейнера.
+    /// </summary>
+    internal SurfaceItemState CurrentState => _states.Count > 0 ? _states.Peek() : null!;
+
+    /// <summary>
+    /// Помещает новое состояние контейнера в стек и делает его активным.
+    /// </summary>
+    /// <param name="state">Новое состояние.</param>
+    internal void PushState(SurfaceItemState state)
+    {
+        var previous = CurrentState;
+        _states.Push(state);
+        state.Enter(previous);
+        UpdatePseudoClassesState(state);
+    }
+
+    /// <summary>
+    /// Завершает текущее состояние контейнера и возвращается к предыдущему.
+    /// </summary>
+    internal void PopState()
+    {
+        if (_states.Count > 1)
+        {
+            var current = _states.Pop();
+            current.Exit();
+            CurrentState.ReEnter(current);
+            UpdatePseudoClassesState(CurrentState);
+        }
+    }
+
+    private void UpdatePseudoClassesState(SurfaceItemState state)
+    {
+        PseudoClasses.Set(":dragging", state.PseudoClass == ":dragging");
+        PseudoClasses.Set(":resizing", state.PseudoClass == ":resizing");
+    }
+
+    /// <summary>
+    /// Передает событие нажатия указателя в текущее состояние контейнера.
+    /// </summary>
+    /// <param name="e">Аргументы указателя.</param>
+    protected override void OnPointerPressed(PointerPressedEventArgs e) { base.OnPointerPressed(e); if (!e.Handled) CurrentState.OnPointerPressed(e); }
+
+    /// <summary>
+    /// Передает событие перемещения указателя в текущее состояние контейнера.
+    /// </summary>
+    /// <param name="e">Аргументы указателя.</param>
+    protected override void OnPointerMoved(PointerEventArgs e) { base.OnPointerMoved(e); CurrentState.OnPointerMoved(e); }
+
+    /// <summary>
+    /// Передает событие отпускания указателя в текущее состояние контейнера.
+    /// </summary>
+    /// <param name="e">Аргументы указателя.</param>
+    protected override void OnPointerReleased(PointerReleasedEventArgs e) { base.OnPointerReleased(e); CurrentState.OnPointerReleased(e); }
+
+    /// <summary>
+    /// Сбрасывает вложенные состояния, если контейнер теряет захват указателя.
+    /// </summary>
+    /// <param name="e">Аргументы потери захвата указателя.</param>
+    /// <inheritdoc />
+    /// <remarks>
+    /// Стек разбирается до базового состояния, а базовому о брошенном жесте говорится
+    /// отдельно: снять его нечем, а нажатие, за которым не последует отпускания,
+    /// иначе осталось бы у него записанным.
+    /// </remarks>
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+
+        while (_states.Count > 1)
+            PopState();
+
+        CurrentState.OnPointerCaptureLost();
+    }
 }

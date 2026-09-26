@@ -20,7 +20,6 @@ using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
-using ArxisStudio.States;
 using ArxisStudio.Surface;
 
 namespace ArxisStudio.Surface.UiDesigner;
@@ -66,7 +65,6 @@ public partial class DesignEditor : SurfaceView
 
     private GroupResizeOperation? _groupResizeOperation;
 
-    private GroupDragOperation? _groupDragOperation;
 
     static DesignEditor()
     {

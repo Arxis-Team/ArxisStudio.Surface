@@ -421,6 +421,10 @@ class ArxisStudio.Surface.SurfaceItem : ContentControl
     field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
     field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
     field RoutedEvent<VectorEventArgs> ResizeStartedEvent
+    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
+    method Void OnPointerMoved(PointerEventArgs)
+    method Void OnPointerPressed(PointerPressedEventArgs)
+    method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Boolean IsDraggable { get; set; }
     property Boolean IsSelected { get; set; }
@@ -582,10 +586,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
 class ArxisStudio.Surface.UiDesigner.DesignEditorItem : SurfaceItem
     avalonia ContentModeProperty -> ContentMode : DesignContentMode (styled) = Annotated
     ctor .ctor()
-    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
-    method Void OnPointerMoved(PointerEventArgs)
-    method Void OnPointerPressed(PointerPressedEventArgs)
-    method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property DesignContentMode ContentMode { get; set; }
 sealed class ArxisStudio.Surface.UiDesigner.DesignEditorReorderRequestedEventArgs : EventArgs

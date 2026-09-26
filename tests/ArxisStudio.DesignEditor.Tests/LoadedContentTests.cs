@@ -253,7 +253,7 @@ public class LoadedContentTests
 
         var before = harness.Editor.GetDesignSize(action).Height;
 
-        var state = new ArxisStudio.States.ItemResizingState(container, action, ResizeDirection.Bottom);
+        var state = new ArxisStudio.Surface.Editing.ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
             new Vector(0, 40), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));

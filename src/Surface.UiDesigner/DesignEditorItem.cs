@@ -5,7 +5,7 @@ using Avalonia.Controls.Mixins;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using ArxisStudio.States;
+using Avalonia.VisualTree;
 using ArxisStudio.Surface;
 
 namespace ArxisStudio.Surface.UiDesigner;
@@ -28,11 +28,9 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// ]]></code>
 /// </example>
 [TemplatePart("PART_Border", typeof(Border))]
-[PseudoClasses(":dragging", ":resizing")]
 public class DesignEditorItem : SurfaceItem
 {
     #region Fields
-    private readonly Stack<DesignEditorItemState> _states = new();
     private bool _isUpdatingLocation;
     #endregion
 
@@ -62,11 +60,6 @@ public class DesignEditorItem : SurfaceItem
 
     #endregion
 
-    /// <summary>
-    /// Получает текущее состояние контейнера.
-    /// </summary>
-    internal DesignEditorItemState CurrentState => _states.Count > 0 ? _states.Peek() : null!;
-
     static DesignEditorItem()
     {
         Layout.XProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) => item.SyncLocationFromLayout());
@@ -78,8 +71,14 @@ public class DesignEditorItem : SurfaceItem
     /// </summary>
     public DesignEditorItem()
     {
-        _states.Push(new ItemIdleState(this));
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Без редактора жест пишет <see cref="SurfaceItem.Location"/>, которую читает
+    /// лишь <see cref="AbsolutePanel"/>.
+    /// </remarks>
+    internal override bool CanMoveWithoutSurface => this.GetVisualParent() is AbsolutePanel;
 
     /// <summary>
     /// Реагирует на изменение свойств контейнера и переносит <see cref="SurfaceItem.Location"/>
@@ -140,75 +139,5 @@ public class DesignEditorItem : SurfaceItem
 
     #region State Machine Management
 
-    /// <summary>
-    /// Помещает новое состояние контейнера в стек и делает его активным.
-    /// </summary>
-    /// <param name="state">Новое состояние.</param>
-    internal void PushState(DesignEditorItemState state)
-    {
-        var previous = CurrentState;
-        _states.Push(state);
-        state.Enter(previous);
-        UpdatePseudoClassesState(state);
-    }
-
-    /// <summary>
-    /// Завершает текущее состояние контейнера и возвращается к предыдущему.
-    /// </summary>
-    internal void PopState()
-    {
-        if (_states.Count > 1)
-        {
-            var current = _states.Pop();
-            current.Exit();
-            CurrentState.ReEnter(current);
-            UpdatePseudoClassesState(CurrentState);
-        }
-    }
-
-    private void UpdatePseudoClassesState(DesignEditorItemState state)
-    {
-        PseudoClasses.Set(":dragging", state is ItemDraggingState);
-        PseudoClasses.Set(":resizing", state is ItemResizingState);
-    }
-
     #endregion
-
-    /// <summary>
-    /// Передает событие нажатия указателя в текущее состояние контейнера.
-    /// </summary>
-    /// <param name="e">Аргументы указателя.</param>
-    protected override void OnPointerPressed(PointerPressedEventArgs e) { base.OnPointerPressed(e); if (!e.Handled) CurrentState.OnPointerPressed(e); }
-
-    /// <summary>
-    /// Передает событие перемещения указателя в текущее состояние контейнера.
-    /// </summary>
-    /// <param name="e">Аргументы указателя.</param>
-    protected override void OnPointerMoved(PointerEventArgs e) { base.OnPointerMoved(e); CurrentState.OnPointerMoved(e); }
-
-    /// <summary>
-    /// Передает событие отпускания указателя в текущее состояние контейнера.
-    /// </summary>
-    /// <param name="e">Аргументы указателя.</param>
-    protected override void OnPointerReleased(PointerReleasedEventArgs e) { base.OnPointerReleased(e); CurrentState.OnPointerReleased(e); }
-
-    /// <summary>
-    /// Сбрасывает вложенные состояния, если контейнер теряет захват указателя.
-    /// </summary>
-    /// <param name="e">Аргументы потери захвата указателя.</param>
-    /// <inheritdoc />
-    /// <remarks>
-    /// Стек разбирается до базового состояния, а базовому о брошенном жесте говорится
-    /// отдельно: снять его нечем, а нажатие, за которым не последует отпускания,
-    /// иначе осталось бы у него записанным.
-    /// </remarks>
-    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
-    {
-        base.OnPointerCaptureLost(e);
-
-        while (_states.Count > 1)
-            PopState();
-
-        CurrentState.OnPointerCaptureLost();
-    }
 }

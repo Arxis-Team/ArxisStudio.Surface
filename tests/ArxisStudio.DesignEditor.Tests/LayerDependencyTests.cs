@@ -11,10 +11,9 @@ namespace ArxisStudio.Tests;
 /// только этим тестом. Слой типа определяется по пространству имён; ссылки собирает
 /// <see cref="IlReferenceScanner"/> — из объявлений и из тел методов.
 /// <para>
-/// Типы, ещё не разнесённые по слоям, лежат в наследии и перечислены в <see cref="Legacy"/>
-/// явно. Список обязан совпадать с действительностью в обе стороны: тип, покинувший наследие,
-/// вычёркивается тем же коммитом, что его перенёс, — иначе список перестаёт говорить, сколько
-/// работы осталось. Пустой список — конец первого этапа.
+/// Пока шло разделение, типы, ещё не разнесённые по слоям, лежали в «наследии» и были
+/// перечислены явно; список только сокращался. Он опустел, и правило стало прямым:
+/// тип вне трёх слоёв — ошибка.
 /// </para>
 /// </remarks>
 public class LayerDependencyTests
@@ -26,20 +25,9 @@ public class LayerDependencyTests
         Core,
         Editing,
         UiDesigner,
-        Legacy,
+        Outside,
         Generated
     }
-
-    /// <summary>
-    /// Типы верхнего уровня, ещё не разнесённые по слоям.
-    /// </summary>
-    private static readonly string[] Legacy =
-    [
-        "ArxisStudio.States.DesignEditorItemState",
-        "ArxisStudio.States.ItemDraggingState",
-        "ArxisStudio.States.ItemIdleState",
-        "ArxisStudio.States.ItemResizingState",
-    ];
 
     private static Assembly Library => typeof(ArxisStudio.Surface.UiDesigner.DesignEditor).Assembly;
 
@@ -52,7 +40,7 @@ public class LayerDependencyTests
         foreach (var type in TopLevelTypes())
         {
             var from = LayerOf(type);
-            if (from is Layer.Legacy or Layer.Generated)
+            if (from is Layer.Outside or Layer.Generated)
                 continue;
 
             foreach (var reference in IlReferenceScanner.References(type, unresolved))
@@ -74,24 +62,17 @@ public class LayerDependencyTests
     }
 
     [Fact]
-    public void Legacy_List_Matches_The_Code()
+    public void Every_Type_Belongs_To_A_Layer()
     {
-        var actual = TopLevelTypes()
-            .Where(type => LayerOf(type) == Layer.Legacy)
+        var outside = TopLevelTypes()
+            .Where(type => LayerOf(type) == Layer.Outside)
             .Select(type => type.FullName!)
-            .ToHashSet(StringComparer.Ordinal);
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
 
-        var listed = Legacy.ToHashSet(StringComparer.Ordinal);
-
-        var unlisted = actual.Except(listed).OrderBy(n => n, StringComparer.Ordinal).ToList();
-        var stale = listed.Except(actual).OrderBy(n => n, StringComparer.Ordinal).ToList();
-
-        Assert.True(unlisted.Count == 0,
-            "Новый тип вне слоёв. Наследие только сокращается: положите тип в ArxisStudio.Surface, " +
-            ".Editing или .UiDesigner.\n" + string.Join("\n", unlisted.Select(n => $"        \"{n}\",")));
-
-        Assert.True(stale.Count == 0,
-            "Тип покинул наследие — вычеркните его из списка тем же коммитом:\n" + string.Join("\n", stale));
+        Assert.True(outside.Count == 0,
+            "Тип вне слоёв. Положите его в ArxisStudio.Surface, .Editing или .UiDesigner (ADR 0003):\n" +
+            string.Join("\n", outside));
     }
 
     [Fact]
@@ -149,13 +130,13 @@ public class LayerDependencyTests
         if (InNamespace(ns, Root + ".Editing"))
             return Layer.Editing;
 
-        return InNamespace(ns, Root) ? Layer.Core : Layer.Legacy;
+        return InNamespace(ns, Root) ? Layer.Core : Layer.Outside;
     }
 
     private static bool InNamespace(string ns, string root) =>
         ns == root || ns.StartsWith(root + ".", StringComparison.Ordinal);
 
-    private static bool Allowed(Layer from, Layer to) => to is Layer.Legacy or Layer.Generated || from switch
+    private static bool Allowed(Layer from, Layer to) => to is Layer.Generated || from switch
     {
         Layer.Core => to == Layer.Core,
         Layer.Editing => to is Layer.Core or Layer.Editing,

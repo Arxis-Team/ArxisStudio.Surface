@@ -20,9 +20,9 @@ using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
-using ArxisStudio.States;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.States;
+using ArxisStudio.Surface.UiDesigner.States;
 
 namespace ArxisStudio.Surface.UiDesigner;
 
@@ -30,6 +30,49 @@ namespace ArxisStudio.Surface.UiDesigner;
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.
 public partial class DesignEditor
 {
+    /// <inheritdoc />
+    /// <remarks>
+    /// Порядок решений прежний, и он значим.
+    /// <list type="number">
+    /// <item><description>
+    /// Пользовательский запрет сильнее любой раскладки — в том числе сильнее перестановки.
+    /// </description></item>
+    /// <item><description>
+    /// Спрашивается не родитель контейнера, а фактическая цель жеста: двигаться будет
+    /// именно она, и решает её собственная раскладка.
+    /// </description></item>
+    /// <item><description>
+    /// Перестановку выполняет приложение, и без подписчика она не произойдёт: жест тогда
+    /// не начинается вовсе — вести точку вставки за курсором, зная, что на отпускании
+    /// ничего не будет, то же самое, что предлагать заблокированное перемещение.
+    /// </description></item>
+    /// <item><description>
+    /// Смешанная группа заблокированных и свободных вложенных target'ов не двигается вовсе.
+    /// </description></item>
+    /// </list>
+    /// </remarks>
+    internal override ItemDragPlan PlanItemDrag(SurfaceItem container, Control moveTarget)
+    {
+        if (DesignInteraction.GetMovePolicy(moveTarget) == ArxisStudio.Surface.MovePolicy.None)
+            return ItemDragPlan.Refuse;
+
+        var semantics = GetPlacementStrategy(moveTarget).MoveSemantics;
+        if (semantics == DesignMoveSemantics.None)
+            return ItemDragPlan.Refuse;
+
+        if (semantics == DesignMoveSemantics.Reorder)
+        {
+            return CanRequestReorder
+                ? new ItemDragPlan(ItemDragKind.Custom, static (item, start) => new ItemReorderingState((DesignEditorItem)item, start))
+                : ItemDragPlan.Refuse;
+        }
+
+        if (ShouldBlockNestedGroupDrag())
+            return ItemDragPlan.Refuse with { MarkHandled = true };
+
+        return ItemDragPlan.Drag;
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// Правый клик сначала переводит выделение, если щёлкнули мимо него, и только потом
@@ -605,39 +648,6 @@ public partial class DesignEditor
         EndSnapGuides();
         UpdateSelectionOverlayState();
         CommitEdit();
-    }
-
-    /// <summary>
-    /// Определяет, должен ли контейнер уступить нажатие рамке выделения.
-    /// </summary>
-    /// <param name="container">Контейнер, получивший нажатие. Может быть вложенным.</param>
-    /// <param name="viewportPoint">Точка нажатия в координатах редактора.</param>
-    /// <param name="modifiers">Модификаторы ввода.</param>
-    /// <remarks>
-    /// Решение принимает редактор, а не состояние контейнера: политика ввода живёт
-    /// в <see cref="SurfaceView.InputGestures"/>, и контейнеру знать о ней незачем. Уступив жест,
-    /// контейнер не захватывает указатель и не помечает событие обработанным,
-    /// поэтому нажатие всплывает до редактора обычным маршрутом.
-    /// <para>
-    /// Контейнер удерживает жест, если нажат <see cref="DesignEditorInputGestures.ContainerInteractionModifiers"/>,
-    /// если контейнер уже выбран целиком, либо если под точкой есть design target.
-    /// </para>
-    /// </remarks>
-    internal bool ShouldDeferPressToMarquee(DesignEditorItem container, Point viewportPoint, KeyModifiers modifiers)
-    {
-        if (InputGestures.ContainerEmptyAreaDrag != ContainerEmptyAreaDragGesture.Marquee)
-            return false;
-
-        if (ShouldUseContainerInteraction(modifiers))
-            return false;
-
-        // Уже выбранный контейнер перетаскивается без модификаторов —
-        // иначе его нельзя было бы двигать мышью вовсе.
-        if (_selectedTargets.Contains(container))
-            return false;
-
-        var worldPoint = GetWorldPosition(viewportPoint);
-        return !TryResolveSelectionTargetAtPoint(container, worldPoint, out _);
     }
 
     private bool TryCreateGroupResizeOperation(ResizeDirection direction, out GroupResizeOperation? operation)

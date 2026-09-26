@@ -57,7 +57,7 @@ internal sealed class GroupResizeOperation
         // Для группы привязывается рамка целиком: привязка каждого target'а
         // по отдельности разрушила бы пропорции внутри группы. Это касается
         // и направляющих — линия ловит рамку выделения, а не отдельный контрол.
-        if (editor.GetService<SnapService>()?.CanSnapEdge(editor.LastInputModifiers) == true)
+        if (editor.CanSnapResizeEdge(editor.LastInputModifiers))
             nextBounds = SnapBounds(editor, nextBounds, _direction, _currentBounds, _minSize);
 
         // Ограничение по форме — тоже над рамкой целиком, по тем же причинам,
@@ -70,7 +70,7 @@ internal sealed class GroupResizeOperation
         _currentBounds = nextBounds;
 
         // Линии — по применённой рамке: край мог упереться в границу формы.
-        editor.GetService<SnapService>()?.PublishApplied(nextBounds);
+        editor.PublishResizeGuides(nextBounds);
 
         // Масштаб и позиции считаются от ИСХОДНОЙ рамки, иначе округления
         // копились бы от кадра к кадру и группа расползалась.
@@ -200,14 +200,14 @@ internal sealed class GroupResizeOperation
         var bottom = bounds.Bottom;
 
         if (direction is ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight)
-            right = ResolveEdge(editor, right, bounds, xAxis: true, farEdge: true, modifiers);
+            right = editor.ResolveResizeEdge(right, bounds, xAxis: true, farEdge: true, modifiers);
         else if (direction is ResizeDirection.Left or ResizeDirection.TopLeft or ResizeDirection.BottomLeft)
-            left = ResolveEdge(editor, left, bounds, xAxis: true, farEdge: false, modifiers);
+            left = editor.ResolveResizeEdge(left, bounds, xAxis: true, farEdge: false, modifiers);
 
         if (direction is ResizeDirection.Bottom or ResizeDirection.BottomLeft or ResizeDirection.BottomRight)
-            bottom = ResolveEdge(editor, bottom, bounds, xAxis: false, farEdge: true, modifiers);
+            bottom = editor.ResolveResizeEdge(bottom, bounds, xAxis: false, farEdge: true, modifiers);
         else if (direction is ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight)
-            top = ResolveEdge(editor, top, bounds, xAxis: false, farEdge: false, modifiers);
+            top = editor.ResolveResizeEdge(top, bounds, xAxis: false, farEdge: false, modifiers);
 
         var width = Math.Max(minSize, right - left);
         var height = Math.Max(minSize, bottom - top);
@@ -282,11 +282,6 @@ internal sealed class GroupResizeOperation
         return new Rect(newX, newY, newWidth, newHeight);
     }
 
-    // Край ставит служба привязки поверхности; без неё край остаётся, где его оставил жест.
-    private static double ResolveEdge(SurfaceView editor, double edge, Rect bounds, bool xAxis, bool farEdge, Avalonia.Input.KeyModifiers modifiers)
-        => editor.GetService<SnapService>() is { } snap
-            ? snap.ResolveEdge(edge, bounds, xAxis, farEdge, modifiers)
-            : edge;
 }
 
 

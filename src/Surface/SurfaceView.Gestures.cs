@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
 using ArxisStudio.Surface.States;
 
@@ -222,4 +224,64 @@ public partial class SurfaceView
             GetWorldPosition(e.GetPosition(this)),
             ++_pointerMoveCount);
     }
+
+    // --- Поправка позиции ---
+    // Жест считает, куда элемент хочет встать; где он встанет, решает модификатор,
+    // которого подключила служба инструментов (ISurfacePositionModifier).
+
+    private protected GroupDragOperation? _groupDragOperation;
+
+    private ISurfacePositionModifier? PositionModifier => GetService<ISurfacePositionModifier>();
+
+    internal void BeginSnapGuides(Control movingTarget) => PositionModifier?.Begin(movingTarget);
+
+    internal void EndSnapGuides() => PositionModifier?.End();
+
+    /// <summary>
+    /// Возвращает позицию перетаскиваемого target'а с учётом поправки.
+    /// </summary>
+    /// <remarks>
+    /// Группа ставится рамкой выделения, а не тем элементом, за который её схватили:
+    /// так уже устроен групповой resize, и так же выглядит происходящее на экране —
+    /// пользователь ведёт рамку, её и надо ставить на место.
+    /// <para>
+    /// Отображение стоит снаружи поправки, а не внутри неё: правило одно на всю
+    /// привязку, и сетка обязана ставить на узел ту же рамку, что и направляющие.
+    /// </para>
+    /// </remarks>
+    internal Point ResolveDragPosition(Control target, Point proposed, KeyModifiers modifiers)
+    {
+        if (_groupDragOperation is { } group && ReferenceEquals(target, group.SourceTarget))
+        {
+            var frame = ResolveOrigin(proposed + group.FrameOffset, group.Frame.Size, modifiers);
+            return frame - group.FrameOffset;
+        }
+
+        return ResolveOrigin(proposed, GetDesignSize(target), modifiers);
+    }
+
+    private Point ResolveOrigin(Point proposed, Size size, KeyModifiers modifiers)
+        => PositionModifier is { } modifier
+            ? modifier.ResolveOrigin(proposed, size, modifiers)
+            : new Point(Math.Round(proposed.X), Math.Round(proposed.Y));
+
+    internal bool CanSnapResizeEdge(KeyModifiers modifiers) => PositionModifier?.CanSnapEdge(modifiers) == true;
+
+    internal double ResolveResizeEdge(double edge, Rect proposed, bool xAxis, bool farEdge, KeyModifiers modifiers)
+        => PositionModifier is { } modifier ? modifier.ResolveEdge(edge, proposed, xAxis, farEdge, modifiers) : edge;
+
+    internal void PublishResizeGuides(Rect bounds) => PositionModifier?.PublishApplied(bounds);
+
+    /// <summary>
+    /// Решает, что делать с протяжкой контейнера.
+    /// </summary>
+    /// <param name="container">Контейнер, который тянут.</param>
+    /// <param name="moveTarget">Target, который будет двигаться.</param>
+    /// <remarks>
+    /// Правило ядра одно: не предлагать жест, который ничего не делает, — заблокированный
+    /// политикой target не перетаскивается. Слой, у которого есть свои причины отказать
+    /// или своё состояние жеста, переопределяет.
+    /// </remarks>
+    internal virtual ItemDragPlan PlanItemDrag(SurfaceItem container, Control moveTarget)
+        => GetEffectiveMovePolicy(moveTarget) == MovePolicy.None ? ItemDragPlan.Refuse : ItemDragPlan.Drag;
 }

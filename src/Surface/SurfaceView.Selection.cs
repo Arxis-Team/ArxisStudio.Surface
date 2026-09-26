@@ -1243,4 +1243,84 @@ public partial class SurfaceView
     /// Получает количество выбранных design targets.
     /// </summary>
     public int SelectedDesignTargetsCount => _selectedDesignTargetsCount;
+
+    /// <summary>
+    /// Определяет, должен ли контейнер уступить нажатие рамке выделения.
+    /// </summary>
+    /// <param name="container">Контейнер, получивший нажатие. Может быть вложенным.</param>
+    /// <param name="viewportPoint">Точка нажатия в координатах редактора.</param>
+    /// <param name="modifiers">Модификаторы ввода.</param>
+    /// <remarks>
+    /// Решение принимает редактор, а не состояние контейнера: политика ввода живёт
+    /// в <see cref="SurfaceView.InputGestures"/>, и контейнеру знать о ней незачем. Уступив жест,
+    /// контейнер не захватывает указатель и не помечает событие обработанным,
+    /// поэтому нажатие всплывает до редактора обычным маршрутом.
+    /// <para>
+    /// Контейнер удерживает жест, если нажат <see cref="DesignEditorInputGestures.ContainerInteractionModifiers"/>,
+    /// если контейнер уже выбран целиком, либо если под точкой есть design target.
+    /// </para>
+    /// </remarks>
+    internal bool ShouldDeferPressToMarquee(SurfaceItem container, Point viewportPoint, KeyModifiers modifiers)
+    {
+        if (InputGestures.ContainerEmptyAreaDrag != ContainerEmptyAreaDragGesture.Marquee)
+            return false;
+
+        if (ShouldUseContainerInteraction(modifiers))
+            return false;
+
+        // Уже выбранный контейнер перетаскивается без модификаторов —
+        // иначе его нельзя было бы двигать мышью вовсе.
+        if (_selectedTargets.Contains(container))
+            return false;
+
+        var worldPoint = GetWorldPosition(viewportPoint);
+        return !TryResolveSelectionTargetAtPoint(container, worldPoint, out _);
+    }
+
+    internal void UpdateSelectionTargetFromPoint(SurfaceItem container, Point screenPoint, KeyModifiers modifiers, int clickCount = 1)
+    {
+        // Оба слоя пишутся одной транзакцией. Раньше индексный слой писало состояние
+        // контейнера, а этот метод дописывал слой target'ов уже после — и между двумя
+        // записями оверлей успевал пересобраться на промежуточном состоянии.
+        using (Selection.BatchUpdate())
+        {
+            if (!container.IsSelected)
+            {
+                if (!ShouldUseAdditiveSelection(modifiers))
+                    Selection.Clear();
+
+                var ownerIndex = IndexFromContainer(container);
+                if (ownerIndex >= 0)
+                    Selection.Select(ownerIndex);
+            }
+
+            ApplyTargetFromPoint(container, screenPoint, modifiers, clickCount);
+        }
+
+        RefreshSelectionOverlay();
+    }
+
+    /// <summary>
+    /// Пишет слой target'ов по точке нажатия внутри контейнера.
+    /// </summary>
+    /// <remarks>
+    /// Правило ядра — уровень контейнеров: аддитивный клик добавляет контейнер к выбору
+    /// или снимает его, обычный — выбирает только его. Слой, у которого внутри контейнера
+    /// есть свои target'ы, переопределяет правило целиком.
+    /// <para>
+    /// Оверлей отсюда не пересобирается: это половина транзакции, и пересборка
+    /// на её середине публиковала бы состояние, которого пользователь не просил.
+    /// </para>
+    /// </remarks>
+    private protected virtual void ApplyTargetFromPoint(SurfaceItem container, Point screenPoint, KeyModifiers modifiers, int clickCount)
+    {
+        if (ShouldUseAdditiveSelection(modifiers))
+        {
+            ToggleTargetInSelection(container);
+            SyncContainerItemSelection(container);
+            return;
+        }
+
+        SetSingleSelectedTarget(container);
+    }
 }
