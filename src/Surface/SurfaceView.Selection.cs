@@ -59,6 +59,11 @@ public partial class SurfaceView
     private protected readonly List<Control> _selectedTargets = new();
 
     /// <summary>
+    /// Выбранные target'ы в порядке приоритета — для служб слоя редактирования.
+    /// </summary>
+    internal IReadOnlyList<Control> SelectedTargetList => _selectedTargets;
+
+    /// <summary>
     /// Снимок контейнеров на время жеста; <c>null</c> вне жеста.
     /// </summary>
     private protected IReadOnlyList<SurfaceItem>? _containerSnapshot;
@@ -1046,7 +1051,7 @@ public partial class SurfaceView
     /// Во время жеста, снявшего снимок через <see cref="BeginContainerSnapshot"/>,
     /// отдаёт этот снимок вместо нового обхода.
     /// </remarks>
-    private protected IEnumerable<SurfaceItem> EnumerateContainers() =>
+    internal IEnumerable<SurfaceItem> EnumerateContainers() =>
         _containerSnapshot ?? EnumerateContainersCore();
 
     /// <summary>

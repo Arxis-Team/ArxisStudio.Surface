@@ -54,8 +54,6 @@ public partial class DesignEditor : SurfaceView
 
     private SelectionAdornerLayer? _secondarySelectionAdornerLayer;
 
-    private DesignGrid? _grid;
-
     private readonly GroupEditFacet _groupFacet;
 
     private DesignEditorItem? _primarySelectionItem;
@@ -70,10 +68,6 @@ public partial class DesignEditor : SurfaceView
     private GroupResizeOperation? _groupResizeOperation;
 
     private GroupDragOperation? _groupDragOperation;
-
-    // Соседи, к которым идёт выравнивание в текущем жесте. Снимаются один раз
-    // на входе в жест; null означает, что жест не идёт.
-    private IReadOnlyList<Rect>? _snapGuideNeighbours;
 
     static DesignEditor()
     {
@@ -190,7 +184,6 @@ public partial class DesignEditor : SurfaceView
             _secondarySelectionAdornerLayer.AdornerResizeCompleted -= OnSecondarySelectionResizeCompleted;
         }
 
-        _grid = e.NameScope.Find<DesignGrid>("PART_Grid");
         _selectionAdorner = e.NameScope.Find<SelectionAdorner>("PART_SelectionAdorner");
         _groupSelectionAdorner = e.NameScope.Find<SelectionAdorner>("PART_GroupSelectionAdorner");
         _secondarySelectionAdornerLayer = e.NameScope.Find<SelectionAdornerLayer>("PART_SecondarySelectionAdorners");

@@ -98,4 +98,23 @@ public partial class SurfaceView : SelectingItemsControl
         get => base.SelectionMode;
         set => base.SelectionMode = value;
     }
+
+    /// <summary>
+    /// Сетка из шаблона, если она в нём есть.
+    /// </summary>
+    /// <remarks>
+    /// Её шаг — шаг привязки по умолчанию: сетка не может рисовать одну структуру,
+    /// а привязка использовать другую.
+    /// </remarks>
+    internal DesignGrid? Grid { get; private set; }
+
+    /// <summary>
+    /// Находит части шаблона ядра.
+    /// </summary>
+    /// <param name="e">Аргументы применения шаблона.</param>
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        Grid = e.NameScope.Find<DesignGrid>("PART_Grid");
+    }
 }

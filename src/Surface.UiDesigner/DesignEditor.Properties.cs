@@ -117,22 +117,6 @@ public partial class DesignEditor
             o => o.UserGuides);
 
     /// <summary>
-    /// Идентификатор свойства подсказок о равных интервалах.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, IReadOnlyList<DesignSpacingHint>> SpacingHintsProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, IReadOnlyList<DesignSpacingHint>>(
-            nameof(SpacingHints),
-            o => o.SpacingHints);
-
-    /// <summary>
-    /// Идентификатор свойства линий выравнивания, найденных во время жеста.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, IReadOnlyList<DesignSnapGuide>> SnapGuidesProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, IReadOnlyList<DesignSnapGuide>>(
-            nameof(SnapGuides),
-            o => o.SnapGuides);
-
-    /// <summary>
     /// Идентификатор свойства прямоугольника, охватывающего все размещенные элементы.
     /// </summary>
     public static readonly DirectProperty<DesignEditor, Rect> ItemsExtentProperty =
@@ -390,32 +374,6 @@ public partial class DesignEditor
     {
         get => _userGuides;
         private set => SetAndRaise(UserGuidesProperty, ref _userGuides, value);
-    }
-
-    private IReadOnlyList<DesignSpacingHint> _spacingHints = Array.Empty<DesignSpacingHint>();
-
-    /// <summary>
-    /// Получает подсказки о равных интервалах, показанные во время жеста.
-    /// </summary>
-    public IReadOnlyList<DesignSpacingHint> SpacingHints
-    {
-        get => _spacingHints;
-        private set => SetAndRaise(SpacingHintsProperty, ref _spacingHints, value);
-    }
-
-    private IReadOnlyList<DesignSnapGuide> _snapGuides = Array.Empty<DesignSnapGuide>();
-
-    /// <summary>
-    /// Получает направляющие, действующие в текущем жесте, в мировых координатах.
-    /// </summary>
-    /// <remarks>
-    /// Набор пуст вне жеста и всегда, когда выравнивания не нашлось. Публикуется он
-    /// только при фактическом изменении — см. <see cref="PublishSnapGuides"/>.
-    /// </remarks>
-    public IReadOnlyList<DesignSnapGuide> SnapGuides
-    {
-        get => _snapGuides;
-        private set => SetAndRaise(SnapGuidesProperty, ref _snapGuides, value);
     }
 
     private Rect _itemsExtent;
