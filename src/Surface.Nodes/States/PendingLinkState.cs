@@ -191,7 +191,7 @@ internal sealed class PendingLinkState : EditorState
             return true;
 
         var (source, target) = Normalise(key);
-        return _editor.ValidateConnect(source, target);
+        return _editor.ValidateConnect(source, target, _detachment?.Link.ItemOrSelf);
     }
 
     /// <summary>

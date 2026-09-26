@@ -9,6 +9,11 @@ namespace ArxisStudio.Surface.Nodes;
 /// Задаётся, когда протягиваемая связь приходит на новый порт, — ещё до отпускания, чтобы порт
 /// успел показать ответ. Направления редактор уже проверил: источник — всегда выход, цель — вход.
 /// Остальные правила графа — один вход на порт, без петель, совместимость типов — здесь.
+/// <para>
+/// Спрашивается и о новой связи, и об отцеплённом конце существующей — с той парой портов,
+/// которая получится. Во втором случае <see cref="Link"/> называет саму связь: правило «во вход —
+/// одна связь» иначе отказало бы связи, перецепляющей свой выход, — её вход занят ею же.
+/// </para>
 /// </remarks>
 public sealed class ConnectValidatingEventArgs : EventArgs
 {
@@ -17,11 +22,22 @@ public sealed class ConnectValidatingEventArgs : EventArgs
     /// </summary>
     /// <param name="source">Данные порта-выхода.</param>
     /// <param name="target">Данные порта-входа.</param>
-    public ConnectValidatingEventArgs(object source, object target)
+    /// <param name="link">
+    /// Элемент <see cref="NodeEditor.Links"/>, чей конец перецепляют, или <see langword="null"/>
+    /// для новой связи.
+    /// </param>
+    public ConnectValidatingEventArgs(object source, object target, object? link = null)
     {
         Source = source;
         Target = target;
+        Link = link;
     }
+
+    /// <summary>
+    /// Получает элемент коллекции связей, чей конец перецепляют, или <see langword="null"/>,
+    /// если тянут новую связь.
+    /// </summary>
+    public object? Link { get; }
 
     /// <summary>
     /// Получает данные порта, из которого выйдет связь.

@@ -220,6 +220,28 @@ public class LinkDetachTests
     }
 
     [AvaloniaFact]
+    public void Validation_Names_The_Link_Being_Reconnected()
+    {
+        // Правило «во вход — одна связь», а вход узла 1 занят этой же связью: не зная, какую
+        // связь перецепляют, приложение отказало бы ей перенести свой выход.
+        var stand = new Stand();
+        var asked = new List<object?>();
+        stand.Editor.ConnectValidating += (_, e) =>
+        {
+            asked.Add(e.Link);
+            e.IsAllowed = !stand.Nodes.Links.OfType<LinkData>()
+                .Any(l => !ReferenceEquals(l, e.Link) && Equals(l.To, e.Target));
+        };
+
+        stand.Drag(0.2, stand.Pin(2, PortDirection.Output));
+
+        Assert.NotEmpty(asked);
+        Assert.All(asked, link => Assert.Same(stand.Data, link));
+        var request = Assert.Single(stand.Reconnects);
+        Assert.Equal(NodeStand.Out(2), request.NewPort);
+    }
+
+    [AvaloniaFact]
     public void A_Click_Below_The_Threshold_Only_Selects()
     {
         var stand = new Stand();

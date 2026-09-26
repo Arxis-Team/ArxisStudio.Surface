@@ -90,9 +90,9 @@ public partial class NodeEditor
         return true;
     }
 
-    internal bool ValidateConnect(object source, object target)
+    internal bool ValidateConnect(object source, object target, object? link = null)
     {
-        var args = new ConnectValidatingEventArgs(source, target);
+        var args = new ConnectValidatingEventArgs(source, target, link);
         ConnectValidating?.Invoke(this, args);
         return args.IsAllowed;
     }

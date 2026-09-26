@@ -135,6 +135,19 @@ public class PendingLinkTests
     }
 
     [AvaloniaFact]
+    public void A_New_Link_Is_Validated_Without_A_Link()
+    {
+        var stand = Create();
+        var asked = new List<object?>();
+        stand.Editor.ConnectValidating += (_, e) => asked.Add(e.Link);
+
+        DragLink(stand, Pin(stand, 0, PortDirection.Output), Pin(stand, 1, PortDirection.Input));
+
+        Assert.NotEmpty(asked);
+        Assert.All(asked, Assert.Null);
+    }
+
+    [AvaloniaFact]
     public void Without_A_Handler_Nothing_Changes()
     {
         var stand = Create();

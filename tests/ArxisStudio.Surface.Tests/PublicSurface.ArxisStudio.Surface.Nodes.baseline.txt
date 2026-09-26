@@ -4,8 +4,9 @@ sealed class ArxisStudio.Surface.Nodes.ConnectRequestedEventArgs : EventArgs
     property Object Source { get; }
     property Object Target { get; }
 sealed class ArxisStudio.Surface.Nodes.ConnectValidatingEventArgs : EventArgs
-    ctor .ctor(Object, Object)
+    ctor .ctor(Object, Object, Object)
     property Boolean IsAllowed { get; set; }
+    property Object Link { get; }
     property Object Source { get; }
     property Object Target { get; }
 class ArxisStudio.Surface.Nodes.Link : Control
