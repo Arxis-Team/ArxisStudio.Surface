@@ -340,7 +340,7 @@ Delete не удаляет, а поднимает `DeleteRequested`: колле�
 
 ### Стратегии размещения
 
-Главное архитектурное решение библиотеки после сетки. `src/Placement/`, namespace `ArxisStudio.Placement`, **всё internal** — форму рано фиксировать публично, тест `Placement_Strategies_Are_Not_Public` это сторожит.
+Главное архитектурное решение библиотеки после сетки. `src/Surface.UiDesigner/Placement/`, namespace `ArxisStudio.Surface.UiDesigner.Placement`, **всё internal** — форму рано фиксировать публично, тест `Placement_Strategies_Are_Not_Public` это сторожит.
 
 Таблица возможностей снята с реальной Avalonia 12 в `LayoutHonourProbeTests` и определяет всё остальное:
 
@@ -713,7 +713,7 @@ grep -rn "Children\.\(Add\|Remove\|Insert\|Move\|Clear\)" src/ --include=*.cs
 
 До этого закреплялся только список из 40 типов, и этого не хватило: `SelectDesignTarget` — первый публичный член, добавленный после появления замка, — приехал с девятью дефектами, не уронив ни одного теста, потому что список типов не изменился.
 
-Машины состояний (`ArxisStudio.States.*`), стратегии размещения (`ArxisStudio.Placement.*`), направляющие (`ArxisStudio.Guides.*`, `SnapGuideLayer`, свойство `SnapGuides`), `SelectionAdornerLayer`, `SelectionAdornerInfo`, `DesignSurface` и свойства `SecondarySelectionAdorners` — **internal**. Вместе с ними internal стали `CurrentState`, `PushState`, `PopState` на обоих контролах.
+Машины состояний (`ArxisStudio.States.*`), стратегии размещения (`ArxisStudio.Surface.UiDesigner.Placement.*`), резолверы направляющих (`ArxisStudio.Surface.Editing.*Resolver`, `SnapGuideLayer`, свойство `SnapGuides`), `SelectionAdornerLayer`, `SelectionAdornerInfo`, `DesignSurface` и свойства `SecondarySelectionAdorners` — **internal**. Вместе с ними internal стали `CurrentState`, `PushState`, `PopState` на обоих контролах.
 
 Это работает потому, что AXAML библиотеки компилируется в ту же сборку: internal-типы в шаблонах и `TemplateBinding` к internal-свойствам разрешаются нормально. Прецедент был давно — `DesignSurface` в `ItemsPanelTemplate`.
 

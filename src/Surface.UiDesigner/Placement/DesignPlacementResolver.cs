@@ -3,7 +3,7 @@ using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.Placement;
+namespace ArxisStudio.Surface.UiDesigner.Placement;
 
 /// <summary>
 /// Выводит стратегию размещения из родительской раскладки контрола.

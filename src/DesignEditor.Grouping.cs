@@ -4,7 +4,6 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Utilities;
-using ArxisStudio.Grouping;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;

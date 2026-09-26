@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ArxisStudio.Grouping;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Арифметика пути design-time группы.

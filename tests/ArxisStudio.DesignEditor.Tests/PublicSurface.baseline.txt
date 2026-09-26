@@ -393,33 +393,10 @@ enum ArxisStudio.DesignEditorPointerButton
     value Left = 0
     value Middle = 1
     value Right = 2
-sealed class ArxisStudio.DesignEditorReorderRequestedEventArgs : EventArgs
-    ctor .ctor(Control, Int32, Int32, Control)
-    property Boolean Handled { get; set; }
-    property Control Anchor { get; }
-    property Control Target { get; }
-    property Int32 NewIndex { get; }
-    property Int32 OldIndex { get; }
 sealed class ArxisStudio.DesignGeometryChange : DesignChange
     ctor .ctor(Control, Rect, Rect)
     property Rect NewBounds { get; }
     property Rect OldBounds { get; }
-sealed class ArxisStudio.DesignGroupAttachedStore
-    event EventHandler GroupsChanged
-    method String GetGroup(Control)
-    method Void SetGroup(Control, String)
-    property DesignGroupAttachedStore Default { get; }
-sealed class ArxisStudio.DesignGroupChange : DesignChange
-    ctor .ctor(Control, String, String)
-    property String NewId { get; }
-    property String OldId { get; }
-sealed class ArxisStudio.DesignGroupInfo
-    ctor .ctor(DesignEditorItem, String, IReadOnlyList<Control>, IReadOnlyList<DesignGroupInfo>)
-    property DesignEditorItem Container { get; }
-    property IReadOnlyList<Control> Members { get; }
-    property IReadOnlyList<DesignGroupInfo> Groups { get; }
-    property String Id { get; }
-    property String Path { get; }
 sealed class ArxisStudio.DesignOrderChange : DesignChange
     ctor .ctor(Control, Int32, Int32)
     property Int32 NewZIndex { get; }
@@ -448,10 +425,6 @@ interface ArxisStudio.IDesignEditorContextActionProvider
     method ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(DesignEditor, DesignEditorContextRequest, CancellationToken)
 interface ArxisStudio.IDesignEditorContextPresenter
     method Boolean TryShow(DesignEditor, DesignEditorContextRequest, IReadOnlyList<DesignEditorContextAction>)
-interface ArxisStudio.IDesignGroupStore
-    event EventHandler GroupsChanged
-    method String GetGroup(Control)
-    method Void SetGroup(Control, String)
 class ArxisStudio.Surface.DesignGrid : Control
     avalonia BackgroundProperty -> Background : IBrush (styled) = null
     avalonia CellSizeProperty -> CellSize : Double (styled) = 20
@@ -583,10 +556,37 @@ class ArxisStudio.Surface.UiDesigner.AbsolutePanel : Panel
 enum ArxisStudio.Surface.UiDesigner.DesignContentMode
     value Annotated = 0
     value Loaded = 1
+sealed class ArxisStudio.Surface.UiDesigner.DesignEditorReorderRequestedEventArgs : EventArgs
+    ctor .ctor(Control, Int32, Int32, Control)
+    property Boolean Handled { get; set; }
+    property Control Anchor { get; }
+    property Control Target { get; }
+    property Int32 NewIndex { get; }
+    property Int32 OldIndex { get; }
 static class ArxisStudio.Surface.UiDesigner.DesignGroup
     avalonia IdProperty -> Id : String (attached) = null
     method String GetId(AvaloniaObject)
     method Void SetId(AvaloniaObject, String)
+sealed class ArxisStudio.Surface.UiDesigner.DesignGroupAttachedStore
+    event EventHandler GroupsChanged
+    method String GetGroup(Control)
+    method Void SetGroup(Control, String)
+    property DesignGroupAttachedStore Default { get; }
+sealed class ArxisStudio.Surface.UiDesigner.DesignGroupChange : DesignChange
+    ctor .ctor(Control, String, String)
+    property String NewId { get; }
+    property String OldId { get; }
+sealed class ArxisStudio.Surface.UiDesigner.DesignGroupInfo
+    ctor .ctor(DesignEditorItem, String, IReadOnlyList<Control>, IReadOnlyList<DesignGroupInfo>)
+    property DesignEditorItem Container { get; }
+    property IReadOnlyList<Control> Members { get; }
+    property IReadOnlyList<DesignGroupInfo> Groups { get; }
+    property String Id { get; }
+    property String Path { get; }
+interface ArxisStudio.Surface.UiDesigner.IDesignGroupStore
+    event EventHandler GroupsChanged
+    method String GetGroup(Control)
+    method Void SetGroup(Control, String)
 static class ArxisStudio.Surface.UiDesigner.Layout
     avalonia DesignXProperty -> DesignX : Double (attached) = 0
     avalonia DesignYProperty -> DesignY : Double (attached) = 0

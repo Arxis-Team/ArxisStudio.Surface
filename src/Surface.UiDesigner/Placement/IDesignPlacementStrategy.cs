@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.Placement;
+namespace ArxisStudio.Surface.UiDesigner.Placement;
 
 /// <summary>
 /// Определяет, что редактор может сделать с позицией контрола в его родительской раскладке.

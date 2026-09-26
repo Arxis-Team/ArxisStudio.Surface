@@ -1,9 +1,8 @@
 ﻿using System;
 using Avalonia.Controls;
 using DesignGroupAttached = ArxisStudio.Surface.UiDesigner.DesignGroup;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Хранилище групп в attached-свойстве <see cref="DesignGroup"/>.

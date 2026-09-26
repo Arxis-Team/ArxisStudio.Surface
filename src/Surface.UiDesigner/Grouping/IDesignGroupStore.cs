@@ -1,8 +1,7 @@
 ﻿using System;
 using Avalonia.Controls;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Хранилище принадлежности контролов design-time группам.

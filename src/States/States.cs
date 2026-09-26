@@ -4,7 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
-using ArxisStudio.Placement;
+using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.UiDesigner;
 

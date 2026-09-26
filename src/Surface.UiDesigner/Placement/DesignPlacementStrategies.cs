@@ -4,7 +4,7 @@ using ArxisStudio.Controls;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.Placement;
+namespace ArxisStudio.Surface.UiDesigner.Placement;
 
 /// <summary>
 /// Позиционирование в <see cref="AbsolutePanel"/> и в <see cref="DesignSurface"/>.

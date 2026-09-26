@@ -61,7 +61,7 @@
 
 - **машины состояний** — `EditorState`, `DesignEditorItemState` и наследники вместе с `CurrentState`, `PushState`, `PopState`;
 - **детали overlay** — `SelectionAdornerLayer`, `SelectionAdornerInfo`, `DesignSurface`, свойства `SecondarySelectionAdorners`;
-- **стратегии размещения** — `ArxisStudio.Placement.*`: форма ещё должна отлежаться внутри библиотеки, добавить публичный тип позже можно аддитивно.
+- **стратегии размещения** — `ArxisStudio.Surface.UiDesigner.Placement.*`: форма ещё должна отлежаться внутри библиотеки, добавить публичный тип позже можно аддитивно.
 
 Поверхность закреплена тестом: новый публичный тип роняет сборку тестов, пока его не внесут в список осознанно либо не сделают `internal`.
 

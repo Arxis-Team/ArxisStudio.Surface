@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 

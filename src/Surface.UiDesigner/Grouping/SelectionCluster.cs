@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Avalonia.Controls;
 
-namespace ArxisStudio.Grouping;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// То, что пользователь видит в выделении одной рамкой.

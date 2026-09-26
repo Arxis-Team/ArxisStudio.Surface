@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Avalonia.Controls;
-using ArxisStudio.Grouping;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Представляет design-time группу и её состав внутри одной формы.
