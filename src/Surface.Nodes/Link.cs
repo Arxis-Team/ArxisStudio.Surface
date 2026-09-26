@@ -167,6 +167,17 @@ public class Link : Control
     internal void SetHighlighted(bool value) => PseudoClasses.Set(":highlighted", value);
 
     /// <summary>
+    /// Показывает, что конец связи отцеплён и тянется (<c>:detaching</c>): новую форму рисует
+    /// превью протяжки, а сама связь остаётся на месте, пока приложение её не поменяет.
+    /// </summary>
+    internal void SetDetaching(bool value) => PseudoClasses.Set(":detaching", value);
+
+    /// <summary>
+    /// Стоит ли связь на поверхности редактора.
+    /// </summary>
+    internal bool IsOnSurface => _editor != null;
+
+    /// <summary>
     /// Найдены ли оба порта: только такая связь рисуется.
     /// </summary>
     internal bool IsResolved { get; private set; }

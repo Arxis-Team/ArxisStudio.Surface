@@ -33,6 +33,9 @@ sealed class ArxisStudio.Surface.Nodes.LinkDeleteRequestedEventArgs : EventArgs
     ctor .ctor(IReadOnlyList<Object>)
     property Boolean Handled { get; set; }
     property IReadOnlyList<Object> Links { get; }
+enum ArxisStudio.Surface.Nodes.LinkEnd
+    value Source = 0
+    value Target = 1
 class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     ctor .ctor()
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
@@ -46,6 +49,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     event EventHandler<ConnectRequestedEventArgs> ConnectRequested
     event EventHandler<ConnectValidatingEventArgs> ConnectValidating
     event EventHandler<LinkDeleteRequestedEventArgs> LinkDeleteRequested
+    event EventHandler<ReconnectRequestedEventArgs> ReconnectRequested
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Boolean SelectLink(Object, Boolean)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
@@ -80,3 +84,10 @@ class ArxisStudio.Surface.Nodes.Port : ContentControl
 enum ArxisStudio.Surface.Nodes.PortDirection
     value Input = 0
     value Output = 1
+sealed class ArxisStudio.Surface.Nodes.ReconnectRequestedEventArgs : EventArgs
+    ctor .ctor(Object, LinkEnd, Object, Object)
+    property Boolean Handled { get; set; }
+    property LinkEnd End { get; }
+    property Object Link { get; }
+    property Object NewPort { get; }
+    property Object OldPort { get; }

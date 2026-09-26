@@ -160,6 +160,24 @@ public class PendingLinkTests
     }
 
     [AvaloniaFact]
+    public void Connect_Stops_At_The_First_Handler()
+    {
+        var stand = Create();
+        var late = 0;
+        stand.Editor.ConnectRequested += (_, e) =>
+        {
+            stand.Links.Add(new LinkData(e.Source, e.Target));
+            e.Handled = true;
+        };
+        stand.Editor.ConnectRequested += (_, _) => late++;
+
+        DragLink(stand, Pin(stand, 0, PortDirection.Output), Pin(stand, 1, PortDirection.Input));
+
+        Assert.Single(stand.Links);
+        Assert.Equal(0, late);
+    }
+
+    [AvaloniaFact]
     public void Pressing_A_Port_Neither_Drags_Nor_Selects_The_Node()
     {
         var stand = Create();

@@ -9,7 +9,7 @@ namespace ArxisStudio.Surface.Nodes;
 /// </remarks>
 public static class NodeEditorKeyCommands
 {
-    /// <summary>Отмена протягиваемой связи по Escape.</summary>
+    /// <summary>Отмена протяжки связи — новой или отцеплённого конца — по Escape.</summary>
     public const string CancelLink = "nodes.cancelLink";
 
     /// <summary>Снятие выбора связей по Escape.</summary>

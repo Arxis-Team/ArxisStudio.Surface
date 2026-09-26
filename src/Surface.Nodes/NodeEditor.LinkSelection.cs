@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using ArxisStudio.Surface.Nodes.States;
 using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface.Nodes;
@@ -232,6 +233,12 @@ public partial class NodeEditor
             Focus();
 
         SelectLinkCore(link, additive);
+
+        // Протяжка тела связи отцепляет её ближний конец. Нажатие с модификатором добавления —
+        // жест выбора, и отцеплять им нечего.
+        if (!additive)
+            PushState(new LinkPressState(this, link, e.Pointer, point.Position));
+
         e.Handled = true;
         return true;
     }
@@ -292,13 +299,13 @@ public partial class NodeEditor
         SelectedLinks = items;
     }
 
-    private bool RequestLinkDelete()
+    internal bool RequestLinkDelete(IReadOnlyList<object> items)
     {
         var handler = LinkDeleteRequested;
-        if (handler == null || _selectedLinks.Count == 0)
+        if (handler == null || items.Count == 0)
             return false;
 
-        var args = new LinkDeleteRequestedEventArgs(_selectedLinkItems);
+        var args = new LinkDeleteRequestedEventArgs(items);
         foreach (var invocation in handler.GetInvocationList())
         {
             ((EventHandler<LinkDeleteRequestedEventArgs>)invocation)(this, args);
@@ -321,5 +328,5 @@ public partial class NodeEditor
     private static SurfaceKeyCommand DeleteLinksCommand() => new(
         NodeEditorKeyCommands.DeleteLinks,
         static (view, e) => e.Key is Key.Delete or Key.Back && view is NodeEditor { _selectedLinks.Count: > 0 },
-        static (view, _) => ((NodeEditor)view).RequestLinkDelete());
+        static (view, _) => ((NodeEditor)view).RequestLinkDelete(((NodeEditor)view)._selectedLinkItems));
 }

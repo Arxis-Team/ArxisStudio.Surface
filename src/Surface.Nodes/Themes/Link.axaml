@@ -14,6 +14,11 @@
         <Style Selector="^:selected">
             <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Link.SelectedStroke}" />
         </Style>
+
+        <!-- Отцеплённая связь бледнеет: новую её форму рисует превью протяжки. -->
+        <Style Selector="^:detaching">
+            <Setter Property="Opacity" Value="{DynamicResource NodeEditor.Link.DetachingOpacity}" />
+        </Style>
     </ControlTheme>
 
     <!--

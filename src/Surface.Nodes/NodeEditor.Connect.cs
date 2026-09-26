@@ -47,6 +47,18 @@ public partial class NodeEditor
     public event EventHandler<ConnectRequestedEventArgs>? ConnectRequested;
 
     /// <summary>
+    /// Возникает, когда конец существующей связи отцепили и отпустили на другой порт того же
+    /// направления: перецепите его.
+    /// </summary>
+    /// <remarks>
+    /// Отцепляют протяжкой тела связи, и уходит ближний к нажатию конец. Брошенный в пустоту
+    /// конец просит удалить связь (<see cref="LinkDeleteRequested"/>), возвращённый на свой порт
+    /// не просит ничего. Порт-кандидат проверяется тем же <see cref="ConnectValidating"/>, что и
+    /// новая связь, — с той парой портов, которая получится.
+    /// </remarks>
+    public event EventHandler<ReconnectRequestedEventArgs>? ReconnectRequested;
+
+    /// <summary>
     /// Превью протягиваемой связи из шаблона.
     /// </summary>
     internal PendingLinkPreview? PendingPreview { get; private set; }
@@ -102,9 +114,28 @@ public partial class NodeEditor
         return args.Handled;
     }
 
+    internal bool RequestReconnect(object link, LinkEnd end, object oldPort, object newPort)
+    {
+        var handler = ReconnectRequested;
+        if (handler == null)
+            return false;
+
+        var args = new ReconnectRequestedEventArgs(link, end, oldPort, newPort);
+        foreach (var invocation in handler.GetInvocationList())
+        {
+            ((EventHandler<ReconnectRequestedEventArgs>)invocation)(this, args);
+            if (args.Handled)
+                break;
+        }
+
+        return args.Handled;
+    }
+
+    // Отменяет и протяжку, и нажатие по связи до порога: иначе Escape снял бы выбор, а
+    // следующее движение всё равно отцепило бы конец.
     private static SurfaceKeyCommand CancelLinkCommand() => new(
         NodeEditorKeyCommands.CancelLink,
-        static (view, e) => e.Key == Key.Escape && view.CurrentState is PendingLinkState,
+        static (view, e) => e.Key == Key.Escape && view.CurrentState is PendingLinkState or LinkPressState,
         static (view, _) =>
         {
             view.PopState();

@@ -206,6 +206,25 @@ public class LinkSelectionTests
     }
 
     [AvaloniaFact]
+    public void Link_Delete_Stops_At_The_First_Handler()
+    {
+        var stand = Create();
+        var late = 0;
+        stand.Editor.LinkDeleteRequested += (_, e) =>
+        {
+            foreach (var item in e.Links.ToArray())
+                stand.Nodes.Links.Remove(item);
+            e.Handled = true;
+        };
+        stand.Editor.LinkDeleteRequested += (_, _) => late++;
+
+        Click(stand, Middle(stand, stand.First));
+        Press(stand, PhysicalKey.Delete);
+
+        Assert.Equal(0, late);
+    }
+
+    [AvaloniaFact]
     public void Delete_With_Nodes_Selected_Asks_For_The_Nodes()
     {
         var stand = Create();
