@@ -998,6 +998,7 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 | [0002](docs/adr/0002-where-the-group-mark-lives-belongs-to-the-document-owner.md) | Смысл группы — за редактором, место её хранения — за владельцем документа |
 | [0003](docs/adr/0003-the-library-is-three-layers-and-references-go-down.md) | Библиотека — три слоя (`Surface`, `Surface.Editing`, `Surface.UiDesigner`), ссылки идут только вниз |
 | [0004](docs/adr/0004-the-node-editor-is-a-fourth-layer-beside-the-form-designer.md) | Редактор узлов — четвёртый слой рядом с дизайнером форм; связь знает концы данными портов, структуру графа правит хост |
+| [0005](docs/adr/0005-a-bend-is-a-reroute-node-and-the-minimap-is-a-surface-tool.md) | Излом связи — узел-перевалка хоста, разрез — удаление перечёркнутых, миникарта — инструмент любой поверхности |
 
 `SelectDesignTarget(control, additive)` — единственный публичный способ задать выделение, который меняет **оба** слоя. Внутри него порядок существенный и в обратном тихо не работает: очистка индексного выбора приходит в обработчик, а тот на пустом выборе вычищает и слой target'ов. Оба слоя обязаны меняться вместе — см. «Двухуровневое выделение».
 
