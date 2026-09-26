@@ -149,7 +149,7 @@ internal sealed class PendingLinkState : EditorState
         _editor.PendingPreview?.Show(source, target);
     }
 
-    private Port? FindCandidate(Point world, out Point anchor)
+    internal Port? FindCandidate(Point world, out Point anchor)
     {
         anchor = default;
         var radius = _editor.PortCaptureRadius / Math.Max(_editor.ViewportZoom, 0.0001);
