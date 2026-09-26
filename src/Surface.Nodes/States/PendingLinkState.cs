@@ -149,30 +149,58 @@ internal sealed class PendingLinkState : EditorState
         _editor.PendingPreview?.Show(source, target);
     }
 
+    /// <summary>
+    /// Насколько порты считаются стоящими в одной точке, в мировых единицах.
+    /// </summary>
+    private const double SameSpot = 0.5;
+
+    /// <summary>
+    /// Порт под свободным концом: ближайший, а из стоящих с ним в одной точке — тот, что может
+    /// принять связь.
+    /// </summary>
+    /// <remarks>
+    /// Порты бывают друг над другом — у перевалки вход и выход в одной точке, — и ближайший по
+    /// расстоянию там выбирался бы порядком обхода, а порт того же направления связь не примет
+    /// никогда. Предпочтение — только в одной точке: принимающий порт строкой выше, в радиусе захвата,
+    /// не перехватывает конец, брошенный на порт того же направления, — тот показывает отказ.
+    /// </remarks>
     internal Port? FindCandidate(Point world, out Point anchor)
     {
         anchor = default;
         var radius = _editor.PortCaptureRadius / Math.Max(_editor.ViewportZoom, 0.0001);
-        Port? best = null;
-        var bestDistance = double.MaxValue;
+        Port? nearest = null, accepting = null;
+        double nearestDistance = double.MaxValue, acceptingDistance = double.MaxValue;
+        Point nearestAnchor = default, acceptingAnchor = default;
 
         foreach (var (port, _, portAnchor, bounds) in _ports)
         {
             if (ReferenceEquals(port, _origin) || !bounds.Inflate(radius).Contains(world))
                 continue;
 
-            var dx = portAnchor.X - world.X;
-            var dy = portAnchor.Y - world.Y;
-            var distance = (dx * dx) + (dy * dy);
-            if (distance < bestDistance)
+            var distance = Point.Distance(portAnchor, world);
+            if (distance < nearestDistance)
             {
-                bestDistance = distance;
-                best = port;
-                anchor = portAnchor;
+                nearestDistance = distance;
+                nearest = port;
+                nearestAnchor = portAnchor;
+            }
+
+            if (port.Direction != _origin.Direction && distance < acceptingDistance)
+            {
+                acceptingDistance = distance;
+                accepting = port;
+                acceptingAnchor = portAnchor;
             }
         }
 
-        return best;
+        if (accepting != null && acceptingDistance <= nearestDistance + SameSpot)
+        {
+            anchor = acceptingAnchor;
+            return accepting;
+        }
+
+        anchor = nearestAnchor;
+        return nearest;
     }
 
     /// <summary>

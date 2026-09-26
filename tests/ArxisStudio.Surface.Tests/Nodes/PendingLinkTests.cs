@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -102,6 +104,41 @@ public class PendingLinkTests
         stand.Window.MouseUp(Pin(stand, 1, PortDirection.Output), MouseButton.Left);
         Assert.Empty(requests);
         Assert.DoesNotContain(":refusing", target.Classes);
+    }
+
+    /// <summary>
+    /// Узел 1 — вход и выход в одной точке, как у перевалки. Выход поставлен первым: по одному
+    /// расстоянию — поровну — выбирался бы тот, что встретился раньше.
+    /// </summary>
+    private static readonly IDataTemplate PortsOnTopAtOne = new FuncDataTemplate<string>((name, _) =>
+        name == NodeStand.NodeName(1)
+            ? new Grid
+            {
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Children =
+                {
+                    new Port { Direction = PortDirection.Output, Data = name + ".out" },
+                    new Port { Direction = PortDirection.Input, Data = name + ".in" }
+                }
+            }
+            : NodeStand.PortedNode.Build(name)!, supportsRecycling: false);
+
+    [AvaloniaFact]
+    public void Ports_On_Top_Of_Each_Other_Resolve_By_Direction()
+    {
+        // По одному расстоянию конец из выхода выбрал бы выход узла 1 и получил отказ: связь в
+        // перевалку не входила бы вовсе.
+        var stand = NodeStand.Create([new Point(100, 100), new Point(400, 200)], itemTemplate: PortsOnTopAtOne);
+        var requests = RecordRequests(stand);
+        var output = Pin(stand, 1, PortDirection.Output);
+        Assert.Equal(output, Pin(stand, 1, PortDirection.Input));
+
+        DragLink(stand, Pin(stand, 0, PortDirection.Output), output);
+
+        var request = Assert.Single(requests);
+        Assert.Equal(NodeStand.Out(0), request.Source);
+        Assert.Equal(NodeStand.In(1), request.Target);
     }
 
     [AvaloniaFact]
