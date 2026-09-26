@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Input;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.States;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner;
 
@@ -16,6 +17,10 @@ namespace ArxisStudio.States;
 /// </remarks>
 internal class EditorGuideDraggingState : EditorState
 {
+    // Направляющие — инструмент дизайнера форм, пока их служба не выделена
+    // в слой редактирования: состоянию нужен сам редактор, а не только ядро.
+    private new DesignEditor Editor => (DesignEditor)base.Editor;
+
     private readonly IPointer _pointer;
     private readonly GestureCursorScope _cursor = new GestureCursorScope();
     private readonly DesignGuide _original;

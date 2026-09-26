@@ -2,9 +2,8 @@
 using Avalonia;
 using Avalonia.Input;
 using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.States;
+namespace ArxisStudio.Surface.States;
 
 /// <summary>
 /// Состояние прямоугольного выделения элементов редактора.
@@ -30,7 +29,7 @@ internal class EditorSelectingState : EditorState
     /// </summary>
     /// <param name="editor">Редактор, которому принадлежит состояние.</param>
     /// <param name="pointer">Указатель, которым идёт жест.</param>
-    public EditorSelectingState(DesignEditor editor, IPointer pointer) : base(editor)
+    public EditorSelectingState(SurfaceView editor, IPointer pointer) : base(editor)
     {
         _pointer = pointer;
     }

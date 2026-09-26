@@ -31,51 +31,6 @@ namespace ArxisStudio.Surface.UiDesigner;
 public partial class DesignEditor
 {
     /// <summary>
-    /// Идентификатор свойства модели выделения, повторно экспортированный из базового класса.
-    /// </summary>
-    public new static readonly DirectProperty<SelectingItemsControl, ISelectionModel> SelectionProperty =
-        SelectingItemsControl.SelectionProperty;
-
-    /// <summary>
-    /// Идентификатор свойства коллекции выбранных элементов, повторно экспортированный из базового класса.
-    /// </summary>
-    public new static readonly DirectProperty<SelectingItemsControl, IList?> SelectedItemsProperty =
-        SelectingItemsControl.SelectedItemsProperty;
-
-    /// <summary>
-    /// Идентификатор свойства режима выделения.
-    /// </summary>
-    public new static readonly StyledProperty<SelectionMode> SelectionModeProperty =
-        SelectingItemsControl.SelectionModeProperty.AddOwner<DesignEditor>();
-
-    /// <summary>
-    /// Получает или задает модель выделения редактора.
-    /// </summary>
-    public new ISelectionModel Selection
-    {
-        get => base.Selection;
-        set => base.Selection = value;
-    }
-
-    /// <summary>
-    /// Получает или задает внешнюю коллекцию выбранных элементов.
-    /// </summary>
-    public new IList? SelectedItems
-    {
-        get => base.SelectedItems;
-        set => base.SelectedItems = value;
-    }
-
-    /// <summary>
-    /// Получает или задает режим выделения элементов.
-    /// </summary>
-    public new SelectionMode SelectionMode
-    {
-        get => base.SelectionMode;
-        set => base.SelectionMode = value;
-    }
-
-    /// <summary>
     /// Идентификатор свойства видимости пользовательских направляющих.
     /// </summary>
     public static readonly StyledProperty<bool> ShowGuidesProperty =
@@ -98,12 +53,6 @@ public partial class DesignEditor
     /// </summary>
     public static readonly StyledProperty<ControlTheme> SelectionRectangleStyleProperty =
         AvaloniaProperty.Register<DesignEditor, ControlTheme>(nameof(SelectionRectangleStyle));
-
-    /// <summary>
-    /// Идентификатор свойства, показывающего активен ли marquee-selection.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> IsSelectingProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(IsSelecting), o => o.IsSelecting, (o, v) => o.IsSelecting = v);
 
     /// <summary>
     /// Идентификатор свойства имени раскладки primary target.
@@ -190,12 +139,6 @@ public partial class DesignEditor
         AvaloniaProperty.RegisterDirect<DesignEditor, DesignEditorItem?>(
             nameof(MarqueeScope),
             o => o.MarqueeScope);
-
-    /// <summary>
-    /// Идентификатор свойства прямоугольника выделения в мировых координатах.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, Rect> SelectedAreaProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, Rect>(nameof(SelectedArea), o => o.SelectedArea, (o, v) => o.SelectedArea = v);
 
     /// <summary>
     /// Идентификатор свойства прямоугольника, охватывающего все размещенные элементы.
@@ -363,17 +306,6 @@ public partial class DesignEditor
     /// </summary>
     private readonly GroupStoreBridge _groupStoreBridge;
 
-    private bool _isSelecting;
-
-    /// <summary>
-    /// Получает или задает признак активного прямоугольного выделения.
-    /// </summary>
-    public bool IsSelecting
-    {
-        get => _isSelecting;
-        set => SetAndRaise(IsSelectingProperty, ref _isSelecting, value);
-    }
-
     private string? _primarySelectionPlacement;
 
     /// <summary>
@@ -517,17 +449,6 @@ public partial class DesignEditor
     {
         get => _snapGuides;
         private set => SetAndRaise(SnapGuidesProperty, ref _snapGuides, value);
-    }
-
-    private Rect _selectedArea;
-
-    /// <summary>
-    /// Получает или задает текущий прямоугольник выделения в мировых координатах.
-    /// </summary>
-    public Rect SelectedArea
-    {
-        get => _selectedArea;
-        set => SetAndRaise(SelectedAreaProperty, ref _selectedArea, value);
     }
 
     private DesignEditorItem? _marqueeScope;

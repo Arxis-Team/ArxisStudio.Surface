@@ -1,7 +1,6 @@
 ﻿using Avalonia.Input;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.States;
+namespace ArxisStudio.Surface.States;
 
 /// <summary>
 /// Базовый класс состояния редактора.
@@ -11,13 +10,13 @@ internal abstract class EditorState
     /// <summary>
     /// Получает редактор, которому принадлежит состояние.
     /// </summary>
-    protected DesignEditor Editor { get; }
+    protected SurfaceView Editor { get; }
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="EditorState"/>.
     /// </summary>
     /// <param name="editor">Редактор, которому принадлежит состояние.</param>
-    protected EditorState(DesignEditor editor)
+    protected EditorState(SurfaceView editor)
     {
         Editor = editor;
     }

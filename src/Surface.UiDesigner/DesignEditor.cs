@@ -144,7 +144,6 @@ public partial class DesignEditor : SurfaceView
         _groupStoreBridge = new GroupStoreBridge(this);
         AttachGroupStore(_groupStore);
 
-        _states.Push(new EditorIdleState(this));
         UpdateSelectionOverlayState();
     }
 

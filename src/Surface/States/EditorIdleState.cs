@@ -1,9 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Input;
 using Avalonia.VisualTree;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.States;
+namespace ArxisStudio.Surface.States;
 
 /// <summary>
 /// Состояние ожидания, в котором редактор обрабатывает старт выделения, панорамирования и зума.
@@ -14,7 +13,7 @@ internal class EditorIdleState : EditorState
     /// Инициализирует новый экземпляр <see cref="EditorIdleState"/>.
     /// </summary>
     /// <param name="editor">Редактор, которому принадлежит состояние.</param>
-    public EditorIdleState(DesignEditor editor) : base(editor) { }
+    public EditorIdleState(SurfaceView editor) : base(editor) { }
 
     /// <inheritdoc />
     public override void OnPointerPressed(PointerPressedEventArgs e)

@@ -23,6 +23,7 @@ using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface.UiDesigner;
 
@@ -30,65 +31,35 @@ namespace ArxisStudio.Surface.UiDesigner;
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.
 public partial class DesignEditor
 {
-    private readonly Stack<EditorState> _states = new();
-
-    /// <summary>
-    /// Получает текущее активное состояние редактора.
-    /// </summary>
-    internal EditorState CurrentState => _states.Count > 0 ? _states.Peek() : null!;
-
-    /// <summary>
-    /// Помещает новое состояние в стек и вызывает его инициализацию.
-    /// </summary>
-    /// <param name="state">Состояние, которое должно стать активным.</param>
-    internal void PushState(EditorState state)
+    /// <inheritdoc />
+    /// <remarks>
+    /// Правый клик сначала переводит выделение, если щёлкнули мимо него, и только потом
+    /// спрашивает контекст: меню относится к тому, что выбрано.
+    /// </remarks>
+    private protected override bool OnContextPointerPressed(PointerPressedEventArgs e, Point position)
     {
-        var previous = _states.Count > 0 ? _states.Peek() : null;
-        _states.Push(state);
-        state.Enter(previous);
+        if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+            return false;
+
+        RetargetSelectionForContext(position, e.KeyModifiers);
+        RequestContextSafe(DesignEditorContextSource.Pointer, position, e.KeyModifiers);
+        return true;
     }
 
-    /// <summary>
-    /// Завершает текущее состояние и возвращается к предыдущему, если стек содержит более одного состояния.
-    /// </summary>
-    internal void PopState()
+    /// <inheritdoc />
+    /// <remarks>
+    /// Брошенный групповой жест закрывается здесь же. Иначе и операция, и открытая
+    /// единица редактирования переживают его: правка ушла бы мимо отмены, а следующий
+    /// жест достался бы чужой операции. Единица именно фиксируется, а не затирается —
+    /// геометрия к этому моменту уже применена, и поздняя запись лучше потерянной.
+    /// </remarks>
+    private protected override void OnGestureAbandoned()
     {
-        if (_states.Count > 1)
-        {
-            var current = _states.Pop();
-            current.Exit();
-        }
+        if (_groupResizeOperation != null)
+            CompleteGroupResize();
     }
 
     // --- Input Handling ---
-
-    /// <summary>
-    /// Обрабатывает нажатие указателя и маршрутизирует его в active state редактора.
-    /// </summary>
-    /// <param name="e">Аргументы указателя.</param>
-    protected override void OnPointerPressed(PointerPressedEventArgs e)
-    {
-        _lastMousePosition = e.GetPosition(this);
-        LastInputModifiers = e.KeyModifiers;
-
-        // Focusable сам по себе фокус не даёт: без него клавиатурные жесты
-        // до редактора не доходят. Проверка IsKeyboardFocusWithin не даёт
-        // отобрать фокус у вложенного редактируемого контрола.
-        if (!IsKeyboardFocusWithin)
-            Focus();
-
-        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
-        {
-            RetargetSelectionForContext(_lastMousePosition, e.KeyModifiers);
-            RequestContextSafe(DesignEditorContextSource.Pointer, _lastMousePosition, e.KeyModifiers);
-            e.Handled = true;
-            return;
-        }
-
-        CurrentState.OnPointerPressed(e);
-
-        if (!e.Handled) base.OnPointerPressed(e);
-    }
 
     /// <summary>
     /// Обрабатывает нажатие клавиши: смещение выделения, снятие выделения,
@@ -313,59 +284,6 @@ public partial class DesignEditor
     }
 
     /// <summary>
-    /// Обрабатывает перемещение указателя и обновляет последнюю известную позицию курсора.
-    /// </summary>
-    /// <param name="e">Аргументы указателя.</param>
-    protected override void OnPointerMoved(PointerEventArgs e)
-    {
-        _lastMousePosition = e.GetPosition(this);
-        CurrentState.OnPointerMoved(e);
-        base.OnPointerMoved(e);
-    }
-
-    /// <summary>
-    /// Обрабатывает отпускание указателя и завершает текущее interaction-состояние при необходимости.
-    /// </summary>
-    /// <param name="e">Аргументы указателя.</param>
-    protected override void OnPointerReleased(PointerReleasedEventArgs e)
-    {
-        CurrentState.OnPointerReleased(e);
-        base.OnPointerReleased(e);
-    }
-
-    /// <summary>
-    /// Разбирает стек состояний, если редактор потерял захват указателя.
-    /// </summary>
-    /// <param name="e">Аргументы потери захвата.</param>
-    /// <remarks>
-    /// Рамка выделения и панорамирование выходят только через отпускание. Отпускание
-    /// доходит почти всегда, но захват можно и потерять — его забирает другой элемент,
-    /// захваченный уходит из дерева, платформа отбирает сама. Тогда состояние остаётся
-    /// на стеке, и это не косметика: брошенная рамка держит <see cref="IsSelecting"/>,
-    /// а по нему <c>OnItemsDragStarted</c> отклоняет следующее перетаскивание — при том
-    /// что контейнер об отказе не узнаёт и продолжает писать геометрию каждый кадр
-    /// с закрытой единицей редактирования. Правка уходила мимо undo.
-    /// <para>
-    /// Тот же приём, что у контейнера (<c>DesignEditorItem.OnPointerCaptureLost</c>):
-    /// разобрать стек до базового состояния, дав каждому выйти своим <c>Exit</c>.
-    /// </para>
-    /// </remarks>
-    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
-    {
-        base.OnPointerCaptureLost(e);
-
-        while (_states.Count > 1)
-            PopState();
-
-        // Брошенный групповой жест закрывается здесь же. Иначе и операция, и открытая
-        // единица редактирования переживают его: правка ушла бы мимо отмены, а следующий
-        // жест достался бы чужой операции. Единица именно фиксируется, а не затирается —
-        // геометрия к этому моменту уже применена, и поздняя запись лучше потерянной.
-        if (_groupResizeOperation != null)
-            CompleteGroupResize();
-    }
-
-    /// <summary>
     /// Решает, набирает ли рамка контейнеры целиком.
     /// </summary>
     /// <param name="viewportPoint">Точка нажатия в координатах редактора.</param>
@@ -383,27 +301,12 @@ public partial class DesignEditor
     /// протяжки — в отличие от её владельца, который пересчитывается каждый кадр.
     /// </para>
     /// </remarks>
-    internal bool ShouldUseContainerMarquee(Point viewportPoint, KeyModifiers modifiers)
+    internal override bool ShouldUseContainerMarquee(Point viewportPoint, KeyModifiers modifiers)
     {
         if (ShouldUseContainerInteraction(modifiers))
             return true;
 
         return FindContainerAtWorldPoint(GetWorldPosition(viewportPoint)) == null;
-    }
-
-    /// <summary>
-    /// Обрабатывает колесо мыши и делегирует управление активному состоянию редактора.
-    /// </summary>
-    /// <param name="e">Аргументы колесика мыши.</param>
-    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
-    {
-        if (e.Handled) return;
-
-        // Помечать обработанным можно только то, что действительно потребили.
-        // Безусловный Handled съедал колесо и тогда, когда зум не сработал —
-        // заданы ZoomModifiers, но не нажаты, — и внешний ScrollViewer,
-        // внутри которого лежит редактор, переставал прокручиваться вовсе.
-        e.Handled = CurrentState.OnPointerWheelChanged(e);
     }
 
     // --- Drag & Drop ---

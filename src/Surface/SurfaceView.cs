@@ -1,6 +1,10 @@
+using System.Collections;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Selection;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
+using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface;
 
@@ -37,6 +41,8 @@ public partial class SurfaceView : SelectingItemsControl
         _additiveSelectionModifiers = _inputGestures.AdditiveSelectionModifiers;
         AttachInputGestures(_inputGestures);
 
+        _states.Push(new EditorIdleState(this));
+
         var contentGroup = new TransformGroup();
         contentGroup.Children.Add(_scaleTransform);
         contentGroup.Children.Add(_translateTransform);
@@ -46,5 +52,50 @@ public partial class SurfaceView : SelectingItemsControl
         dpiGroup.Children.Add(_scaleTransform);
         dpiGroup.Children.Add(_dpiTranslateTransform);
         SetCurrentValue(DpiScaledViewportTransformProperty, dpiGroup);
+    }
+
+    /// <summary>
+    /// Идентификатор свойства модели выделения, повторно экспортированный из базового класса.
+    /// </summary>
+    public new static readonly DirectProperty<SelectingItemsControl, ISelectionModel> SelectionProperty =
+        SelectingItemsControl.SelectionProperty;
+
+    /// <summary>
+    /// Идентификатор свойства коллекции выбранных элементов, повторно экспортированный из базового класса.
+    /// </summary>
+    public new static readonly DirectProperty<SelectingItemsControl, IList?> SelectedItemsProperty =
+        SelectingItemsControl.SelectedItemsProperty;
+
+    /// <summary>
+    /// Идентификатор свойства режима выделения.
+    /// </summary>
+    public new static readonly StyledProperty<SelectionMode> SelectionModeProperty =
+        SelectingItemsControl.SelectionModeProperty.AddOwner<SurfaceView>();
+
+    /// <summary>
+    /// Получает или задает модель выделения редактора.
+    /// </summary>
+    public new ISelectionModel Selection
+    {
+        get => base.Selection;
+        set => base.Selection = value;
+    }
+
+    /// <summary>
+    /// Получает или задает внешнюю коллекцию выбранных элементов.
+    /// </summary>
+    public new IList? SelectedItems
+    {
+        get => base.SelectedItems;
+        set => base.SelectedItems = value;
+    }
+
+    /// <summary>
+    /// Получает или задает режим выделения элементов.
+    /// </summary>
+    public new SelectionMode SelectionMode
+    {
+        get => base.SelectionMode;
+        set => base.SelectionMode = value;
     }
 }

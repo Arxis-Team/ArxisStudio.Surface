@@ -1,9 +1,8 @@
 ﻿using Avalonia;
 using Avalonia.Input;
 using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio.States;
+namespace ArxisStudio.Surface.States;
 
 /// <summary>
 /// Состояние панорамирования viewport редактора.
@@ -20,7 +19,7 @@ internal class EditorPanningState : EditorState
     /// </summary>
     /// <param name="editor">Редактор, которому принадлежит состояние.</param>
     /// <param name="pointer">Указатель, которым идёт жест.</param>
-    public EditorPanningState(DesignEditor editor, IPointer pointer) : base(editor)
+    public EditorPanningState(SurfaceView editor, IPointer pointer) : base(editor)
     {
         _pointer = pointer;
     }

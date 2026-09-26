@@ -21,6 +21,7 @@ using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
+using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface.UiDesigner;
 
@@ -41,7 +42,7 @@ public partial class DesignEditor
     /// <see cref="SurfaceView.LastInputModifiers"/>: режим фиксируется в момент нажатия, иначе
     /// отпускание модификатора посреди протяжки меняло бы смысл начатого жеста.
     /// </param>
-    internal void CommitSelection(Rect bounds, bool isCtrlPressed, bool useContainerSelection)
+    internal override void CommitSelection(Rect bounds, bool isCtrlPressed, bool useContainerSelection)
     {
         if (Presenter?.Panel == null) return;
 
@@ -541,12 +542,12 @@ public partial class DesignEditor
     /// оставалась бы привязанной к нему при любой протяжке, и её визуальный охват
     /// обещал бы выборку, которой не происходит.
     /// </remarks>
-    internal void UpdateMarqueeScope(Rect worldBounds, bool useContainerSelection)
+    internal override void UpdateMarqueeScope(Rect worldBounds, bool useContainerSelection)
     {
         MarqueeScope = useContainerSelection ? null : FindContainerForMarquee(worldBounds);
     }
 
-    internal void ClearMarqueeScope() => MarqueeScope = null;
+    internal override void ClearMarqueeScope() => MarqueeScope = null;
 
     /// <summary>
     /// Выбирает контрол как design target — то же, что клик по нему на поверхности.
@@ -1322,12 +1323,12 @@ public partial class DesignEditor
     /// применённое выделение считается по тем же контейнерам, которые рамка измеряла.
     /// </para>
     /// </remarks>
-    internal void BeginContainerSnapshot() => _containerSnapshot = EnumerateContainersCore().ToList();
+    internal override void BeginContainerSnapshot() => _containerSnapshot = EnumerateContainersCore().ToList();
 
     /// <summary>
     /// Отпускает снимок контейнеров: следующий обход снова идёт по дереву.
     /// </summary>
-    internal void EndContainerSnapshot() => _containerSnapshot = null;
+    internal override void EndContainerSnapshot() => _containerSnapshot = null;
 
     private IEnumerable<DesignEditorItem> EnumerateContainersCore()
     {
