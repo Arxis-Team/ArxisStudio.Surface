@@ -36,7 +36,12 @@ internal sealed class LinksPresenter : ItemsControl
     {
         base.PrepareContainerForItemOverride(container, item, index);
 
-        if (container is not Link link || ReferenceEquals(link, item))
+        if (container is not Link link)
+            return;
+
+        // Выбор и запросы говорят с приложением его элементами, а не нашими контролами.
+        link.Item = item;
+        if (ReferenceEquals(link, item))
             return;
 
         if (this.FindAncestorOfType<NodeEditor>() is not { } editor)
@@ -47,6 +52,14 @@ internal sealed class LinksPresenter : ItemsControl
 
         if (editor.LinkTargetBinding is { } target)
             link.Bind(Link.TargetProperty, target);
+    }
+
+    /// <inheritdoc />
+    protected override void ClearContainerForItemOverride(Control container)
+    {
+        base.ClearContainerForItemOverride(container);
+        if (container is Link link)
+            link.Item = null;
     }
 }
 

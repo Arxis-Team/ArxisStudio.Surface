@@ -58,8 +58,15 @@ public class Link : Control
     public static readonly DirectProperty<Link, Point> TargetAnchorProperty =
         AvaloniaProperty.RegisterDirect<Link, Point>(nameof(TargetAnchor), o => o.TargetAnchor);
 
+    /// <summary>
+    /// Идентификатор свойства признака выбора.
+    /// </summary>
+    public static readonly DirectProperty<Link, bool> IsSelectedProperty =
+        AvaloniaProperty.RegisterDirect<Link, bool>(nameof(IsSelected), o => o.IsSelected);
+
     private Point _sourceAnchor;
     private Point _targetAnchor;
+    private bool _isSelected;
     private NodeEditor? _editor;
     private object? _registeredSource;
     private object? _registeredTarget;
@@ -124,6 +131,40 @@ public class Link : Control
         get => _targetAnchor;
         private set => SetAndRaise(TargetAnchorProperty, ref _targetAnchor, value);
     }
+
+    /// <summary>
+    /// Получает признак того, что связь выбрана.
+    /// </summary>
+    /// <remarks>
+    /// Выбирает связь редактор — щелчком или <see cref="NodeEditor.SelectLink"/>; выбранная
+    /// показывает псевдокласс <c>:selected</c>.
+    /// </remarks>
+    public bool IsSelected
+    {
+        get => _isSelected;
+        internal set
+        {
+            if (SetAndRaise(IsSelectedProperty, ref _isSelected, value))
+                PseudoClasses.Set(":selected", value);
+        }
+    }
+
+    /// <summary>
+    /// Элемент <see cref="NodeEditor.Links"/>, ради которого создана связь; готовая связь из
+    /// коллекции — сама себе элемент.
+    /// </summary>
+    internal object? Item { get; set; }
+
+    /// <summary>
+    /// Элемент коллекции, которым связь называют приложению.
+    /// </summary>
+    internal object ItemOrSelf => Item ?? this;
+
+    /// <summary>
+    /// Показывает, что связь под указателем (<c>:highlighted</c>): сама она попадания не
+    /// принимает, и <c>:pointerover</c> у неё не бывает.
+    /// </summary>
+    internal void SetHighlighted(bool value) => PseudoClasses.Set(":highlighted", value);
 
     /// <summary>
     /// Найдены ли оба порта: только такая связь рисуется.
@@ -201,6 +242,7 @@ public class Link : Control
     {
         base.OnAttachedToVisualTree(e);
         _editor = this.FindAncestorOfType<NodeEditor>();
+        _editor?.OnLinkAttached(this);
         Reregister();
     }
 
@@ -209,6 +251,7 @@ public class Link : Control
     {
         base.OnDetachedFromVisualTree(e);
         _editor?.UnregisterLink(this, _registeredSource, _registeredTarget);
+        _editor?.OnLinkDetached(this);
         _registeredSource = null;
         _registeredTarget = null;
         _editor = null;

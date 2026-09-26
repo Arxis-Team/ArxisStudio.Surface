@@ -246,7 +246,7 @@ public partial class SurfaceView
         return true;
     }
 
-    private bool TryClearSelection()
+    internal bool TryClearSelection()
     {
         if (SelectedDesignTargets.Count == 0)
             return false;

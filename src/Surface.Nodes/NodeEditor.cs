@@ -37,7 +37,13 @@ public partial class NodeEditor : SurfaceView
         Ports.Changed += OnPortsChanged;
 
         // Свои команды — впереди встроенных: они отвечают, только когда им есть что делать.
+        // Escape сперва бросает протяжку, потом снимает выбор связей и лишь затем — узлов.
         KeyCommands.Insert(0, CancelLinkCommand());
+        KeyCommands.Insert(1, ClearLinkSelectionCommand());
+        KeyCommands.Insert(2, DeleteLinksCommand());
+
+        // Выбор узлов и выбор связей взаимоисключающие: Delete значит что-то одно.
+        DesignSelectionChanged += OnNodeSelectionChanged;
     }
 
     /// <summary>

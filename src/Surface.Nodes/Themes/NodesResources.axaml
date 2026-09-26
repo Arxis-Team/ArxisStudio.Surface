@@ -16,6 +16,8 @@
             <SolidColorBrush x:Key="NodeEditor.Port.PinStroke" Color="#5C6577" />
             <SolidColorBrush x:Key="NodeEditor.Port.ConnectedFill" Color="#5C6577" />
             <SolidColorBrush x:Key="NodeEditor.Link.Stroke" Color="#8A96A8" />
+            <SolidColorBrush x:Key="NodeEditor.Link.HighlightedStroke" Color="#5C6577" />
+            <SolidColorBrush x:Key="NodeEditor.Link.SelectedStroke" Color="#0F6CBD" />
             <SolidColorBrush x:Key="NodeEditor.PendingLink.Stroke" Color="#0F6CBD" />
             <SolidColorBrush x:Key="NodeEditor.Port.AcceptingStroke" Color="#1A7F37" />
             <SolidColorBrush x:Key="NodeEditor.Port.RefusingStroke" Color="#CF222E" />
@@ -31,6 +33,8 @@
             <SolidColorBrush x:Key="NodeEditor.Port.PinStroke" Color="#8A96A8" />
             <SolidColorBrush x:Key="NodeEditor.Port.ConnectedFill" Color="#8A96A8" />
             <SolidColorBrush x:Key="NodeEditor.Link.Stroke" Color="#6E7A8C" />
+            <SolidColorBrush x:Key="NodeEditor.Link.HighlightedStroke" Color="#A8B3C4" />
+            <SolidColorBrush x:Key="NodeEditor.Link.SelectedStroke" Color="#1E90FF" />
             <SolidColorBrush x:Key="NodeEditor.PendingLink.Stroke" Color="#1E90FF" />
             <SolidColorBrush x:Key="NodeEditor.Port.AcceptingStroke" Color="#3FB950" />
             <SolidColorBrush x:Key="NodeEditor.Port.RefusingStroke" Color="#F85149" />

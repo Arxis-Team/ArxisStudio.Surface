@@ -9,6 +9,7 @@ sealed class ArxisStudio.Surface.Nodes.ConnectValidatingEventArgs : EventArgs
     property Object Source { get; }
     property Object Target { get; }
 class ArxisStudio.Surface.Nodes.Link : Control
+    avalonia IsSelectedProperty -> IsSelected : Boolean (direct)
     avalonia SourceAnchorProperty -> SourceAnchor : Point (direct)
     avalonia SourceProperty -> Source : Object (styled) = null
     avalonia StrokeProperty -> Stroke : IBrush (styled) = null
@@ -21,31 +22,48 @@ class ArxisStudio.Surface.Nodes.Link : Control
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void Render(DrawingContext)
+    property Boolean IsSelected { get; }
     property Double StrokeThickness { get; set; }
     property IBrush Stroke { get; set; }
     property Object Source { get; set; }
     property Object Target { get; set; }
     property Point SourceAnchor { get; }
     property Point TargetAnchor { get; }
+sealed class ArxisStudio.Surface.Nodes.LinkDeleteRequestedEventArgs : EventArgs
+    ctor .ctor(IReadOnlyList<Object>)
+    property Boolean Handled { get; set; }
+    property IReadOnlyList<Object> Links { get; }
 class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     ctor .ctor()
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
+    avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
     avalonia LinksProperty -> Links : IEnumerable (styled) = null
     avalonia PortCaptureRadiusProperty -> PortCaptureRadius : Double (styled) = 12
+    avalonia SelectedLinksProperty -> SelectedLinks : IReadOnlyList<Object> (direct)
     ctor .ctor()
     event EventHandler<ConnectRequestedEventArgs> ConnectRequested
     event EventHandler<ConnectValidatingEventArgs> ConnectValidating
+    event EventHandler<LinkDeleteRequestedEventArgs> LinkDeleteRequested
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
+    method Boolean SelectLink(Object, Boolean)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
+    method Void ClearLinkSelection()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
+    method Void OnPointerExited(PointerEventArgs)
+    method Void OnPointerMoved(PointerEventArgs)
+    method Void OnPointerPressed(PointerPressedEventArgs)
     property BindingBase LinkSourceBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
+    property Double LinkHitTolerance { get; set; }
     property Double PortCaptureRadius { get; set; }
     property IEnumerable Links { get; set; }
+    property IReadOnlyList<Object> SelectedLinks { get; }
 static class ArxisStudio.Surface.Nodes.NodeEditorKeyCommands
     field String CancelLink = "nodes.cancelLink"
+    field String ClearLinkSelection = "nodes.clearLinkSelection"
+    field String DeleteLinks = "nodes.deleteLinks"
 class ArxisStudio.Surface.Nodes.Port : ContentControl
     avalonia DataProperty -> Data : Object (styled) = null
     avalonia DirectionProperty -> Direction : PortDirection (styled) = Input

@@ -6,6 +6,14 @@
     <ControlTheme x:Key="{x:Type nodes:Link}" TargetType="nodes:Link">
         <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Link.Stroke}" />
         <Setter Property="StrokeThickness" Value="{DynamicResource NodeEditor.Link.Thickness}" />
+
+        <!-- Попадания связь не принимает, поэтому наведение она показывает :highlighted, а не :pointerover. -->
+        <Style Selector="^:highlighted">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Link.HighlightedStroke}" />
+        </Style>
+        <Style Selector="^:selected">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Link.SelectedStroke}" />
+        </Style>
     </ControlTheme>
 
     <!--

@@ -11,4 +11,10 @@ public static class NodeEditorKeyCommands
 {
     /// <summary>Отмена протягиваемой связи по Escape.</summary>
     public const string CancelLink = "nodes.cancelLink";
+
+    /// <summary>Снятие выбора связей по Escape.</summary>
+    public const string ClearLinkSelection = "nodes.clearLinkSelection";
+
+    /// <summary>Запрос удаления выбранных связей по Delete и Backspace.</summary>
+    public const string DeleteLinks = "nodes.deleteLinks";
 }
