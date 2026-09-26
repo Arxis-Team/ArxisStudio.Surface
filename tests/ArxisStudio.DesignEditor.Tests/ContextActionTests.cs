@@ -7,6 +7,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 
@@ -31,7 +32,7 @@ public class ContextActionTests
         public List<DesignEditorContextRequest> Seen { get; } = new();
 
         public ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-            DesignEditor editor, DesignEditorContextRequest request, CancellationToken cancellationToken)
+            SurfaceView editor, DesignEditorContextRequest request, CancellationToken cancellationToken)
         {
             Seen.Add(request);
             return ValueTask.FromResult(_actions);
@@ -44,7 +45,7 @@ public class ContextActionTests
         public int Shows { get; private set; }
         public bool Result { get; set; } = true;
 
-        public bool TryShow(DesignEditor editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions)
+        public bool TryShow(SurfaceView editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions)
         {
             Shows++;
             return Result;
@@ -245,7 +246,7 @@ public class ContextActionTests
         public void Release() => _gate.TrySetResult();
 
         public async ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-            DesignEditor editor, DesignEditorContextRequest request, CancellationToken cancellationToken)
+            SurfaceView editor, DesignEditorContextRequest request, CancellationToken cancellationToken)
         {
             Calls++;
 

@@ -533,21 +533,6 @@ public partial class DesignEditor
     }
 
     /// <summary>
-    /// Получает коллекцию провайдеров действий контекстного меню.
-    /// </summary>
-    public IList<IDesignEditorContextActionProvider> ContextActionProviders { get; } = new List<IDesignEditorContextActionProvider>();
-
-    /// <summary>
-    /// Возникает перед показом контекстного меню.
-    /// </summary>
-    public event EventHandler<DesignEditorContextRequestingEventArgs>? ContextMenuRequesting;
-
-    /// <summary>
-    /// Возникает после разрешения контекста и списка действий.
-    /// </summary>
-    public event EventHandler<DesignEditorContextRequestedEventArgs>? ContextMenuResolved;
-
-    /// <summary>
     /// Возникает при запросе удаления выделения с клавиатуры.
     /// </summary>
     /// <remarks>
@@ -592,9 +577,4 @@ public partial class DesignEditor
     /// </para>
     /// </remarks>
     public event EventHandler<DesignGuideChangeRequestedEventArgs>? GuideChangeRequested;
-
-    /// <summary>
-    /// Получает или задает presenter контекстных действий.
-    /// </summary>
-    public IDesignEditorContextPresenter ContextPresenter { get; set; } = new ContextMenuContextPresenter();
 }

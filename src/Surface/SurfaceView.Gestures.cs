@@ -117,7 +117,18 @@ public partial class SurfaceView
     /// Даёт слою выше перехватить нажатие, которое открывает контекст.
     /// </summary>
     /// <returns><see langword="true"/>, если нажатие потреблено и в состояния не идёт.</returns>
-    private protected virtual bool OnContextPointerPressed(PointerPressedEventArgs e, Point position) => false;
+    /// <remarks>
+    /// Ядро открывает контекст правой кнопкой и больше ничего не делает; слой, у которого
+    /// своё правило выделения под курсором, переопределяет.
+    /// </remarks>
+    private protected virtual bool OnContextPointerPressed(PointerPressedEventArgs e, Point position)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+            return false;
+
+        RequestContextSafe(DesignEditorContextSource.Pointer, position, e.KeyModifiers);
+        return true;
+    }
 
     /// <summary>
     /// Сообщает слою выше, что жест брошен потерей захвата.

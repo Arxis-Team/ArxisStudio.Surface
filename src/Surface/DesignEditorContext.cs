@@ -7,13 +7,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
-using ArxisStudio.Surface.UiDesigner;
-using ArxisStudio.Surface;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
-/// Определяет область, для которой запрошено контекстное действие в <see cref="DesignEditor"/>.
+/// Определяет область, для которой запрошено контекстное действие в <see cref="SurfaceView"/>.
 /// </summary>
 public enum DesignEditorContextScope
 {
@@ -23,7 +21,7 @@ public enum DesignEditorContextScope
     Surface = 0,
 
     /// <summary>
-    /// Контекст вызван над контейнером <see cref="DesignEditorItem"/>.
+    /// Контекст вызван над контейнером <see cref="SurfaceItem"/>.
     /// </summary>
     Container = 1,
 
@@ -39,7 +37,7 @@ public enum DesignEditorContextScope
 }
 
 /// <summary>
-/// Определяет источник запроса контекста в <see cref="DesignEditor"/>.
+/// Определяет источник запроса контекста в <see cref="SurfaceView"/>.
 /// </summary>
 public enum DesignEditorContextSource
 {
@@ -85,7 +83,7 @@ public sealed class DesignEditorContextRequest
     public Point WorldPoint { get; set; }
 
     /// <summary>
-    /// Получает или задает точку вызова в координатах <see cref="DesignEditor"/>.
+    /// Получает или задает точку вызова в координатах <see cref="SurfaceView"/>.
     /// </summary>
     public Point ViewportPoint { get; set; }
 
@@ -167,7 +165,7 @@ public sealed class DesignEditorContextAction
 }
 
 /// <summary>
-/// Определяет контракт провайдера действий контекстного меню <see cref="DesignEditor"/>.
+/// Определяет контракт провайдера действий контекстного меню <see cref="SurfaceView"/>.
 /// </summary>
 public interface IDesignEditorContextActionProvider
 {
@@ -179,7 +177,7 @@ public interface IDesignEditorContextActionProvider
     /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Список действий контекстного меню.</returns>
     ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-        DesignEditor editor,
+        SurfaceView editor,
         DesignEditorContextRequest request,
         CancellationToken cancellationToken = default);
 }
@@ -196,7 +194,7 @@ public interface IDesignEditorContextPresenter
     /// <param name="request">Снимок контекста вызова.</param>
     /// <param name="actions">Действия для отображения.</param>
     /// <returns><see langword="true"/>, если отображение обработано presenter'ом.</returns>
-    bool TryShow(DesignEditor editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions);
+    bool TryShow(SurfaceView editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions);
 }
 
 /// <summary>
@@ -207,7 +205,7 @@ public sealed class ContextMenuContextPresenter : IDesignEditorContextPresenter
     private ContextMenu? _activeContextMenu;
 
     /// <inheritdoc />
-    public bool TryShow(DesignEditor editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions)
+    public bool TryShow(SurfaceView editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions)
     {
         if (actions == null || actions.Count == 0)
             return false;
@@ -217,7 +215,7 @@ public sealed class ContextMenuContextPresenter : IDesignEditorContextPresenter
         {
             ItemsSource = CreateContextMenuItems(actions),
             // Меню открывается в точке вызова, а не по дефолтному placement редактора.
-            // ViewportPoint уже в координатах DesignEditor, поэтому он же и есть якорь.
+            // ViewportPoint уже в координатах поверхности, поэтому он же и есть якорь.
             PlacementTarget = editor,
             Placement = PlacementMode.AnchorAndGravity,
             PlacementAnchor = PopupAnchor.TopLeft,

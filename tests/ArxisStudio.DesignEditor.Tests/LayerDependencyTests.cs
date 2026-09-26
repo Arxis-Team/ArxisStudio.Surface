@@ -35,7 +35,6 @@ public class LayerDependencyTests
     /// </summary>
     private static readonly string[] Legacy =
     [
-        "ArxisStudio.ContextMenuContextPresenter",
         "ArxisStudio.Controls.DesignRuler",
         "ArxisStudio.Controls.SelectionAdorner",
         "ArxisStudio.Controls.SelectionAdornerLayer",
@@ -45,18 +44,10 @@ public class LayerDependencyTests
         "ArxisStudio.Controls.SelectionAdornerResizeStartedEventArgs",
         "ArxisStudio.Controls.SelectionAdornerRole",
         "ArxisStudio.Controls.SnapGuideLayer",
-        "ArxisStudio.DesignEditorContextAction",
-        "ArxisStudio.DesignEditorContextRequest",
-        "ArxisStudio.DesignEditorContextRequestedEventArgs",
-        "ArxisStudio.DesignEditorContextRequestingEventArgs",
-        "ArxisStudio.DesignEditorContextScope",
-        "ArxisStudio.DesignEditorContextSource",
         "ArxisStudio.GroupDragOperation",
         "ArxisStudio.GroupDragTarget",
         "ArxisStudio.GroupResizeOperation",
         "ArxisStudio.GroupResizeTarget",
-        "ArxisStudio.IDesignEditorContextActionProvider",
-        "ArxisStudio.IDesignEditorContextPresenter",
         "ArxisStudio.IInteractionOperation",
         "ArxisStudio.SelectionAdornerInfo",
         "ArxisStudio.SelectionInteractionCapabilities",

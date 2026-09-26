@@ -9,6 +9,7 @@ using Xunit;
 using ArxisStudio.Controls;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 

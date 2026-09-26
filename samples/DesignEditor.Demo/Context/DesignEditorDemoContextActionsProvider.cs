@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,10 +22,14 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
     private static readonly Dictionary<Control, InteractionPolicySnapshot> LockedTargets = new();
 
     public ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-        global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
+        SurfaceView surface,
         DesignEditorContextRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Действия демо — действия дизайнера форм: над другой поверхностью им нечего делать.
+        if (surface is not global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
+            return ValueTask.FromResult<IReadOnlyList<DesignEditorContextAction>>(Array.Empty<DesignEditorContextAction>());
+
         var actions = request.Scope switch
         {
             DesignEditorContextScope.Surface => CreateSurfaceActions(editor),
