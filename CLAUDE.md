@@ -117,28 +117,53 @@ dotnet pack ArxisStudio.DesignEditor.sln -c Release -o artifacts
 Правило для нового кода: **если код ядра называет `Layout`, `ContentMode`, панель Avalonia или
 группу — он не в ядре.**
 
+Где стоит первый этап. В ядре уже viewport, настройка ввода, машина состояний редактора, выделение
+с рамкой, контракт изменений, политики и контекстное меню — за швами `ISurfaceGeometry`,
+`ISurfaceTargetResolver`, `ISurfaceInteractionPolicy` и `IEditFacet`. В наследии остаются
+инструменты редактирования: адорнеры и resize, групповые операции, состояния контейнера, привязка,
+направляющие и линейки. Их вынос в `Surface.Editing` требует служб, которые подключаются к
+`SurfaceView`, и решения, кому принадлежат свойства вроде `ShowGuides`, — это следующий шаг.
+
 ## Архитектура
 
 ### Где что лежит
 
-`DesignEditor` разбит на `partial`-файлы по темам; все они лежат в `src/Surface.UiDesigner/` и по мере разделения на слои (раздел «Слои») переезжают в `SurfaceView` и службы инструментов. Ядро — `DesignEditor.cs`: константы, поля, оба конструктора, переопределения контейнеров и `OnApplyTemplate`, то есть то, чем не владеет ни одна тема. Остальное:
+Редактор — два класса: `SurfaceView` в ядре (`src/Surface/`) и его наследник `DesignEditor` в
+дизайнере форм (`src/Surface.UiDesigner/`). Оба разбиты на `partial`-файлы по темам; разделение на
+слои идёт по шагам (раздел «Слои»), и то, что ещё не выделено в службы инструментов, живёт в
+`DesignEditor`.
+
+`SurfaceView` — `SurfaceView.cs`: оба конструктора, переэкспорт индексного выбора. Остальное:
 
 | Файл | О чём |
 | --- | --- |
-| `DesignEditor.Selection.cs` | двухуровневое выделение: запись, чтение, публикация, перечисление кандидатов и контейнеров |
-| `DesignEditor.Properties.cs` | свойства зависимостей, обёртки, публичные события |
-| `DesignEditor.Gestures.cs` | машина состояний редактора, указатель, клавиатура, drag и resize |
-| `DesignEditor.Placement.cs` | шов записи геометрии, политики, стратегии размещения, перестановка |
+| `SurfaceView.Viewport.cs` | положение, масштаб, обе трансформации и их DPI, зум колесом, `CenterOn*`/`FitToView` |
+| `SurfaceView.Input.cs` | наборы жестов, опций и курсоров, мост уведомлений набора жестов, решения по модификаторам |
+| `SurfaceView.Gestures.cs` | машина состояний редактора, маршрутизация указателя, рамка, хуки контекста и брошенного жеста |
+| `SurfaceView.Selection.cs` | двухуровневое выделение: запись, чтение, публикация, рамка, перечисление контейнеров |
+| `SurfaceView.EditContract.cs` | швы записи геометрии и `ZIndex`, единица редактирования, отмена и повтор |
+| `SurfaceView.Policies.cs` | политика взаимодействия как пересечение участников |
+| `SurfaceView.Context.cs` | контекстные действия: запрос, провайдеры, показ |
+
+Швы ядра — `ISurfaceGeometry`, `ISurfaceTargetResolver`, `ISurfaceInteractionPolicy`, `IEditFacet`;
+их реализации дизайнера форм — `DesignPlacementGeometry`, `NestedTargetResolver`,
+`PlacementMovePolicy`, `GroupEditFacet`, а блокировок — `DesignInteractionLockPolicy` в инструментах.
+
+`DesignEditor` — `DesignEditor.cs`: поля, конструктор (ставит швы), контейнеры, `OnApplyTemplate`. Остальное:
+
+| Файл | О чём |
+| --- | --- |
+| `DesignEditor.Selection.cs` | правило клика по вложенным target'ам и группам, кандидаты формы, политики адорнеров |
+| `DesignEditor.Properties.cs` | свойства и события, которые ещё не ушли в ядро или в инструменты |
+| `DesignEditor.Gestures.cs` | клавиатура, drag и resize контейнеров и групп, хуки контекста и брошенного жеста |
+| `DesignEditor.Placement.cs` | `TryGetDesignBounds`, ограничение формой, перестановка, распределение |
 | `DesignEditor.Snapping.cs` | привязка к сетке и направляющие |
 | `DesignEditor.Guides.cs` | пользовательские направляющие: набор хоста, попадание, запрос правки, туннельный перехват нажатия |
-| `DesignEditor.Viewport.cs` | панорамирование, зум, трансформации |
-| `DesignEditor.Context.cs` | контекстные действия |
+| `DesignEditor.Viewport.cs` | центрирование и вписывание выделения |
+| `DesignEditor.Context.cs` | перевод выделения под правый клик |
 | `DesignEditor.ZOrder.cs` | `ZIndex` и порядок среди детей панели |
 | `DesignEditor.Overlay.cs` | пересборка состояния оверлея выделения |
-| `DesignEditor.EditContract.cs` | единица редактирования, отмена и повтор |
 | `DesignEditor.Grouping.cs` | design-time группы: хранилище пометки, шов записи, вход в группу |
-
-Границы сняты с прежней раскладки файла, поэтому порядок внутри темы сохранён. Два члена лежат не там, где подсказывает имя, а там, где их предмет: `UpdateSelectionAdornerPolicies` — в выделении, `SetLastInputModifiers` — в жестах.
 
 ### Три системы координат
 

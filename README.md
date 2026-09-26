@@ -40,11 +40,11 @@
 
 ## Публичная поверхность
 
-Библиотека экспортирует 57 типов. Всё остальное — реализация и может меняться без предупреждения.
+Библиотека экспортирует 59 типов в трёх пространствах имён — `ArxisStudio.Surface` (ядро), `ArxisStudio.Surface.Editing` (инструменты) и `ArxisStudio.Surface.UiDesigner` (дизайнер форм), все под одним адресом разметки `https://github.com/Arxis-Team/ArxisStudio.Surface` (ADR 0003). Всё остальное — реализация и может меняться без предупреждения.
 
 | Область | Типы |
 |---|---|
-| Редактор | `DesignEditor`, `DesignEditorItem` |
+| Редактор | `SurfaceView`, `SurfaceItem` (ядро); `DesignEditor`, `DesignEditorItem` (дизайнер форм) |
 | Контролы для шаблонов и тем | `AbsolutePanel`, `DesignGrid`, `SelectionAdorner`, `SelectionAdornerRole`, `ResizeDirection`, `ResizeDeltaEventArgs`, `ResizeStartedEventArgs` |
 | Позиционирование и политики | `Layout`, `DesignInteraction`, `MovePolicy`, `ResizePolicy` |
 | Группы | `DesignGroup`, `DesignGroupInfo`, `IDesignGroupStore`, `DesignGroupAttachedStore` |
