@@ -85,7 +85,8 @@ public class InteractionPolicyTests
         var editor = new DesignEditor();
         var target = new Border();
 
-        Assert.Equal(MovePolicy.Both, editor.GetMovePolicy(target));
+        Assert.Equal(MovePolicy.Both, DesignInteraction.GetMovePolicy(target));
+        Assert.Equal(MovePolicy.Both, editor.GetEffectiveMovePolicy(target));
         Assert.Equal(ResizePolicy.All, editor.GetResizePolicy(target));
     }
 }

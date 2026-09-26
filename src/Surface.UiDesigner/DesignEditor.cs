@@ -141,6 +141,11 @@ public partial class DesignEditor : SurfaceView
         Geometry = new DesignPlacementGeometry(this);
         _groupFacet = new GroupEditFacet(this);
         AddEditFacet(_groupFacet);
+
+        // Действующая политика — пересечение: блокировки человека и то, что умеет
+        // раскладка. Ни одна не расширяет другую.
+        AddInteractionPolicy(DesignInteractionLockPolicy.Instance);
+        AddInteractionPolicy(PlacementMovePolicy.Instance);
         // Набор создан инициализатором поля и здесь только подхватывается: прежде
         // конструктор заводил второй и первый выбрасывал, а подписан оказывался
         // ровно один из двух — ошибиться в такой паре легко и молча.

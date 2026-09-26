@@ -83,7 +83,7 @@ public class PlacementStrategyTests
 
         // Пользователь разрешил, но StackPanel не читает Layout.X/Y:
         // разрешать жест значило бы обещать то, чего не произойдёт.
-        Assert.Equal(MovePolicy.Both, editor.GetMovePolicy(child));
+        Assert.Equal(MovePolicy.Both, DesignInteraction.GetMovePolicy(child));
         Assert.Equal(MovePolicy.None, editor.GetEffectiveMovePolicy(child));
     }
 

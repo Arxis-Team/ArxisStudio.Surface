@@ -7,6 +7,7 @@ using ArxisStudio.Controls;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.States;
 
@@ -172,7 +173,7 @@ internal class ItemIdleState : DesignEditorItemState
 
             // Пользовательский запрет сильнее любой раскладки — в том числе
             // сильнее перестановки.
-            if (editor.GetMovePolicy(moveTarget) == ArxisStudio.Surface.MovePolicy.None)
+            if (DesignInteraction.GetMovePolicy(moveTarget) == ArxisStudio.Surface.MovePolicy.None)
             {
                 RefuseDrag(editor, beyondThreshold);
                 return;

@@ -244,50 +244,11 @@ public partial class DesignEditor
         double Size(Rect rect) => xAxis ? rect.Width : rect.Height;
     }
 
-    internal ArxisStudio.Surface.ResizePolicy GetResizePolicy(Control control)
-    {
-        return DesignInteraction.GetResizePolicy(control);
-    }
-
-    internal ArxisStudio.Surface.MovePolicy GetMovePolicy(Control control)
-    {
-        return DesignInteraction.GetMovePolicy(control);
-    }
-
     /// <summary>
     /// Возвращает стратегию размещения контрола.
     /// </summary>
     internal static IDesignPlacementStrategy GetPlacementStrategy(Control control)
         => DesignPlacementResolver.Resolve(control);
-
-    /// <summary>
-    /// Возвращает политику перемещения с учётом того, что реально умеет родительская раскладка.
-    /// </summary>
-    /// <remarks>
-    /// Правило одно: <c>effective = user &amp; layout</c>. Раскладка задаёт потолок —
-    /// что физически работает; политика пользователя только сужает. Ни одна не расширяет
-    /// другую, иначе редактор снова начал бы предлагать жест, который ничего не делает.
-    /// </remarks>
-    internal ArxisStudio.Surface.MovePolicy GetEffectiveMovePolicy(Control control)
-    {
-        var user = GetMovePolicy(control);
-        if (user == ArxisStudio.Surface.MovePolicy.None)
-            return ArxisStudio.Surface.MovePolicy.None;
-
-        return GetPlacementStrategy(control).MoveSemantics == DesignMoveSemantics.Reposition
-            ? user
-            : ArxisStudio.Surface.MovePolicy.None;
-    }
-
-    internal Vector ApplyMovePolicy(Control control, Vector delta)
-    {
-        return ApplyMovePolicy(delta, GetEffectiveMovePolicy(control));
-    }
-
-    internal bool IsResizeAllowed(Control control, ResizeDirection direction)
-    {
-        return IsResizeAllowed(GetResizePolicy(control), direction);
-    }
 
     private SelectionInteractionCapabilities GetSelectionInteractionCapabilities()
     {
@@ -328,33 +289,6 @@ public partial class DesignEditor
     internal bool ShouldBlockNestedGroupDrag()
     {
         return ShouldBlockNestedGroupDrag(GetSelectionInteractionCapabilities());
-    }
-
-    private static Vector ApplyMovePolicy(Vector delta, ArxisStudio.Surface.MovePolicy policy)
-    {
-        var x = policy.HasFlag(ArxisStudio.Surface.MovePolicy.X) ? delta.X : 0d;
-        var y = policy.HasFlag(ArxisStudio.Surface.MovePolicy.Y) ? delta.Y : 0d;
-        return new Vector(x, y);
-    }
-
-    private static bool IsResizeAllowed(ArxisStudio.Surface.ResizePolicy policy, ResizeDirection direction)
-    {
-        return direction switch
-        {
-            ResizeDirection.Left => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Left),
-            ResizeDirection.Top => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Top),
-            ResizeDirection.Right => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Right),
-            ResizeDirection.Bottom => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Bottom),
-            ResizeDirection.TopLeft => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Top) &&
-                                       policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Left),
-            ResizeDirection.TopRight => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Top) &&
-                                        policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Right),
-            ResizeDirection.BottomLeft => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Bottom) &&
-                                          policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Left),
-            ResizeDirection.BottomRight => policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Bottom) &&
-                                           policy.HasFlag(ArxisStudio.Surface.ResizePolicy.Right),
-            _ => false
-        };
     }
 
     /// <summary>
