@@ -100,7 +100,9 @@ public class PublicSurfaceTests
     [Fact]
     public void State_Machines_Are_Not_Public()
     {
-        var leaked = Leaked(name => name.StartsWith("ArxisStudio.States.", StringComparison.Ordinal));
+        // Сегмент, а не префикс: при разделении на слои машины состояний уезжают
+        // в ArxisStudio.Surface.States, и страж обязан следовать за ними.
+        var leaked = Leaked(name => HasSegment(name, "States"));
 
         Assert.True(leaked.Count == 0, "Машины состояний должны быть internal:\n" + string.Join("\n", leaked));
     }
@@ -111,7 +113,7 @@ public class PublicSurfaceTests
         // Форму стратегий ещё рано фиксировать: она должна отлежаться внутри
         // библиотеки. Добавить публичный тип позже — аддитивно, опубликовать
         // неверный сейчас — ломающе.
-        var leaked = Leaked(name => name.StartsWith("ArxisStudio.Placement.", StringComparison.Ordinal));
+        var leaked = Leaked(name => HasSegment(name, "Placement"));
 
         Assert.True(leaked.Count == 0, "Стратегии размещения должны быть internal:\n" + string.Join("\n", leaked));
     }
@@ -139,4 +141,14 @@ public class PublicSurfaceTests
 
     private static List<string> Leaked(Func<string, bool> predicate) =>
         PublicSurface.ExportedTypes().Select(type => type.FullName!).Where(predicate).ToList();
+
+    /// <summary>
+    /// Лежит ли тип в пространстве имён, одним из сегментов которого является <paramref name="segment"/>.
+    /// </summary>
+    private static bool HasSegment(string fullName, string segment)
+    {
+        var lastDot = fullName.LastIndexOf('.');
+        var ns = lastDot < 0 ? string.Empty : fullName[..lastDot];
+        return ns.Split('.').Contains(segment, StringComparer.Ordinal);
+    }
 }
