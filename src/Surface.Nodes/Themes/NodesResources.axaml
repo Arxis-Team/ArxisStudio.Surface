@@ -51,6 +51,10 @@
     <Thickness x:Key="NodeEditor.Port.PinMargin">4,2</Thickness>
 
     <x:Double x:Key="NodeEditor.Link.Thickness">2</x:Double>
+
+    <x:Double x:Key="NodeEditor.Reroute.Size">22</x:Double>
+    <x:Double x:Key="NodeEditor.Reroute.RingThickness">1</x:Double>
+    <x:Double x:Key="NodeEditor.Reroute.SelectedRingThickness">2</x:Double>
     <x:Double x:Key="NodeEditor.Link.DetachingOpacity">0.35</x:Double>
 
 </ResourceDictionary>

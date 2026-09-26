@@ -39,5 +39,18 @@
             <Setter Property="BorderBrush" Value="{DynamicResource NodeEditor.Node.SelectedBorderBrush}" />
             <Setter Property="BorderThickness" Value="{DynamicResource NodeEditor.Node.SelectedBorderThickness}" />
         </Style>
+
+        <!--
+            Перевалка сама себе карточка: узел снимает свою, и выбор показывает её кольцо. Стоит после
+            :selected, чтобы у выбранной перевалки рамка карточки не вернулась.
+        -->
+        <Style Selector="^:reroute">
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <Style Selector="^:reroute /template/ Border#PART_Card">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
     </ControlTheme>
 </ResourceDictionary>

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface.Nodes;
@@ -10,7 +11,8 @@ namespace ArxisStudio.Surface.Nodes;
 /// Положение, выделение и перетаскивание — ядра (<see cref="SurfaceItem"/>). Свой тип нужен узлу
 /// ради своей темы — Avalonia ищет тему по точному типу — и ради портов, которые лежат в его
 /// содержимом: раскладку узла приложение пишет в <c>ItemTemplate</c> редактора, ставя туда
-/// <see cref="Port"/>.
+/// <see cref="Port"/>. Узел, в котором лежит <see cref="Reroute"/>, получает псевдокласс
+/// <c>:reroute</c>: тема снимает с него карточку.
 /// </remarks>
 public class Node : SurfaceItem
 {
@@ -32,4 +34,9 @@ public class Node : SurfaceItem
         this.FindAncestorOfType<NodeEditor>()?.OnNodeArranged(this);
         return size;
     }
+
+    /// <summary>
+    /// Отмечает узел перевалкой — его ставит и снимает сам <see cref="Reroute"/>.
+    /// </summary>
+    internal void SetReroute(bool value) => PseudoClasses.Set(":reroute", value);
 }

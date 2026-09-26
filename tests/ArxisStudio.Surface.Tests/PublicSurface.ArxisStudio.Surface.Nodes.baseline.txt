@@ -93,3 +93,11 @@ sealed class ArxisStudio.Surface.Nodes.ReconnectRequestedEventArgs : EventArgs
     property Object Link { get; }
     property Object NewPort { get; }
     property Object OldPort { get; }
+class ArxisStudio.Surface.Nodes.Reroute : TemplatedControl
+    avalonia InputProperty -> Input : Object (styled) = null
+    avalonia OutputProperty -> Output : Object (styled) = null
+    ctor .ctor()
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    property Object Input { get; set; }
+    property Object Output { get; set; }

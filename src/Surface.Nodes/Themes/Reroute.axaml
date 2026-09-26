@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:nodes="clr-namespace:ArxisStudio.Surface.Nodes">
+
+    <!--
+        Перевалка: кольцо, а в его центре вход и выход друг над другом. Выход объявлен последним и
+        лежит сверху — нажатие по центру начинает связь из него. Фона у портов нет: попадание берёт
+        только штырёк, иначе рамки портов закрыли бы почти всё кольцо. Кольцо залито: нажатие по нему
+        доходит до узла и тянет его.
+    -->
+    <ControlTheme x:Key="{x:Type nodes:Reroute}" TargetType="nodes:Reroute">
+        <Setter Property="Width" Value="{DynamicResource NodeEditor.Reroute.Size}" />
+        <Setter Property="Height" Value="{DynamicResource NodeEditor.Reroute.Size}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid>
+                    <Ellipse Name="PART_Ring"
+                             Fill="{DynamicResource NodeEditor.Node.Background}"
+                             Stroke="{DynamicResource NodeEditor.Node.BorderBrush}"
+                             StrokeThickness="{DynamicResource NodeEditor.Reroute.RingThickness}" />
+                    <nodes:Port Name="PART_Input"
+                                Direction="Input"
+                                Data="{TemplateBinding Input}"
+                                Background="{x:Null}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                    <nodes:Port Name="PART_Output"
+                                Direction="Output"
+                                Data="{TemplateBinding Output}"
+                                Background="{x:Null}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Ellipse#PART_Ring">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Node.HoverBorderBrush}" />
+        </Style>
+
+        <Style Selector="^:selected /template/ Ellipse#PART_Ring">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Node.SelectedBorderBrush}" />
+            <Setter Property="StrokeThickness" Value="{DynamicResource NodeEditor.Reroute.SelectedRingThickness}" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>
