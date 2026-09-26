@@ -15,6 +15,11 @@
             <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Link.SelectedStroke}" />
         </Style>
 
+        <!-- Перечёркнутая разрезом — цветом разреза, сильнее выбора: отпустят — её удалят. -->
+        <Style Selector="^:cutting">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Cut.Stroke}" />
+        </Style>
+
         <!-- Отцеплённая связь бледнеет: новую её форму рисует превью протяжки. -->
         <Style Selector="^:detaching">
             <Setter Property="Opacity" Value="{DynamicResource NodeEditor.Link.DetachingOpacity}" />

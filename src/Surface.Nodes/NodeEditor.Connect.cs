@@ -68,6 +68,7 @@ public partial class NodeEditor
     {
         base.OnApplyTemplate(e);
         PendingPreview = e.NameScope.Find<PendingLinkPreview>("PART_PendingLink");
+        CutPreview = e.NameScope.Find<LinkCutPreview>("PART_CutLine");
     }
 
     /// <summary>
@@ -131,11 +132,11 @@ public partial class NodeEditor
         return args.Handled;
     }
 
-    // Отменяет и протяжку, и нажатие по связи до порога: иначе Escape снял бы выбор, а
-    // следующее движение всё равно отцепило бы конец.
+    // Отменяет протяжку, нажатие по связи до порога и разрез: иначе Escape снял бы выбор, а
+    // следующее движение всё равно отцепило бы конец или разрезало связи.
     private static SurfaceKeyCommand CancelLinkCommand() => new(
         NodeEditorKeyCommands.CancelLink,
-        static (view, e) => e.Key == Key.Escape && view.CurrentState is PendingLinkState or LinkPressState,
+        static (view, e) => e.Key == Key.Escape && view.CurrentState is PendingLinkState or LinkPressState or LinkCutState,
         static (view, _) =>
         {
             view.PopState();

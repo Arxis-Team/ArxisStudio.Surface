@@ -87,6 +87,43 @@ internal readonly struct LinkGeometry
         return t;
     }
 
+    /// <summary>
+    /// Пересекает ли отрезок кривую — по той же ломаной, по которой меряется расстояние.
+    /// </summary>
+    /// <param name="a">Начало отрезка в мировых координатах.</param>
+    /// <param name="b">Конец отрезка в мировых координатах.</param>
+    public bool Intersects(Point a, Point b)
+    {
+        var previous = Source;
+        for (var i = 1; i <= Segments; i++)
+        {
+            var next = At((double)i / Segments);
+            if (SegmentsCross(a, b, previous, next))
+                return true;
+
+            previous = next;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Лежат ли концы каждого отрезка по разные стороны прямой другого.
+    /// </summary>
+    /// <remarks>
+    /// Точка на самой прямой считается лежащей по положительную сторону. Со строгим сравнением
+    /// отрезок, прошедший ровно через вершину ломаной, не пересекал ни одного из двух её отрезков —
+    /// у симметричной связи середина и есть вершина, и разрез через неё связь не резал. Так касание
+    /// засчитывается ровно один раз, а наложение на одной прямой — ни разу: разрез, прошедший вдоль
+    /// связи, её не режет.
+    /// </remarks>
+    private static bool SegmentsCross(Point p1, Point p2, Point q1, Point q2) =>
+        Side(p1, p2, q1) != Side(p1, p2, q2) && Side(q1, q2, p1) != Side(q1, q2, p2);
+
+    private static bool Side(Point a, Point b, Point c) => Cross(b - a, c - a) >= 0;
+
+    private static double Cross(Vector a, Vector b) => (a.X * b.Y) - (a.Y * b.X);
+
     private double Nearest(Point point, out double parameter)
     {
         var best = double.MaxValue;

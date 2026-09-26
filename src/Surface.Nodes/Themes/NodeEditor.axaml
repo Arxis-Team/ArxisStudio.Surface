@@ -61,6 +61,16 @@
                                                       StrokeThickness="{DynamicResource NodeEditor.Link.Thickness}" />
                         </Canvas>
 
+                        <!-- Разрез — поверх узлов: отрезок видно и там, где он идёт над узлом. -->
+                        <Canvas Name="PART_CutLayer"
+                                IsHitTestVisible="False"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0">
+                            <nodes:LinkCutPreview Name="PART_CutLine"
+                                                  Stroke="{DynamicResource NodeEditor.Cut.Stroke}"
+                                                  StrokeThickness="{DynamicResource NodeEditor.Cut.Thickness}" />
+                        </Canvas>
+
                         <Canvas Name="PART_InteractionOverlayLayer"
                                 IsHitTestVisible="False"
                                 RenderTransform="{TemplateBinding ViewportTransform}"

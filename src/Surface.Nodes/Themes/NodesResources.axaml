@@ -21,6 +21,7 @@
             <SolidColorBrush x:Key="NodeEditor.PendingLink.Stroke" Color="#0F6CBD" />
             <SolidColorBrush x:Key="NodeEditor.Port.AcceptingStroke" Color="#1A7F37" />
             <SolidColorBrush x:Key="NodeEditor.Port.RefusingStroke" Color="#CF222E" />
+            <SolidColorBrush x:Key="NodeEditor.Cut.Stroke" Color="#CF222E" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -38,6 +39,7 @@
             <SolidColorBrush x:Key="NodeEditor.PendingLink.Stroke" Color="#1E90FF" />
             <SolidColorBrush x:Key="NodeEditor.Port.AcceptingStroke" Color="#3FB950" />
             <SolidColorBrush x:Key="NodeEditor.Port.RefusingStroke" Color="#F85149" />
+            <SolidColorBrush x:Key="NodeEditor.Cut.Stroke" Color="#F85149" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -51,6 +53,8 @@
     <Thickness x:Key="NodeEditor.Port.PinMargin">4,2</Thickness>
 
     <x:Double x:Key="NodeEditor.Link.Thickness">2</x:Double>
+
+    <x:Double x:Key="NodeEditor.Cut.Thickness">1.5</x:Double>
 
     <x:Double x:Key="NodeEditor.Reroute.Size">22</x:Double>
     <x:Double x:Key="NodeEditor.Reroute.RingThickness">1</x:Double>

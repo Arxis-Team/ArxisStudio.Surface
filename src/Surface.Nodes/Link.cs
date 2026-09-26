@@ -173,6 +173,12 @@ public class Link : Control
     internal void SetDetaching(bool value) => PseudoClasses.Set(":detaching", value);
 
     /// <summary>
+    /// Показывает, что связь перечёркнута протягиваемым разрезом (<c>:cutting</c>): отпустят — её
+    /// попросят удалить.
+    /// </summary>
+    internal void SetCutting(bool value) => PseudoClasses.Set(":cutting", value);
+
+    /// <summary>
     /// Стоит ли связь на поверхности редактора.
     /// </summary>
     internal bool IsOnSurface => _editor != null;

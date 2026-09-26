@@ -46,6 +46,7 @@ class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     ctor .ctor()
     method Size ArrangeOverride(Size)
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
+    avalonia LinkCutModifiersProperty -> LinkCutModifiers : KeyModifiers (styled) = Alt
     avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
@@ -72,6 +73,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     property Double PortCaptureRadius { get; set; }
     property IEnumerable Links { get; set; }
     property IReadOnlyList<Object> SelectedLinks { get; }
+    property KeyModifiers LinkCutModifiers { get; set; }
 static class ArxisStudio.Surface.Nodes.NodeEditorKeyCommands
     field String CancelLink = "nodes.cancelLink"
     field String ClearLinkSelection = "nodes.clearLinkSelection"

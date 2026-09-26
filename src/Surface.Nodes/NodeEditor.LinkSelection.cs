@@ -194,7 +194,7 @@ public partial class NodeEditor
     /// <inheritdoc />
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
-        if (!e.Handled && TryPressLink(e))
+        if (!e.Handled && (TryStartCut(e) || TryPressLink(e)))
             return;
 
         base.OnPointerPressed(e);

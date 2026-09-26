@@ -73,4 +73,32 @@ public class LinkGeometryTests
         for (var i = 0; i <= 20; i++)
             Assert.True(g.Bounds.Inflate(0.001).Contains(g.At(i / 20.0)));
     }
+
+    [Fact]
+    public void A_Segment_Across_The_Curve_Intersects_It_And_One_Beside_Does_Not()
+    {
+        var g = new LinkGeometry(new Point(0, 0), new Point(200, 100));
+
+        Assert.True(g.Intersects(new Point(60, -20), new Point(60, 120)));
+        Assert.False(g.Intersects(new Point(150, -20), new Point(190, -5)));
+    }
+
+    [Fact]
+    public void A_Segment_Through_A_Vertex_Of_The_Polyline_Intersects()
+    {
+        // Середина симметричной кривой — вершина ломаной, по которой считается пересечение: со
+        // строгим сравнением отрезок ровно через неё не пересекал ни одного из двух соседних отрезков.
+        var g = new LinkGeometry(new Point(0, 0), new Point(200, 100));
+        Assert.Equal(new Point(100, 50), g.At(0.5));
+
+        Assert.True(g.Intersects(new Point(100, -20), new Point(100, 120)));
+    }
+
+    [Fact]
+    public void A_Segment_Along_A_Straight_Link_Does_Not_Cut_It()
+    {
+        var flat = new LinkGeometry(new Point(0, 0), new Point(200, 0));
+
+        Assert.False(flat.Intersects(new Point(20, 0), new Point(180, 0)));
+    }
 }
