@@ -28,6 +28,11 @@ public partial class SurfaceView : SelectingItemsControl
 {
     static SurfaceView()
     {
+        // Фокус поверхность просит сама, на нажатии (OnPointerPressed), но получает его
+        // только фокусируемый элемент. Разрешение стояло у дизайнера форм, и голая
+        // поверхность щелчком по пустому холсту клавиатуры не получала.
+        FocusableProperty.OverrideDefaultValue<SurfaceView>(true);
+
         ViewportLocationProperty.Changed.AddClassHandler<SurfaceView>((x, _) => x.UpdateTransforms());
         ViewportZoomProperty.Changed.AddClassHandler<SurfaceView>((x, _) => x.UpdateTransforms());
 

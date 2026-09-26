@@ -68,8 +68,6 @@ public partial class DesignEditor : SurfaceView
 
     static DesignEditor()
     {
-        FocusableProperty.OverrideDefaultValue<DesignEditor>(true);
-
         DesignEditorItem.ResizeDeltaEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsResizeDelta(e));
         // Геометрия и политики выбранных targets отслеживаются точечно —
         // подпиской на сами targets, см. SyncSelectedTargetSubscriptions.

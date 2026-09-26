@@ -118,6 +118,19 @@ public class SurfaceViewTests
     }
 
     [AvaloniaFact]
+    public void A_Click_On_The_Empty_Canvas_Gives_The_Surface_Focus()
+    {
+        // Фокус поверхность просит сама, на нажатии, — но просьбу выполняют только
+        // фокусируемому. Разрешение стояло у дизайнера форм и у контейнера, и на голой
+        // поверхности щелчок по пустому холсту клавиатуру ей не давал.
+        var stand = Create();
+
+        Click(stand, new Point(700, 500));
+
+        Assert.True(stand.View.IsFocused, "Поверхность обязана взять фокус щелчком по пустому холсту.");
+    }
+
+    [AvaloniaFact]
     public void Selecting_By_Index_Is_Published_Too()
     {
         var stand = Create();
