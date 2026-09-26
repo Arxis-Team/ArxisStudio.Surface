@@ -239,6 +239,15 @@ public partial class NodeEditor
 
         SelectLinkCore(link, additive);
 
+        // Второе нажатие двойного щелчка просит излом (ADR 0005) и ничего не отцепляет. Выбор при
+        // этом — как у щелчка: не разрежет хост — связь останется выбранной.
+        if (e.ClickCount >= 2 && !additive)
+        {
+            RequestLinkSplit(link, GetWorldPosition(point.Position));
+            e.Handled = true;
+            return true;
+        }
+
         // Протяжка тела связи отцепляет её ближний конец. Нажатие с модификатором добавления —
         // жест выбора, и отцеплять им нечего.
         if (!additive)

@@ -37,6 +37,11 @@ sealed class ArxisStudio.Surface.Nodes.LinkDeleteRequestedEventArgs : EventArgs
 enum ArxisStudio.Surface.Nodes.LinkEnd
     value Source = 0
     value Target = 1
+sealed class ArxisStudio.Surface.Nodes.LinkSplitRequestedEventArgs : EventArgs
+    ctor .ctor(Object, Point)
+    property Boolean Handled { get; set; }
+    property Object Link { get; }
+    property Point Location { get; }
 class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     ctor .ctor()
     method Size ArrangeOverride(Size)
@@ -51,6 +56,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     event EventHandler<ConnectRequestedEventArgs> ConnectRequested
     event EventHandler<ConnectValidatingEventArgs> ConnectValidating
     event EventHandler<LinkDeleteRequestedEventArgs> LinkDeleteRequested
+    event EventHandler<LinkSplitRequestedEventArgs> LinkSplitRequested
     event EventHandler<ReconnectRequestedEventArgs> ReconnectRequested
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Boolean SelectLink(Object, Boolean)
