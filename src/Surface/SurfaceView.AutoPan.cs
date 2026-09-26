@@ -28,6 +28,15 @@ public partial class SurfaceView
     internal bool IsAutoPanning => _autoPanTimer?.IsEnabled == true;
 
     /// <summary>
+    /// Насколько сдвинулся холст на последнем шаге, в мировых координатах.
+    /// </summary>
+    /// <remarks>
+    /// Относительно холста указатель ушёл ровно на столько же в обратную сторону — это и
+    /// сообщает жест, у которого событие шага несёт смещение указателя.
+    /// </remarks>
+    internal Vector LastAutoPanShift { get; private set; }
+
+    /// <summary>
     /// Сообщает положение указателя в жесте, который умеет автопрокрутку.
     /// </summary>
     /// <param name="screenPoint">Указатель в координатах редактора.</param>
@@ -132,7 +141,12 @@ public partial class SurfaceView
 
         // Скорость задана на экране, а холст сдвигается в своих единицах: на отдалении
         // та же скорость проносит больше холста — ровно то, что видит человек.
-        ViewportLocation += velocity * elapsed.TotalSeconds / ViewportZoom;
+        LastAutoPanShift = velocity * elapsed.TotalSeconds / ViewportZoom;
+        ViewportLocation += LastAutoPanShift;
+
+        // Изменение размера считает от снимка указателя на холсте, а не от точки экрана:
+        // снимок обязан увидеть сдвиг раньше, чем жест пересчитается.
+        RefreshPointerSample();
         reapply(_autoPanPoint);
         return true;
     }

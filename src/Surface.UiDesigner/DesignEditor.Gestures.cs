@@ -148,6 +148,10 @@ public partial class DesignEditor
         _primarySelectionItem.OnResizeDelta(new ResizeDeltaEventArgs(worldDelta, e.Direction, DesignEditorItem.ResizeDeltaEvent));
         UpdateSelectionOverlayState();
         e.Handled = true;
+
+        TrackResizeAutoPan(() => OnSelectionResizeDelta(
+            sender,
+            new ResizeDeltaEventArgs(AutoPanScreenShift(), e.Direction, SelectionAdorner.ResizeDeltaEvent) { Source = e.Source }));
     }
 
     private void OnSelectionResizeCompleted(object? sender, VectorEventArgs e)
@@ -155,6 +159,7 @@ public partial class DesignEditor
         if (_primarySelectionItem == null || _primarySelectionControl == null || _primarySelectionItem.CurrentState is not ItemResizingState)
             return;
 
+        StopAutoPan();
         _primarySelectionItem.PopState();
         _primarySelectionItem.OnResizeCompleted(e.Vector);
         UpdateSelectionOverlayState();
@@ -213,6 +218,7 @@ public partial class DesignEditor
             UpdateInteractionOperation(_groupResizeOperation, NormalizeResizeDelta(e.Delta));
             UpdateSelectionOverlayState();
             e.Handled = true;
+            TrackSecondaryResizeAutoPan(sender, e);
             return;
         }
 
@@ -234,7 +240,13 @@ public partial class DesignEditor
         container.OnResizeDelta(new ResizeDeltaEventArgs(worldDelta, e.Direction, DesignEditorItem.ResizeDeltaEvent));
         UpdateSelectionOverlayState();
         e.Handled = true;
+        TrackSecondaryResizeAutoPan(sender, e);
     }
+
+    private void TrackSecondaryResizeAutoPan(object? sender, SelectionAdornerResizeDeltaEventArgs e) =>
+        TrackResizeAutoPan(() => OnSecondarySelectionResizeDelta(
+            sender,
+            new SelectionAdornerResizeDeltaEventArgs(e.AdornerInfo, AutoPanScreenShift(), e.Direction, e.RoutedEvent!) { Source = e.Source }));
 
     private void OnSecondarySelectionResizeCompleted(object? sender, SelectionAdornerResizeCompletedEventArgs e)
     {
@@ -255,6 +267,7 @@ public partial class DesignEditor
         if (container == null || target == null || container.CurrentState is not ItemResizingState)
             return;
 
+        StopAutoPan();
         container.PopState();
         container.OnResizeCompleted(e.Vector);
         UpdateSelectionOverlayState();
@@ -299,7 +312,26 @@ public partial class DesignEditor
 
         UpdateSelectionOverlayState();
         e.Handled = true;
+
+        TrackResizeAutoPan(() => OnGroupSelectionResizeDelta(
+            sender,
+            new ResizeDeltaEventArgs(AutoPanScreenShift(), e.Direction, e.RoutedEvent!) { Source = e.Source }));
     }
+
+    /// <summary>
+    /// Автопрокрутка у края для изменения размера — тем же механизмом, что у перетаскивания.
+    /// </summary>
+    /// <remarks>
+    /// Ручка сообщает о движении, только пока движется указатель; у края он стоит, а холст
+    /// едет. Поэтому шаг автопрокрутки повторяет обработчик сам — с тем же направлением и
+    /// сдвигом холста вместо движения указателя. Сам размер от этой дельты не зависит: жест
+    /// считает от снимка указателя, который шаг автопрокрутки уже пересчитал.
+    /// </remarks>
+    private void TrackResizeAutoPan(Action reapply) => TrackAutoPan(LastPointerScreen, _ => reapply());
+
+    // Сдвиг холста в экранных единицах: обработчики ручек переводят дельту в мировые
+    // делением на масштаб, как дельту самой ручки.
+    private Vector AutoPanScreenShift() => LastAutoPanShift * ViewportZoom;
 
     private Vector NormalizeResizeDelta(Vector delta)
     {
@@ -326,6 +358,7 @@ public partial class DesignEditor
     /// </remarks>
     private void CompleteGroupResize()
     {
+        StopAutoPan();
         CompleteInteractionOperation(ref _groupResizeOperation);
         EndSnapGuides();
         UpdateSelectionOverlayState();

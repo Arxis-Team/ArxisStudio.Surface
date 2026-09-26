@@ -109,6 +109,10 @@ public partial class SurfaceView
     {
         base.OnPointerCaptureLost(e);
 
+        // Брошенный жест не должен оставить холст ехать: таймер пережил бы его и
+        // пересчитывал бы жест, которого уже нет.
+        StopAutoPan();
+
         while (_states.Count > 1)
             PopState();
 
@@ -219,10 +223,35 @@ public partial class SurfaceView
 
     private void OnTrackPointer(object? sender, PointerEventArgs e)
     {
+        LastPointerScreen = e.GetPosition(this);
         _pointerSample = new PointerSample(
             e.Pointer.Id,
-            GetWorldPosition(e.GetPosition(this)),
+            GetWorldPosition(LastPointerScreen),
             ++_pointerMoveCount);
+    }
+
+    /// <summary>
+    /// Последнее положение указателя над редактором, в его координатах.
+    /// </summary>
+    /// <remarks>
+    /// Снимается тем же туннельным обработчиком, что и снимок: во время изменения размера
+    /// указатель захвачен ручкой, и до редактора движение иначе не доходит.
+    /// </remarks>
+    internal Point LastPointerScreen { get; private set; }
+
+    /// <summary>
+    /// Пересчитывает снимок указателя после того, как холст сдвинулся под ним.
+    /// </summary>
+    /// <remarks>
+    /// Снимок хранит точку на холсте, а указатель стоит на экране: сдвинулся холст — и
+    /// под тем же указателем уже другое место. Номер движения не растёт — указатель не
+    /// двигался, — поэтому жест, начатый после последнего движения, снимком по-прежнему
+    /// не пользуется.
+    /// </remarks>
+    private void RefreshPointerSample()
+    {
+        if (_pointerSample is { } sample)
+            _pointerSample = sample with { World = GetWorldPosition(LastPointerScreen) };
     }
 
     // --- Поправка позиции ---
