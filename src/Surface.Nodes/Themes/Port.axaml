@@ -34,6 +34,15 @@
             <Setter Property="Fill" Value="{DynamicResource NodeEditor.Port.ConnectedFill}" />
         </Style>
 
+        <!-- Протягиваемая связь над портом: примет ли он её — видно до отпускания. -->
+        <Style Selector="^:accepting /template/ Ellipse#PART_Pin">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Port.AcceptingStroke}" />
+        </Style>
+
+        <Style Selector="^:refusing /template/ Ellipse#PART_Pin">
+            <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Port.RefusingStroke}" />
+        </Style>
+
         <Style Selector="^:output /template/ Ellipse#PART_Pin">
             <Setter Property="Grid.Column" Value="2" />
         </Style>

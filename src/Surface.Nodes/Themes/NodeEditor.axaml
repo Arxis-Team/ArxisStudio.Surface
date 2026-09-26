@@ -51,6 +51,16 @@
                             </ItemsPresenter>
                         </Canvas>
 
+                        <!-- Протягиваемая связь — над узлами: её тянут к порту, и узел её не закрывает. -->
+                        <Canvas Name="PART_PendingLinkLayer"
+                                IsHitTestVisible="False"
+                                RenderTransform="{TemplateBinding ViewportTransform}"
+                                RenderTransformOrigin="0,0">
+                            <nodes:PendingLinkPreview Name="PART_PendingLink"
+                                                      Stroke="{DynamicResource NodeEditor.PendingLink.Stroke}"
+                                                      StrokeThickness="{DynamicResource NodeEditor.Link.Thickness}" />
+                        </Canvas>
+
                         <Canvas Name="PART_InteractionOverlayLayer"
                                 IsHitTestVisible="False"
                                 RenderTransform="{TemplateBinding ViewportTransform}"

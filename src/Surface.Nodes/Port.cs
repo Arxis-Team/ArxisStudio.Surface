@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface.Nodes;
@@ -133,6 +134,51 @@ public class Port : ContentControl
 
         world = node.Location + (Vector)local;
         return true;
+    }
+
+    /// <summary>
+    /// Считает рамку порта в мировых координатах.
+    /// </summary>
+    internal bool TryGetWorldBounds(out Rect world)
+    {
+        world = default;
+
+        var node = this.FindAncestorOfType<Node>();
+        if (node == null || Bounds.Width <= 0 || Bounds.Height <= 0)
+            return false;
+
+        if (this.TranslatePoint(default, node) is not { } local)
+            return false;
+
+        world = new Rect(node.Location + (Vector)local, Bounds.Size);
+        return true;
+    }
+
+    /// <summary>
+    /// Показывает, примет ли порт протягиваемую связь: <see langword="true"/> — да,
+    /// <see langword="false"/> — нет, <see langword="null"/> — связь не над ним.
+    /// </summary>
+    internal void SetAcceptance(bool? accepts)
+    {
+        PseudoClasses.Set(":accepting", accepts == true);
+        PseudoClasses.Set(":refusing", accepts == false);
+    }
+
+    /// <summary>
+    /// Нажатие на порт начинает протяжку связи, а не перетаскивание узла.
+    /// </summary>
+    /// <remarks>
+    /// Нажатие помечается обработанным, поэтому до узла оно не доходит: ни выбора, ни
+    /// перетаскивания узла из порта не бывает.
+    /// </remarks>
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+
+        if (e.Handled || _editor == null || Key is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        e.Handled = _editor.BeginPendingLink(this, e);
     }
 
     /// <inheritdoc />

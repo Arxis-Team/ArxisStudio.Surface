@@ -79,4 +79,16 @@ internal sealed class PortRegistry
         key != null && _ports.TryGetValue(key, out var list) && list.Count > 0 ? list[0] : null;
 
     public int Count => _ports.Count;
+
+    /// <summary>
+    /// Отвечающие порты по ключам — на жест, которому нужен снимок.
+    /// </summary>
+    public IEnumerable<(object Key, Port Port)> Snapshot()
+    {
+        foreach (var pair in _ports)
+        {
+            if (pair.Value.Count > 0)
+                yield return (pair.Key, pair.Value[0]);
+        }
+    }
 }

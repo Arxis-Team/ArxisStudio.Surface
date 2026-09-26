@@ -35,6 +35,9 @@ public partial class NodeEditor : SurfaceView
         AddService(new SnapService(this, static () => Array.Empty<Rect>()));
 
         Ports.Changed += OnPortsChanged;
+
+        // Свои команды — впереди встроенных: они отвечают, только когда им есть что делать.
+        KeyCommands.Insert(0, CancelLinkCommand());
     }
 
     /// <summary>

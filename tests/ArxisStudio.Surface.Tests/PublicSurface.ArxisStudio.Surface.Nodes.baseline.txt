@@ -1,3 +1,13 @@
+sealed class ArxisStudio.Surface.Nodes.ConnectRequestedEventArgs : EventArgs
+    ctor .ctor(Object, Object)
+    property Boolean Handled { get; set; }
+    property Object Source { get; }
+    property Object Target { get; }
+sealed class ArxisStudio.Surface.Nodes.ConnectValidatingEventArgs : EventArgs
+    ctor .ctor(Object, Object)
+    property Boolean IsAllowed { get; set; }
+    property Object Source { get; }
+    property Object Target { get; }
 class ArxisStudio.Surface.Nodes.Link : Control
     avalonia SourceAnchorProperty -> SourceAnchor : Point (direct)
     avalonia SourceProperty -> Source : Object (styled) = null
@@ -23,12 +33,19 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
     avalonia LinksProperty -> Links : IEnumerable (styled) = null
+    avalonia PortCaptureRadiusProperty -> PortCaptureRadius : Double (styled) = 12
     ctor .ctor()
+    event EventHandler<ConnectRequestedEventArgs> ConnectRequested
+    event EventHandler<ConnectValidatingEventArgs> ConnectValidating
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
+    method Void OnApplyTemplate(TemplateAppliedEventArgs)
     property BindingBase LinkSourceBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
+    property Double PortCaptureRadius { get; set; }
     property IEnumerable Links { get; set; }
+static class ArxisStudio.Surface.Nodes.NodeEditorKeyCommands
+    field String CancelLink = "nodes.cancelLink"
 class ArxisStudio.Surface.Nodes.Port : ContentControl
     avalonia DataProperty -> Data : Object (styled) = null
     avalonia DirectionProperty -> Direction : PortDirection (styled) = Input
@@ -37,6 +54,7 @@ class ArxisStudio.Surface.Nodes.Port : ContentControl
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Boolean IsConnected { get; }
     property Object Data { get; set; }
