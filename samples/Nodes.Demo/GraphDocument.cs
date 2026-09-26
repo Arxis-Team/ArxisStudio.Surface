@@ -12,6 +12,8 @@ namespace Nodes.Demo;
 /// </remarks>
 public sealed class GraphDocument
 {
+    private int _reroutes;
+
     public ObservableCollection<GraphNode> Nodes { get; } = new();
 
     public ObservableCollection<GraphLink> Links { get; } = new();
@@ -29,6 +31,11 @@ public sealed class GraphDocument
     public bool CanConnect(GraphPort source, GraphPort target, GraphLink? moving) =>
         !ReferenceEquals(source.Node, target.Node)
         && !Links.Any(link => !ReferenceEquals(link, moving) && ReferenceEquals(link.To, target));
+
+    /// <summary>
+    /// Новая перевалка — узел с одним входом и одним выходом (ADR 0005 библиотеки).
+    /// </summary>
+    public RerouteNode CreateReroute(Point location) => new($"Перевалка {++_reroutes}", location);
 
     public static GraphDocument CreateSample()
     {
@@ -65,7 +72,7 @@ public sealed class GraphDocument
 /// жизни контейнера положением распоряжается редактор, и приложение забирает его обратно, когда
 /// узел уходит (<c>MainWindow.RemoveNodes</c>): тогда отмена удаления вернёт узел туда, где он стоял.
 /// </remarks>
-public sealed class GraphNode
+public class GraphNode
 {
     public GraphNode(string title, Point location, IEnumerable<string> inputs, IEnumerable<string> outputs)
     {
@@ -85,6 +92,11 @@ public sealed class GraphNode
 
     public override string ToString() => Title;
 }
+
+/// <summary>
+/// Перевалка: излом связи — это узел, а не точка на связи. Шаблон у неё — <c>Reroute</c> библиотеки.
+/// </summary>
+public sealed class RerouteNode(string title, Point location) : GraphNode(title, location, ["вход"], ["выход"]);
 
 /// <summary>
 /// Порт узла. Им же связь называет свой конец, поэтому сравнивается он по ссылке: одноимённый порт

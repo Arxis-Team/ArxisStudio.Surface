@@ -16,43 +16,57 @@
                 <Button x:Name="RedoButton" Content="Повторить" Click="OnRedoClick" />
             </StackPanel>
             <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Opacity="0.7"
-                       Text="От порта — новая связь · щелчок по связи — выбор, Delete — удалить · протяжка связи — перецепить ближний конец · Esc — отмена" />
+                       Text="От порта — новая связь · щелчок по связи — выбор, Delete — удалить · протяжка связи — перецепить ближний конец · двойной щелчок по связи — излом · Alt + протяжка — разрез · Esc — отмена" />
         </DockPanel>
 
         <TextBlock x:Name="StatusText" DockPanel.Dock="Bottom" Margin="12,6" Opacity="0.7" />
 
-        <!--
-            Концы связи — привязками к элементу коллекции связей, как DisplayMemberBinding:
-            тип данных для них компилятор берёт у Links.
-        -->
-        <surface:NodeEditor x:Name="Editor"
-                            ItemsSource="{Binding Nodes}"
-                            Links="{Binding Links}"
-                            LinkSourceBinding="{Binding From}"
-                            LinkTargetBinding="{Binding To}">
-            <surface:NodeEditor.ItemTemplate>
-                <DataTemplate x:DataType="demo:GraphNode">
-                    <StackPanel MinWidth="160" Spacing="6">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                        <Grid ColumnDefinitions="*,*">
-                            <ItemsControl ItemsSource="{Binding Inputs}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="demo:GraphPort">
-                                        <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <ItemsControl Grid.Column="1" ItemsSource="{Binding Outputs}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="demo:GraphPort">
-                                        <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Grid>
-                    </StackPanel>
-                </DataTemplate>
-            </surface:NodeEditor.ItemTemplate>
-        </surface:NodeEditor>
+        <Grid>
+            <!--
+                Концы связи — привязками к элементу коллекции связей, как DisplayMemberBinding:
+                тип данных для них компилятор берёт у Links. Шаблоны узлов — по типу данных:
+                перевалка первой, она тоже GraphNode.
+            -->
+            <surface:NodeEditor x:Name="Editor"
+                                ItemsSource="{Binding Nodes}"
+                                Links="{Binding Links}"
+                                LinkSourceBinding="{Binding From}"
+                                LinkTargetBinding="{Binding To}">
+                <surface:NodeEditor.DataTemplates>
+                    <DataTemplate x:DataType="demo:RerouteNode">
+                        <surface:Reroute Input="{Binding Inputs[0]}" Output="{Binding Outputs[0]}" />
+                    </DataTemplate>
+
+                    <DataTemplate x:DataType="demo:GraphNode">
+                        <StackPanel MinWidth="160" Spacing="6">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                            <Grid ColumnDefinitions="*,*">
+                                <ItemsControl ItemsSource="{Binding Inputs}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="demo:GraphPort">
+                                            <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Outputs}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="demo:GraphPort">
+                                            <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </StackPanel>
+                    </DataTemplate>
+                </surface:NodeEditor.DataTemplates>
+            </surface:NodeEditor>
+
+            <!-- Миникарта инструментов — поверх холста, в углу; связи на неё дорисовывает редактор узлов. -->
+            <surface:SurfaceMinimap x:Name="Minimap"
+                                    Editor="{Binding #Editor}"
+                                    Width="220" Height="150"
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    Margin="12" />
+        </Grid>
     </DockPanel>
 </Window>

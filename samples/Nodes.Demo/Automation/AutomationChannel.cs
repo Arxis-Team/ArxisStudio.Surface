@@ -85,6 +85,11 @@ internal sealed class AutomationChannel
         {
             ["links"] = e.Links.Select(Name).ToList()
         });
+        _editor.LinkSplitRequested += (_, e) => Record("LinkSplitRequested", new()
+        {
+            ["link"] = Name(e.Link),
+            ["location"] = PointOf(e.Location)
+        });
         _editor.DeleteRequested += (_, e) => Record("DeleteRequested", new()
         {
             ["nodes"] = e.Targets.Select(t => Name(_editor.ItemFromContainer(t.Container))).ToList()

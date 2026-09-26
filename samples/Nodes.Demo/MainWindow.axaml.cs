@@ -39,6 +39,7 @@ public partial class MainWindow : Window
         Editor.ConnectRequested += OnConnectRequested;
         Editor.ReconnectRequested += OnReconnectRequested;
         Editor.LinkDeleteRequested += OnLinkDeleteRequested;
+        Editor.LinkSplitRequested += OnLinkSplitRequested;
         Editor.DeleteRequested += OnDeleteRequested;
         Editor.DesignSelectionChanged += (_, _) => UpdateChrome();
         Editor.PropertyChanged += (_, e) =>
@@ -129,6 +130,41 @@ public partial class MainWindow : Window
             return;
 
         _history.Push(edit);
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Ломает связь перевалкой: вместо одной связи — перевалка и две связи через неё, одной записью
+    /// истории.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LinkSplitRequestedEventArgs.Location"/> — где быть центру перевалки, а узел
+    /// ставится левым верхним углом, поэтому из точки вычитается половина её размера. Новые связи
+    /// встают на место прежней: порядок коллекции — порядок, в каком хост их видит.
+    /// </remarks>
+    private void OnLinkSplitRequested(object? sender, LinkSplitRequestedEventArgs e)
+    {
+        if (e.Link is not GraphLink link)
+            return;
+
+        var index = Document.Links.IndexOf(link);
+        if (index < 0)
+            return;
+
+        var half = Editor.TryFindResource("NodeEditor.Reroute.Size", ActualThemeVariant, out var size) && size is double d ? d / 2 : 0;
+        var knot = Document.CreateReroute(e.Location - new Vector(half, half));
+
+        var removed = ListEdit<GraphLink>.Remove(Document.Links, [link]);
+        Document.Nodes.Add(knot);
+        var added = ListEdit<GraphNode>.Added(Document.Nodes, Document.Nodes.Count - 1, knot);
+
+        var into = new GraphLink(link.From, knot.Inputs[0]);
+        var outOf = new GraphLink(knot.Outputs[0], link.To);
+        Document.Links.Insert(index, into);
+        Document.Links.Insert(index + 1, outOf);
+        var rewired = new ListEdit<GraphLink>(Document.Links, [], [(index, into), (index + 1, outOf)]);
+
+        _history.Push(new CompositeChange(removed, added, rewired));
         e.Handled = true;
     }
 
