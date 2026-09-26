@@ -130,49 +130,6 @@ public partial class SurfaceView
     {
     }
 
-    // --- Рамка выделения ---
-    // Что рамка выбирает, решает слой, который знает содержимое. Ядро ведёт сам жест:
-    // захват, прямоугольник в мировых координатах, курсор и отмену.
-
-    /// <summary>
-    /// Снимает контейнеры на время жеста рамки.
-    /// </summary>
-    internal virtual void BeginContainerSnapshot()
-    {
-    }
-
-    /// <summary>
-    /// Отпускает снимок контейнеров.
-    /// </summary>
-    internal virtual void EndContainerSnapshot()
-    {
-    }
-
-    /// <summary>
-    /// Решает, набирает ли рамка контейнеры целиком.
-    /// </summary>
-    internal virtual bool ShouldUseContainerMarquee(Point viewportPoint, KeyModifiers modifiers) => true;
-
-    /// <summary>
-    /// Пересчитывает область действия рамки по текущему прямоугольнику.
-    /// </summary>
-    internal virtual void UpdateMarqueeScope(Rect worldBounds, bool useContainerSelection)
-    {
-    }
-
-    /// <summary>
-    /// Сбрасывает область действия рамки.
-    /// </summary>
-    internal virtual void ClearMarqueeScope()
-    {
-    }
-
-    /// <summary>
-    /// Применяет выделение по прямоугольнику рамки.
-    /// </summary>
-    internal virtual void CommitSelection(Rect bounds, bool isAdditive, bool useContainerSelection)
-    {
-    }
 
     /// <summary>
     /// Обрабатывает колесо мыши и делегирует управление активному состоянию редактора.

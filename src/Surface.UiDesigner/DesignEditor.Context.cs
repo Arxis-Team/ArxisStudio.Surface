@@ -142,8 +142,7 @@ public partial class DesignEditor
     private bool TryResolveContextTarget(Point worldPoint, out DesignSelectionTarget? target)
     {
         target = null;
-        var container = FindContainerAtWorldPoint(worldPoint);
-        if (container == null)
+        if (FindContainerAtWorldPoint(worldPoint) is not DesignEditorItem container)
             return false;
 
         Control? bestMatch = null;
@@ -173,7 +172,7 @@ public partial class DesignEditor
         // согласованно со snapshot'ом выделения; глубина передаётся через Depth.
         var resolvedTarget = (Control?)bestMatch ?? container;
         var ownerItem = ResolveOwningItem(container) ?? container;
-        target = new DesignSelectionTarget(ownerItem, resolvedTarget, _groupStore);
+        target = new DesignSelectionTarget(ownerItem, resolvedTarget, GetGroupKey(resolvedTarget));
         return true;
     }
 
@@ -236,7 +235,8 @@ public partial class DesignEditor
             return;
 
         var target = hitTarget.Target;
-        var container = hitTarget.Container;
+        // У дизайнера форм каждый контейнер — DesignEditorItem.
+        var container = (DesignEditorItem)hitTarget.Container;
         if (target == null)
             return;
 

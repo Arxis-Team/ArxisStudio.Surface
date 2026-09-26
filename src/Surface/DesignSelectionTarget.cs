@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 /// <summary>
 /// Определяет уровень выбранного target в редакторе.
@@ -13,12 +12,12 @@ namespace ArxisStudio;
 public enum DesignSelectionScope
 {
     /// <summary>
-    /// Выбран весь контейнер <see cref="DesignEditorItem"/>.
+    /// Выбран весь контейнер <see cref="SurfaceItem"/>.
     /// </summary>
     Container = 0,
 
     /// <summary>
-    /// Выбран nested control внутри <see cref="DesignEditorItem"/>.
+    /// Выбран nested control внутри <see cref="SurfaceItem"/>.
     /// </summary>
     NestedTarget = 1
 }
@@ -108,36 +107,36 @@ public sealed class DesignSelectionTarget
     /// </summary>
     /// <param name="container">Контейнер, которому принадлежит выбранный target.</param>
     /// <param name="target">Выбранный visual target.</param>
-    public DesignSelectionTarget(DesignEditorItem container, Control target)
-        : this(container, target, null)
+    public DesignSelectionTarget(SurfaceItem container, Control target)
+        : this(container, target, ResolveGroupKey(container, target))
     {
     }
 
     /// <summary>
-    /// Инициализирует новый экземпляр с уже известным хранилищем групп.
+    /// Инициализирует новый экземпляр с уже известным ключом группы.
     /// </summary>
     /// <param name="container">Контейнер, которому принадлежит выбранный target.</param>
     /// <param name="target">Выбранный visual target.</param>
-    /// <param name="groupStore">Хранилище групп или <see langword="null"/>, чтобы найти его по дереву.</param>
+    /// <param name="groupId">Ключ группы target'а, который отдала поверхность.</param>
     /// <remarks>
-    /// Снимок выделения пересобирается на каждом кадре жеста, а редактор своё хранилище знает:
-    /// искать его подъёмом по дереву на каждый target значило бы платить за это в жесте.
+    /// Снимок выделения пересобирается на каждом кадре жеста, а поверхность ключ знает сама:
+    /// искать её подъёмом по дереву на каждый target значило бы платить за это в жесте.
     /// </remarks>
-    internal DesignSelectionTarget(DesignEditorItem container, Control target, IDesignGroupStore? groupStore)
+    internal DesignSelectionTarget(SurfaceItem container, Control target, string? groupId)
     {
         Container = container ?? throw new ArgumentNullException(nameof(container));
         Target = target ?? throw new ArgumentNullException(nameof(target));
 
         // Scope определяется типом самого target, а не совпадением с владельцем:
-        // вложенный DesignEditorItem — это контейнер, даже если владеющий item
+        // вложенный SurfaceItem — это контейнер, даже если владеющий item
         // верхнего уровня другой.
-        Scope = target is DesignEditorItem
+        Scope = target is SurfaceItem
             ? DesignSelectionScope.Container
             : DesignSelectionScope.NestedTarget;
 
         Depth = CalculateDepth(target);
         DisplayName = CreateDisplayName(target);
-        GroupId = (groupStore ?? ResolveGroupStore(container)).GetGroup(target);
+        GroupId = groupId;
     }
 
     /// <summary>
@@ -148,13 +147,15 @@ public sealed class DesignSelectionTarget
     /// редактор там известен только по дереву. Контейнер вне дерева читается библиотечным
     /// хранилищем: это ровно то, что было до появления шва.
     /// </remarks>
-    private static IDesignGroupStore ResolveGroupStore(DesignEditorItem container) =>
-        container.FindAncestorOfType<DesignEditor>()?.GroupStore ?? DesignGroupAttachedStore.Default;
+    // Ключ группы отдаёт поверхность, которой принадлежит контейнер: ядро о группах
+    // не знает (ADR 0003), а слой, который знает, переопределяет SurfaceView.GetGroupKey.
+    private static string? ResolveGroupKey(SurfaceItem container, Control target) =>
+        container.FindAncestorOfType<SurfaceView>()?.GetGroupKey(target);
 
     /// <summary>
     /// Получает контейнер выбранного target.
     /// </summary>
-    public DesignEditorItem Container { get; }
+    public SurfaceItem Container { get; }
 
     /// <summary>
     /// Получает выбранный visual target.
@@ -170,7 +171,7 @@ public sealed class DesignSelectionTarget
     /// Получает глубину вложенности target в дереве контейнеров.
     /// </summary>
     /// <remarks>
-    /// Считается число <see cref="DesignEditorItem"/>-предков строго выше target:
+    /// Считается число <see cref="SurfaceItem"/>-предков строго выше target:
     /// <list type="bullet">
     /// <item><description><c>0</c> — контейнер верхнего уровня;</description></item>
     /// <item><description><c>1</c> — контрол внутри контейнера верхнего уровня либо вложенный контейнер;</description></item>
@@ -192,7 +193,11 @@ public sealed class DesignSelectionTarget
     /// Значение прочитано при создании снимка, поэтому свежо ровно настолько же,
     /// насколько сам снимок. Идентификатор осмыслен в пределах <see cref="Container"/>:
     /// одинаковый идентификатор в двух формах означает две разные группы. Состав —
-    /// <see cref="DesignEditor.GetGroupMembers"/>.
+    /// <c>DesignEditor.GetGroupMembers</c>.
+    /// <para>
+    /// Ключ отдаёт слой, который знает о группах (<see cref="SurfaceView.GetGroupKey"/>);
+    /// для контейнера вне поверхности его спросить не у кого, и значение пусто.
+    /// </para>
     /// </remarks>
     public string? GroupId { get; }
 
@@ -203,7 +208,7 @@ public sealed class DesignSelectionTarget
 
         while (current != null)
         {
-            if (current is DesignEditorItem)
+            if (current is SurfaceItem)
                 depth++;
 
             current = current.GetVisualParent();

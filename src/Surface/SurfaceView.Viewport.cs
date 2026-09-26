@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Surface;
 
@@ -323,5 +324,84 @@ public partial class SurfaceView
         // и отдавать его наружу на границе диапазона значило бы, что у края
         // зума страница вдруг начинает прокручиваться.
         return true;
+    }
+
+    /// <summary>
+    /// Смещает viewport так, чтобы указанный элемент оказался в центре видимой области редактора.
+    /// </summary>
+    /// <param name="item">Элемент, который необходимо центрировать в области просмотра.</param>
+    /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="item"/> равен <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Выбрасывается, если <paramref name="item"/> не принадлежит текущему экземпляру <see cref="SurfaceView"/>.
+    /// </exception>
+    /// <remarks>
+    /// Метод изменяет только <see cref="SurfaceView.ViewportLocation"/> и не изменяет <see cref="SurfaceView.ViewportZoom"/>.
+    /// <para>
+    /// Если размер элемента превышает размер видимой области, элемент не масштабируется и не вписывается целиком:
+    /// в центр видимой области помещается только геометрический центр элемента.
+    /// </para>
+    /// <para>
+    /// Метод использует текущие <see cref="SurfaceItem.Location"/> и <see cref="Visual.Bounds"/> элемента.
+    /// Для корректного результата элемент должен принадлежать текущему редактору и иметь актуальный layout.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code language="csharp"><![CDATA[
+    /// editor.CenterOnItem(container);
+    /// ]]></code>
+    /// </example>
+    public void CenterOnItem(SurfaceItem item)
+    {
+        if (item == null)
+            throw new ArgumentNullException(nameof(item));
+
+        if (!ReferenceEquals(item.FindAncestorOfType<SurfaceView>(), this))
+            throw new InvalidOperationException("The specified item does not belong to this SurfaceView.");
+
+        if (Geometry.TryGetBounds(item, out var bounds))
+        {
+            CenterOn(bounds.Center);
+            return;
+        }
+
+        var fallbackCenter = new Point(
+            item.Location.X + (item.Bounds.Width / 2),
+            item.Location.Y + (item.Bounds.Height / 2));
+
+        CenterOn(fallbackCenter);
+    }
+
+    /// <summary>
+    /// Изменяет положение и масштаб viewport так, чтобы указанный элемент целиком поместился в видимой области редактора.
+    /// </summary>
+    /// <param name="item">Элемент, который необходимо вписать в окно редактора.</param>
+    /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="item"/> равен <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Выбрасывается, если <paramref name="item"/> не принадлежит текущему экземпляру <see cref="SurfaceView"/>.
+    /// </exception>
+    /// <remarks>
+    /// Метод использует текущие <see cref="SurfaceItem.Location"/> и <see cref="Visual.Bounds"/> элемента
+    /// и делегирует расчет геометрии перегрузке <see cref="SurfaceView.FitToView(Rect)"/>.
+    /// </remarks>
+    /// <example>
+    /// <code language="csharp"><![CDATA[
+    /// editor.FitToView(container);
+    /// ]]></code>
+    /// </example>
+    public void FitToView(SurfaceItem item)
+    {
+        if (item == null)
+            throw new ArgumentNullException(nameof(item));
+
+        if (!ReferenceEquals(item.FindAncestorOfType<SurfaceView>(), this))
+            throw new InvalidOperationException("The specified item does not belong to this SurfaceView.");
+
+        if (Geometry.TryGetBounds(item, out var bounds))
+        {
+            FitToView(bounds);
+            return;
+        }
+
+        FitToView(new Rect(item.Location, item.Bounds.Size));
     }
 }

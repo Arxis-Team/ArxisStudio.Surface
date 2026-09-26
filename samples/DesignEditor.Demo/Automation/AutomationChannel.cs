@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ArxisStudio;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace DesignEditor.Demo.Automation;
 

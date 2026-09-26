@@ -25,4 +25,7 @@ internal sealed class DesignPlacementGeometry : ISurfaceGeometry
 
     public void SetPosition(Control target, Point position)
         => DesignPlacementResolver.Resolve(target).SetPosition(target, position, _editor);
+
+    public bool TryGetBounds(Control target, out Rect bounds)
+        => _editor.TryGetDesignBounds(target, out bounds);
 }

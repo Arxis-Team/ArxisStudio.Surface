@@ -4,11 +4,12 @@ using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Контракт публичного <see cref="DesignEditor.SelectDesignTarget"/>.
+/// Контракт публичного <see cref="SurfaceView.SelectDesignTarget"/>.
 /// </summary>
 /// <remarks>
 /// Стенд намеренно на <b>двух</b> контейнерах. Прежние тесты этого метода жили в одном,

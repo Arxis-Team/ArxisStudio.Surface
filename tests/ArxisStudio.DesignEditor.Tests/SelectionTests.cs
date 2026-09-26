@@ -3,6 +3,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
+using ArxisStudio.Surface;
 
 namespace ArxisStudio.Tests;
 
@@ -11,7 +12,7 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Тесты намеренно опираются только на публичное наблюдаемое состояние
-/// (<see cref="DesignEditor.SelectedDesignTargets"/>, <see cref="DesignEditor.PrimarySelectionTarget"/>,
+/// (<see cref="SurfaceView.SelectedDesignTargets"/>, <see cref="SurfaceView.PrimarySelectionTarget"/>,
 /// счётчики), а не на внутренние структуры выбора. Внутреннее представление
 /// будет переписано при переходе к рекурсивной вложенности, ожидания — нет.
 /// </remarks>

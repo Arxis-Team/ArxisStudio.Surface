@@ -283,32 +283,6 @@ public partial class DesignEditor
         return args.Handled;
     }
 
-    /// <summary>
-    /// Решает, набирает ли рамка контейнеры целиком.
-    /// </summary>
-    /// <param name="viewportPoint">Точка нажатия в координатах редактора.</param>
-    /// <param name="modifiers">Модификаторы на момент нажатия.</param>
-    /// <remarks>
-    /// Рамка, начатая на пустом холсте, набирает формы, а не их содержимое: снаружи
-    /// контейнеров выбирать содержимое не за что — пользователь видит формы и обводит
-    /// формы. Начатая внутри формы — работает в её пределах, как и раньше.
-    /// <para>
-    /// <see cref="DesignEditorInputGestures.ContainerInteractionModifiers"/> остаётся
-    /// способом потребовать контейнеров и изнутри формы.
-    /// </para>
-    /// <para>
-    /// Спрашивается один раз, на входе в жест: режим рамки не должен меняться посреди
-    /// протяжки — в отличие от её владельца, который пересчитывается каждый кадр.
-    /// </para>
-    /// </remarks>
-    internal override bool ShouldUseContainerMarquee(Point viewportPoint, KeyModifiers modifiers)
-    {
-        if (ShouldUseContainerInteraction(modifiers))
-            return true;
-
-        return FindContainerAtWorldPoint(GetWorldPosition(viewportPoint)) == null;
-    }
-
     // --- Drag & Drop ---
 
     private void OnItemsDragStarted(DragStartedEventArgs e)

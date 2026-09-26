@@ -35,6 +35,11 @@ internal interface ISurfaceGeometry
     /// Задаёт позицию target'а в design-координатах.
     /// </summary>
     void SetPosition(Control target, Point position);
+
+    /// <summary>
+    /// Возвращает рамку target'а в design-координатах, если она определена.
+    /// </summary>
+    bool TryGetBounds(Control target, out Rect bounds);
 }
 
 /// <summary>
@@ -54,5 +59,17 @@ internal sealed class SurfaceItemGeometry : ISurfaceGeometry
     {
         if (target is SurfaceItem item)
             item.Location = position;
+    }
+
+    public bool TryGetBounds(Control target, out Rect bounds)
+    {
+        if (target is SurfaceItem item && item.Bounds.Width > 0 && item.Bounds.Height > 0)
+        {
+            bounds = new Rect(item.Location, item.Bounds.Size);
+            return true;
+        }
+
+        bounds = default;
+        return false;
     }
 }

@@ -258,7 +258,7 @@ internal class ItemIdleState : DesignEditorItemState
         // Контейнер может быть вложен в другой контейнер. Индексный выбор работает
         // только с item'ами верхнего уровня, поэтому selection адресуется владельцу,
         // а сам Container участвует дальше как design target.
-        var owner = editor.ResolveOwningItem(Container);
+        var owner = editor.ResolveOwningItem(Container) as DesignEditorItem;
         if (owner == null) return;
 
         editor.SetLastInputModifiers(e.KeyModifiers);
@@ -282,7 +282,7 @@ internal class ItemIdleState : DesignEditorItemState
         var editor = Container.FindAncestorOfType<DesignEditor>();
         if (editor == null) return;
 
-        var owner = editor.ResolveOwningItem(Container);
+        var owner = editor.ResolveOwningItem(Container) as DesignEditorItem;
         if (owner == null) return;
 
         bool isAdditive = editor.ShouldUseAdditiveSelection(e.KeyModifiers);

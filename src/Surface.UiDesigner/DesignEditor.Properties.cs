@@ -133,14 +133,6 @@ public partial class DesignEditor
             o => o.SnapGuides);
 
     /// <summary>
-    /// Идентификатор свойства контейнера, в пределах которого работает текущая рамка.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, DesignEditorItem?> MarqueeScopeProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, DesignEditorItem?>(
-            nameof(MarqueeScope),
-            o => o.MarqueeScope);
-
-    /// <summary>
     /// Идентификатор свойства прямоугольника, охватывающего все размещенные элементы.
     /// </summary>
     public static readonly DirectProperty<DesignEditor, Rect> ItemsExtentProperty =
@@ -168,31 +160,6 @@ public partial class DesignEditor
         AvaloniaProperty.RegisterDirect<DesignEditor, int>(
             nameof(SecondarySelectionAdornersCount),
             o => o.SecondarySelectionAdornersCount);
-
-    /// <summary>
-    /// Идентификатор primary selection target.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, DesignSelectionTarget?> PrimarySelectionTargetProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, DesignSelectionTarget?>(
-            nameof(PrimarySelectionTarget),
-            o => o.PrimarySelectionTarget);
-
-    /// <summary>
-    /// Идентификатор коллекции всех выбранных design targets.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, IReadOnlyList<DesignSelectionTarget>> SelectedDesignTargetsProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, IReadOnlyList<DesignSelectionTarget>>(
-            nameof(SelectedDesignTargets),
-            o => o.SelectedDesignTargets,
-            (o, v) => o.SelectedDesignTargets = v);
-
-    /// <summary>
-    /// Идентификатор количества выбранных design targets.
-    /// </summary>
-    public static readonly DirectProperty<DesignEditor, int> SelectedDesignTargetsCountProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, int>(
-            nameof(SelectedDesignTargetsCount),
-            o => o.SelectedDesignTargetsCount);
 
     /// <summary>
     /// Идентификатор свойства, указывающего наличие ровно одного выбранного элемента.
@@ -451,26 +418,6 @@ public partial class DesignEditor
         private set => SetAndRaise(SnapGuidesProperty, ref _snapGuides, value);
     }
 
-    private DesignEditorItem? _marqueeScope;
-
-    /// <summary>
-    /// Получает контейнер, в пределах которого сейчас работает рамка выделения,
-    /// либо <see langword="null"/>, если рамка не активна или работает на уровне контейнеров.
-    /// </summary>
-    /// <remarks>
-    /// Значение пересчитывается на каждом шаге протяжки, поэтому по нему можно
-    /// подсвечивать целевой контейнер прямо во время жеста: пользователь видит,
-    /// что именно попадёт в выборку, ещё до отпускания кнопки.
-    /// <para>
-    /// Библиотека не навязывает визуал подсветки — это решение конкретного продукта.
-    /// </para>
-    /// </remarks>
-    public DesignEditorItem? MarqueeScope
-    {
-        get => _marqueeScope;
-        private set => SetAndRaise(MarqueeScopeProperty, ref _marqueeScope, value);
-    }
-
     private Rect _itemsExtent;
 
     /// <summary>
@@ -514,39 +461,6 @@ public partial class DesignEditor
     /// Получает количество secondary adorner'ов в текущем multi-selection overlay.
     /// </summary>
     private int SecondarySelectionAdornersCount => _secondarySelectionAdornersCount;
-
-    private DesignSelectionTarget? _primarySelectionTarget;
-
-    /// <summary>
-    /// Получает primary selection target редактора.
-    /// </summary>
-    public DesignSelectionTarget? PrimarySelectionTarget
-    {
-        get => _primarySelectionTarget;
-        private set => SetAndRaise(PrimarySelectionTargetProperty, ref _primarySelectionTarget, value);
-    }
-
-    private IReadOnlyList<DesignSelectionTarget> _selectedDesignTargets = Array.Empty<DesignSelectionTarget>();
-
-    /// <summary>
-    /// Получает снимок всех выбранных design targets.
-    /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> SelectedDesignTargets
-    {
-        get => _selectedDesignTargets;
-        private set
-        {
-            SetAndRaise(SelectedDesignTargetsProperty, ref _selectedDesignTargets, value);
-            SetAndRaise(SelectedDesignTargetsCountProperty, ref _selectedDesignTargetsCount, value.Count);
-        }
-    }
-
-    private int _selectedDesignTargetsCount;
-
-    /// <summary>
-    /// Получает количество выбранных design targets.
-    /// </summary>
-    public int SelectedDesignTargetsCount => _selectedDesignTargetsCount;
 
     private bool _hasSingleSelection;
 
@@ -678,21 +592,6 @@ public partial class DesignEditor
     /// </para>
     /// </remarks>
     public event EventHandler<DesignGuideChangeRequestedEventArgs>? GuideChangeRequested;
-
-    /// <summary>
-    /// Возникает при изменении набора выбранных design targets.
-    /// </summary>
-    /// <remarks>
-    /// Это не то же, что унаследованное <see cref="SelectingItemsControl.SelectionChanged"/>:
-    /// то работает на уровне элементов <c>ItemsSource</c>, а это — на уровне design targets,
-    /// включая вложенные контролы и вложенные контейнеры.
-    /// <para>
-    /// Событие возникает только при фактической смене набора или primary target.
-    /// Перетаскивание и изменение размера его не поднимают, хотя внутренний снимок
-    /// пересобирается на каждом кадре.
-    /// </para>
-    /// </remarks>
-    public event EventHandler<DesignSelectionChangedEventArgs>? DesignSelectionChanged;
 
     /// <summary>
     /// Получает или задает presenter контекстных действий.

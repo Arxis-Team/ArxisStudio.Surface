@@ -62,12 +62,6 @@ public partial class DesignEditor : SurfaceView
 
     private Control? _primarySelectionControl;
 
-    // Выбранные design targets в порядке приоритета: первый — primary.
-    // Контейнеры и вложенные контролы лежат вместе: контейнер, выбранный целиком,
-    // это просто DesignEditorItem в списке. Владелец каждого target вычисляется
-    // по дереву, поэтому структура не привязана к глубине вложенности.
-    private readonly List<Control> _selectedTargets = new();
-
     // Targets, на изменения свойств которых редактор сейчас подписан.
     // Ведётся отдельно от _selectedTargets: следить нужно за разрешёнными
     // targets, включая default'ные для item'ов без явного выбора.
@@ -80,11 +74,6 @@ public partial class DesignEditor : SurfaceView
     // Соседи, к которым идёт выравнивание в текущем жесте. Снимаются один раз
     // на входе в жест; null означает, что жест не идёт.
     private IReadOnlyList<Rect>? _snapGuideNeighbours;
-
-    /// <summary>
-    /// Снимок контейнеров на время жеста; <c>null</c> вне жеста.
-    /// </summary>
-    private IReadOnlyList<DesignEditorItem>? _containerSnapshot;
 
     static DesignEditor()
     {
@@ -133,6 +122,7 @@ public partial class DesignEditor : SurfaceView
         // примет ли содержимое запись. Пометка группы — участник единицы редактирования
         // сверх геометрии, и в контракт изменений она попадает через него.
         Geometry = new DesignPlacementGeometry(this);
+        TargetResolver = NestedTargetResolver.Instance;
         _groupFacet = new GroupEditFacet(this);
         AddEditFacet(_groupFacet);
 
@@ -231,4 +221,7 @@ public partial class DesignEditor : SurfaceView
 
     /// <inheritdoc />
     private protected override void RefreshSelectionOverlay() => UpdateSelectionOverlayState();
+
+    /// <inheritdoc />
+    internal override string? GetGroupKey(Control target) => _groupStore.GetGroup(target);
 }

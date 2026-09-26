@@ -132,26 +132,6 @@ enum ArxisStudio.DesignEditorContextSource
     value Keyboard = 1
     value Pointer = 0
     value Programmatic = 2
-sealed class ArxisStudio.DesignSelectionChangedEventArgs : EventArgs
-    ctor .ctor(IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, DesignSelectionTarget, DesignSelectionTarget)
-    property Boolean IsPrimaryChanged { get; }
-    property DesignSelectionTarget NewPrimary { get; }
-    property DesignSelectionTarget OldPrimary { get; }
-    property IReadOnlyList<DesignSelectionTarget> Added { get; }
-    property IReadOnlyList<DesignSelectionTarget> NewTargets { get; }
-    property IReadOnlyList<DesignSelectionTarget> OldTargets { get; }
-    property IReadOnlyList<DesignSelectionTarget> Removed { get; }
-enum ArxisStudio.DesignSelectionScope
-    value Container = 0
-    value NestedTarget = 1
-sealed class ArxisStudio.DesignSelectionTarget
-    ctor .ctor(DesignEditorItem, Control)
-    property Control Target { get; }
-    property DesignEditorItem Container { get; }
-    property DesignSelectionScope Scope { get; }
-    property Int32 Depth { get; }
-    property String DisplayName { get; }
-    property String GroupId { get; }
 interface ArxisStudio.IDesignEditorContextActionProvider
     method ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(DesignEditor, DesignEditorContextRequest, CancellationToken)
 interface ArxisStudio.IDesignEditorContextPresenter
@@ -277,6 +257,26 @@ sealed class ArxisStudio.Surface.DesignOrderChange : DesignChange
     ctor .ctor(Control, Int32, Int32)
     property Int32 NewZIndex { get; }
     property Int32 OldZIndex { get; }
+sealed class ArxisStudio.Surface.DesignSelectionChangedEventArgs : EventArgs
+    ctor .ctor(IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, DesignSelectionTarget, DesignSelectionTarget)
+    property Boolean IsPrimaryChanged { get; }
+    property DesignSelectionTarget NewPrimary { get; }
+    property DesignSelectionTarget OldPrimary { get; }
+    property IReadOnlyList<DesignSelectionTarget> Added { get; }
+    property IReadOnlyList<DesignSelectionTarget> NewTargets { get; }
+    property IReadOnlyList<DesignSelectionTarget> OldTargets { get; }
+    property IReadOnlyList<DesignSelectionTarget> Removed { get; }
+enum ArxisStudio.Surface.DesignSelectionScope
+    value Container = 0
+    value NestedTarget = 1
+sealed class ArxisStudio.Surface.DesignSelectionTarget
+    ctor .ctor(SurfaceItem, Control)
+    property Control Target { get; }
+    property DesignSelectionScope Scope { get; }
+    property Int32 Depth { get; }
+    property String DisplayName { get; }
+    property String GroupId { get; }
+    property SurfaceItem Container { get; }
 class ArxisStudio.Surface.DragCompletedEventArgs : RoutedEventArgs
     ctor .ctor(Double, Double, Boolean)
     property Boolean Canceled { get; }
@@ -407,9 +407,13 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia InputGesturesProperty -> InputGestures : DesignEditorInputGestures (direct)
     avalonia InteractionOptionsProperty -> InteractionOptions : DesignEditorInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
+    avalonia MarqueeScopeProperty -> MarqueeScope : SurfaceItem (direct)
     avalonia MaxZoomProperty -> MaxZoom : Double (styled) = 5
     avalonia MinZoomProperty -> MinZoom : Double (styled) = 0.1
+    avalonia PrimarySelectionTargetProperty -> PrimarySelectionTarget : DesignSelectionTarget (direct)
     avalonia SelectedAreaProperty -> SelectedArea : Rect (direct)
+    avalonia SelectedDesignTargetsCountProperty -> SelectedDesignTargetsCount : Int32 (direct)
+    avalonia SelectedDesignTargetsProperty -> SelectedDesignTargets : IReadOnlyList<DesignSelectionTarget> (direct)
     avalonia SelectedItemsProperty -> SelectedItems : IList (direct)
     avalonia SelectionModeProperty -> SelectionMode : SelectionMode (styled) = Single
     avalonia SelectionProperty -> Selection : ISelectionModel (direct)
@@ -419,6 +423,8 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
     ctor .ctor()
     event EventHandler<DesignEditCompletedEventArgs> EditCompleted
+    event EventHandler<DesignSelectionChangedEventArgs> DesignSelectionChanged
+    method Boolean SelectDesignTarget(Control, Boolean)
     method Boolean SetDesignGeometry(Control, Rect)
     method Point GetPositionForInput(Visual)
     method Point GetWorldPosition(Point)
@@ -426,7 +432,9 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void ApplyOrder(Control, Int32)
     method Void CenterOn(Point)
     method Void CenterOn(Rect)
+    method Void CenterOnItem(SurfaceItem)
     method Void FitToView(Rect)
+    method Void FitToView(SurfaceItem)
     method Void HandleZoom(PointerWheelEventArgs)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
@@ -442,16 +450,20 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     property DesignEditorCursors Cursors { get; set; }
     property DesignEditorInputGestures InputGestures { get; set; }
     property DesignEditorInteractionOptions InteractionOptions { get; set; }
+    property DesignSelectionTarget PrimarySelectionTarget { get; }
     property Double MaxZoom { get; set; }
     property Double MinZoom { get; set; }
     property Double ViewportZoom { get; set; }
     property IList SelectedItems { get; set; }
+    property IReadOnlyList<DesignSelectionTarget> SelectedDesignTargets { get; }
     property ISelectionModel Selection { get; set; }
+    property Int32 SelectedDesignTargetsCount { get; }
     property KeyModifiers AdditiveSelectionModifiers { get; set; }
     property KeyModifiers ContainerInteractionModifiers { get; set; }
     property Point ViewportLocation { get; set; }
     property Rect SelectedArea { get; set; }
     property SelectionMode SelectionMode { get; set; }
+    property SurfaceItem MarqueeScope { get; }
     property Transform DpiScaledViewportTransform { get; set; }
     property Transform ViewportTransform { get; set; }
 class ArxisStudio.Surface.UiDesigner.AbsolutePanel : Panel
@@ -474,14 +486,10 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia HasSingleSelectionProperty -> HasSingleSelection : Boolean (direct)
     avalonia IsReorderingProperty -> IsReordering : Boolean (direct)
     avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
-    avalonia MarqueeScopeProperty -> MarqueeScope : DesignEditorItem (direct)
     avalonia PrimarySelectionMovePolicyProperty -> PrimarySelectionMovePolicy : MovePolicy (direct)
     avalonia PrimarySelectionPlacementProperty -> PrimarySelectionPlacement : String (direct)
     avalonia PrimarySelectionResizePolicyProperty -> PrimarySelectionResizePolicy : ResizePolicy (direct)
-    avalonia PrimarySelectionTargetProperty -> PrimarySelectionTarget : DesignSelectionTarget (direct)
     avalonia ReorderIndicatorProperty -> ReorderIndicator : Rect (direct)
-    avalonia SelectedDesignTargetsCountProperty -> SelectedDesignTargetsCount : Int32 (direct)
-    avalonia SelectedDesignTargetsProperty -> SelectedDesignTargets : IReadOnlyList<DesignSelectionTarget> (direct)
     avalonia SelectionBoundsProperty -> SelectionBounds : Rect (direct)
     avalonia SelectionRectangleStyleProperty -> SelectionRectangleStyle : ControlTheme (styled) = null
     avalonia ShowGuidesProperty -> ShowGuides : Boolean (styled) = true
@@ -498,7 +506,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     event EventHandler<DesignEditorHistoryRequestedEventArgs> UndoRequested
     event EventHandler<DesignEditorReorderRequestedEventArgs> ReorderRequested
     event EventHandler<DesignGuideChangeRequestedEventArgs> GuideChangeRequested
-    event EventHandler<DesignSelectionChangedEventArgs> DesignSelectionChanged
     method Boolean BringForward()
     method Boolean BringToFront()
     method Boolean CanGroupSelection()
@@ -508,7 +515,6 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     method Boolean GroupSelection()
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Boolean RenameGroup(DesignEditorItem, String, String)
-    method Boolean SelectDesignTarget(Control, Boolean)
     method Boolean SendBackward()
     method Boolean SendToBack()
     method Boolean UngroupSelection()
@@ -518,10 +524,8 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     method Task RequestContextAsync(CancellationToken)
     method Task RequestContextAsync(DesignEditorContextSource, Point, KeyModifiers, CancellationToken)
     method Void ApplyGroup(Control, String)
-    method Void CenterOnItem(DesignEditorItem)
     method Void CenterOnSelection()
     method Void FitSelectionToView()
-    method Void FitToView(DesignEditorItem)
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnKeyDown(KeyEventArgs)
     property Boolean HasGroupSelection { get; }
@@ -534,17 +538,13 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property Boolean ShowRulers { get; set; }
     property Boolean ShowSnapGuides { get; set; }
     property ControlTheme SelectionRectangleStyle { get; set; }
-    property DesignEditorItem MarqueeScope { get; }
-    property DesignSelectionTarget PrimarySelectionTarget { get; }
     property IDesignEditorContextPresenter ContextPresenter { get; set; }
     property IDesignGroupStore GroupStore { get; set; }
     property IEnumerable<DesignGuide> Guides { get; set; }
     property IList<IDesignEditorContextActionProvider> ContextActionProviders { get; }
     property IReadOnlyList<DesignGuide> UserGuides { get; }
-    property IReadOnlyList<DesignSelectionTarget> SelectedDesignTargets { get; }
     property IReadOnlyList<DesignSnapGuide> SnapGuides { get; }
     property IReadOnlyList<DesignSpacingHint> SpacingHints { get; }
-    property Int32 SelectedDesignTargetsCount { get; }
     property MovePolicy PrimarySelectionMovePolicy { get; }
     property Nullable<DesignGuide> GuidePreview { get; }
     property Rect ItemsExtent { get; set; }
