@@ -6,7 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{D2164E8D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesignEditor.Demo", "samples\DesignEditor.Demo\DesignEditor.Demo.csproj", "{1D6B7B88-DB55-465D-9641-81073A6BD0EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArxisStudio.DesignEditor.Tests", "tests\ArxisStudio.DesignEditor.Tests\ArxisStudio.DesignEditor.Tests.csproj", "{971D80EC-8FCC-4A9F-8BDD-B73F02337A4F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArxisStudio.Surface.Tests", "tests\ArxisStudio.Surface.Tests\ArxisStudio.Surface.Tests.csproj", "{971D80EC-8FCC-4A9F-8BDD-B73F02337A4F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject

@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Команды
 
 ```bash
-dotnet build ArxisStudio.DesignEditor.sln      # сборка решения
-dotnet test tests/ArxisStudio.DesignEditor.Tests/ArxisStudio.DesignEditor.Tests.csproj
+dotnet build ArxisStudio.Surface.sln      # сборка решения
+dotnet test tests/ArxisStudio.Surface.Tests/ArxisStudio.Surface.Tests.csproj
 dotnet run --project samples/DesignEditor.Demo # запуск демо
 ```
 
@@ -87,7 +87,7 @@ fatal: Failed to recurse into submodule path 'external/ArxisStudio.DesignEditor'
 ### Упаковка
 
 ```bash
-dotnet pack ArxisStudio.DesignEditor.sln -c Release -o artifacts
+dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 ```
 
 Пакетов три — `ArxisStudio.Surface`, `ArxisStudio.Surface.Editing`, `ArxisStudio.Surface.UiDesigner`, — и зависимости в них идут вниз, как ссылки проектов: дизайнер форм тянет инструменты и ядро, инструменты — ядро. `IsPackable` выключен в `Directory.Build.props` и включён обратно в `src/Library.props`: иначе рядом ложились бы пакеты тестов и демо.
@@ -106,9 +106,11 @@ dotnet pack ArxisStudio.DesignEditor.sln -c Release -o artifacts
 
 Библиотека делится на три слоя — ADR 0003, там же причина и «почему не иначе». Первый этап развёл
 их по папкам и пространствам имён внутри одной сборки, второй — по **трём сборкам и трём пакетам**.
-Снаружи репозитория второй этап не выходил: имя репозитория, путь подмодуля у головной студии и
-образец `FormsDesigner` в ProjectSystem ещё называют `ArxisStudio.DesignEditor`, и переводить их —
-отдельное решение владельца.
+Следом за пакетами переименован и репозиторий: был `ArxisStudio.DesignEditor`, стал
+`ArxisStudio.Surface` (прежний адрес GitHub перенаправляет). У головной студии он лежит в
+`external/ArxisStudio.Surface`, а образец `FormsDesigner` в ProjectSystem ищет его соседом под
+этим же именем. Имя `DesignEditor` осталось за тем, что им и является, — классом дизайнера форм
+и демо.
 
 | Слой | Пространство имён и сборка | Папка |
 | --- | --- | --- |
@@ -654,7 +656,7 @@ Resize пользуется тем же резолвером, но входит 
 
 ### Границы ответственности
 
-`ArxisStudio.DesignEditor` и `ArxisStudio.Markup` — две самостоятельные библиотеки со своими API. Деревом контролов владеет вторая.
+`ArxisStudio.Surface` и `ArxisStudio.Markup` — две самостоятельные библиотеки со своими API. Деревом контролов владеет вторая.
 
 Редактор **читает** дерево — без этого он ничего не покажет, — но не создаёт, не удаляет и не переставляет. Структурные намерения он выражает запросами: `DeleteRequested`, `ReorderRequested`. Пока обработчик не выставил `Handled`, ничего не происходит.
 

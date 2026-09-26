@@ -20,7 +20,8 @@
         меняется — разделение на слои её уже правило, — а 1.0 обещает обратную
         совместимость, которую сейчас обещать нечем.
 
-        Адреса репозитория прежние: переименование на GitHub — отдельный шаг.
+        Репозиторий переименован вслед за пакетами: ArxisStudio.DesignEditor стал
+        ArxisStudio.Surface; прежний адрес GitHub перенаправляет сюда.
     -->
     <PropertyGroup>
         <IsPackable>true</IsPackable>
@@ -31,8 +32,8 @@
         <Product>ArxisStudio.Surface</Product>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/Arxis-Team/ArxisStudio.DesignEditor</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/Arxis-Team/ArxisStudio.DesignEditor.git</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/Arxis-Team/ArxisStudio.Surface</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Arxis-Team/ArxisStudio.Surface.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 

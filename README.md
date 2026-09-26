@@ -1,6 +1,6 @@
-﻿# ArxisStudio.DesignEditor
+﻿# ArxisStudio.Surface
 
-`ArxisStudio.DesignEditor` — это библиотека для Avalonia UI, предназначенная для построения визуальных редакторов, form designer'ов, layout editor'ов и других IDE-подобных инструментов.
+`ArxisStudio.Surface` — семейство библиотек для Avalonia UI, предназначенное для построения визуальных редакторов, form designer'ов, layout editor'ов и других IDE-подобных инструментов.
 
 Библиотека предоставляет:
 
@@ -67,7 +67,7 @@
 
 ## Границы ответственности
 
-`ArxisStudio.DesignEditor` и `ArxisStudio.Markup` — две самостоятельные библиотеки, каждая со своим API.
+`ArxisStudio.Surface` и `ArxisStudio.Markup` — две самостоятельные библиотеки, каждая со своим API.
 
 | | Редактор | Разметка |
 |---|---|---|
@@ -93,7 +93,7 @@
 - `src/Surface.Editing/` — `ArxisStudio.Surface.Editing`, инструменты: ручки, привязка, направляющие, линейки
 - `src/Surface.UiDesigner/` — `ArxisStudio.Surface.UiDesigner`, дизайнер форм: `DesignEditor`
 - `samples/DesignEditor.Demo/` — демонстрационное Avalonia-приложение
-- `ArxisStudio.DesignEditor.sln` — solution
+- `ArxisStudio.Surface.sln` — solution
 
 ### Только ядро
 
@@ -1090,7 +1090,7 @@ dotnet run --project samples/DesignEditor.Demo
 ## Сборка
 
 ```bash
-dotnet build ArxisStudio.DesignEditor.sln
+dotnet build ArxisStudio.Surface.sln
 ```
 
 ## Примечания

@@ -12,12 +12,12 @@ description: Собрать, запустить и подвигать DesignEdit
 ### 1. Собрать
 
 ```bash
-dotnet build ArxisStudio.DesignEditor.sln
+dotnet build ArxisStudio.Surface.sln
 ```
 
 Ожидается **0 ошибок, 0 предупреждений** (у библиотеки включён `GenerateDocumentationFile` → CS1591 на недокументированный публичный член).
 
-Если падает `MSB3021`/`MSB3027` («файл используется другим процессом») на `ArxisStudio.DesignEditor.dll` — **это не ошибка кода**, а блокировка от `Avalonia.Designer.HostApp` (XAML-превьюер Rider). Компиляция при этом проходит, ломается только копирование. Варианты:
+Если падает `MSB3021`/`MSB3027` («файл используется другим процессом») на `ArxisStudio.Surface*.dll` — **это не ошибка кода**, а блокировка от `Avalonia.Designer.HostApp` (XAML-превьюер Rider). Компиляция при этом проходит, ломается только копирование. Варианты:
 
 - закрыть вкладку превью в Rider;
 - `taskkill //PID <pid> //F` — pid берётся из текста ошибки;
@@ -126,7 +126,7 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action stop
 ```
 
-Закрывать обязательно: живой процесс держит `ArxisStudio.DesignEditor.dll` и следующая сборка упадёт с той же MSB3021.
+Закрывать обязательно: живой процесс держит `ArxisStudio.Surface*.dll` и следующая сборка упадёт с той же MSB3021.
 
 ## Что проверять
 
