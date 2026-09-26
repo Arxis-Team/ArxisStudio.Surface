@@ -8,6 +8,7 @@ using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using Xunit;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Tests;
 

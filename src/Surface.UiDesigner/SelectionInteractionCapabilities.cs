@@ -1,4 +1,4 @@
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 internal readonly struct SelectionInteractionCapabilities
 {

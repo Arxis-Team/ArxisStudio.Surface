@@ -10,7 +10,7 @@ using ResizePolicyMode = ArxisStudio.Surface.ResizePolicy;
 using MovePolicyMode = ArxisStudio.Surface.MovePolicy;
 using ArxisStudio.Surface;
 
-namespace ArxisStudio.Controls;
+namespace ArxisStudio.Surface.Editing;
 
 
 /// <summary>

@@ -14,6 +14,7 @@ using ArxisStudio.Surface.UiDesigner;
 using Xunit;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Tests;
 

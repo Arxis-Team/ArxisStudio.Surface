@@ -440,7 +440,7 @@ public partial class DesignEditor
 
     private void OnSecondarySelectionResizeStarted(object? sender, SelectionAdornerResizeStartedEventArgs e)
     {
-        var container = e.AdornerInfo.Container;
+        var container = e.AdornerInfo.Container as DesignEditorItem;
         var target = e.AdornerInfo.Target;
 
         if (container == null || target == null || !HasMultipleNestedSelection)
@@ -492,7 +492,7 @@ public partial class DesignEditor
             return;
         }
 
-        var container = e.AdornerInfo.Container;
+        var container = e.AdornerInfo.Container as DesignEditorItem;
         var target = e.AdornerInfo.Target;
 
         if (container == null || target == null || container.CurrentState is not ItemResizingState)
@@ -525,7 +525,7 @@ public partial class DesignEditor
             return;
         }
 
-        var container = e.AdornerInfo.Container;
+        var container = e.AdornerInfo.Container as DesignEditorItem;
         var target = e.AdornerInfo.Target;
 
         if (container == null || target == null || container.CurrentState is not ItemResizingState)

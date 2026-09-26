@@ -1,6 +1,5 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:controls="clr-namespace:ArxisStudio.Controls"
                     xmlns:editing="clr-namespace:ArxisStudio.Surface.Editing">
 
     <editing:HandleMarginConverter x:Key="HandleMarginConverter" />
@@ -10,7 +9,7 @@
         Внешний вид конкретного overlay определяется ролью adorner'а
         (:primary/:secondary/:group) и lightweight resources.
     -->
-    <ControlTheme x:Key="{x:Type controls:SelectionAdorner}" TargetType="controls:SelectionAdorner">
+    <ControlTheme x:Key="{x:Type editing:SelectionAdorner}" TargetType="editing:SelectionAdorner">
         <Setter Property="AdornerBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.Brush}" />
         <Setter Property="Fill" Value="{DynamicResource DesignEditor.SelectionAdorner.Fill}" />
         <Setter Property="StrokeThickness" Value="{DynamicResource DesignEditor.Selection.StrokeThickness}" />

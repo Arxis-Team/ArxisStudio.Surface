@@ -19,39 +19,6 @@ class ArxisStudio.Controls.DesignRuler : Control
     property IBrush LabelBrush { get; set; }
     property IBrush TickBrush { get; set; }
     property Orientation Orientation { get; set; }
-class ArxisStudio.Controls.SelectionAdorner : TemplatedControl
-    avalonia AdornerBrushProperty -> AdornerBrush : IBrush (styled) = <ImmutableSolidColorBrush>
-    avalonia FillProperty -> Fill : IBrush (styled) = <ImmutableSolidColorBrush>
-    avalonia HandleSizeProperty -> HandleSize : Double (styled) = 8
-    avalonia IsInteractiveProperty -> IsInteractive : Boolean (styled) = true
-    avalonia MovePolicyProperty -> MovePolicy : MovePolicy (styled) = Both
-    avalonia ResizePolicyProperty -> ResizePolicy : ResizePolicy (styled) = All
-    avalonia RoleProperty -> Role : SelectionAdornerRole (styled) = Primary
-    avalonia ShowHandlesProperty -> ShowHandles : Boolean (styled) = true
-    avalonia StrokeDashArrayProperty -> StrokeDashArray : AvaloniaList<Double> (styled) = null
-    avalonia StrokeThicknessProperty -> StrokeThickness : Double (styled) = 1
-    ctor .ctor()
-    event EventHandler<ResizeDeltaEventArgs> ResizeDelta
-    event EventHandler<ResizeStartedEventArgs> ResizeStarted
-    event EventHandler<VectorEventArgs> ResizeCompleted
-    field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
-    field RoutedEvent<ResizeStartedEventArgs> ResizeStartedEvent
-    field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
-    method Void OnApplyTemplate(TemplateAppliedEventArgs)
-    property AvaloniaList<Double> StrokeDashArray { get; set; }
-    property Boolean IsInteractive { get; set; }
-    property Boolean ShowHandles { get; set; }
-    property Double HandleSize { get; set; }
-    property Double StrokeThickness { get; set; }
-    property IBrush AdornerBrush { get; set; }
-    property IBrush Fill { get; set; }
-    property MovePolicy MovePolicy { get; set; }
-    property ResizePolicy ResizePolicy { get; set; }
-    property SelectionAdornerRole Role { get; set; }
-enum ArxisStudio.Controls.SelectionAdornerRole
-    value Group = 2
-    value Primary = 0
-    value Secondary = 1
 class ArxisStudio.Controls.SnapGuideLayer : Control
     avalonia CentreLineBrushProperty -> CentreLineBrush : IBrush (styled) = null
     avalonia EditorProperty -> Editor : DesignEditor (styled) = null
@@ -343,6 +310,39 @@ struct ArxisStudio.Surface.Editing.DesignSpacingHint : ValueType
     property Double End { get; }
     property Double Position { get; }
     property Double Start { get; }
+class ArxisStudio.Surface.Editing.SelectionAdorner : TemplatedControl
+    avalonia AdornerBrushProperty -> AdornerBrush : IBrush (styled) = <ImmutableSolidColorBrush>
+    avalonia FillProperty -> Fill : IBrush (styled) = <ImmutableSolidColorBrush>
+    avalonia HandleSizeProperty -> HandleSize : Double (styled) = 8
+    avalonia IsInteractiveProperty -> IsInteractive : Boolean (styled) = true
+    avalonia MovePolicyProperty -> MovePolicy : MovePolicy (styled) = Both
+    avalonia ResizePolicyProperty -> ResizePolicy : ResizePolicy (styled) = All
+    avalonia RoleProperty -> Role : SelectionAdornerRole (styled) = Primary
+    avalonia ShowHandlesProperty -> ShowHandles : Boolean (styled) = true
+    avalonia StrokeDashArrayProperty -> StrokeDashArray : AvaloniaList<Double> (styled) = null
+    avalonia StrokeThicknessProperty -> StrokeThickness : Double (styled) = 1
+    ctor .ctor()
+    event EventHandler<ResizeDeltaEventArgs> ResizeDelta
+    event EventHandler<ResizeStartedEventArgs> ResizeStarted
+    event EventHandler<VectorEventArgs> ResizeCompleted
+    field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
+    field RoutedEvent<ResizeStartedEventArgs> ResizeStartedEvent
+    field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
+    method Void OnApplyTemplate(TemplateAppliedEventArgs)
+    property AvaloniaList<Double> StrokeDashArray { get; set; }
+    property Boolean IsInteractive { get; set; }
+    property Boolean ShowHandles { get; set; }
+    property Double HandleSize { get; set; }
+    property Double StrokeThickness { get; set; }
+    property IBrush AdornerBrush { get; set; }
+    property IBrush Fill { get; set; }
+    property MovePolicy MovePolicy { get; set; }
+    property ResizePolicy ResizePolicy { get; set; }
+    property SelectionAdornerRole Role { get; set; }
+enum ArxisStudio.Surface.Editing.SelectionAdornerRole
+    value Group = 2
+    value Primary = 0
+    value Secondary = 1
 interface ArxisStudio.Surface.IDesignEditorContextActionProvider
     method ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(SurfaceView, DesignEditorContextRequest, CancellationToken)
 interface ArxisStudio.Surface.IDesignEditorContextPresenter

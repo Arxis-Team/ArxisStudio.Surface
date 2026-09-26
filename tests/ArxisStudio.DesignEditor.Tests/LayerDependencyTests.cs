@@ -36,26 +36,16 @@ public class LayerDependencyTests
     private static readonly string[] Legacy =
     [
         "ArxisStudio.Controls.DesignRuler",
-        "ArxisStudio.Controls.SelectionAdorner",
-        "ArxisStudio.Controls.SelectionAdornerLayer",
-        "ArxisStudio.Controls.SelectionAdornerResizeCompletedEventArgs",
-        "ArxisStudio.Controls.SelectionAdornerResizeDeltaEventArgs",
-        "ArxisStudio.Controls.SelectionAdornerResizeEventArgs",
-        "ArxisStudio.Controls.SelectionAdornerResizeStartedEventArgs",
-        "ArxisStudio.Controls.SelectionAdornerRole",
         "ArxisStudio.Controls.SnapGuideLayer",
         "ArxisStudio.GroupDragOperation",
         "ArxisStudio.GroupDragTarget",
         "ArxisStudio.GroupResizeOperation",
         "ArxisStudio.GroupResizeTarget",
         "ArxisStudio.IInteractionOperation",
-        "ArxisStudio.SelectionAdornerInfo",
-        "ArxisStudio.SelectionInteractionCapabilities",
         "ArxisStudio.States.DesignEditorItemState",
         "ArxisStudio.States.EditorGuideDraggingState",
         "ArxisStudio.States.ItemDraggingState",
         "ArxisStudio.States.ItemIdleState",
-        "ArxisStudio.States.ItemReorderingState",
         "ArxisStudio.States.ItemResizingState",
     ];
 

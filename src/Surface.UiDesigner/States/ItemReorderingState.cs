@@ -6,9 +6,9 @@ using Avalonia.Layout;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.States;
 
-namespace ArxisStudio.States;
+namespace ArxisStudio.Surface.UiDesigner.States;
 
 /// <summary>
 /// Состояние перестановки контрола среди соседей по родительской панели.

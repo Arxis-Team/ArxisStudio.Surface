@@ -8,7 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using ArxisStudio.Surface;
 
-namespace ArxisStudio.Controls;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Представляет lightweight-layer для отрисовки нескольких <see cref="SelectionAdorner"/>

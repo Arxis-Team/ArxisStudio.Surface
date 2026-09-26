@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
-using ArxisStudio.Controls;
 using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.Editing;
 
 /// <summary>
 /// Представляет модель геометрии adorner'а для selection overlay.
@@ -15,7 +13,7 @@ internal class SelectionAdornerInfo
     /// <summary>
     /// Получает или задает контейнер, которому принадлежит visual target.
     /// </summary>
-    public DesignEditorItem? Container { get; set; }
+    public SurfaceItem? Container { get; set; }
 
     /// <summary>
     /// Получает или задает visual target, для которого строится adorner.

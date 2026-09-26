@@ -7,6 +7,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Xunit;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Tests;
 
