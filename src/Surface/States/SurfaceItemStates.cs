@@ -300,6 +300,13 @@ internal class ItemDraggingState : SurfaceItemState
     private readonly GestureCursorScope _cursor = new GestureCursorScope();
     private bool _accepted;
 
+    // Точка нажатия в мировых координатах, снятая один раз. Пересчитывать её по текущему
+    // viewport нельзя: стоит холсту сдвинуться посреди жеста — автопрокруткой или
+    // колесом, — и начало «уехало» бы вместе с ним, а элемент перестал бы идти за
+    // указателем.
+    private Point _initialPointerWorld;
+    private KeyModifiers _lastModifiers;
+
     /// <inheritdoc />
     public override string? PseudoClass => ":dragging";
 
@@ -321,6 +328,8 @@ internal class ItemDraggingState : SurfaceItemState
         _dragTarget = editor?.ResolveInteractionTarget(Container) ?? Container;
         _elementStartLocation = editor?.GetDesignPosition(_dragTarget) ?? Container.Location;
         _previousAppliedDelta = Vector.Zero;
+        if (editor != null)
+            _initialPointerWorld = editor.GetWorldPosition(_initialPointerPosition);
 
         // Соседи снимаются здесь, до первого кадра: во время жеста они не двигаются,
         // и направляющая обязана стоять там, где пользователь её увидел.
@@ -347,6 +356,7 @@ internal class ItemDraggingState : SurfaceItemState
         _cursor.Restore();
 
         var editor = Container.FindAncestorOfType<SurfaceView>();
+        editor?.StopAutoPan();
         editor?.EndSnapGuides();
 
         var total = editor != null
@@ -368,23 +378,12 @@ internal class ItemDraggingState : SurfaceItemState
         if (editor != null)
         {
             var currentPointerPosition = e.GetPosition(editor);
-            var rawTotalDelta = editor.GetWorldPosition(currentPointerPosition) - editor.GetWorldPosition(_initialPointerPosition);
-            var appliedTotalDelta = editor.ApplyMovePolicy(_dragTarget, rawTotalDelta);
+            _lastModifiers = e.KeyModifiers;
+            MoveTo(editor, currentPointerPosition);
 
-            // Привязывается результат, а не дельта: иначе элемент сохранил бы
-            // исходное смещение относительно сетки и на узел бы не встал.
-            // Направляющие занимают свою ось первыми, сетка получает остальные.
-            var snapped = editor.ResolveDragPosition(_dragTarget, _elementStartLocation + appliedTotalDelta, e.KeyModifiers);
-
-            // Дальше по группе идёт уже привязанное смещение, поэтому соседи
-            // двигаются ровно на столько же и взаимное расположение сохраняется.
-            var effectiveDelta = snapped - _elementStartLocation;
-
-            editor.SetDesignPosition(_dragTarget, snapped);
-            var frameDelta = effectiveDelta - _previousAppliedDelta;
-            Container.RaiseEvent(new DragDeltaEventArgs(frameDelta.X, frameDelta.Y) { RoutedEvent = SurfaceItem.DragDeltaEvent });
-            _previousAppliedDelta = effectiveDelta;
-            _previousPointerPosition = currentPointerPosition;
+            // У края холст едет сам, и элемент едет с ним: указатель стоит, а под ним
+            // уже другое место холста — жест пересчитывается по той же точке экрана.
+            editor.TrackAutoPan(currentPointerPosition, point => MoveTo(editor, point));
             e.Handled = true;
             return;
         }
@@ -402,6 +401,27 @@ internal class ItemDraggingState : SurfaceItemState
         Container.RaiseEvent(new DragDeltaEventArgs(frameDeltaFallback.X, frameDeltaFallback.Y) { RoutedEvent = SurfaceItem.DragDeltaEvent });
         _previousPointerPosition = currentPointerPositionFallback;
         e.Handled = true;
+    }
+
+    private void MoveTo(SurfaceView editor, Point currentPointerPosition)
+    {
+        var rawTotalDelta = editor.GetWorldPosition(currentPointerPosition) - _initialPointerWorld;
+        var appliedTotalDelta = editor.ApplyMovePolicy(_dragTarget, rawTotalDelta);
+
+        // Привязывается результат, а не дельта: иначе элемент сохранил бы
+        // исходное смещение относительно сетки и на узел бы не встал.
+        // Направляющие занимают свою ось первыми, сетка получает остальные.
+        var snapped = editor.ResolveDragPosition(_dragTarget, _elementStartLocation + appliedTotalDelta, _lastModifiers);
+
+        // Дальше по группе идёт уже привязанное смещение, поэтому соседи
+        // двигаются ровно на столько же и взаимное расположение сохраняется.
+        var effectiveDelta = snapped - _elementStartLocation;
+
+        editor.SetDesignPosition(_dragTarget, snapped);
+        var frameDelta = effectiveDelta - _previousAppliedDelta;
+        Container.RaiseEvent(new DragDeltaEventArgs(frameDelta.X, frameDelta.Y) { RoutedEvent = SurfaceItem.DragDeltaEvent });
+        _previousAppliedDelta = effectiveDelta;
+        _previousPointerPosition = currentPointerPosition;
     }
 
     /// <inheritdoc />

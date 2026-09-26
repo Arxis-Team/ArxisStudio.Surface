@@ -37,6 +37,42 @@ public class DesignEditorInteractionOptions : AvaloniaObject
             true);
 
     /// <summary>
+    /// Идентификатор свойства, включающего автопрокрутку у края.
+    /// </summary>
+    /// <remarks>
+    /// Перетаскивание и рамка, доведённые до края редактора, сдвигают холст сами, и
+    /// жест продолжается за пределы видимого. По умолчанию: <see langword="true"/>.
+    /// </remarks>
+    public static readonly StyledProperty<bool> IsAutoPanEnabledProperty =
+        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+            nameof(IsAutoPanEnabled),
+            true);
+
+    /// <summary>
+    /// Идентификатор свойства ширины полосы у края, в которой включается автопрокрутка.
+    /// </summary>
+    /// <remarks>
+    /// В пикселях экрана, а не холста: полоса одинакова на любом масштабе.
+    /// По умолчанию: <c>32.0</c>.
+    /// </remarks>
+    public static readonly StyledProperty<double> AutoPanEdgeProperty =
+        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+            nameof(AutoPanEdge),
+            32.0);
+
+    /// <summary>
+    /// Идентификатор свойства наибольшей скорости автопрокрутки.
+    /// </summary>
+    /// <remarks>
+    /// В пикселях экрана в секунду — у самого края и за ним. В глубине полосы скорость
+    /// растёт от нуля до этой величины. По умолчанию: <c>900.0</c>.
+    /// </remarks>
+    public static readonly StyledProperty<double> AutoPanSpeedProperty =
+        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+            nameof(AutoPanSpeed),
+            900.0);
+
+    /// <summary>
     /// Идентификатор свойства порога старта перетаскивания в пикселях.
     /// </summary>
     /// <remarks>По умолчанию: <c>3.0</c>.</remarks>
@@ -70,6 +106,33 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     {
         get => GetValue(IsPinchZoomEnabledProperty);
         set => SetValue(IsPinchZoomEnabledProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает значение, включающее автопрокрутку у края.
+    /// </summary>
+    public bool IsAutoPanEnabled
+    {
+        get => GetValue(IsAutoPanEnabledProperty);
+        set => SetValue(IsAutoPanEnabledProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает ширину полосы автопрокрутки у края в пикселях экрана.
+    /// </summary>
+    public double AutoPanEdge
+    {
+        get => GetValue(AutoPanEdgeProperty);
+        set => SetValue(AutoPanEdgeProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает наибольшую скорость автопрокрутки в пикселях экрана в секунду.
+    /// </summary>
+    public double AutoPanSpeed
+    {
+        get => GetValue(AutoPanSpeedProperty);
+        set => SetValue(AutoPanSpeedProperty, value);
     }
 
     /// <summary>

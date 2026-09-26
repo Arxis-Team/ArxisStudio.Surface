@@ -108,7 +108,10 @@ class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
     property KeyModifiers SnapBypassModifiers { get; set; }
     property KeyModifiers ZoomModifiers { get; set; }
 class ArxisStudio.Surface.DesignEditorInteractionOptions : AvaloniaObject
+    avalonia AutoPanEdgeProperty -> AutoPanEdge : Double (styled) = 32
+    avalonia AutoPanSpeedProperty -> AutoPanSpeed : Double (styled) = 900
     avalonia DragStartThresholdProperty -> DragStartThreshold : Double (styled) = 3
+    avalonia IsAutoPanEnabledProperty -> IsAutoPanEnabled : Boolean (styled) = true
     avalonia IsEqualSpacingEnabledProperty -> IsEqualSpacingEnabled : Boolean (styled) = true
     avalonia IsPinchZoomEnabledProperty -> IsPinchZoomEnabled : Boolean (styled) = true
     avalonia IsResizeContainedToParentProperty -> IsResizeContainedToParent : Boolean (styled) = true
@@ -121,11 +124,14 @@ class ArxisStudio.Surface.DesignEditorInteractionOptions : AvaloniaObject
     avalonia SnapStepProperty -> SnapStep : Double (styled) = NaN
     avalonia ZoomStepProperty -> ZoomStep : Double (styled) = 1.1
     ctor .ctor()
+    property Boolean IsAutoPanEnabled { get; set; }
     property Boolean IsEqualSpacingEnabled { get; set; }
     property Boolean IsPinchZoomEnabled { get; set; }
     property Boolean IsResizeContainedToParent { get; set; }
     property Boolean IsSnapToGridEnabled { get; set; }
     property Boolean IsSnapToGuidesEnabled { get; set; }
+    property Double AutoPanEdge { get; set; }
+    property Double AutoPanSpeed { get; set; }
     property Double DragStartThreshold { get; set; }
     property Double LargeNudgeStep { get; set; }
     property Double NudgeStep { get; set; }

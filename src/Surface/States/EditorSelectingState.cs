@@ -76,6 +76,7 @@ internal class EditorSelectingState : EditorState
     /// <inheritdoc />
     public override void Exit()
     {
+        Editor.StopAutoPan();
         Editor.IsSelecting = false;
         Editor.SelectedArea = new Rect(0, 0, 0, 0);
         Editor.ClearMarqueeScope();
@@ -96,7 +97,18 @@ internal class EditorSelectingState : EditorState
     /// <inheritdoc />
     public override void OnPointerMoved(PointerEventArgs e)
     {
-        Point currentMousePosWorld = Editor.GetWorldPosition(e.GetPosition(Editor));
+        var screenPoint = e.GetPosition(Editor);
+        UpdateArea(screenPoint);
+
+        // У края холст едет сам, а рамка растёт за указателем: начало её лежит в
+        // мировых координатах и уезжает вместе с холстом, угол пересчитывается по той
+        // же точке экрана.
+        Editor.TrackAutoPan(screenPoint, UpdateArea);
+    }
+
+    private void UpdateArea(Point screenPoint)
+    {
+        Point currentMousePosWorld = Editor.GetWorldPosition(screenPoint);
 
         double x = Math.Min(_startLocationWorld.X, currentMousePosWorld.X);
         double y = Math.Min(_startLocationWorld.Y, currentMousePosWorld.Y);
