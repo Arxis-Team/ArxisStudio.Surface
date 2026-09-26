@@ -21,9 +21,8 @@ using ArxisStudio.Controls;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Контракт изменений: единица редактирования, отмена и повтор.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

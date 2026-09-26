@@ -24,7 +24,7 @@ using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 using ArxisStudio.Surface;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Ввод: машина состояний редактора, указатель, клавиатура, drag и resize.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

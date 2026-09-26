@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 

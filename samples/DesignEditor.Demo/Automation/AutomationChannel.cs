@@ -8,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ArxisStudio;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace DesignEditor.Demo.Automation;
 
@@ -36,12 +37,12 @@ internal sealed class AutomationChannel
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     private readonly string _directory;
-    private readonly ArxisStudio.DesignEditor _editor;
+    private readonly ArxisStudio.Surface.UiDesigner.DesignEditor _editor;
     private readonly Window _window;
     private readonly List<Dictionary<string, object?>> _events = new();
     private DispatcherTimer? _timer;
 
-    private AutomationChannel(string directory, ArxisStudio.DesignEditor editor, Window window)
+    private AutomationChannel(string directory, ArxisStudio.Surface.UiDesigner.DesignEditor editor, Window window)
     {
         _directory = directory;
         _editor = editor;
@@ -65,7 +66,7 @@ internal sealed class AutomationChannel
     /// <summary>
     /// Поднимает канал, если демо запущено с <c>--automation</c>.
     /// </summary>
-    public static void TryStart(string? directory, ArxisStudio.DesignEditor editor, Window window)
+    public static void TryStart(string? directory, ArxisStudio.Surface.UiDesigner.DesignEditor editor, Window window)
     {
         if (string.IsNullOrWhiteSpace(directory))
             return;

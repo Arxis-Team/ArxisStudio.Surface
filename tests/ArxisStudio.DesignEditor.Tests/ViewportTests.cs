@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Headless.XUnit;
 using Xunit;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
 

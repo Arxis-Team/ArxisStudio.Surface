@@ -24,7 +24,7 @@ using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 using ArxisStudio.Surface;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Представляет поверхность визуального редактора с поддержкой панорамирования,
@@ -46,7 +46,7 @@ namespace ArxisStudio;
 ///                      ViewportZoom="{Binding Zoom, Mode=TwoWay}" />
 /// ]]></code>
 /// </example>
-public partial class DesignEditor : SelectingItemsControl
+public partial class DesignEditor : SurfaceView
 {
     private const double ZoomTolerance = 0.0001;
 

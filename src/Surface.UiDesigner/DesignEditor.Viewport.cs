@@ -22,7 +22,7 @@ using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Панорамирование, зум и трансформации viewport'а.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

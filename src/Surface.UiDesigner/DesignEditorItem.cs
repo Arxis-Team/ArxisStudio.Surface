@@ -8,9 +8,8 @@ using Avalonia.Interactivity;
 using ArxisStudio.States;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
 /// Представляет контейнер элемента редактора с поддержкой выделения,
@@ -31,7 +30,7 @@ namespace ArxisStudio;
 /// </example>
 [TemplatePart("PART_Border", typeof(Border))]
 [PseudoClasses(":selected", ":dragging", ":resizing")]
-public class DesignEditorItem : ContentControl, ISelectable
+public class DesignEditorItem : SurfaceItem, ISelectable
 {
     #region Fields
     private readonly Stack<DesignEditorItemState> _states = new();

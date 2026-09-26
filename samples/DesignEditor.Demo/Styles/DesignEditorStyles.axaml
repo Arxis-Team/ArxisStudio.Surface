@@ -1,7 +1,7 @@
 ﻿<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DesignEditor.Demo.ViewModels"
-        xmlns:design="clr-namespace:ArxisStudio;assembly=ArxisStudio.DesignEditor">
+        xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface">
 
     <!--
         ContentMode="Loaded" — экраны написаны как обычная разметка приложения,
@@ -26,7 +26,7 @@
         разворачивает ребёнка внутри штриха, и форма стала бы на два пикселя
         уже, чем в разметке. Цвет рамки берётся из BorderBrush контейнера.
     -->
-    <Style Selector="design|DesignEditorItem" x:DataType="vm:DesignItemViewModel">
+    <Style Selector="surface|DesignEditorItem" x:DataType="vm:DesignItemViewModel">
         <Setter Property="ContentMode" Value="Loaded" />
         <Setter Property="Background" Value="#4A5A73" />
         <Setter Property="BorderBrush" Value="#5A6B85" />

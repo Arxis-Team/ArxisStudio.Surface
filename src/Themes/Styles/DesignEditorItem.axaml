@@ -1,12 +1,12 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:arxisStudio="clr-namespace:ArxisStudio">
+                    xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner">
 
     <!--
         DesignEditorItem больше не рисует selection frame.
         Его тема отвечает только за content host, hover feedback и toolbar host.
     -->
-    <ControlTheme x:Key="{x:Type arxisStudio:DesignEditorItem}" TargetType="arxisStudio:DesignEditorItem">
+    <ControlTheme x:Key="{x:Type uidesigner:DesignEditorItem}" TargetType="uidesigner:DesignEditorItem">
         <Setter Property="Background" Value="Transparent" />
 
         <Setter Property="BorderBrush" Value="{DynamicResource DesignEditorItem.BorderBrush}" />

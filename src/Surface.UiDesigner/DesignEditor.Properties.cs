@@ -23,9 +23,8 @@ using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Свойства зависимостей, их обёртки и публичные события.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

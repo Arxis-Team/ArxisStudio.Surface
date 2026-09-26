@@ -4,9 +4,8 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Utilities;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Design-time группы: пометка на контролах, а не узел дерева.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

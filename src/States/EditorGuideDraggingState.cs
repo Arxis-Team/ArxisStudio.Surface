@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Input;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.States;
 

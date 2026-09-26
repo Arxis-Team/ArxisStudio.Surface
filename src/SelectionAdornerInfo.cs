@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 

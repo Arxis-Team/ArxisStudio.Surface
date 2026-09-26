@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.VisualTree;
 using ArxisStudio.Controls;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.States;
 

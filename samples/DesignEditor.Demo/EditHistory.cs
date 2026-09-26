@@ -24,11 +24,11 @@ namespace DesignEditor.Demo;
 /// </remarks>
 public sealed class EditHistory
 {
-    private readonly ArxisStudio.DesignEditor _editor;
+    private readonly ArxisStudio.Surface.UiDesigner.DesignEditor _editor;
     private readonly Stack<HistoryEntry> _undo = new();
     private readonly Stack<HistoryEntry> _redo = new();
 
-    public EditHistory(ArxisStudio.DesignEditor editor)
+    public EditHistory(ArxisStudio.Surface.UiDesigner.DesignEditor editor)
     {
         _editor = editor;
         _editor.EditCompleted += OnEditCompleted;

@@ -23,7 +23,7 @@ using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Пользовательские направляющие: источник, притяжение к ним и жест перемещения.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

@@ -1,6 +1,5 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:ArxisStudio"
                     xmlns:controls="clr-namespace:ArxisStudio.Controls"
                     xmlns:surface="clr-namespace:ArxisStudio.Surface"
                     xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner">
@@ -16,7 +15,7 @@
         <Setter Property="IsHitTestVisible" Value="False"/>
     </ControlTheme>
 
-    <ControlTheme x:Key="{x:Type local:DesignEditor}" TargetType="local:DesignEditor">
+    <ControlTheme x:Key="{x:Type uidesigner:DesignEditor}" TargetType="uidesigner:DesignEditor">
         <Setter Property="Background" Value="{DynamicResource DesignEditor.BackgroundBrush}" />
         <Setter Property="ClipToBounds" Value="True" />
         <Setter Property="SelectionRectangleStyle" Value="{StaticResource SelectionRectangleStyle}" />
@@ -45,7 +44,7 @@
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <uidesigner:DesignSurface Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=local:DesignEditor}}" />
+                                        <uidesigner:DesignSurface Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=uidesigner:DesignEditor}}" />
                                     </ItemsPanelTemplate>
                                 </ItemsPresenter.ItemsPanel>
                             </ItemsPresenter>

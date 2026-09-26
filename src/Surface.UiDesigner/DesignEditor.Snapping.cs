@@ -22,7 +22,7 @@ using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Привязка к сетке и направляющие выравнивания.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

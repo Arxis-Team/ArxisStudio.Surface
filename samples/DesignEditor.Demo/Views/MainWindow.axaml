@@ -4,6 +4,7 @@
         xmlns:screens="using:DesignEditor.Demo.Views.Screens"
         xmlns:views="using:DesignEditor.Demo.Views"
         xmlns:arxisStudio="clr-namespace:ArxisStudio;assembly=ArxisStudio.DesignEditor"
+        xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
         xmlns:arxisControls="clr-namespace:ArxisStudio.Controls;assembly=ArxisStudio.DesignEditor"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -85,7 +86,7 @@
                                    Editor="{Binding #Editor}"
                                    IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />
 
-        <arxisStudio:DesignEditor Grid.Row="1" Grid.Column="2"
+        <surface:DesignEditor Grid.Row="1" Grid.Column="2"
                                  x:Name="Editor"
                                  ItemsSource="{Binding Elements}"
                                  SelectedItems="{Binding SelectedElements}"
@@ -93,7 +94,7 @@
                                  Guides="{Binding Guides}"
                                  ShowGuides="False"
                                  ViewportZoom="{Binding Zoom, Mode=TwoWay}">
-            <arxisStudio:DesignEditor.InputGestures>
+            <surface:DesignEditor.InputGestures>
                 <arxisStudio:DesignEditorInputGestures PanButton="Middle"
                                                        PanModifiers="None"
                                                        MarqueeButton="Left"
@@ -101,12 +102,12 @@
                                                        ZoomModifiers="None"
                                                        ContainerInteractionModifiers="Control"
                                                        AdditiveSelectionModifiers="Shift" />
-            </arxisStudio:DesignEditor.InputGestures>
-            <arxisStudio:DesignEditor.InteractionOptions>
+            </surface:DesignEditor.InputGestures>
+            <surface:DesignEditor.InteractionOptions>
                 <arxisStudio:DesignEditorInteractionOptions ZoomStep="1.1"
                                                            DragStartThreshold="3"
                                                            ResizeMinSize="10" />
-            </arxisStudio:DesignEditor.InteractionOptions>
+            </surface:DesignEditor.InteractionOptions>
 
             <!--
                 Курсоры жестов. Значения здесь совпадают с библиотечными: блок стоит
@@ -114,7 +115,7 @@
                 изменения размера и линейки задаются иначе — ресурсами темы: у них
                 есть свой элемент под указателем.
             -->
-            <arxisStudio:DesignEditor.Cursors>
+            <surface:DesignEditor.Cursors>
                 <arxisStudio:DesignEditorCursors Move="SizeAll"
                                                  Blocked="No"
                                                  Pan="Hand"
@@ -122,9 +123,9 @@
                                                  Reorder="DragMove"
                                                  GuideHorizontal="SizeNorthSouth"
                                                  GuideVertical="SizeWestEast" />
-            </arxisStudio:DesignEditor.Cursors>
+            </surface:DesignEditor.Cursors>
 
-            <arxisStudio:DesignEditor.DataTemplates>
+            <surface:DesignEditor.DataTemplates>
                 <DataTemplate DataType="{x:Type vm:HomeScreenViewModel}">
                     <screens:HomeScreenView />
                 </DataTemplate>
@@ -144,9 +145,9 @@
                 <DataTemplate DataType="{x:Type vm:ComponentLibraryViewModel}">
                     <screens:ComponentLibraryView />
                 </DataTemplate>
-            </arxisStudio:DesignEditor.DataTemplates>
+            </surface:DesignEditor.DataTemplates>
 
-        </arxisStudio:DesignEditor>
+        </surface:DesignEditor>
         </Grid>
 
         <Border Grid.Row="0"

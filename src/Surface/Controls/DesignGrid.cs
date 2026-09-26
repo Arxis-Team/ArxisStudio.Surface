@@ -24,8 +24,8 @@ namespace ArxisStudio.Surface;
 /// </description></item>
 /// </list>
 /// <para>
-/// Положение и масштаб приходят из <see cref="DesignEditor.ViewportLocation"/> и
-/// <see cref="DesignEditor.ViewportZoom"/>. Собственной трансформации у контрола нет:
+/// Положение и масштаб приходят из viewport поверхности (<c>ViewportLocation</c> и
+/// <c>ViewportZoom</c>). Собственной трансформации у контрола нет:
 /// он рисует в экранных координатах, пересчитывая мировые сам.
 /// </para>
 /// </remarks>

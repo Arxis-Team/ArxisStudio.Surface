@@ -50,7 +50,6 @@ public class LayerDependencyTests
         "ArxisStudio.DesignEditCompletedEventArgs",
         "ArxisStudio.DesignEditKind",
         "ArxisStudio.DesignEditScope",
-        "ArxisStudio.DesignEditor",
         "ArxisStudio.DesignEditorContextAction",
         "ArxisStudio.DesignEditorContextRequest",
         "ArxisStudio.DesignEditorContextRequestedEventArgs",
@@ -62,7 +61,6 @@ public class LayerDependencyTests
         "ArxisStudio.DesignEditorHistoryRequestedEventArgs",
         "ArxisStudio.DesignEditorInputGestures",
         "ArxisStudio.DesignEditorInteractionOptions",
-        "ArxisStudio.DesignEditorItem",
         "ArxisStudio.DesignEditorPointerButton",
         "ArxisStudio.DesignGeometryChange",
         "ArxisStudio.DesignOrderChange",
@@ -90,7 +88,7 @@ public class LayerDependencyTests
         "ArxisStudio.States.ItemResizingState",
     ];
 
-    private static Assembly Library => typeof(ArxisStudio.DesignEditor).Assembly;
+    private static Assembly Library => typeof(ArxisStudio.Surface.UiDesigner.DesignEditor).Assembly;
 
     [Fact]
     public void Layers_Reference_Only_Downwards()

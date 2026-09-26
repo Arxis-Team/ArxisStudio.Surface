@@ -22,7 +22,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
     private static readonly Dictionary<Control, InteractionPolicySnapshot> LockedTargets = new();
 
     public ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-        global::ArxisStudio.DesignEditor editor,
+        global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
         DesignEditorContextRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -38,7 +38,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         return ValueTask.FromResult(actions);
     }
 
-    private static IReadOnlyList<DesignEditorContextAction> CreateSurfaceActions(global::ArxisStudio.DesignEditor editor)
+    private static IReadOnlyList<DesignEditorContextAction> CreateSurfaceActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
     {
         return new[]
         {
@@ -51,7 +51,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
     }
 
     private static IReadOnlyList<DesignEditorContextAction> CreateContainerActions(
-        global::ArxisStudio.DesignEditor editor,
+        global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
         DesignEditorContextRequest request)
     {
         var hasTarget = request.Target != null;
@@ -82,7 +82,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
     }
 
     private static IReadOnlyList<DesignEditorContextAction> CreateNestedActions(
-        global::ArxisStudio.DesignEditor editor,
+        global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
         DesignEditorContextRequest request)
     {
         var nestedTarget = request.Target?.Target;
@@ -125,7 +125,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         };
     }
 
-    private static IReadOnlyList<DesignEditorContextAction> CreateSelectionActions(global::ArxisStudio.DesignEditor editor)
+    private static IReadOnlyList<DesignEditorContextAction> CreateSelectionActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
     {
         return new[]
         {
@@ -164,7 +164,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         };
     }
 
-    private static void AddElement(global::ArxisStudio.DesignEditor editor, DesignItemViewModel element)
+    private static void AddElement(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignItemViewModel element)
     {
         if (editor.DataContext is not MainWindowViewModel viewModel)
             return;
@@ -172,7 +172,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         viewModel.Elements.Add(element);
     }
 
-    private static void DeleteTarget(global::ArxisStudio.DesignEditor editor, DesignEditorContextRequest request)
+    private static void DeleteTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignEditorContextRequest request)
     {
         if (editor.DataContext is not MainWindowViewModel viewModel || request.Target == null)
             return;
@@ -181,13 +181,13 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
             viewModel.Elements.Remove(element);
     }
 
-    private static void CenterTarget(global::ArxisStudio.DesignEditor editor, DesignEditorContextRequest request)
+    private static void CenterTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignEditorContextRequest request)
     {
         if (request.Target?.Container is { } container)
             editor.CenterOnItem(container);
     }
 
-    private static void FitTarget(global::ArxisStudio.DesignEditor editor, DesignEditorContextRequest request)
+    private static void FitTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignEditorContextRequest request)
     {
         if (request.Target?.Container is { } container)
             editor.FitToView(container);

@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives.PopupPositioning;
 using Avalonia.Input;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio;
 

@@ -18,12 +18,11 @@ using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
 using ArxisStudio.Controls;
-using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.States;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.UiDesigner;
 
 // Пересборка состояния оверлея выделения.
 // Часть DesignEditor; общее описание типа — в DesignEditor.cs.

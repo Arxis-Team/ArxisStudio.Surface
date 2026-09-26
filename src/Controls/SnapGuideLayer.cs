@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Controls;
 

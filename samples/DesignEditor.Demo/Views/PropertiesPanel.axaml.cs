@@ -10,7 +10,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using ArxisStudio;
 using DesignEditor.Demo.ViewModels;
-using Editor = ArxisStudio.DesignEditor;
+using Editor = ArxisStudio.Surface.UiDesigner.DesignEditor;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
 

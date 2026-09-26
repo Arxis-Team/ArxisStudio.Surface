@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using ArxisStudio;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ArxisStudio.Surface.UiDesigner;
 
 namespace DesignEditor.Demo.ViewModels;
 

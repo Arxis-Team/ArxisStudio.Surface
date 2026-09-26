@@ -7,7 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using ArxisStudio;
 using DesignEditor.Demo.ViewModels;
-using Editor = ArxisStudio.DesignEditor;
+using Editor = ArxisStudio.Surface.UiDesigner.DesignEditor;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace DesignEditor.Demo.Views;

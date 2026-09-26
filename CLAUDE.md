@@ -121,7 +121,7 @@ dotnet pack ArxisStudio.DesignEditor.sln -c Release -o artifacts
 
 ### Где что лежит
 
-`DesignEditor` разбит на `partial`-файлы по темам. Ядро — `src/DesignEditor.cs`: константы, поля, оба конструктора, переопределения контейнеров и `OnApplyTemplate`, то есть то, чем не владеет ни одна тема. Остальное:
+`DesignEditor` разбит на `partial`-файлы по темам; все они лежат в `src/Surface.UiDesigner/` и по мере разделения на слои (раздел «Слои») переезжают в `SurfaceView` и службы инструментов. Ядро — `DesignEditor.cs`: константы, поля, оба конструктора, переопределения контейнеров и `OnApplyTemplate`, то есть то, чем не владеет ни одна тема. Остальное:
 
 | Файл | О чём |
 | --- | --- |
