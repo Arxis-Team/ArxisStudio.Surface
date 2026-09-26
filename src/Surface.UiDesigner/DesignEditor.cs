@@ -105,10 +105,6 @@ public partial class DesignEditor : SurfaceView
         AddService(_snap);
         AddService(new UserGuideService(this));
 
-        // Положение указателя нужно изменению размера, а ручка о нём не сообщает.
-        // Туннель и handledEventsToo: во время жеста указатель захвачен ручкой,
-        // и она помечает движение обработанным.
-        AddHandler(PointerMovedEvent, OnTrackPointer, RoutingStrategies.Tunnel, handledEventsToo: true);
         SelectionMode = SelectionMode.Multiple;
 
         // Позицию target'а знает его панель, а не ядро: стратегия размещения решает,

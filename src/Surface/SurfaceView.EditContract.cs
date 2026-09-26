@@ -347,4 +347,80 @@ public partial class SurfaceView
     /// Отбрасывает единицу редактирования, не публикуя изменения.
     /// </summary>
     private protected void CancelEdit() => _activeEdit = null;
+
+    /// <summary>
+    /// Возвращает прямоугольник, за который target не должен выходить при изменении размера.
+    /// </summary>
+    /// <remarks>
+    /// Границей выбран владеющий <see cref="SurfaceItem"/>, а не прямой родитель.
+    /// Панель, которая растёт по содержимому, границей быть не может: ограничивать
+    /// ребёнка её же высотой — рассуждение по кругу. Форма же всегда имеет размер,
+    /// и правило формулируется одной фразой: содержимое не выходит за свой контейнер.
+    /// <para>
+    /// У контейнера верхнего уровня владельца нет, поэтому его размер не ограничен —
+    /// он лежит на бесконечном холсте.
+    /// </para>
+    /// </remarks>
+    internal bool TryGetContainmentBounds(Control target, out Rect bounds)
+    {
+        bounds = default;
+
+        if (!InteractionOptions.IsResizeContainedToParent)
+            return false;
+
+        var host = FindSurfaceHost(target);
+        return host != null && Geometry.TryGetBounds(host, out bounds);
+    }
+
+    /// <summary>
+    /// Точка двигающегося края: угол для диагоналей, край для сторон.
+    /// </summary>
+    /// <remarks>
+    /// У односторонних направлений вторая координата в арифметику не входит, поэтому
+    /// берётся верхний левый угол — лишь бы согласованно с местом, где считают поправку.
+    /// </remarks>
+    internal static Point MovingEdge(ResizeDirection direction, Rect bounds)
+    {
+        var x = direction switch
+        {
+            ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight => bounds.Right,
+            _ => bounds.X
+        };
+
+        var y = direction switch
+        {
+            ResizeDirection.Bottom or ResizeDirection.BottomLeft or ResizeDirection.BottomRight => bounds.Bottom,
+            _ => bounds.Y
+        };
+
+        return new Point(x, y);
+    }
+
+    /// <summary>
+    /// Отдаёт положение указателя, если жест вправе им пользоваться.
+    /// </summary>
+    /// <param name="current">Последнее движение, какое видел редактор.</param>
+    /// <param name="grab">Движение, на котором жест начался.</param>
+    /// <param name="world">Положение в мировых координатах.</param>
+    /// <returns><see langword="true"/>, если то же устройство двинулось после начала жеста.</returns>
+    /// <remarks>
+    /// Два условия, и оба нужны. <b>То же устройство</b> — иначе перо, зависшее над
+    /// холстом, пока мышь тянет ручку, увело бы край к перу. <b>После начала жеста</b> —
+    /// иначе снимок, оставшийся от прошлого раза, выдавался бы за движение внутри
+    /// текущего, и жест, поднятый программно, получал бы нулевую поправку вместо своей
+    /// дельты. Обе ошибки уже были сделаны и обе молчаливы.
+    /// </remarks>
+    internal static bool TryGetGesturePointer(PointerSample? current, PointerSample? grab, out Point world)
+    {
+        world = default;
+
+        if (current is not { } now || grab is not { } start)
+            return false;
+
+        if (now.PointerId != start.PointerId || now.MoveCount <= start.MoveCount)
+            return false;
+
+        world = now.World;
+        return true;
+    }
 }

@@ -1,11 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
-using ArxisStudio.Surface;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface.Editing;
 
 internal sealed class GroupResizeOperation
     : IInteractionOperation
@@ -36,7 +34,7 @@ internal sealed class GroupResizeOperation
         _grabSample = pointer;
 
         if (pointer is { } sample)
-            _grabOffset = sample.World - DesignEditor.MovingEdge(direction, initialBounds);
+            _grabOffset = sample.World - SurfaceView.MovingEdge(direction, initialBounds);
     }
 
 
@@ -46,20 +44,20 @@ internal sealed class GroupResizeOperation
     /// </summary>
     public Control? SourceTarget => _targets.Count > 0 ? _targets[0].Target : null;
 
-    public void Update(DesignEditor editor, Vector worldDelta)
+    public void Update(SurfaceView editor, Vector worldDelta)
     {
         // Дельта считается от указателя по той же причине, что и у одиночного resize:
         // ручка отдаёт смещение относительно себя, и приращённым оно бывает лишь пока
         // между движениями проходит layout.
-        if (DesignEditor.TryGetGesturePointer(editor.PointerSample, _grabSample, out var pointer))
-            worldDelta = (pointer - _grabOffset) - DesignEditor.MovingEdge(_direction, _currentBounds);
+        if (SurfaceView.TryGetGesturePointer(editor.PointerSample, _grabSample, out var pointer))
+            worldDelta = (pointer - _grabOffset) - SurfaceView.MovingEdge(_direction, _currentBounds);
 
         var nextBounds = CalculateResizedBounds(_currentBounds, _direction, worldDelta, _minSize);
 
         // Для группы привязывается рамка целиком: привязка каждого target'а
         // по отдельности разрушила бы пропорции внутри группы. Это касается
         // и направляющих — линия ловит рамку выделения, а не отдельный контрол.
-        if (editor.CanSnapResizeEdge(editor.LastInputModifiers))
+        if (editor.GetService<SnapService>()?.CanSnapEdge(editor.LastInputModifiers) == true)
             nextBounds = SnapBounds(editor, nextBounds, _direction, _currentBounds, _minSize);
 
         // Ограничение по форме — тоже над рамкой целиком, по тем же причинам,
@@ -72,7 +70,7 @@ internal sealed class GroupResizeOperation
         _currentBounds = nextBounds;
 
         // Линии — по применённой рамке: край мог упереться в границу формы.
-        editor.PublishResizeGuides(nextBounds);
+        editor.GetService<SnapService>()?.PublishApplied(nextBounds);
 
         // Масштаб и позиции считаются от ИСХОДНОЙ рамки, иначе округления
         // копились бы от кадра к кадру и группа расползалась.
@@ -104,7 +102,7 @@ internal sealed class GroupResizeOperation
         }
     }
 
-    public void Complete(DesignEditor editor)
+    public void Complete(SurfaceView editor)
     {
     }
 
@@ -193,7 +191,7 @@ internal sealed class GroupResizeOperation
     /// <summary>
     /// Приводит к направляющим и сетке те края рамки группы, которые тянет пользователь.
     /// </summary>
-    private static Rect SnapBounds(DesignEditor editor, Rect bounds, ResizeDirection direction, Rect initialBounds, double minSize)
+    private static Rect SnapBounds(SurfaceView editor, Rect bounds, ResizeDirection direction, Rect initialBounds, double minSize)
     {
         var modifiers = editor.LastInputModifiers;
         var left = bounds.X;
@@ -202,14 +200,14 @@ internal sealed class GroupResizeOperation
         var bottom = bounds.Bottom;
 
         if (direction is ResizeDirection.Right or ResizeDirection.TopRight or ResizeDirection.BottomRight)
-            right = editor.ResolveResizeEdge(right, bounds, xAxis: true, farEdge: true, modifiers);
+            right = ResolveEdge(editor, right, bounds, xAxis: true, farEdge: true, modifiers);
         else if (direction is ResizeDirection.Left or ResizeDirection.TopLeft or ResizeDirection.BottomLeft)
-            left = editor.ResolveResizeEdge(left, bounds, xAxis: true, farEdge: false, modifiers);
+            left = ResolveEdge(editor, left, bounds, xAxis: true, farEdge: false, modifiers);
 
         if (direction is ResizeDirection.Bottom or ResizeDirection.BottomLeft or ResizeDirection.BottomRight)
-            bottom = editor.ResolveResizeEdge(bottom, bounds, xAxis: false, farEdge: true, modifiers);
+            bottom = ResolveEdge(editor, bottom, bounds, xAxis: false, farEdge: true, modifiers);
         else if (direction is ResizeDirection.Top or ResizeDirection.TopLeft or ResizeDirection.TopRight)
-            top = editor.ResolveResizeEdge(top, bounds, xAxis: false, farEdge: false, modifiers);
+            top = ResolveEdge(editor, top, bounds, xAxis: false, farEdge: false, modifiers);
 
         var width = Math.Max(minSize, right - left);
         var height = Math.Max(minSize, bottom - top);
@@ -283,7 +281,14 @@ internal sealed class GroupResizeOperation
 
         return new Rect(newX, newY, newWidth, newHeight);
     }
+
+    // Край ставит служба привязки поверхности; без неё край остаётся, где его оставил жест.
+    private static double ResolveEdge(SurfaceView editor, double edge, Rect bounds, bool xAxis, bool farEdge, Avalonia.Input.KeyModifiers modifiers)
+        => editor.GetService<SnapService>() is { } snap
+            ? snap.ResolveEdge(edge, bounds, xAxis, farEdge, modifiers)
+            : edge;
 }
+
 
 internal readonly struct GroupResizeTarget
 {

@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
-using ArxisStudio.Surface.UiDesigner;
 
-namespace ArxisStudio;
+namespace ArxisStudio.Surface;
 
 internal sealed class GroupDragOperation
     : IInteractionOperation
@@ -12,7 +11,7 @@ internal sealed class GroupDragOperation
     private Vector _accumulatedDelta;
 
     private GroupDragOperation(
-        DesignEditorItem sourceContainer,
+        SurfaceItem sourceContainer,
         Control sourceTarget,
         IReadOnlyList<GroupDragTarget> targets,
         Rect frame,
@@ -26,7 +25,7 @@ internal sealed class GroupDragOperation
         FrameOffset = frameOffset;
     }
 
-    public DesignEditorItem SourceContainer { get; }
+    public SurfaceItem SourceContainer { get; }
     public Control SourceTarget { get; }
 
     /// <summary>
@@ -48,7 +47,7 @@ internal sealed class GroupDragOperation
     /// </remarks>
     public Vector FrameOffset { get; }
 
-    public static GroupDragOperation? TryCreate(DesignEditor editor, DesignEditorItem sourceContainer, Control sourceTarget)
+    public static GroupDragOperation? TryCreate(SurfaceView editor, SurfaceItem sourceContainer, Control sourceTarget)
     {
         var targets = new List<GroupDragTarget>();
         var items = editor.SelectedItems;
@@ -57,8 +56,8 @@ internal sealed class GroupDragOperation
 
         foreach (var item in items)
         {
-            var container = editor.ContainerFromItem(item) as DesignEditorItem;
-            if (container == null && item is DesignEditorItem directItem)
+            var container = editor.ContainerFromItem(item) as SurfaceItem;
+            if (container == null && item is SurfaceItem directItem)
                 container = directItem;
 
             if (container == null || !container.IsDraggable)
@@ -68,7 +67,7 @@ internal sealed class GroupDragOperation
             {
                 if (ReferenceEquals(container, sourceContainer) && ReferenceEquals(target, sourceTarget))
                     continue;
-                if (editor.GetEffectiveMovePolicy(target) == ArxisStudio.Surface.MovePolicy.None)
+                if (editor.GetEffectiveMovePolicy(target) == MovePolicy.None)
                     continue;
 
                 targets.Add(new GroupDragTarget(target, editor.GetDesignPosition(target)));
@@ -78,25 +77,25 @@ internal sealed class GroupDragOperation
         if (targets.Count == 0)
             return null;
 
-        if (!editor.TryGetDesignBounds(sourceTarget, out var frame))
+        if (!editor.Geometry.TryGetBounds(sourceTarget, out var frame))
             return null;
 
         var sourceOrigin = frame.Position;
         for (var i = 0; i < targets.Count; i++)
         {
-            if (editor.TryGetDesignBounds(targets[i].Target, out var bounds))
+            if (editor.Geometry.TryGetBounds(targets[i].Target, out var bounds))
                 frame = frame.Union(bounds);
         }
 
         return new GroupDragOperation(sourceContainer, sourceTarget, targets, frame, frame.Position - sourceOrigin);
     }
 
-    public bool CanHandle(DesignEditorItem sourceContainer)
+    public bool CanHandle(SurfaceItem sourceContainer)
     {
         return ReferenceEquals(sourceContainer, SourceContainer);
     }
 
-    public void Update(DesignEditor editor, Vector frameDelta)
+    public void Update(SurfaceView editor, Vector frameDelta)
     {
         _accumulatedDelta += frameDelta;
 
@@ -108,7 +107,7 @@ internal sealed class GroupDragOperation
         }
     }
 
-    public void Complete(DesignEditor editor)
+    public void Complete(SurfaceView editor)
     {
     }
 }

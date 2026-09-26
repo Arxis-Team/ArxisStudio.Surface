@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Selection;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 using ArxisStudio.Surface.States;
@@ -44,6 +45,11 @@ public partial class SurfaceView : SelectingItemsControl
         AttachInputGestures(_inputGestures);
 
         _states.Push(new EditorIdleState(this));
+
+        // Положение указателя нужно изменению размера, а ручка о нём не сообщает.
+        // Туннель и handledEventsToo: во время жеста указатель захвачен ручкой,
+        // и она помечает движение обработанным.
+        AddHandler(PointerMovedEvent, OnTrackPointer, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         var contentGroup = new TransformGroup();
         contentGroup.Children.Add(_scaleTransform);

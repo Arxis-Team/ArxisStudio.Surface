@@ -7,6 +7,7 @@ using ArxisStudio.States;
 using Xunit;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.UiDesigner;
+using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Tests;
 

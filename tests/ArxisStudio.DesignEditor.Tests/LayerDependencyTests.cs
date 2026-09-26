@@ -35,11 +35,6 @@ public class LayerDependencyTests
     /// </summary>
     private static readonly string[] Legacy =
     [
-        "ArxisStudio.GroupDragOperation",
-        "ArxisStudio.GroupDragTarget",
-        "ArxisStudio.GroupResizeOperation",
-        "ArxisStudio.GroupResizeTarget",
-        "ArxisStudio.IInteractionOperation",
         "ArxisStudio.States.DesignEditorItemState",
         "ArxisStudio.States.ItemDraggingState",
         "ArxisStudio.States.ItemIdleState",
