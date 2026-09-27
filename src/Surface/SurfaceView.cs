@@ -116,9 +116,16 @@ public partial class SurfaceView : SelectingItemsControl
     internal void OnContentChanged() => ContentChanged?.Invoke(this, EventArgs.Empty);
 
     /// <summary>
-    /// Прямоугольники контейнеров верхнего уровня в мировых координатах.
+    /// Прямоугольники элементов верхнего уровня в мировых координатах.
     /// </summary>
-    internal IEnumerable<Rect> EnumerateItemBounds()
+    /// <remarks>
+    /// У виртуализирующей панели — из её геометрии, и у свёрнутых тоже: миникарта показывает холст
+    /// целиком, а не то, что сейчас развёрнуто.
+    /// </remarks>
+    internal IEnumerable<Rect> EnumerateItemBounds() =>
+        ItemsPanelRoot is VirtualizingSurfacePanel panel ? panel.EnumerateItemBounds() : EnumerateContainerBounds();
+
+    private IEnumerable<Rect> EnumerateContainerBounds()
     {
         for (var i = 0; i < ItemCount; i++)
         {
@@ -228,6 +235,28 @@ public partial class SurfaceView : SelectingItemsControl
     }
 
     /// <summary>
+    /// Идентификатор свойства предполагаемого размера элемента.
+    /// </summary>
+    public static readonly StyledProperty<Size> EstimatedItemSizeProperty =
+        AvaloniaProperty.Register<SurfaceView, Size>(nameof(EstimatedItemSize), new Size(100, 60));
+
+    /// <summary>
+    /// Получает или задает размер элемента, контейнер которого ещё ни разу не мерялся.
+    /// </summary>
+    /// <remarks>
+    /// Нужен виртуализирующей панели, то есть когда задана <see cref="ItemLocationBinding"/>: элемент
+    /// без контейнера известен ей положением, а размер у него появляется после первого показа. До того
+    /// по этому размеру решается, пересекает ли элемент видимую область, и с ним элемент входит в охват
+    /// и миникарту. Ставить его близким к типичному элементу: меньший — элемент у края развернётся
+    /// позже, чем станет виден; больший — раньше, чем нужно.
+    /// </remarks>
+    public Size EstimatedItemSize
+    {
+        get => GetValue(EstimatedItemSizeProperty);
+        set => SetValue(EstimatedItemSizeProperty, value);
+    }
+
+    /// <summary>
     /// Даёт контейнеру положение его элемента привязкой <see cref="ItemLocationBinding"/>.
     /// </summary>
     /// <param name="container">Контейнер.</param>
@@ -238,7 +267,30 @@ public partial class SurfaceView : SelectingItemsControl
         base.PrepareContainerForItemOverride(container, item, index);
 
         if (container is SurfaceItem surfaceItem && !ReferenceEquals(container, item) && ItemLocationBinding is { } location)
-            surfaceItem.Bind(SurfaceItem.LocationProperty, location);
+        {
+            surfaceItem.LocationBinding?.Dispose();
+            surfaceItem.LocationBinding = surfaceItem.Bind(SurfaceItem.LocationProperty, location);
+        }
+    }
+
+    /// <summary>
+    /// Снимает у контейнера привязку положения, когда он уходит в пул или удаляется.
+    /// </summary>
+    /// <param name="container">Контейнер.</param>
+    /// <remarks>
+    /// Контейнер в пуле хранит прежний контекст данных, и не снятая привязка продолжала бы двигать его
+    /// вслед прежней модели, а отданный другому элементу — слушать обе. Положение, которое хост поставил
+    /// сам, без <see cref="ItemLocationBinding"/>, не трогается.
+    /// </remarks>
+    protected override void ClearContainerForItemOverride(Control container)
+    {
+        base.ClearContainerForItemOverride(container);
+
+        if (container is SurfaceItem { LocationBinding: { } binding } item)
+        {
+            binding.Dispose();
+            item.LocationBinding = null;
+        }
     }
 
     /// <summary>

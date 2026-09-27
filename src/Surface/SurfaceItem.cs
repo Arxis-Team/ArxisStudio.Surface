@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
@@ -61,6 +62,16 @@ public class SurfaceItem : ContentControl, ISelectable
         get => GetValue(LocationProperty);
         set => SetValue(LocationProperty, value);
     }
+
+    /// <summary>
+    /// Привязка положения, которую контейнеру поставила поверхность (<see cref="SurfaceView.ItemLocationBinding"/>).
+    /// </summary>
+    /// <remarks>
+    /// Снимается её освобождением: <c>ClearValue</c> в Avalonia 12 снимает значение, но не локальную
+    /// привязку, и её выражение, подписанное на прежнюю модель, писало бы в контейнер и после того, как
+    /// он ушёл в пул или достался другому элементу.
+    /// </remarks>
+    internal IDisposable? LocationBinding { get; set; }
 
     /// <summary>
     /// Идентификатор свойства, определяющего возможность перетаскивания элемента.

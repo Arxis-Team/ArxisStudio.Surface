@@ -32,7 +32,7 @@
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <surface:SurfacePanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=surface:SurfaceView}}" />
+                                        <surface:VirtualizingSurfacePanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=surface:SurfaceView}}" />
                                     </ItemsPanelTemplate>
                                 </ItemsPresenter.ItemsPanel>
                             </ItemsPresenter>

@@ -270,13 +270,10 @@ public partial class SurfaceView
 
         // Выбор всего работает на уровне контейнеров: это единица документа.
         _selectedTargets.Clear();
-        if (Presenter?.Panel != null)
+        foreach (var child in GetRealizedContainers())
         {
-            foreach (var child in Presenter.Panel.Children)
-            {
-                if (child is SurfaceItem container)
-                    AddSelectedTarget(container);
-            }
+            if (child is SurfaceItem container)
+                AddSelectedTarget(container);
         }
 
         RefreshSelectionOverlay();

@@ -477,8 +477,8 @@ public class NodeGraphCostProbeTests
         Assert.Equal(rebuilt + 2, map.ContentRebuilds);
     }
 
-    private static SurfacePanel NodePanel(NodeStand stand) =>
-        stand.Editor.GetVisualDescendants().OfType<SurfacePanel>().Single();
+    private static VirtualizingSurfacePanel NodePanel(NodeStand stand) =>
+        stand.Editor.GetVisualDescendants().OfType<VirtualizingSurfacePanel>().Single();
 
     private static LinkPanel LinkPanelOf(NodeStand stand) =>
         stand.Editor.GetVisualDescendants().OfType<LinkPanel>().Single();

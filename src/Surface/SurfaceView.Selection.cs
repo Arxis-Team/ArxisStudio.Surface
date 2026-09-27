@@ -169,7 +169,7 @@ public partial class SurfaceView
     /// </param>
     internal void CommitSelection(Rect bounds, bool isCtrlPressed, bool useContainerSelection)
     {
-        if (Presenter?.Panel == null) return;
+        if (ItemsPanelRoot == null) return;
 
         // Владелец определяется итоговым прямоугольником — тем же правилом,
         // по которому во время протяжки обновлялся MarqueeScope.
@@ -211,7 +211,7 @@ public partial class SurfaceView
             }
             else
             {
-                foreach (var child in Presenter.Panel.Children)
+                foreach (var child in GetRealizedContainers())
                 {
                     if (child is not SurfaceItem container)
                         continue;
@@ -1081,10 +1081,9 @@ public partial class SurfaceView
 
     private protected IEnumerable<SurfaceItem> EnumerateContainersCore()
     {
-        if (Presenter?.Panel == null)
-            yield break;
-
-        foreach (var child in Presenter.Panel.Children)
+        // Развёрнутые, а не дети панели: у виртуализирующей среди детей нет свёрнутых, но обходить
+        // надо то, что у элементов есть сейчас, — так же, как у обычной.
+        foreach (var child in GetRealizedContainers())
         {
             if (child is not SurfaceItem container)
                 continue;

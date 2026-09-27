@@ -220,7 +220,11 @@ internals инструментам, дизайнеру интерфейса и �
 | `SurfaceView.Pinch.cs` | масштаб щипком тачпада и пальцами поверх `ZoomAt` |
 | `SurfaceView.Keyboard.cs` | набор клавиатурных команд, их разбор и встроенные команды: история, изменение размера, нюдж, снятие и выбор всего, запрос удаления |
 
-Там же: `SurfacePanel` — панель холста ядра, ставит `SurfaceItem` в его `Location` и считает `Extent`; темы `SurfaceView` и `SurfaceItem` в `Themes/`; `SurfaceItem` со стеком состояний контейнера, состояния в `States/`, `GroupDragOperation`,
+Там же: `VirtualizingSurfacePanel` — панель холста в темах ядра и редактора узлов: ставит
+`SurfaceItem` в его `Location`, считает `Extent` по геометрии всех элементов и с `ItemLocationBinding`
+держит контейнеры только у видимого с запасом (ADR 0007); `ItemLocationReader` читает положение
+элемента без контейнера; `SurfacePanel` — прежняя панель без виртуализации, открытая для чужих
+шаблонов; темы `SurfaceView` и `SurfaceItem` в `Themes/`; `SurfaceItem` со стеком состояний контейнера, состояния в `States/`, `GroupDragOperation`,
 `SurfaceHistory` в `History/`.
 
 Инструменты (`src/Surface.Editing/`): `Snapping/` — `SnapService` и `SurfaceSnapping`; `Guides/` —

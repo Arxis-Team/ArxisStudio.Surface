@@ -310,6 +310,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (direct)
     avalonia CursorsProperty -> Cursors : SurfaceCursors (direct)
     avalonia DpiScaledViewportTransformProperty -> DpiScaledViewportTransform : Transform (styled) = <TransformGroup>
+    avalonia EstimatedItemSizeProperty -> EstimatedItemSize : Size (styled) = 100, 60
     avalonia InputGesturesProperty -> InputGestures : SurfaceInputGestures (direct)
     avalonia InteractionOptionsProperty -> InteractionOptions : SurfaceInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
@@ -350,6 +351,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void CenterOn(Point)
     method Void CenterOn(Rect)
     method Void CenterOnItem(SurfaceItem)
+    method Void ClearContainerForItemOverride(Control)
     method Void FitToView(Rect)
     method Void FitToView(SurfaceItem)
     method Void HandleZoom(PointerWheelEventArgs)
@@ -384,6 +386,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     property Rect ItemsExtent { get; set; }
     property Rect SelectedArea { get; set; }
     property SelectionMode SelectionMode { get; set; }
+    property Size EstimatedItemSize { get; set; }
     property SurfaceCursors Cursors { get; set; }
     property SurfaceInputGestures InputGestures { get; set; }
     property SurfaceInteractionOptions InteractionOptions { get; set; }
@@ -395,3 +398,18 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
 abstract class ArxisStudio.Surface.TargetChange
     ctor .ctor(Control)
     property Control Target { get; }
+class ArxisStudio.Surface.VirtualizingSurfacePanel : VirtualizingPanel
+    avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
+    avalonia RealizationMarginProperty -> RealizationMargin : Double (styled) = 200
+    ctor .ctor()
+    method Control ContainerFromIndex(Int32)
+    method Control ScrollIntoView(Int32)
+    method IEnumerable<Control> GetRealizedContainers()
+    method IInputElement GetControl(NavigationDirection, IInputElement, Boolean)
+    method Int32 IndexFromContainer(Control)
+    method Size ArrangeOverride(Size)
+    method Size MeasureOverride(Size)
+    method Void OnItemsChanged(IReadOnlyList<Object>, NotifyCollectionChangedEventArgs)
+    method Void OnItemsControlChanged(ItemsControl)
+    property Double RealizationMargin { get; set; }
+    property Rect Extent { get; set; }

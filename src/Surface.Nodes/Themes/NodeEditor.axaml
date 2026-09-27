@@ -45,7 +45,7 @@
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <surface:SurfacePanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=nodes:NodeEditor}}" />
+                                        <surface:VirtualizingSurfacePanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=nodes:NodeEditor}}" />
                                     </ItemsPanelTemplate>
                                 </ItemsPresenter.ItemsPanel>
                             </ItemsPresenter>
