@@ -98,6 +98,7 @@ public partial class SurfaceView : SelectingItemsControl
         SetCurrentValue(DpiScaledViewportTransformProperty, dpiGroup);
 
         ItemsView.CollectionChanged += (_, _) => OnContentChanged();
+        WatchSelection(Selection);
     }
 
     /// <summary>
@@ -246,8 +247,8 @@ public partial class SurfaceView : SelectingItemsControl
     /// <remarks>
     /// Нужен виртуализирующей панели, то есть когда задана <see cref="ItemLocationBinding"/>: элемент
     /// без контейнера известен ей положением, а размер у него появляется после первого показа. До того
-    /// по этому размеру решается, пересекает ли элемент видимую область, и с ним элемент входит в охват
-    /// и миникарту. Ставить его близким к типичному элементу: меньший — элемент у края развернётся
+    /// по этому размеру решается, пересекает ли элемент видимую область, и с ним элемент входит в охват,
+    /// миникарту и рамку выделения. Ставить его близким к типичному элементу: меньший — элемент у края развернётся
     /// позже, чем станет виден; больший — раньше, чем нужно.
     /// </remarks>
     public Size EstimatedItemSize

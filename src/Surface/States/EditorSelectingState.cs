@@ -12,6 +12,7 @@ internal class EditorSelectingState : EditorState
 {
     private readonly IPointer _pointer;
     private readonly GestureCursorScope _cursor = new GestureCursorScope();
+    private IDisposable? _realizationHold;
     private Point _startLocationWorld;
 
     /// <summary>
@@ -47,6 +48,10 @@ internal class EditorSelectingState : EditorState
         // направляющих: рамка спрашивает их на каждом кадре, а меняться внутри
         // жеста они не должны, иначе охват обещал бы одно, а применилось другое.
         Editor.BeginContainerSnapshot();
+
+        // Снятое остаётся развёрнутым до конца жеста: автопрокрутка увозит холст, и свёрнутый
+        // контейнер из снимка ушёл бы в пул или достался другому элементу (ADR 0007).
+        _realizationHold = Editor.HoldRealization();
 
         _cursor.Apply(Editor, Editor.Cursors.ResolveMarquee());
 
@@ -85,6 +90,8 @@ internal class EditorSelectingState : EditorState
         // на обычном отпускании: иначе он пережил бы жест и следующее чтение
         // контейнеров пошло бы по устаревшему списку. Exit проходит на обоих путях.
         Editor.EndContainerSnapshot();
+        _realizationHold?.Dispose();
+        _realizationHold = null;
 
         _cursor.Restore();
 

@@ -186,6 +186,22 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         return container;
     }
 
+    /// <summary>
+    /// Разворачивает элементы, чей прямоугольник пересекает <paramref name="bounds"/>.
+    /// </summary>
+    internal void RealizeWithin(Rect bounds)
+    {
+        if (!IsVirtualizing)
+            return;
+
+        SyncSlots(Items);
+        for (var i = 0; i < _slots.Count; i++)
+        {
+            if (!_realized.ContainsKey(i) && bounds.Intersects(BoundsOf(_slots[i])))
+                RealizeNow(i);
+        }
+    }
+
     /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)
     {
@@ -212,12 +228,15 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         {
             var (realize, keep) = Windows(view);
 
-            // Уходят вышедшие из окна с запасом, кроме закреплённых.
+            // Уходят вышедшие из окна с запасом, кроме закреплённых; под удержанием жеста — никто.
             _scratch.Clear();
-            foreach (var pair in _realized)
+            if (!view.IsRealizationHeld)
             {
-                if (!keep.Intersects(BoundsOf(_slots[pair.Key])) && !IsPinned(view, pair.Key, pair.Value))
-                    _scratch.Add(pair);
+                foreach (var pair in _realized)
+                {
+                    if (!keep.Intersects(BoundsOf(_slots[pair.Key])) && !IsPinned(view, pair.Key, pair.Value))
+                        _scratch.Add(pair);
+                }
             }
 
             foreach (var pair in _scratch)

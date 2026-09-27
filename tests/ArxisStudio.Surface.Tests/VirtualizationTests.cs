@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Selection;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Headless;
@@ -302,6 +303,129 @@ public class VirtualizationTests
         stand.View.Focus();
         stand.Pan(new Point(1510, 1000));
         AssertRealizedExactlyWhatIsSeen(stand);
+    }
+
+    [AvaloniaFact]
+    public void A_Collapsed_Item_Selected_By_The_Host_Is_Realized_With_One_Event()
+    {
+        // Индексный слой отмечает выбор только на развёрнутых; свёрнутый обязан получить контейнер
+        // раньше, чем снимок выделения уйдёт наружу, — иначе событий было бы два, и первое без него.
+        var stand = Create();
+        var far = stand.Items.Count - 1;
+        var events = new List<SurfaceSelectionChangedEventArgs>();
+        stand.View.SurfaceSelectionChanged += (_, e) => events.Add(e);
+
+        using (stand.View.Selection.BatchUpdate())
+        {
+            stand.View.Selection.Select(0);
+            stand.View.Selection.Select(far);
+        }
+
+        var selected = Assert.Single(events).NewTargets.Select(t => t.Container).ToList();
+        Assert.Equal(new[] { stand.Container(0), stand.Container(far) }, selected);
+        Assert.Equal(new Rect(stand.Model(far).Location, ItemSize), stand.Container(far)!.Bounds);
+
+        // Одно свёрнутое: развёрнутых среди выбранного нет, и индексный слой не отмечает ничего —
+        // до слоя target'ов выбор доходит только через саму модель выбора.
+        stand.View.Selection.Clear();
+        events.Clear();
+        stand.View.Selection.Select(far - 1);
+
+        Assert.Same(stand.Container(far - 1), Assert.Single(Assert.Single(events).NewTargets).Container);
+    }
+
+    [AvaloniaFact]
+    public void A_Marquee_Selects_The_Collapsed_Items_It_Covers()
+    {
+        var stand = Create();
+        var bounds = new Rect(2000, 1200, 700, 500);
+        var covered = Enumerable.Range(0, stand.Items.Count)
+            .Where(i => bounds.Intersects(new Rect(stand.Model(i).Location, ItemSize)))
+            .ToList();
+        Assert.All(covered, i => Assert.Null(stand.Container(i)));
+
+        stand.View.CommitSelection(bounds, isCtrlPressed: false, useContainerSelection: true);
+
+        Assert.Equal(covered, stand.View.Selection.SelectedIndexes.OrderBy(i => i));
+        Assert.Equal(covered.Count, stand.View.SelectedTargets.Count);
+        Assert.All(covered, i => Assert.NotNull(stand.Container(i)));
+    }
+
+    [AvaloniaFact]
+    public void Select_All_Realizes_Everything_And_Deselecting_Lets_It_Go()
+    {
+        var stand = Create();
+        stand.View.Focus();
+
+        stand.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control);
+
+        Assert.Equal(stand.Items.Count, stand.View.SelectedTargets.Count);
+        Assert.Equal(stand.Items.Count, stand.Panel.RealizedCount);
+        AssertConsistent(stand);
+
+        // Снятый выбор отпускает контейнеры на ближайшей мере, а не на ближайшей панораме. Развёрнуты
+        // были все, поэтому остаются ровно те, кого держит двойной запас.
+        stand.View.Selection.Clear();
+        stand.RunLayout();
+
+        var keep = stand.Visible.Inflate(2 * stand.Panel.RealizationMargin);
+        Assert.All(Enumerable.Range(0, stand.Items.Count), i =>
+            Assert.Equal(keep.Intersects(new Rect(stand.Model(i).Location, ItemSize)), stand.Container(i) != null));
+        AssertConsistent(stand);
+    }
+
+    [AvaloniaFact]
+    public void Select_All_Of_Two_Thousand_Realizes_Them_Without_Recursing()
+    {
+        // Каждый развёрнутый выбранный контейнер отмечает выбор и зовёт пересборку снимка; без
+        // пропуска вложенных вызовов она разворачивала бы следующий, и глубина стека росла бы с числом
+        // свёрнутых выбранных — на двух тысячах процесс падал переполнением стека. «Выбрать всё» —
+        // честная цена: развёрнуто всё, снимок — один.
+        var stand = Create(columns: 50, rows: 40);
+        var events = 0;
+        stand.View.SurfaceSelectionChanged += (_, _) => events++;
+        stand.View.Focus();
+
+        stand.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control);
+
+        Assert.Equal(stand.Items.Count, stand.Panel.RealizedCount);
+        Assert.Equal(stand.Items.Count, stand.View.SelectedTargets.Count);
+        Assert.Equal(1, events);
+    }
+
+    [AvaloniaFact]
+    public void A_Held_Surface_Recycles_Nothing_Until_Released()
+    {
+        var stand = Create();
+        var hold = stand.View.HoldRealization();
+
+        stand.Pan(new Point(1500, 1000));
+        Assert.NotNull(stand.Container(0));
+        AssertConsistent(stand);
+
+        hold.Dispose();
+        stand.RunLayout();
+        AssertRealizedExactlyWhatIsSeen(stand);
+    }
+
+    [AvaloniaFact]
+    public void The_Marquee_Holds_What_It_Took_Until_It_Ends()
+    {
+        // Рамка снимает контейнеры на входе и читает снимок до отпускания; холст, уехавший посреди
+        // жеста, их не сворачивает, а после жеста они уходят на ближайшей мере.
+        var stand = Create();
+        var from = new Point(120, 80);
+        stand.Window.MouseDown(from, MouseButton.Left);
+        stand.Window.MouseMove(from + new Vector(10, 10));
+        Assert.True(stand.View.IsSelecting);
+
+        stand.Pan(new Point(1500, 1000));
+        Assert.NotNull(stand.Container(0));
+
+        stand.Window.MouseUp(from + new Vector(10, 10), MouseButton.Left);
+        stand.RunLayout();
+        Assert.Null(stand.Container(0));
+        AssertConsistent(stand);
     }
 
     [AvaloniaFact]

@@ -211,6 +211,9 @@ public partial class SurfaceView
             }
             else
             {
+                // Рамка набирает и то, что свёрнуто: у выбранного обязан быть контейнер.
+                RealizeWithin(bounds);
+
                 foreach (var child in GetRealizedContainers())
                 {
                     if (child is not SurfaceItem container)

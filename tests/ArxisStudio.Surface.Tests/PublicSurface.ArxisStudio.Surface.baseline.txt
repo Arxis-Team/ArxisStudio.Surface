@@ -364,6 +364,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPointerWheelChanged(PointerWheelEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void PrepareContainerForItemOverride(Control, Object, Int32)
     method Void Reapply(TargetChange)
     method Void Revert(TargetChange)
