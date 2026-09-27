@@ -32,19 +32,19 @@ public partial class DesignEditor
     /// <summary>
     /// Идентификатор свойства пользовательских направляющих.
     /// </summary>
-    public static readonly AttachedProperty<IEnumerable<DesignGuide>?> GuidesProperty =
+    public static readonly AttachedProperty<IEnumerable<SurfaceGuide>?> GuidesProperty =
         SurfaceGuides.GuidesProperty.AddOwner<DesignEditor>();
 
     /// <summary>
     /// Идентификатор свойства направляющей, показываемой во время её перемещения.
     /// </summary>
-    public static readonly AttachedProperty<DesignGuide?> GuidePreviewProperty =
+    public static readonly AttachedProperty<SurfaceGuide?> GuidePreviewProperty =
         SurfaceGuides.GuidePreviewProperty.AddOwner<DesignEditor>();
 
     /// <summary>
     /// Идентификатор свойства снимка пользовательских направляющих.
     /// </summary>
-    public static readonly AttachedProperty<IReadOnlyList<DesignGuide>> UserGuidesProperty =
+    public static readonly AttachedProperty<IReadOnlyList<SurfaceGuide>> UserGuidesProperty =
         SurfaceGuides.UserGuidesProperty.AddOwner<DesignEditor>();
 
     private UserGuideService UserGuides_ => GetService<UserGuideService>()!;
@@ -92,7 +92,7 @@ public partial class DesignEditor
     /// </summary>
     /// <remarks>
     /// Линейка в шаблон редактора не входит — её ставит хост, — поэтому свойство
-    /// не прячет её напрямую, а служит общим выключателем: <see cref="DesignRuler"/>
+    /// не прячет её напрямую, а служит общим выключателем: <see cref="SurfaceRuler"/>
     /// следит за ним у своего <c>Editor</c> так же, как за масштабом и положением.
     /// Одна настройка гасит обе линейки, и хосту не нужно держать свой флаг.
     /// <para>
@@ -118,7 +118,7 @@ public partial class DesignEditor
     /// без переприсваивания свойства.
     /// </para>
     /// </remarks>
-    public IEnumerable<DesignGuide>? Guides
+    public IEnumerable<SurfaceGuide>? Guides
     {
         get => GetValue(GuidesProperty);
         set => SetValue(GuidesProperty, value);
@@ -127,12 +127,12 @@ public partial class DesignEditor
     /// <summary>
     /// Получает направляющую, показываемую во время её перемещения.
     /// </summary>
-    public DesignGuide? GuidePreview => GetValue(GuidePreviewProperty);
+    public SurfaceGuide? GuidePreview => GetValue(GuidePreviewProperty);
 
     /// <summary>
     /// Получает снимок пользовательских направляющих.
     /// </summary>
-    public IReadOnlyList<DesignGuide> UserGuides => GetValue(UserGuidesProperty);
+    public IReadOnlyList<SurfaceGuide> UserGuides => GetValue(UserGuidesProperty);
 
     /// <summary>
     /// Возникает, когда пользователь просит изменить набор направляющих.
@@ -144,7 +144,7 @@ public partial class DesignEditor
     /// Без подписчика жест перемещения направляющей не начинается вовсе.
     /// </para>
     /// </remarks>
-    public event EventHandler<DesignGuideChangeRequestedEventArgs>? GuideChangeRequested
+    public event EventHandler<SurfaceGuideChangeRequestedEventArgs>? GuideChangeRequested
     {
         add => UserGuides_.ChangeRequested += value;
         remove => UserGuides_.ChangeRequested -= value;
@@ -152,14 +152,14 @@ public partial class DesignEditor
 
     internal bool CanRequestGuideChange => UserGuides_.CanRequestChange;
 
-    internal bool TryFindGuideAtPoint(Point viewportPoint, out DesignGuide guide)
+    internal bool TryFindGuideAtPoint(Point viewportPoint, out SurfaceGuide guide)
         => UserGuides_.TryFindGuideAtPoint(viewportPoint, out guide);
 
-    internal double ResolveGuidePosition(Point viewportPoint, DesignGuideOrientation orientation, Avalonia.Input.KeyModifiers modifiers)
+    internal double ResolveGuidePosition(Point viewportPoint, SurfaceGuideOrientation orientation, Avalonia.Input.KeyModifiers modifiers)
         => UserGuides_.ResolvePosition(viewportPoint, orientation, modifiers);
 
-    internal bool RequestGuideChange(DesignGuideChangeKind kind, DesignGuide guide, DesignGuide? original)
+    internal bool RequestGuideChange(SurfaceGuideChangeKind kind, SurfaceGuide guide, SurfaceGuide? original)
         => UserGuides_.RequestChange(kind, guide, original);
 
-    internal void SetGuidePreview(DesignGuide? guide) => UserGuides_.SetPreview(guide);
+    internal void SetGuidePreview(SurfaceGuide? guide) => UserGuides_.SetPreview(guide);
 }

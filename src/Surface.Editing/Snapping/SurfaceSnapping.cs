@@ -24,34 +24,34 @@ public static class SurfaceSnapping
     /// <summary>
     /// Идентификатор свойства линий выравнивания, найденных во время жеста.
     /// </summary>
-    public static readonly AttachedProperty<IReadOnlyList<DesignSnapGuide>> SnapGuidesProperty =
-        AvaloniaProperty.RegisterAttached<AvaloniaObject, IReadOnlyList<DesignSnapGuide>>(
-            "SnapGuides", typeof(SurfaceSnapping), Array.Empty<DesignSnapGuide>());
+    public static readonly AttachedProperty<IReadOnlyList<SurfaceSnapGuide>> SnapGuidesProperty =
+        AvaloniaProperty.RegisterAttached<AvaloniaObject, IReadOnlyList<SurfaceSnapGuide>>(
+            "SnapGuides", typeof(SurfaceSnapping), Array.Empty<SurfaceSnapGuide>());
 
     /// <summary>
     /// Идентификатор свойства подсказок о равных интервалах.
     /// </summary>
-    public static readonly AttachedProperty<IReadOnlyList<DesignSpacingHint>> SpacingHintsProperty =
-        AvaloniaProperty.RegisterAttached<AvaloniaObject, IReadOnlyList<DesignSpacingHint>>(
-            "SpacingHints", typeof(SurfaceSnapping), Array.Empty<DesignSpacingHint>());
+    public static readonly AttachedProperty<IReadOnlyList<SurfaceSpacingHint>> SpacingHintsProperty =
+        AvaloniaProperty.RegisterAttached<AvaloniaObject, IReadOnlyList<SurfaceSpacingHint>>(
+            "SpacingHints", typeof(SurfaceSnapping), Array.Empty<SurfaceSpacingHint>());
 
     /// <summary>
     /// Возвращает линии выравнивания, найденные во время жеста.
     /// </summary>
-    public static IReadOnlyList<DesignSnapGuide> GetSnapGuides(AvaloniaObject target) => target.GetValue(SnapGuidesProperty);
+    public static IReadOnlyList<SurfaceSnapGuide> GetSnapGuides(AvaloniaObject target) => target.GetValue(SnapGuidesProperty);
 
     /// <summary>
     /// Задаёт линии выравнивания. Вызывает служба привязки.
     /// </summary>
-    public static void SetSnapGuides(AvaloniaObject target, IReadOnlyList<DesignSnapGuide> value) => target.SetValue(SnapGuidesProperty, value);
+    public static void SetSnapGuides(AvaloniaObject target, IReadOnlyList<SurfaceSnapGuide> value) => target.SetValue(SnapGuidesProperty, value);
 
     /// <summary>
     /// Возвращает подсказки о равных интервалах.
     /// </summary>
-    public static IReadOnlyList<DesignSpacingHint> GetSpacingHints(AvaloniaObject target) => target.GetValue(SpacingHintsProperty);
+    public static IReadOnlyList<SurfaceSpacingHint> GetSpacingHints(AvaloniaObject target) => target.GetValue(SpacingHintsProperty);
 
     /// <summary>
     /// Задаёт подсказки о равных интервалах. Вызывает служба привязки.
     /// </summary>
-    public static void SetSpacingHints(AvaloniaObject target, IReadOnlyList<DesignSpacingHint> value) => target.SetValue(SpacingHintsProperty, value);
+    public static void SetSpacingHints(AvaloniaObject target, IReadOnlyList<SurfaceSpacingHint> value) => target.SetValue(SpacingHintsProperty, value);
 }

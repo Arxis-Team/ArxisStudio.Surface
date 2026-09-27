@@ -147,11 +147,11 @@ public class MarqueeScopeSnapshotTests
 
         AddNestedContainer(harness);
 
-        DesignEditorContextRequest? seen = null;
+        SurfaceContextRequest? seen = null;
         harness.Editor.ContextMenuResolved += (_, e) => seen = e.Request;
 
         await harness.Editor.RequestContextAsync(
-            DesignEditorContextSource.Programmatic,
+            SurfaceContextSource.Programmatic,
             InsideAddedOnly,
             KeyModifiers.None);
 
@@ -194,11 +194,11 @@ public class MarqueeScopeSnapshotTests
 
         AddNestedContainer(harness);
 
-        DesignEditorContextRequest? seen = null;
+        SurfaceContextRequest? seen = null;
         harness.Editor.ContextMenuResolved += (_, e) => seen = e.Request;
 
         await harness.Editor.RequestContextAsync(
-            DesignEditorContextSource.Programmatic,
+            SurfaceContextSource.Programmatic,
             InsideAddedOnly,
             KeyModifiers.None);
 

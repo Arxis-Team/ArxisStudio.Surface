@@ -27,7 +27,7 @@ public sealed class SurfaceKeyCommands : IReadOnlyList<SurfaceKeyCommand>
 
     /// <summary>
     /// Изменение размера выделения стрелками с
-    /// <see cref="DesignEditorInputGestures.KeyboardResizeModifiers"/> — клавиатурная замена ручкам.
+    /// <see cref="SurfaceInputGestures.KeyboardResizeModifiers"/> — клавиатурная замена ручкам.
     /// </summary>
     public const string Resize = "surface.resize";
 

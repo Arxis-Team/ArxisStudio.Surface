@@ -17,8 +17,8 @@ internal class EditorGuideDraggingState : EditorState
     private readonly UserGuideService _guides;
     private readonly IPointer _pointer;
     private readonly GestureCursorScope _cursor = new GestureCursorScope();
-    private readonly DesignGuide _original;
-    private DesignGuide _current;
+    private readonly SurfaceGuide _original;
+    private SurfaceGuide _current;
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="EditorGuideDraggingState"/>.
@@ -27,7 +27,7 @@ internal class EditorGuideDraggingState : EditorState
     /// <param name="guides">Служба направляющих, которая ведёт набор хоста.</param>
     /// <param name="pointer">Указатель, которым идёт жест.</param>
     /// <param name="guide">Перемещаемая направляющая.</param>
-    public EditorGuideDraggingState(SurfaceView editor, UserGuideService guides, IPointer pointer, DesignGuide guide) : base(editor)
+    public EditorGuideDraggingState(SurfaceView editor, UserGuideService guides, IPointer pointer, SurfaceGuide guide) : base(editor)
     {
         _guides = guides;
         _pointer = pointer;
@@ -40,7 +40,7 @@ internal class EditorGuideDraggingState : EditorState
     {
         _pointer.Capture(Editor);
 
-        _cursor.Apply(Editor, Editor.Cursors.ResolveGuide(_original.Orientation == DesignGuideOrientation.Vertical));
+        _cursor.Apply(Editor, Editor.Cursors.ResolveGuide(_original.Orientation == SurfaceGuideOrientation.Vertical));
 
         _guides.SetPreview(_current);
     }
@@ -59,7 +59,7 @@ internal class EditorGuideDraggingState : EditorState
     public override void OnPointerMoved(PointerEventArgs e)
     {
         var position = _guides.ResolvePosition(e.GetPosition(Editor), _original.Orientation, e.KeyModifiers);
-        _current = new DesignGuide(_original.Orientation, position);
+        _current = new SurfaceGuide(_original.Orientation, position);
         _guides.SetPreview(_current);
     }
 
@@ -72,9 +72,9 @@ internal class EditorGuideDraggingState : EditorState
         // которым её вытянули, только в обратную сторону, и другого способа
         // избавиться от линии указателем не нужно.
         if (!new Rect(Editor.Bounds.Size).Contains(point))
-            _guides.RequestChange(DesignGuideChangeKind.Remove, _original, _original);
+            _guides.RequestChange(SurfaceGuideChangeKind.Remove, _original, _original);
         else if (_current != _original)
-            _guides.RequestChange(DesignGuideChangeKind.Move, _current, _original);
+            _guides.RequestChange(SurfaceGuideChangeKind.Move, _current, _original);
 
         Editor.PopState();
     }

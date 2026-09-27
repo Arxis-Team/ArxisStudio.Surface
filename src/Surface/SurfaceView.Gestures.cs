@@ -132,7 +132,7 @@ public partial class SurfaceView
         if (!e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
             return false;
 
-        RequestContextSafe(DesignEditorContextSource.Pointer, position, e.KeyModifiers);
+        RequestContextSafe(SurfaceContextSource.Pointer, position, e.KeyModifiers);
         return true;
     }
 
@@ -286,7 +286,7 @@ public partial class SurfaceView
             return frame - group.FrameOffset;
         }
 
-        return ResolveOrigin(proposed, GetDesignSize(target), modifiers);
+        return ResolveOrigin(proposed, GetTargetSize(target), modifiers);
     }
 
     private Point ResolveOrigin(Point proposed, Size size, KeyModifiers modifiers)

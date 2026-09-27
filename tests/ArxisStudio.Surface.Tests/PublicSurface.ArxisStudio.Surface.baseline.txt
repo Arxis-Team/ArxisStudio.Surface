@@ -3,62 +3,109 @@ enum ArxisStudio.Surface.ContainerEmptyAreaDragGesture
     value MoveContainer = 0
 sealed class ArxisStudio.Surface.ContextMenuContextPresenter
     ctor .ctor()
-    method Boolean TryShow(SurfaceView, DesignEditorContextRequest, IReadOnlyList<DesignEditorContextAction>)
-abstract class ArxisStudio.Surface.DesignChange
-    ctor .ctor(Control)
-    property Control Target { get; }
-sealed class ArxisStudio.Surface.DesignEditCompletedEventArgs : EventArgs
-    ctor .ctor(DesignEditKind, IReadOnlyList<DesignChange>)
-    property DesignEditKind Kind { get; }
-    property IReadOnlyList<DesignChange> Changes { get; }
-enum ArxisStudio.Surface.DesignEditKind
-    value Group = 3
-    value Move = 0
-    value Order = 2
-    value Resize = 1
-sealed class ArxisStudio.Surface.DesignEditorContextAction
+    method Boolean TryShow(SurfaceView, SurfaceContextRequest, IReadOnlyList<SurfaceContextAction>)
+class ArxisStudio.Surface.DragCompletedEventArgs : RoutedEventArgs
+    ctor .ctor(Double, Double, Boolean)
+    property Boolean Canceled { get; }
+    property Double HorizontalChange { get; }
+    property Double VerticalChange { get; }
+class ArxisStudio.Surface.DragDeltaEventArgs : RoutedEventArgs
+    ctor .ctor(Double, Double)
+    property Double HorizontalChange { get; }
+    property Double VerticalChange { get; }
+class ArxisStudio.Surface.DragStartedEventArgs : RoutedEventArgs
+    ctor .ctor(Double, Double)
+    property Double HorizontalOffset { get; }
+    property Double VerticalOffset { get; }
+sealed class ArxisStudio.Surface.GeometryChange : TargetChange
+    ctor .ctor(Control, Rect, Rect)
+    property Rect NewBounds { get; }
+    property Rect OldBounds { get; }
+interface ArxisStudio.Surface.ISurfaceChange
+    method Void Reapply()
+    method Void Revert()
+interface ArxisStudio.Surface.ISurfaceContextActionProvider
+    method ValueTask<IReadOnlyList<SurfaceContextAction>> GetActionsAsync(SurfaceView, SurfaceContextRequest, CancellationToken)
+interface ArxisStudio.Surface.ISurfaceContextPresenter
+    method Boolean TryShow(SurfaceView, SurfaceContextRequest, IReadOnlyList<SurfaceContextAction>)
+enum ArxisStudio.Surface.MovePolicy
+    value Both = 3
+    value None = 0
+    value X = 1
+    value Y = 2
+sealed class ArxisStudio.Surface.OrderChange : TargetChange
+    ctor .ctor(Control, Int32, Int32)
+    property Int32 NewZIndex { get; }
+    property Int32 OldZIndex { get; }
+class ArxisStudio.Surface.ResizeDeltaEventArgs : RoutedEventArgs
+    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
+    property ResizeDirection Direction { get; }
+    property Vector Delta { get; }
+enum ArxisStudio.Surface.ResizeDirection
+    value Bottom = 1
+    value BottomLeft = 6
+    value BottomRight = 7
+    value Left = 2
+    value Right = 3
+    value Top = 0
+    value TopLeft = 4
+    value TopRight = 5
+enum ArxisStudio.Surface.ResizePolicy
+    value All = 15
+    value Bottom = 8
+    value Horizontal = 5
+    value Left = 1
+    value None = 0
+    value Right = 4
+    value Top = 2
+    value Vertical = 10
+class ArxisStudio.Surface.ResizeStartedEventArgs : RoutedEventArgs
+    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
+    property ResizeDirection Direction { get; }
+    property Vector Vector { get; }
+sealed class ArxisStudio.Surface.SurfaceContextAction
     ctor .ctor()
     property Boolean IsEnabled { get; set; }
     property Boolean IsSeparator { get; set; }
     property Boolean IsVisible { get; set; }
     property ICommand Command { get; set; }
-    property IReadOnlyList<DesignEditorContextAction> Items { get; set; }
+    property IReadOnlyList<SurfaceContextAction> Items { get; set; }
     property Int32 Order { get; set; }
     property Object CommandParameter { get; set; }
     property Object Icon { get; set; }
     property String Group { get; set; }
     property String Header { get; set; }
     property String Id { get; set; }
-sealed class ArxisStudio.Surface.DesignEditorContextRequest
+sealed class ArxisStudio.Surface.SurfaceContextRequest
     ctor .ctor()
-    property DesignEditorContextScope Scope { get; set; }
-    property DesignEditorContextSource Source { get; set; }
-    property DesignSelectionTarget Target { get; set; }
-    property IReadOnlyList<DesignSelectionTarget> Selection { get; set; }
+    property IReadOnlyList<SurfaceSelectionTarget> Selection { get; set; }
     property KeyModifiers Modifiers { get; set; }
     property PixelPoint ScreenPoint { get; set; }
     property Point ViewportPoint { get; set; }
     property Point WorldPoint { get; set; }
-sealed class ArxisStudio.Surface.DesignEditorContextRequestedEventArgs : EventArgs
-    ctor .ctor(DesignEditorContextRequest, IReadOnlyList<DesignEditorContextAction>, Boolean)
+    property SurfaceContextScope Scope { get; set; }
+    property SurfaceContextSource Source { get; set; }
+    property SurfaceSelectionTarget Target { get; set; }
+sealed class ArxisStudio.Surface.SurfaceContextRequestedEventArgs : EventArgs
+    ctor .ctor(SurfaceContextRequest, IReadOnlyList<SurfaceContextAction>, Boolean)
     property Boolean Handled { get; }
-    property DesignEditorContextRequest Request { get; }
-    property IReadOnlyList<DesignEditorContextAction> Actions { get; }
-sealed class ArxisStudio.Surface.DesignEditorContextRequestingEventArgs : CancelEventArgs
-    ctor .ctor(DesignEditorContextRequest)
+    property IReadOnlyList<SurfaceContextAction> Actions { get; }
+    property SurfaceContextRequest Request { get; }
+sealed class ArxisStudio.Surface.SurfaceContextRequestingEventArgs : CancelEventArgs
+    ctor .ctor(SurfaceContextRequest)
     property Boolean Handled { get; set; }
-    property DesignEditorContextRequest Request { get; }
-    property IReadOnlyList<DesignEditorContextAction> Actions { get; set; }
-enum ArxisStudio.Surface.DesignEditorContextScope
+    property IReadOnlyList<SurfaceContextAction> Actions { get; set; }
+    property SurfaceContextRequest Request { get; }
+enum ArxisStudio.Surface.SurfaceContextScope
     value Container = 1
     value NestedTarget = 2
     value Selection = 3
     value Surface = 0
-enum ArxisStudio.Surface.DesignEditorContextSource
+enum ArxisStudio.Surface.SurfaceContextSource
     value Keyboard = 1
     value Pointer = 0
     value Programmatic = 2
-class ArxisStudio.Surface.DesignEditorCursors : AvaloniaObject
+class ArxisStudio.Surface.SurfaceCursors : AvaloniaObject
     avalonia BlockedProperty -> Blocked : Cursor (styled) = null
     avalonia GuideHorizontalProperty -> GuideHorizontal : Cursor (styled) = null
     avalonia GuideVerticalProperty -> GuideVertical : Cursor (styled) = null
@@ -74,22 +121,62 @@ class ArxisStudio.Surface.DesignEditorCursors : AvaloniaObject
     property Cursor Move { get; set; }
     property Cursor Pan { get; set; }
     property Cursor Reorder { get; set; }
-sealed class ArxisStudio.Surface.DesignEditorDeleteRequestedEventArgs : EventArgs
-    ctor .ctor(IReadOnlyList<DesignSelectionTarget>)
+sealed class ArxisStudio.Surface.SurfaceDeleteRequestedEventArgs : EventArgs
+    ctor .ctor(IReadOnlyList<SurfaceSelectionTarget>)
     property Boolean Handled { get; set; }
-    property IReadOnlyList<DesignSelectionTarget> Targets { get; }
-sealed class ArxisStudio.Surface.DesignEditorHistoryRequestedEventArgs : EventArgs
+    property IReadOnlyList<SurfaceSelectionTarget> Targets { get; }
+sealed class ArxisStudio.Surface.SurfaceEditCompletedEventArgs : EventArgs
+    ctor .ctor(SurfaceEditKind, IReadOnlyList<TargetChange>)
+    property IReadOnlyList<TargetChange> Changes { get; }
+    property SurfaceEditKind Kind { get; }
+enum ArxisStudio.Surface.SurfaceEditKind
+    value Group = 3
+    value Move = 0
+    value Order = 2
+    value Resize = 1
+class ArxisStudio.Surface.SurfaceGrid : Control
+    avalonia BackgroundProperty -> Background : IBrush (styled) = null
+    avalonia CellSizeProperty -> CellSize : Double (styled) = 20
+    avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
+    avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
+    avalonia MajorIntervalProperty -> MajorInterval : Int32 (styled) = 5
+    avalonia MajorLineBrushProperty -> MajorLineBrush : IBrush (styled) = null
+    avalonia MinCellSizeProperty -> MinCellSize : Double (styled) = 6
+    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
+    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
+    ctor .ctor()
+    method Void Render(DrawingContext)
+    property Double CellSize { get; set; }
+    property Double LineThickness { get; set; }
+    property Double MinCellSize { get; set; }
+    property Double ViewportZoom { get; set; }
+    property IBrush Background { get; set; }
+    property IBrush LineBrush { get; set; }
+    property IBrush MajorLineBrush { get; set; }
+    property Int32 MajorInterval { get; set; }
+    property Point ViewportLocation { get; set; }
+sealed class ArxisStudio.Surface.SurfaceHistory
+    ctor .ctor(SurfaceView)
+    event EventHandler Changed
+    method Boolean Redo()
+    method Boolean Undo()
+    method Void Clear()
+    method Void Dispose()
+    method Void Push(ISurfaceChange)
+    property Boolean CanRedo { get; }
+    property Boolean CanUndo { get; }
+sealed class ArxisStudio.Surface.SurfaceHistoryRequestedEventArgs : EventArgs
     ctor .ctor()
     property Boolean Handled { get; set; }
-class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
+class ArxisStudio.Surface.SurfaceInputGestures : AvaloniaObject
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (styled) = Shift
     avalonia ContainerEmptyAreaDragProperty -> ContainerEmptyAreaDrag : ContainerEmptyAreaDragGesture (styled) = Marquee
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (styled) = Control
     avalonia KeyboardResizeModifiersProperty -> KeyboardResizeModifiers : KeyModifiers (styled) = Alt
     avalonia LargeNudgeModifiersProperty -> LargeNudgeModifiers : KeyModifiers (styled) = Shift
-    avalonia MarqueeButtonProperty -> MarqueeButton : DesignEditorPointerButton (styled) = Left
+    avalonia MarqueeButtonProperty -> MarqueeButton : SurfacePointerButton (styled) = Left
     avalonia MarqueeModifiersProperty -> MarqueeModifiers : KeyModifiers (styled) = None
-    avalonia PanButtonProperty -> PanButton : DesignEditorPointerButton (styled) = Middle
+    avalonia PanButtonProperty -> PanButton : SurfacePointerButton (styled) = Middle
     avalonia PanModifiersProperty -> PanModifiers : KeyModifiers (styled) = None
     avalonia RedoGesturesProperty -> RedoGestures : IReadOnlyList<KeyGesture> (styled) = null
     avalonia SnapBypassModifiersProperty -> SnapBypassModifiers : KeyModifiers (styled) = Alt
@@ -97,8 +184,6 @@ class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
     avalonia ZoomModifiersProperty -> ZoomModifiers : KeyModifiers (styled) = None
     ctor .ctor()
     property ContainerEmptyAreaDragGesture ContainerEmptyAreaDrag { get; set; }
-    property DesignEditorPointerButton MarqueeButton { get; set; }
-    property DesignEditorPointerButton PanButton { get; set; }
     property IReadOnlyList<KeyGesture> RedoGestures { get; set; }
     property IReadOnlyList<KeyGesture> UndoGestures { get; set; }
     property KeyModifiers AdditiveSelectionModifiers { get; set; }
@@ -109,7 +194,9 @@ class ArxisStudio.Surface.DesignEditorInputGestures : AvaloniaObject
     property KeyModifiers PanModifiers { get; set; }
     property KeyModifiers SnapBypassModifiers { get; set; }
     property KeyModifiers ZoomModifiers { get; set; }
-class ArxisStudio.Surface.DesignEditorInteractionOptions : AvaloniaObject
+    property SurfacePointerButton MarqueeButton { get; set; }
+    property SurfacePointerButton PanButton { get; set; }
+class ArxisStudio.Surface.SurfaceInteractionOptions : AvaloniaObject
     avalonia AutoPanEdgeProperty -> AutoPanEdge : Double (styled) = 32
     avalonia AutoPanSpeedProperty -> AutoPanSpeed : Double (styled) = 900
     avalonia DragStartThresholdProperty -> DragStartThreshold : Double (styled) = 3
@@ -141,120 +228,6 @@ class ArxisStudio.Surface.DesignEditorInteractionOptions : AvaloniaObject
     property Double SnapGuideTolerance { get; set; }
     property Double SnapStep { get; set; }
     property Double ZoomStep { get; set; }
-enum ArxisStudio.Surface.DesignEditorPointerButton
-    value Left = 0
-    value Middle = 1
-    value Right = 2
-sealed class ArxisStudio.Surface.DesignGeometryChange : DesignChange
-    ctor .ctor(Control, Rect, Rect)
-    property Rect NewBounds { get; }
-    property Rect OldBounds { get; }
-class ArxisStudio.Surface.DesignGrid : Control
-    avalonia BackgroundProperty -> Background : IBrush (styled) = null
-    avalonia CellSizeProperty -> CellSize : Double (styled) = 20
-    avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
-    avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
-    avalonia MajorIntervalProperty -> MajorInterval : Int32 (styled) = 5
-    avalonia MajorLineBrushProperty -> MajorLineBrush : IBrush (styled) = null
-    avalonia MinCellSizeProperty -> MinCellSize : Double (styled) = 6
-    avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
-    avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
-    ctor .ctor()
-    method Void Render(DrawingContext)
-    property Double CellSize { get; set; }
-    property Double LineThickness { get; set; }
-    property Double MinCellSize { get; set; }
-    property Double ViewportZoom { get; set; }
-    property IBrush Background { get; set; }
-    property IBrush LineBrush { get; set; }
-    property IBrush MajorLineBrush { get; set; }
-    property Int32 MajorInterval { get; set; }
-    property Point ViewportLocation { get; set; }
-sealed class ArxisStudio.Surface.DesignOrderChange : DesignChange
-    ctor .ctor(Control, Int32, Int32)
-    property Int32 NewZIndex { get; }
-    property Int32 OldZIndex { get; }
-sealed class ArxisStudio.Surface.DesignSelectionChangedEventArgs : EventArgs
-    ctor .ctor(IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, IReadOnlyList<DesignSelectionTarget>, DesignSelectionTarget, DesignSelectionTarget)
-    property Boolean IsPrimaryChanged { get; }
-    property DesignSelectionTarget NewPrimary { get; }
-    property DesignSelectionTarget OldPrimary { get; }
-    property IReadOnlyList<DesignSelectionTarget> Added { get; }
-    property IReadOnlyList<DesignSelectionTarget> NewTargets { get; }
-    property IReadOnlyList<DesignSelectionTarget> OldTargets { get; }
-    property IReadOnlyList<DesignSelectionTarget> Removed { get; }
-enum ArxisStudio.Surface.DesignSelectionScope
-    value Container = 0
-    value NestedTarget = 1
-sealed class ArxisStudio.Surface.DesignSelectionTarget
-    ctor .ctor(SurfaceItem, Control)
-    property Control Target { get; }
-    property DesignSelectionScope Scope { get; }
-    property Int32 Depth { get; }
-    property String DisplayName { get; }
-    property String GroupId { get; }
-    property SurfaceItem Container { get; }
-class ArxisStudio.Surface.DragCompletedEventArgs : RoutedEventArgs
-    ctor .ctor(Double, Double, Boolean)
-    property Boolean Canceled { get; }
-    property Double HorizontalChange { get; }
-    property Double VerticalChange { get; }
-class ArxisStudio.Surface.DragDeltaEventArgs : RoutedEventArgs
-    ctor .ctor(Double, Double)
-    property Double HorizontalChange { get; }
-    property Double VerticalChange { get; }
-class ArxisStudio.Surface.DragStartedEventArgs : RoutedEventArgs
-    ctor .ctor(Double, Double)
-    property Double HorizontalOffset { get; }
-    property Double VerticalOffset { get; }
-interface ArxisStudio.Surface.IDesignEditorContextActionProvider
-    method ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(SurfaceView, DesignEditorContextRequest, CancellationToken)
-interface ArxisStudio.Surface.IDesignEditorContextPresenter
-    method Boolean TryShow(SurfaceView, DesignEditorContextRequest, IReadOnlyList<DesignEditorContextAction>)
-interface ArxisStudio.Surface.ISurfaceChange
-    method Void Reapply()
-    method Void Revert()
-enum ArxisStudio.Surface.MovePolicy
-    value Both = 3
-    value None = 0
-    value X = 1
-    value Y = 2
-class ArxisStudio.Surface.ResizeDeltaEventArgs : RoutedEventArgs
-    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
-    property ResizeDirection Direction { get; }
-    property Vector Delta { get; }
-enum ArxisStudio.Surface.ResizeDirection
-    value Bottom = 1
-    value BottomLeft = 6
-    value BottomRight = 7
-    value Left = 2
-    value Right = 3
-    value Top = 0
-    value TopLeft = 4
-    value TopRight = 5
-enum ArxisStudio.Surface.ResizePolicy
-    value All = 15
-    value Bottom = 8
-    value Horizontal = 5
-    value Left = 1
-    value None = 0
-    value Right = 4
-    value Top = 2
-    value Vertical = 10
-class ArxisStudio.Surface.ResizeStartedEventArgs : RoutedEventArgs
-    ctor .ctor(Vector, ResizeDirection, RoutedEvent)
-    property ResizeDirection Direction { get; }
-    property Vector Vector { get; }
-sealed class ArxisStudio.Surface.SurfaceHistory
-    ctor .ctor(SurfaceView)
-    event EventHandler Changed
-    method Boolean Redo()
-    method Boolean Undo()
-    method Void Clear()
-    method Void Dispose()
-    method Void Push(ISurfaceChange)
-    property Boolean CanRedo { get; }
-    property Boolean CanUndo { get; }
 class ArxisStudio.Surface.SurfaceItem : ContentControl
     avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
     avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false
@@ -308,23 +281,47 @@ class ArxisStudio.Surface.SurfacePanel : Panel
     method Size ArrangeOverride(Size)
     method Size MeasureOverride(Size)
     property Rect Extent { get; set; }
+enum ArxisStudio.Surface.SurfacePointerButton
+    value Left = 0
+    value Middle = 1
+    value Right = 2
+sealed class ArxisStudio.Surface.SurfaceSelectionChangedEventArgs : EventArgs
+    ctor .ctor(IReadOnlyList<SurfaceSelectionTarget>, IReadOnlyList<SurfaceSelectionTarget>, IReadOnlyList<SurfaceSelectionTarget>, IReadOnlyList<SurfaceSelectionTarget>, SurfaceSelectionTarget, SurfaceSelectionTarget)
+    property Boolean IsPrimaryChanged { get; }
+    property IReadOnlyList<SurfaceSelectionTarget> Added { get; }
+    property IReadOnlyList<SurfaceSelectionTarget> NewTargets { get; }
+    property IReadOnlyList<SurfaceSelectionTarget> OldTargets { get; }
+    property IReadOnlyList<SurfaceSelectionTarget> Removed { get; }
+    property SurfaceSelectionTarget NewPrimary { get; }
+    property SurfaceSelectionTarget OldPrimary { get; }
+enum ArxisStudio.Surface.SurfaceSelectionScope
+    value Container = 0
+    value NestedTarget = 1
+sealed class ArxisStudio.Surface.SurfaceSelectionTarget
+    ctor .ctor(SurfaceItem, Control)
+    property Control Target { get; }
+    property Int32 Depth { get; }
+    property String DisplayName { get; }
+    property String GroupId { get; }
+    property SurfaceItem Container { get; }
+    property SurfaceSelectionScope Scope { get; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (direct)
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (direct)
-    avalonia CursorsProperty -> Cursors : DesignEditorCursors (direct)
+    avalonia CursorsProperty -> Cursors : SurfaceCursors (direct)
     avalonia DpiScaledViewportTransformProperty -> DpiScaledViewportTransform : Transform (styled) = <TransformGroup>
-    avalonia InputGesturesProperty -> InputGestures : DesignEditorInputGestures (direct)
-    avalonia InteractionOptionsProperty -> InteractionOptions : DesignEditorInteractionOptions (direct)
+    avalonia InputGesturesProperty -> InputGestures : SurfaceInputGestures (direct)
+    avalonia InteractionOptionsProperty -> InteractionOptions : SurfaceInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
     avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia MarqueeScopeProperty -> MarqueeScope : SurfaceItem (direct)
     avalonia MaxZoomProperty -> MaxZoom : Double (styled) = 5
     avalonia MinZoomProperty -> MinZoom : Double (styled) = 0.1
-    avalonia PrimarySelectionTargetProperty -> PrimarySelectionTarget : DesignSelectionTarget (direct)
+    avalonia PrimarySelectionTargetProperty -> PrimarySelectionTarget : SurfaceSelectionTarget (direct)
     avalonia SelectedAreaProperty -> SelectedArea : Rect (direct)
-    avalonia SelectedDesignTargetsCountProperty -> SelectedDesignTargetsCount : Int32 (direct)
-    avalonia SelectedDesignTargetsProperty -> SelectedDesignTargets : IReadOnlyList<DesignSelectionTarget> (direct)
     avalonia SelectedItemsProperty -> SelectedItems : IList (direct)
+    avalonia SelectedTargetsCountProperty -> SelectedTargetsCount : Int32 (direct)
+    avalonia SelectedTargetsProperty -> SelectedTargets : IReadOnlyList<SurfaceSelectionTarget> (direct)
     avalonia SelectionModeProperty -> SelectionMode : SelectionMode (styled) = Single
     avalonia SelectionProperty -> Selection : ISelectionModel (direct)
     avalonia ShowGridProperty -> ShowGrid : Boolean (styled) = true
@@ -332,21 +329,21 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia ViewportTransformProperty -> ViewportTransform : Transform (styled) = <TransformGroup>
     avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
     ctor .ctor()
-    event EventHandler<DesignEditCompletedEventArgs> EditCompleted
-    event EventHandler<DesignEditorContextRequestedEventArgs> ContextMenuResolved
-    event EventHandler<DesignEditorContextRequestingEventArgs> ContextMenuRequesting
-    event EventHandler<DesignEditorDeleteRequestedEventArgs> DeleteRequested
-    event EventHandler<DesignEditorHistoryRequestedEventArgs> RedoRequested
-    event EventHandler<DesignEditorHistoryRequestedEventArgs> UndoRequested
-    event EventHandler<DesignSelectionChangedEventArgs> DesignSelectionChanged
+    event EventHandler<SurfaceContextRequestedEventArgs> ContextMenuResolved
+    event EventHandler<SurfaceContextRequestingEventArgs> ContextMenuRequesting
+    event EventHandler<SurfaceDeleteRequestedEventArgs> DeleteRequested
+    event EventHandler<SurfaceEditCompletedEventArgs> EditCompleted
+    event EventHandler<SurfaceHistoryRequestedEventArgs> RedoRequested
+    event EventHandler<SurfaceHistoryRequestedEventArgs> UndoRequested
+    event EventHandler<SurfaceSelectionChangedEventArgs> SurfaceSelectionChanged
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
-    method Boolean SelectDesignTarget(Control, Boolean)
-    method Boolean SetDesignGeometry(Control, Rect)
+    method Boolean SelectTarget(Control, Boolean)
+    method Boolean SetTargetGeometry(Control, Rect)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
     method Point GetPositionForInput(Visual)
     method Point GetWorldPosition(Point)
     method Task RequestContextAsync(CancellationToken)
-    method Task RequestContextAsync(DesignEditorContextSource, Point, KeyModifiers, CancellationToken)
+    method Task RequestContextAsync(SurfaceContextSource, Point, KeyModifiers, CancellationToken)
     method Void ApplyGeometry(Control, Rect)
     method Void ApplyOrder(Control, Int32)
     method Void CenterOn(Point)
@@ -364,31 +361,34 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPointerWheelChanged(PointerWheelEventArgs)
-    method Void Reapply(DesignChange)
-    method Void Revert(DesignChange)
+    method Void Reapply(TargetChange)
+    method Void Revert(TargetChange)
     method Void ZoomAt(Double, Point)
     property Boolean IsSelecting { get; set; }
     property Boolean ShowGrid { get; set; }
-    property DesignEditorCursors Cursors { get; set; }
-    property DesignEditorInputGestures InputGestures { get; set; }
-    property DesignEditorInteractionOptions InteractionOptions { get; set; }
-    property DesignSelectionTarget PrimarySelectionTarget { get; }
     property Double MaxZoom { get; set; }
     property Double MinZoom { get; set; }
     property Double ViewportZoom { get; set; }
-    property IDesignEditorContextPresenter ContextPresenter { get; set; }
     property IList SelectedItems { get; set; }
-    property IList<IDesignEditorContextActionProvider> ContextActionProviders { get; }
-    property IReadOnlyList<DesignSelectionTarget> SelectedDesignTargets { get; }
+    property IList<ISurfaceContextActionProvider> ContextActionProviders { get; }
+    property IReadOnlyList<SurfaceSelectionTarget> SelectedTargets { get; }
     property ISelectionModel Selection { get; set; }
-    property Int32 SelectedDesignTargetsCount { get; }
+    property ISurfaceContextPresenter ContextPresenter { get; set; }
+    property Int32 SelectedTargetsCount { get; }
     property KeyModifiers AdditiveSelectionModifiers { get; set; }
     property KeyModifiers ContainerInteractionModifiers { get; set; }
     property Point ViewportLocation { get; set; }
     property Rect ItemsExtent { get; set; }
     property Rect SelectedArea { get; set; }
     property SelectionMode SelectionMode { get; set; }
+    property SurfaceCursors Cursors { get; set; }
+    property SurfaceInputGestures InputGestures { get; set; }
+    property SurfaceInteractionOptions InteractionOptions { get; set; }
     property SurfaceItem MarqueeScope { get; }
     property SurfaceKeyCommands KeyCommands { get; }
+    property SurfaceSelectionTarget PrimarySelectionTarget { get; }
     property Transform DpiScaledViewportTransform { get; set; }
     property Transform ViewportTransform { get; set; }
+abstract class ArxisStudio.Surface.TargetChange
+    ctor .ctor(Control)
+    property Control Target { get; }

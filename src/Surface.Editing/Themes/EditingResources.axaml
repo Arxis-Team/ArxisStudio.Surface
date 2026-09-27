@@ -8,70 +8,70 @@
     -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="DesignEditor.SnapGuideBrush" Color="#D6006C" />
-            <SolidColorBrush x:Key="DesignEditor.SnapGuide.CentreBrush" Color="#7A4DD6" />
-            <SolidColorBrush x:Key="DesignEditor.SpacingBrush" Color="#E0561C" />
-            <SolidColorBrush x:Key="DesignEditor.UserGuideBrush" Color="#0A84FF" />
-            <SolidColorBrush x:Key="DesignEditor.Ruler.BackgroundBrush" Color="#F3F3F5" />
-            <SolidColorBrush x:Key="DesignEditor.Ruler.TickBrush" Color="#8A8A93" />
-            <SolidColorBrush x:Key="DesignEditor.Ruler.LabelBrush" Color="#5B5B64" />
+            <SolidColorBrush x:Key="Surface.SnapGuideBrush" Color="#D6006C" />
+            <SolidColorBrush x:Key="Surface.SnapGuide.CentreBrush" Color="#7A4DD6" />
+            <SolidColorBrush x:Key="Surface.SpacingBrush" Color="#E0561C" />
+            <SolidColorBrush x:Key="Surface.UserGuideBrush" Color="#0A84FF" />
+            <SolidColorBrush x:Key="Surface.Ruler.BackgroundBrush" Color="#F3F3F5" />
+            <SolidColorBrush x:Key="Surface.Ruler.TickBrush" Color="#8A8A93" />
+            <SolidColorBrush x:Key="Surface.Ruler.LabelBrush" Color="#5B5B64" />
             <SolidColorBrush x:Key="SurfaceMinimap.Background" Color="#E6F3F3F5" />
             <SolidColorBrush x:Key="SurfaceMinimap.ItemFill" Color="#9AA3B0" />
             <SolidColorBrush x:Key="SurfaceMinimap.ViewportStroke" Color="#0F6CBD" />
             <SolidColorBrush x:Key="SurfaceMinimap.ViewportFill" Color="#1A0F6CBD" />
 
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryBrush" Color="#0F6CBD" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryFill" Color="Transparent" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.GroupBrush" Color="#0A84D0" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.GroupFill" Color="#140A84D0" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.SecondaryBrush" Color="#5A9BD8" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.SecondaryFill" Color="Transparent" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.PrimaryBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.PrimaryFill" Color="Transparent" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.GroupBrush" Color="#0A84D0" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.GroupFill" Color="#140A84D0" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.SecondaryBrush" Color="#5A9BD8" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.SecondaryFill" Color="Transparent" />
 
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.Brush" Color="#0F6CBD" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.Fill" Color="Transparent" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.LockedBrush" Color="#8A8F98" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleBackground" Color="White" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleLockedBackground" Color="#F1F3F5" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleLockedBorderBrush" Color="#8A8F98" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePointerOverBackground" Color="#0F6CBD" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePressedBackground" Color="#0B5A9C" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.Brush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.Fill" Color="Transparent" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.LockedBrush" Color="#8A8F98" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandleBackground" Color="White" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandleLockedBackground" Color="#F1F3F5" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandleLockedBorderBrush" Color="#8A8F98" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandlePointerOverBackground" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandlePressedBackground" Color="#0B5A9C" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="DesignEditor.SnapGuideBrush" Color="#FF4FA3" />
-            <SolidColorBrush x:Key="DesignEditor.SnapGuide.CentreBrush" Color="#A98BFF" />
-            <SolidColorBrush x:Key="DesignEditor.SpacingBrush" Color="#FF9A5C" />
-            <SolidColorBrush x:Key="DesignEditor.UserGuideBrush" Color="#4DA3FF" />
-            <SolidColorBrush x:Key="DesignEditor.Ruler.BackgroundBrush" Color="#25252A" />
-            <SolidColorBrush x:Key="DesignEditor.Ruler.TickBrush" Color="#6E6E78" />
-            <SolidColorBrush x:Key="DesignEditor.Ruler.LabelBrush" Color="#9A9AA4" />
+            <SolidColorBrush x:Key="Surface.SnapGuideBrush" Color="#FF4FA3" />
+            <SolidColorBrush x:Key="Surface.SnapGuide.CentreBrush" Color="#A98BFF" />
+            <SolidColorBrush x:Key="Surface.SpacingBrush" Color="#FF9A5C" />
+            <SolidColorBrush x:Key="Surface.UserGuideBrush" Color="#4DA3FF" />
+            <SolidColorBrush x:Key="Surface.Ruler.BackgroundBrush" Color="#25252A" />
+            <SolidColorBrush x:Key="Surface.Ruler.TickBrush" Color="#6E6E78" />
+            <SolidColorBrush x:Key="Surface.Ruler.LabelBrush" Color="#9A9AA4" />
             <SolidColorBrush x:Key="SurfaceMinimap.Background" Color="#E625252A" />
             <SolidColorBrush x:Key="SurfaceMinimap.ItemFill" Color="#5C6577" />
             <SolidColorBrush x:Key="SurfaceMinimap.ViewportStroke" Color="#4DA3FF" />
             <SolidColorBrush x:Key="SurfaceMinimap.ViewportFill" Color="#1A4DA3FF" />
 
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryBrush" Color="#0099FF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.PrimaryFill" Color="Transparent" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.GroupBrush" Color="#00C2FF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.GroupFill" Color="#0A00C2FF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.SecondaryBrush" Color="#5FA8FF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.SecondaryFill" Color="Transparent" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.PrimaryBrush" Color="#0099FF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.PrimaryFill" Color="Transparent" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.GroupBrush" Color="#00C2FF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.GroupFill" Color="#0A00C2FF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.SecondaryBrush" Color="#5FA8FF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.SecondaryFill" Color="Transparent" />
 
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.Brush" Color="DodgerBlue" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.Fill" Color="Transparent" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.LockedBrush" Color="#9CA3AF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleBackground" Color="White" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleLockedBackground" Color="#E5E7EB" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandleLockedBorderBrush" Color="#9CA3AF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePointerOverBackground" Color="#0099FF" />
-            <SolidColorBrush x:Key="DesignEditor.SelectionAdorner.HandlePressedBackground" Color="#007ACC" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.Brush" Color="DodgerBlue" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.Fill" Color="Transparent" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.LockedBrush" Color="#9CA3AF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandleBackground" Color="White" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandleLockedBackground" Color="#E5E7EB" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandleLockedBorderBrush" Color="#9CA3AF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandlePointerOverBackground" Color="#0099FF" />
+            <SolidColorBrush x:Key="Surface.SelectionAdorner.HandlePressedBackground" Color="#007ACC" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
-    <x:Double x:Key="DesignEditor.SelectionAdorner.HandleSize">8</x:Double>
+    <x:Double x:Key="Surface.SelectionAdorner.HandleSize">8</x:Double>
 
     <!-- Направляющие. Толщина задана в пикселях устройства, как и у сетки. -->
-    <x:Double x:Key="DesignEditor.SnapGuide.Thickness">1</x:Double>
+    <x:Double x:Key="Surface.SnapGuide.Thickness">1</x:Double>
 
     <!--
         Штрих направляющих. Длины заданы в толщинах пера, поэтому не зависят от DPI.
@@ -80,12 +80,12 @@
         первые живут только внутри жеста и обязаны читаться как подсказка, вторые
         поставлены пользователем и остаются на макете.
     -->
-    <DashStyle x:Key="DesignEditor.SnapGuide.DashStyle" Dashes="4,3" Offset="0" />
-    <DashStyle x:Key="DesignEditor.UserGuide.DashStyle" Dashes="" Offset="0" />
+    <DashStyle x:Key="Surface.SnapGuide.DashStyle" Dashes="4,3" Offset="0" />
+    <DashStyle x:Key="Surface.UserGuide.DashStyle" Dashes="" Offset="0" />
 
     <!-- Линейки. Толщина одна на обе ориентации, чтобы угол между ними был квадратным. -->
-    <x:Double x:Key="DesignEditor.Ruler.Thickness">20</x:Double>
-    <x:Double x:Key="DesignEditor.Ruler.LabelFontSize">9</x:Double>
+    <x:Double x:Key="Surface.Ruler.Thickness">20</x:Double>
+    <x:Double x:Key="Surface.Ruler.LabelFontSize">9</x:Double>
 
     <!--
         Курсоры частей, которые видно под указателем: ручки изменения размера и линейка.
@@ -97,17 +97,17 @@
         рамки, перестановки, переноса направляющей, — задаются иначе: через
         DesignEditor.Cursors.
     -->
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorTopLeft">TopLeftCorner</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorTop">TopSide</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorTopRight">TopRightCorner</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorLeft">LeftSide</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorRight">RightSide</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorBottomLeft">BottomLeftCorner</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorBottom">BottomSide</Cursor>
-    <Cursor x:Key="DesignEditor.SelectionAdorner.CursorBottomRight">BottomRightCorner</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorTopLeft">TopLeftCorner</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorTop">TopSide</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorTopRight">TopRightCorner</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorLeft">LeftSide</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorRight">RightSide</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorBottomLeft">BottomLeftCorner</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorBottom">BottomSide</Cursor>
+    <Cursor x:Key="Surface.SelectionAdorner.CursorBottomRight">BottomRightCorner</Cursor>
 
-    <Cursor x:Key="DesignEditor.Ruler.CursorHorizontal">SizeNorthSouth</Cursor>
-    <Cursor x:Key="DesignEditor.Ruler.CursorVertical">SizeWestEast</Cursor>
+    <Cursor x:Key="Surface.Ruler.CursorHorizontal">SizeNorthSouth</Cursor>
+    <Cursor x:Key="Surface.Ruler.CursorVertical">SizeWestEast</Cursor>
     <Cursor x:Key="SurfaceMinimap.Cursor">Hand</Cursor>
 
 </ResourceDictionary>

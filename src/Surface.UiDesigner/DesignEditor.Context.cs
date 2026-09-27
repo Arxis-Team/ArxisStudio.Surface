@@ -16,7 +16,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 
@@ -38,7 +38,7 @@ public partial class DesignEditor
         if (target == null)
             return;
 
-        var isTargetInSelection = SelectedDesignTargets.Any(selected =>
+        var isTargetInSelection = SelectedTargets.Any(selected =>
             ReferenceEquals(selected.Target, target));
 
         // Щёлкнули внутри выделения — оно принадлежит пользователю и остаётся как есть.

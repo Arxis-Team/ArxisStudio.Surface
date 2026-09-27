@@ -46,7 +46,7 @@ public partial class NodeEditor : SurfaceView
         KeyCommands.Insert(2, DeleteLinksCommand());
 
         // Выбор узлов и выбор связей взаимоисключающие: Delete значит что-то одно.
-        DesignSelectionChanged += OnNodeSelectionChanged;
+        SurfaceSelectionChanged += OnNodeSelectionChanged;
     }
 
     /// <summary>

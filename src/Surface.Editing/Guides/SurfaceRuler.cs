@@ -25,7 +25,7 @@ namespace ArxisStudio.Surface.Editing;
 /// <c>GuideChangeRequested</c>: набором владеет хост.
 /// </para>
 /// </remarks>
-public class DesignRuler : Control
+public class SurfaceRuler : Control
 {
     /// <summary>Минимальный экранный шаг между подписанными делениями.</summary>
     private const double MinLabelledStep = 60.0;
@@ -43,47 +43,47 @@ public class DesignRuler : Control
     /// Идентификатор свойства ориентации линейки.
     /// </summary>
     public static readonly StyledProperty<Orientation> OrientationProperty =
-        AvaloniaProperty.Register<DesignRuler, Orientation>(nameof(Orientation), Orientation.Horizontal);
+        AvaloniaProperty.Register<SurfaceRuler, Orientation>(nameof(Orientation), Orientation.Horizontal);
 
     /// <summary>
     /// Идентификатор свойства редактора, которому принадлежит линейка.
     /// </summary>
     public static readonly StyledProperty<SurfaceView?> EditorProperty =
-        AvaloniaProperty.Register<DesignRuler, SurfaceView?>(nameof(Editor));
+        AvaloniaProperty.Register<SurfaceRuler, SurfaceView?>(nameof(Editor));
 
     /// <summary>
     /// Идентификатор свойства видимости шкалы.
     /// </summary>
     public static readonly StyledProperty<bool> IsScaleVisibleProperty =
-        AvaloniaProperty.Register<DesignRuler, bool>(nameof(IsScaleVisible), true);
+        AvaloniaProperty.Register<SurfaceRuler, bool>(nameof(IsScaleVisible), true);
 
     /// <summary>
     /// Идентификатор свойства кисти делений.
     /// </summary>
     public static readonly StyledProperty<IBrush?> TickBrushProperty =
-        AvaloniaProperty.Register<DesignRuler, IBrush?>(nameof(TickBrush));
+        AvaloniaProperty.Register<SurfaceRuler, IBrush?>(nameof(TickBrush));
 
     /// <summary>
     /// Идентификатор свойства кисти подписей.
     /// </summary>
     public static readonly StyledProperty<IBrush?> LabelBrushProperty =
-        AvaloniaProperty.Register<DesignRuler, IBrush?>(nameof(LabelBrush));
+        AvaloniaProperty.Register<SurfaceRuler, IBrush?>(nameof(LabelBrush));
 
     /// <summary>
     /// Идентификатор свойства кисти фона.
     /// </summary>
     public static readonly StyledProperty<IBrush?> BackgroundProperty =
-        AvaloniaProperty.Register<DesignRuler, IBrush?>(nameof(Background));
+        AvaloniaProperty.Register<SurfaceRuler, IBrush?>(nameof(Background));
 
     /// <summary>
     /// Идентификатор свойства размера шрифта подписей.
     /// </summary>
     public static readonly StyledProperty<double> LabelFontSizeProperty =
-        AvaloniaProperty.Register<DesignRuler, double>(nameof(LabelFontSize), 9.0);
+        AvaloniaProperty.Register<SurfaceRuler, double>(nameof(LabelFontSize), 9.0);
 
-    static DesignRuler()
+    static SurfaceRuler()
     {
-        AffectsRender<DesignRuler>(
+        AffectsRender<SurfaceRuler>(
             OrientationProperty,
             IsScaleVisibleProperty,
             TickBrushProperty,
@@ -91,7 +91,7 @@ public class DesignRuler : Control
             BackgroundProperty,
             LabelFontSizeProperty);
 
-        EditorProperty.Changed.AddClassHandler<DesignRuler>((ruler, e) => ruler.OnEditorChanged(e));
+        EditorProperty.Changed.AddClassHandler<SurfaceRuler>((ruler, e) => ruler.OnEditorChanged(e));
     }
 
     /// <summary>
@@ -168,9 +168,9 @@ public class DesignRuler : Control
     }
 
     /// <summary>Ось направляющих, которые порождает эта линейка.</summary>
-    private DesignGuideOrientation GuideOrientation => Orientation == Orientation.Horizontal
-        ? DesignGuideOrientation.Horizontal
-        : DesignGuideOrientation.Vertical;
+    private SurfaceGuideOrientation GuideOrientation => Orientation == Orientation.Horizontal
+        ? SurfaceGuideOrientation.Horizontal
+        : SurfaceGuideOrientation.Vertical;
 
     /// <summary>
     /// Пересобирает подписку на viewport редактора.
@@ -249,7 +249,7 @@ public class DesignRuler : Control
         if (new Rect(editor.Bounds.Size).Contains(point))
         {
             var position = ResolveGuidePosition(editor, point, GuideOrientation, e.KeyModifiers);
-            editor.GetService<UserGuideService>()?.RequestChange(DesignGuideChangeKind.Add, new DesignGuide(GuideOrientation, position), null);
+            editor.GetService<UserGuideService>()?.RequestChange(SurfaceGuideChangeKind.Add, new SurfaceGuide(GuideOrientation, position), null);
         }
 
         if (ReferenceEquals(e.Pointer.Captured, this))
@@ -271,7 +271,7 @@ public class DesignRuler : Control
     private void UpdatePreview(SurfaceView editor, PointerEventArgs e)
     {
         var position = ResolveGuidePosition(editor, e.GetPosition(editor), GuideOrientation, e.KeyModifiers);
-        editor.GetService<UserGuideService>()?.SetPreview(new DesignGuide(GuideOrientation, position));
+        editor.GetService<UserGuideService>()?.SetPreview(new SurfaceGuide(GuideOrientation, position));
     }
 
     /// <summary>
@@ -320,7 +320,7 @@ public class DesignRuler : Control
 
         for (var world = first; world <= last; world += minorStep)
         {
-            var screen = DesignGrid.SnapToDevicePixel((world - origin) * zoom, scaling);
+            var screen = SurfaceGrid.SnapToDevicePixel((world - origin) * zoom, scaling);
             if (screen < 0 || screen > length)
                 continue;
 
@@ -384,9 +384,9 @@ public class DesignRuler : Control
     /// <summary>Приёмник переключателя линеек: правит видимость.</summary>
     private sealed class VisibilitySink : IObserver<bool>
     {
-        private readonly DesignRuler _ruler;
+        private readonly SurfaceRuler _ruler;
 
-        public VisibilitySink(DesignRuler ruler) => _ruler = ruler;
+        public VisibilitySink(SurfaceRuler ruler) => _ruler = ruler;
 
         public void OnCompleted()
         {
@@ -404,9 +404,9 @@ public class DesignRuler : Control
     /// <summary>Приёмник изменений viewport: перерисовывает линейку.</summary>
     private sealed class Sink<T> : IObserver<T>
     {
-        private readonly DesignRuler _ruler;
+        private readonly SurfaceRuler _ruler;
 
-        public Sink(DesignRuler ruler) => _ruler = ruler;
+        public Sink(SurfaceRuler ruler) => _ruler = ruler;
 
         public void OnCompleted()
         {
@@ -440,12 +440,12 @@ public class DesignRuler : Control
     /// Координату ставит служба направляющих поверхности — с той же привязкой к сетке,
     /// что и у переноса линии. Поверхность без службы отдаёт мировую координату как есть.
     /// </remarks>
-    private static double ResolveGuidePosition(SurfaceView editor, Point viewportPoint, DesignGuideOrientation orientation, KeyModifiers modifiers)
+    private static double ResolveGuidePosition(SurfaceView editor, Point viewportPoint, SurfaceGuideOrientation orientation, KeyModifiers modifiers)
     {
         if (editor.GetService<UserGuideService>() is { } guides)
             return guides.ResolvePosition(viewportPoint, orientation, modifiers);
 
         var world = editor.GetWorldPosition(viewportPoint);
-        return orientation == DesignGuideOrientation.Vertical ? world.X : world.Y;
+        return orientation == SurfaceGuideOrientation.Vertical ? world.X : world.Y;
     }
 }

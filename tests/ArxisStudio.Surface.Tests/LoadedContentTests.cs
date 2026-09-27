@@ -101,7 +101,7 @@ public class LoadedContentTests
         harness.RunLayout();
 
         Assert.Same(action, harness.Editor.PrimarySelectionTarget!.Target);
-        Assert.Equal(DesignSelectionScope.NestedTarget, harness.Editor.PrimarySelectionTarget.Scope);
+        Assert.Equal(SurfaceSelectionScope.NestedTarget, harness.Editor.PrimarySelectionTarget.Scope);
     }
 
     /// <summary>
@@ -113,35 +113,35 @@ public class LoadedContentTests
     /// редактора было нечем.
     /// </remarks>
     [AvaloniaFact]
-    public void SelectDesignTarget_Selects_A_Control_The_Host_Names()
+    public void SelectTarget_Selects_A_Control_The_Host_Names()
     {
         var (harness, _) = Create(DesignContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
-        Assert.True(harness.Editor.SelectDesignTarget(action));
+        Assert.True(harness.Editor.SelectTarget(action));
         harness.RunLayout();
 
         Assert.Same(action, harness.Editor.PrimarySelectionTarget!.Target);
-        Assert.Equal(DesignSelectionScope.NestedTarget, harness.Editor.PrimarySelectionTarget.Scope);
+        Assert.Equal(SurfaceSelectionScope.NestedTarget, harness.Editor.PrimarySelectionTarget.Scope);
     }
 
     [AvaloniaFact]
-    public void SelectDesignTarget_Replaces_The_Selection_Unless_Asked_To_Add()
+    public void SelectTarget_Replaces_The_Selection_Unless_Asked_To_Add()
     {
         var (harness, _) = Create(DesignContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
         var field = Find<TextBox>(harness, "Field");
 
-        harness.Editor.SelectDesignTarget(action);
-        harness.Editor.SelectDesignTarget(field);
+        harness.Editor.SelectTarget(action);
+        harness.Editor.SelectTarget(field);
         harness.RunLayout();
 
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
 
-        harness.Editor.SelectDesignTarget(action, additive: true);
+        harness.Editor.SelectTarget(action, additive: true);
         harness.RunLayout();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
     }
 
     /// <summary>
@@ -153,35 +153,35 @@ public class LoadedContentTests
     /// повторная отправка того же набора снимала бы выбор ровно с тех строк, которые подтверждала.
     /// </remarks>
     [AvaloniaFact]
-    public void SelectDesignTarget_Additive_Is_Idempotent()
+    public void SelectTarget_Additive_Is_Idempotent()
     {
         var (harness, _) = Create(DesignContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
         var field = Find<TextBox>(harness, "Field");
 
-        harness.Editor.SelectDesignTarget(action);
-        harness.Editor.SelectDesignTarget(field, additive: true);
+        harness.Editor.SelectTarget(action);
+        harness.Editor.SelectTarget(field, additive: true);
         harness.RunLayout();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         // Тот же набор ещё раз.
-        harness.Editor.SelectDesignTarget(action, additive: true);
-        harness.Editor.SelectDesignTarget(field, additive: true);
+        harness.Editor.SelectTarget(action, additive: true);
+        harness.Editor.SelectTarget(field, additive: true);
         harness.RunLayout();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
     }
 
     [AvaloniaFact]
-    public void SelectDesignTarget_Declines_A_Control_That_Is_Not_Editable()
+    public void SelectTarget_Declines_A_Control_That_Is_Not_Editable()
     {
         // Annotated, и ничего не размечено: редактировать нечего, и метод об этом говорит,
         // а не делает вид, что выбрал.
         var (harness, _) = Create(DesignContentMode.Annotated);
         var action = Find<Button>(harness, "Action");
 
-        Assert.False(harness.Editor.SelectDesignTarget(action));
+        Assert.False(harness.Editor.SelectTarget(action));
         Assert.Null(harness.Editor.PrimarySelectionTarget);
     }
 
@@ -251,7 +251,7 @@ public class LoadedContentTests
         harness.Window.MouseUp(centre, MouseButton.Left);
         harness.RunLayout();
 
-        var before = harness.Editor.GetDesignSize(action).Height;
+        var before = harness.Editor.GetTargetSize(action).Height;
 
         var state = new ArxisStudio.Surface.Editing.ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
@@ -261,6 +261,6 @@ public class LoadedContentTests
 
         // Размер honours любая панель, поэтому загруженная форма редактируется
         // по размеру сразу, без разметки.
-        Assert.Equal(before + 40, harness.Editor.GetDesignSize(action).Height, 1);
+        Assert.Equal(before + 40, harness.Editor.GetTargetSize(action).Height, 1);
     }
 }

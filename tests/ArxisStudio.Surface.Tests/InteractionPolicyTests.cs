@@ -9,7 +9,7 @@ using ArxisStudio.Surface.UiDesigner;
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Политики перемещения и изменения размера design target.
+/// Политики перемещения и изменения размера target.
 /// </summary>
 /// <remarks>
 /// Логика чистая и не зависит от структуры выделения, поэтому переживёт
@@ -23,8 +23,8 @@ public class InteractionPolicyTests
     {
         var editor = new DesignEditor();
         var target = new Border();
-        DesignInteraction.SetMovePolicy(target, move);
-        DesignInteraction.SetResizePolicy(target, resize);
+        SurfaceInteraction.SetMovePolicy(target, move);
+        SurfaceInteraction.SetResizePolicy(target, resize);
         return (editor, target);
     }
 
@@ -84,7 +84,7 @@ public class InteractionPolicyTests
         var editor = new DesignEditor();
         var target = new Border();
 
-        Assert.Equal(MovePolicy.Both, DesignInteraction.GetMovePolicy(target));
+        Assert.Equal(MovePolicy.Both, SurfaceInteraction.GetMovePolicy(target));
         Assert.Equal(MovePolicy.Both, editor.GetEffectiveMovePolicy(target));
         Assert.Equal(ResizePolicy.All, editor.GetResizePolicy(target));
     }

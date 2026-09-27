@@ -51,13 +51,13 @@ internal class ItemResizingState : SurfaceItemState
     public override void Enter(SurfaceItemState from)
     {
         var editor = Container.FindAncestorOfType<SurfaceView>();
-        _location = editor?.GetDesignPosition(_target) ?? Container.Location;
+        _location = editor?.GetTargetPosition(_target) ?? Container.Location;
 
-        var size = editor?.GetDesignSize(_target) ?? new Size(
+        var size = editor?.GetTargetSize(_target) ?? new Size(
             double.IsNaN(Container.Width) ? Container.Bounds.Width : Container.Width,
             double.IsNaN(Container.Height) ? Container.Bounds.Height : Container.Height);
 
-        editor?.SetDesignSize(_target, size);
+        editor?.SetTargetSize(_target, size);
         _size = size;
         _startSize = size;
 
@@ -151,7 +151,7 @@ internal class ItemResizingState : SurfaceItemState
                 newH = fixedBottom - editor.ResolveResizeEdge(fixedBottom - newH, proposed, xAxis: false, farEdge: false, modifiers);
         }
 
-        // Приведение к Min/Max делается здесь, а не только внутри SetDesignSize:
+        // Приведение к Min/Max делается здесь, а не только внутри SetTargetSize:
         // неподвижный край считается из итогового размера, иначе он уплывал бы
         // на разницу между запрошенным и разрешённым.
         if (editor != null)
@@ -184,8 +184,8 @@ internal class ItemResizingState : SurfaceItemState
             // Предел жеста применяется здесь, а не на шве записи: шов проходят и
             // фиксация текущего размера на входе в жест, и отмена, и им предел
             // не адресован. Min/Max самого контрола сильнее — их накладывает
-            // CoerceDesignSize следом.
-            var coerced = editor.CoerceDesignSize(
+            // CoerceTargetSize следом.
+            var coerced = editor.CoerceTargetSize(
                 _target,
                 new Size(Math.Max(minWidth, newW), Math.Max(minHeight, newH)));
 
@@ -205,7 +205,7 @@ internal class ItemResizingState : SurfaceItemState
             newY = fixedBottom - newH;
 
         if (editor != null)
-            editor.SetDesignSize(_target, new Size(newW, newH));
+            editor.SetTargetSize(_target, new Size(newW, newH));
         else
         {
             Container.Width = newW;
@@ -216,7 +216,7 @@ internal class ItemResizingState : SurfaceItemState
         if (Math.Abs(newX - _location.X) > 0.1 || Math.Abs(newY - _location.Y) > 0.1)
         {
             if (editor != null)
-                editor.SetDesignPosition(_target, new Point(newX, newY));
+                editor.SetTargetPosition(_target, new Point(newX, newY));
             else
                 Container.Location = new Point(newX, newY);
         }

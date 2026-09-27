@@ -27,5 +27,5 @@ internal interface IEditFacet
     /// <summary>
     /// Описывает изменение для контракта.
     /// </summary>
-    DesignChange CreateChange(Control target, object? before, object? after);
+    TargetChange CreateChange(Control target, object? before, object? after);
 }

@@ -23,12 +23,12 @@ public class StackHostedCharacterizationTests
 
     private static readonly Vector DragDelta = new(60, 40);
 
-    private static (EditorHarness Harness, List<DesignEditCompletedEventArgs> Edits) Create()
+    private static (EditorHarness Harness, List<SurfaceEditCompletedEventArgs> Edits) Create()
     {
         var harness = EditorHarness.CreateStackHosted();
         harness.PlaceContainer(0, CardLocation, CardSize);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
         return (harness, edits);
     }
@@ -76,7 +76,7 @@ public class StackHostedCharacterizationTests
         Drag(harness, centre, DragDelta);
 
         // Раньше стек отмены получал перемещение, которого не было: политика
-        // разрешала жест, запись уходила в пустоту, а DesignEditScope фиксировал
+        // разрешала жест, запись уходила в пустоту, а SurfaceEditScope фиксировал
         // задаваемое значение. Теперь раскладка обнуляет смещение до записи,
         // и фильтр no-op отбрасывает изменение целиком.
         Assert.Empty(edits);

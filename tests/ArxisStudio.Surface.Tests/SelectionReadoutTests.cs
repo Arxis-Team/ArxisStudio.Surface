@@ -61,7 +61,7 @@ public class SelectionReadoutTests
         var harness = EditorHarness.Create();
         harness.PlaceContainer(0, CardLocation, new Size(300, 200));
         var nested = harness.Nested(0);
-        DesignInteraction.SetMovePolicy(nested, MovePolicy.X);
+        SurfaceInteraction.SetMovePolicy(nested, MovePolicy.X);
 
         Select(harness, nested);
 

@@ -66,7 +66,7 @@ public class PlacementStrategyTests
         var editor = new DesignEditor();
         var panel = new AbsolutePanel();
         var child = ChildOf(panel);
-        DesignInteraction.SetMovePolicy(child, MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(child, MovePolicy.None);
 
         // Раскладка позволяет двигать, пользователь запретил — запрет сильнее.
         Assert.Equal(MovePolicy.None, editor.GetEffectiveMovePolicy(child));
@@ -78,11 +78,11 @@ public class PlacementStrategyTests
         var editor = new DesignEditor();
         var panel = new StackPanel();
         var child = ChildOf(panel);
-        DesignInteraction.SetMovePolicy(child, MovePolicy.Both);
+        SurfaceInteraction.SetMovePolicy(child, MovePolicy.Both);
 
         // Пользователь разрешил, но StackPanel не читает Layout.X/Y:
         // разрешать жест значило бы обещать то, чего не произойдёт.
-        Assert.Equal(MovePolicy.Both, DesignInteraction.GetMovePolicy(child));
+        Assert.Equal(MovePolicy.Both, SurfaceInteraction.GetMovePolicy(child));
         Assert.Equal(MovePolicy.None, editor.GetEffectiveMovePolicy(child));
     }
 
@@ -92,7 +92,7 @@ public class PlacementStrategyTests
         var editor = new DesignEditor();
         var panel = new AbsolutePanel();
         var child = ChildOf(panel);
-        DesignInteraction.SetMovePolicy(child, MovePolicy.X);
+        SurfaceInteraction.SetMovePolicy(child, MovePolicy.X);
 
         Assert.Equal(MovePolicy.X, editor.GetEffectiveMovePolicy(child));
     }
@@ -120,8 +120,8 @@ public class PlacementStrategyTests
         container.GetVisualDescendants().OfType<AbsolutePanel>().First().Children.Add(canvas);
         harness.RunLayout();
 
-        var before = editor.GetDesignPosition(child);
-        editor.SetDesignPosition(child, before + new Vector(30, 15));
+        var before = editor.GetTargetPosition(child);
+        editor.SetTargetPosition(child, before + new Vector(30, 15));
         harness.RunLayout();
 
         // Canvas игнорирует Layout.X/Y, поэтому стратегия пишет его собственные

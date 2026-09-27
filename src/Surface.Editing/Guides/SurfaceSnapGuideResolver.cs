@@ -17,7 +17,7 @@ namespace ArxisStudio.Surface.Editing;
 /// отдельного правила под него не нужно.
 /// </para>
 /// </remarks>
-internal static class DesignSnapGuideResolver
+internal static class SurfaceSnapGuideResolver
 {
     /// <summary>
     /// Допуск совпадения при сборе линий. Совпадение здесь уже точное:
@@ -25,11 +25,11 @@ internal static class DesignSnapGuideResolver
     /// </summary>
     private const double Epsilon = 0.01;
 
-    private static readonly DesignSnapGuideAlignment[] Alignments =
+    private static readonly SurfaceSnapGuideAlignment[] Alignments =
     {
-        DesignSnapGuideAlignment.Near,
-        DesignSnapGuideAlignment.Centre,
-        DesignSnapGuideAlignment.Far
+        SurfaceSnapGuideAlignment.Near,
+        SurfaceSnapGuideAlignment.Centre,
+        SurfaceSnapGuideAlignment.Far
     };
 
     /// <summary>
@@ -125,14 +125,14 @@ internal static class DesignSnapGuideResolver
     /// обязана дотянуться до самого дальнего.
     /// </para>
     /// </remarks>
-    internal static IReadOnlyList<DesignSnapGuide> CollectGuides(Rect bounds, IReadOnlyList<Rect> neighbours)
+    internal static IReadOnlyList<SurfaceSnapGuide> CollectGuides(Rect bounds, IReadOnlyList<Rect> neighbours)
     {
-        List<DesignSnapGuide>? guides = null;
+        List<SurfaceSnapGuide>? guides = null;
 
         CollectAxis(bounds, neighbours, xAxis: true, ref guides);
         CollectAxis(bounds, neighbours, xAxis: false, ref guides);
 
-        return guides ?? (IReadOnlyList<DesignSnapGuide>)Array.Empty<DesignSnapGuide>();
+        return guides ?? (IReadOnlyList<SurfaceSnapGuide>)Array.Empty<SurfaceSnapGuide>();
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ internal static class DesignSnapGuideResolver
         Rect bounds,
         IReadOnlyList<Rect> neighbours,
         bool xAxis,
-        ref List<DesignSnapGuide>? guides)
+        ref List<SurfaceSnapGuide>? guides)
     {
         foreach (var alignment in Alignments)
         {
@@ -214,8 +214,8 @@ internal static class DesignSnapGuideResolver
                         continue;
 
                     matched = true;
-                    centre |= alignment == DesignSnapGuideAlignment.Centre
-                              && neighbourAlignment == DesignSnapGuideAlignment.Centre;
+                    centre |= alignment == SurfaceSnapGuideAlignment.Centre
+                              && neighbourAlignment == SurfaceSnapGuideAlignment.Centre;
                     start = Math.Min(start, xAxis ? neighbour.Y : neighbour.X);
                     end = Math.Max(end, xAxis ? neighbour.Bottom : neighbour.Right);
                 }
@@ -225,25 +225,25 @@ internal static class DesignSnapGuideResolver
                 continue;
 
             var orientation = xAxis
-                ? DesignSnapGuideOrientation.Vertical
-                : DesignSnapGuideOrientation.Horizontal;
+                ? SurfaceSnapGuideOrientation.Vertical
+                : SurfaceSnapGuideOrientation.Horizontal;
 
-            var kind = centre ? DesignSnapGuideKind.Centre : DesignSnapGuideKind.Edge;
-            (guides ??= new List<DesignSnapGuide>()).Add(new DesignSnapGuide(orientation, line, start, end, kind));
+            var kind = centre ? SurfaceSnapGuideKind.Centre : SurfaceSnapGuideKind.Edge;
+            (guides ??= new List<SurfaceSnapGuide>()).Add(new SurfaceSnapGuide(orientation, line, start, end, kind));
         }
     }
 
-    private static double Coordinate(Rect rect, DesignSnapGuideAlignment alignment, bool xAxis) => alignment switch
+    private static double Coordinate(Rect rect, SurfaceSnapGuideAlignment alignment, bool xAxis) => alignment switch
     {
-        DesignSnapGuideAlignment.Near => xAxis ? rect.X : rect.Y,
-        DesignSnapGuideAlignment.Centre => xAxis ? rect.X + (rect.Width / 2) : rect.Y + (rect.Height / 2),
+        SurfaceSnapGuideAlignment.Near => xAxis ? rect.X : rect.Y,
+        SurfaceSnapGuideAlignment.Centre => xAxis ? rect.X + (rect.Width / 2) : rect.Y + (rect.Height / 2),
         _ => xAxis ? rect.Right : rect.Bottom
     };
 
     /// <summary>
     /// Точка прямоугольника, участвующая в выравнивании по одной оси.
     /// </summary>
-    private enum DesignSnapGuideAlignment
+    private enum SurfaceSnapGuideAlignment
     {
         Near,
         Centre,

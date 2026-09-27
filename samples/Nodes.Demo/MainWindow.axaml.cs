@@ -41,7 +41,7 @@ public partial class MainWindow : Window
         Editor.LinkDeleteRequested += OnLinkDeleteRequested;
         Editor.LinkSplitRequested += OnLinkSplitRequested;
         Editor.DeleteRequested += OnDeleteRequested;
-        Editor.DesignSelectionChanged += (_, _) => UpdateChrome();
+        Editor.SurfaceSelectionChanged += (_, _) => UpdateChrome();
         Editor.PropertyChanged += (_, e) =>
         {
             if (e.Property == SurfaceView.ViewportZoomProperty || e.Property == NodeEditor.SelectedLinksProperty)
@@ -171,7 +171,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Удаляет выбранные узлы вместе с их связями — одной записью истории.
     /// </summary>
-    private void OnDeleteRequested(object? sender, DesignEditorDeleteRequestedEventArgs e)
+    private void OnDeleteRequested(object? sender, SurfaceDeleteRequestedEventArgs e)
     {
         var nodes = new List<GraphNode>();
         foreach (var target in e.Targets)
@@ -211,6 +211,6 @@ public partial class MainWindow : Window
             return;
 
         StatusText.Text = $"Узлов {_document.Nodes.Count}, связей {_document.Links.Count} · выбрано узлов "
-            + $"{Editor.SelectedDesignTargets.Count}, связей {Editor.SelectedLinks.Count}";
+            + $"{Editor.SelectedTargets.Count}, связей {Editor.SelectedLinks.Count}";
     }
 }

@@ -16,7 +16,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface.States;
@@ -31,13 +31,13 @@ public partial class DesignEditor
     /// Держит подписки на свойства текущих selection targets в актуальном состоянии.
     /// </summary>
     /// <remarks>
-    /// Подписка идёт на разрешённые targets из <see cref="SurfaceView.SelectedDesignTargets"/>,
+    /// Подписка идёт на разрешённые targets из <see cref="SurfaceView.SelectedTargets"/>,
     /// а не на <c>_selectedTargets</c>: если у выбранного item'а нет явного target,
     /// его геометрию задаёт default target, и следить нужно за ним.
     /// </remarks>
     private void SyncSelectedTargetSubscriptions()
     {
-        var targets = SelectedDesignTargets;
+        var targets = SelectedTargets;
 
         for (var i = _subscribedTargets.Count - 1; i >= 0; i--)
         {
@@ -76,8 +76,8 @@ public partial class DesignEditor
         if (e.Property == BoundsProperty ||
             e.Property == DesignLayout.DesignXProperty ||
             e.Property == DesignLayout.DesignYProperty ||
-            e.Property == DesignInteraction.ResizePolicyProperty ||
-            e.Property == DesignInteraction.MovePolicyProperty)
+            e.Property == SurfaceInteraction.ResizePolicyProperty ||
+            e.Property == SurfaceInteraction.MovePolicyProperty)
         {
             UpdateSelectionOverlayState();
         }
@@ -105,12 +105,12 @@ public partial class DesignEditor
         // Locked-визуал — это не отдельное оформление, а adorner с политиками
         // None/None: рамка, которой политики не посчитали, выглядит заблокированной
         // и ручки у неё неинтерактивны. Одна причина на оба симптома.
-        if (ShowsGroupFrame && SelectedDesignTargets.Count > 1)
+        if (ShowsGroupFrame && SelectedTargets.Count > 1)
         {
             groupResizePolicy = ArxisStudio.Surface.ResizePolicy.All;
             groupMovePolicy = ArxisStudio.Surface.MovePolicy.Both;
 
-            foreach (var selectedTarget in SelectedDesignTargets)
+            foreach (var selectedTarget in SelectedTargets)
             {
                 groupResizePolicy &= GetResizePolicy(selectedTarget.Target);
                 groupMovePolicy &= GetEffectiveMovePolicy(selectedTarget.Target);
@@ -125,7 +125,7 @@ public partial class DesignEditor
     }
 
     /// <summary>
-    /// Пишет слой design target'ов по точке нажатия.
+    /// Пишет слой target'ов по точке нажатия.
     /// </summary>
     /// <remarks>
     /// Оверлей отсюда не пересобирается: это половина транзакции, и пересборка
@@ -171,10 +171,10 @@ public partial class DesignEditor
         var isAdditive = ShouldUseAdditiveSelection(modifiers);
         // Грубая проверка по владельцу верхнего уровня плюс точная по design host:
         // target уже известен, поэтому уровень вложенности можно сверить честно.
-        if (isAdditive && (!CanAddNestedTargetToContainer(container) || !SharesDesignHostWithSelection(target)))
+        if (isAdditive && (!CanAddNestedTargetToContainer(container) || !SharesTargetHostWithSelection(target)))
             return;
 
-        var groupHost = FindDesignHost(target) ?? container;
+        var groupHost = FindTargetHost(target) ?? container;
         if (!isAdditive)
         {
             // Клик по участнику закрытой группы выбирает её целиком.
@@ -226,7 +226,7 @@ public partial class DesignEditor
     }
 
     /// <summary>
-    /// Определяет, может ли контрол быть design target внутри указанного контейнера.
+    /// Определяет, может ли контрол быть target внутри указанного контейнера.
     /// </summary>
     /// <remarks>
     /// В режиме <see cref="DesignContentMode.Loaded"/> размечать содержимое некому,
@@ -242,7 +242,7 @@ public partial class DesignEditor
 
         // Внутренности контролов отсекает уже сам обход авторской разметки,
         // здесь остаётся только не залезть в чужой контейнер.
-        return ReferenceEquals(FindDesignHost(control), owner);
+        return ReferenceEquals(FindTargetHost(control), owner);
     }
 
     private static bool HasDesignerLayoutMetadata(Control control)
@@ -269,7 +269,7 @@ public partial class DesignEditor
     /// контрола внутри вложенного — вложенный, для вложенного контейнера — его владелец.
     /// Это единица группировки выделения: вместе выбираются только соседи по host'у.
     /// </remarks>
-    private static DesignEditorItem? FindDesignHost(Control target)
+    private static DesignEditorItem? FindTargetHost(Control target)
         => target.FindAncestorOfType<DesignEditorItem>();
 
     internal static IEnumerable<Control> EnumerateSelectionCandidates(DesignEditorItem item)

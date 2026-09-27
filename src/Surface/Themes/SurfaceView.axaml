@@ -13,7 +13,7 @@
         экранных координатах, элементы и рамка — под ViewportTransform.
     -->
     <ControlTheme x:Key="{x:Type surface:SurfaceView}" TargetType="surface:SurfaceView">
-        <Setter Property="Background" Value="{DynamicResource DesignEditor.BackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource Surface.BackgroundBrush}" />
         <Setter Property="ClipToBounds" Value="True" />
         <Setter Property="Template">
             <ControlTemplate>
@@ -21,7 +21,7 @@
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}">
                     <Grid>
-                        <surface:DesignGrid Name="PART_Grid"
+                        <surface:SurfaceGrid Name="PART_Grid"
                                             ViewportLocation="{TemplateBinding ViewportLocation}"
                                             ViewportZoom="{TemplateBinding ViewportZoom}"
                                             IsVisible="{TemplateBinding ShowGrid}" />
@@ -43,9 +43,9 @@
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
                             <Rectangle Name="PART_Marquee"
-                                       Stroke="{DynamicResource DesignEditor.MarqueeStrokeBrush}"
-                                       StrokeThickness="{DynamicResource DesignEditor.Selection.StrokeThickness}"
-                                       Fill="{DynamicResource DesignEditor.MarqueeFillBrush}"
+                                       Stroke="{DynamicResource Surface.MarqueeStrokeBrush}"
+                                       StrokeThickness="{DynamicResource Surface.Selection.StrokeThickness}"
+                                       Fill="{DynamicResource Surface.MarqueeFillBrush}"
                                        RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Surface.InverseScaleConverter}}"
                                        RenderTransformOrigin="0,0"
                                        Canvas.Top="{Binding SelectedArea.Y, RelativeSource={RelativeSource TemplatedParent}}"

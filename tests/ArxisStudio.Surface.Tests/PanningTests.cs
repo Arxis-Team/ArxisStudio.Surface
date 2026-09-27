@@ -105,7 +105,7 @@ public class PanningTests
     public void The_Button_Is_Configurable()
     {
         var harness = Create();
-        harness.Editor.InputGestures.PanButton = DesignEditorPointerButton.Right;
+        harness.Editor.InputGestures.PanButton = SurfacePointerButton.Right;
         harness.Editor.InputGestures.PanModifiers = KeyModifiers.Alt;
 
         Pan(harness, new Vector(60, 40));
@@ -119,11 +119,11 @@ public class PanningTests
     public void Panning_Leaves_The_Selection_Alone()
     {
         var harness = Create();
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
-        var selected = harness.Editor.SelectedDesignTargets.Single().Target;
+        harness.Editor.SelectTarget(harness.Nested(0));
+        var selected = harness.Editor.SelectedTargets.Single().Target;
 
         var raised = 0;
-        harness.Editor.DesignSelectionChanged += (_, _) => raised++;
+        harness.Editor.SurfaceSelectionChanged += (_, _) => raised++;
 
         // Протяжка проходит прямо по контейнеру, а не по пустому месту. Точка
         // выбрана мимо ручек адорнера: (150,130) — это угол выделенного Nested,
@@ -134,7 +134,7 @@ public class PanningTests
         harness.RunLayout();
 
         Assert.NotEqual(default, harness.Editor.ViewportLocation);
-        Assert.Same(selected, harness.Editor.SelectedDesignTargets.Single().Target);
+        Assert.Same(selected, harness.Editor.SelectedTargets.Single().Target);
         Assert.Equal(0, raised);
     }
 

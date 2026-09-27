@@ -10,8 +10,8 @@ namespace ArxisStudio.Surface;
 public partial class SurfaceView
 {
     // Текущая единица редактирования. Живёт от начала жеста до его завершения:
-    // все мутации проходят через SetDesignPosition/SetDesignSize и попадают в неё.
-    private DesignEditScope? _activeEdit;
+    // все мутации проходят через SetTargetPosition/SetTargetSize и попадают в неё.
+    private SurfaceEditScope? _activeEdit;
 
     private ISurfaceGeometry? _geometry;
 
@@ -32,7 +32,7 @@ public partial class SurfaceView
     /// Вернуть состояние можно через <see cref="ApplyGeometry"/>.
     /// </para>
     /// </remarks>
-    public event EventHandler<DesignEditCompletedEventArgs>? EditCompleted;
+    public event EventHandler<SurfaceEditCompletedEventArgs>? EditCompleted;
 
     /// <summary>
     /// Геометрия target'ов: где они и можно ли задать им позицию.
@@ -58,7 +58,7 @@ public partial class SurfaceView
     /// </summary>
     /// <remarks>
     /// Порядок добавления — порядок, в котором изменения участников попадают в
-    /// <see cref="DesignEditCompletedEventArgs.Changes"/> после геометрии и порядка.
+    /// <see cref="SurfaceEditCompletedEventArgs.Changes"/> после геометрии и порядка.
     /// </remarks>
     private protected void AddEditFacet(IEditFacet facet) => _editFacets.Add(facet);
 
@@ -76,7 +76,7 @@ public partial class SurfaceView
     /// </summary>
     /// <remarks>
     /// Ядро публикует выделение само: без этого голая поверхность записывала выбор, но
-    /// не сообщала о нём — <see cref="SelectedDesignTargets"/> оставался пустым, событие
+    /// не сообщала о нём — <see cref="SelectedTargets"/> оставался пустым, событие
     /// не приходило, а выбранный контейнер не удерживал нажатие и отдавал его рамке, так
     /// что перетащить ничего было нельзя. Рамки и ручки ядро не рисует: выбранный
     /// контейнер показывает себя своей темой.
@@ -94,7 +94,7 @@ public partial class SurfaceView
         ApplySelectionSnapshot(CreateSelectionTargetsSnapshot(primaryItem, primary));
     }
 
-    internal Point GetDesignPosition(Control control)
+    internal Point GetTargetPosition(Control control)
         => Geometry.GetPosition(control);
 
     /// <summary>
@@ -105,7 +105,7 @@ public partial class SurfaceView
     /// это единственная точка записи, поэтому только тут можно гарантировать,
     /// что в контракт изменений не попадёт перемещение, которого не произошло.
     /// </remarks>
-    internal void SetDesignPosition(Control control, Point position)
+    internal void SetTargetPosition(Control control, Point position)
     {
         if (!Geometry.CanSetPosition(control))
             return;
@@ -139,35 +139,35 @@ public partial class SurfaceView
     /// те отстают на проход диспетчера и сразу после записи ещё старые.
     /// </para>
     /// </remarks>
-    public bool SetDesignGeometry(Control target, Rect bounds)
+    public bool SetTargetGeometry(Control target, Rect bounds)
     {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
         // Вид правки — по тому, что изменилось: у размера своя единица, как и у жеста.
-        var kind = GetDesignSize(target) == bounds.Size
-            ? DesignEditKind.Move
-            : DesignEditKind.Resize;
+        var kind = GetTargetSize(target) == bounds.Size
+            ? SurfaceEditKind.Move
+            : SurfaceEditKind.Resize;
 
         BeginEdit(kind);
-        SetDesignSize(target, bounds.Size);
-        SetDesignPosition(target, bounds.Position);
+        SetTargetSize(target, bounds.Size);
+        SetTargetPosition(target, bounds.Position);
 
         var applied = CommitEdit();
         RefreshSelectionOverlay();
         return applied;
     }
 
-    internal Size GetDesignSize(Control control)
+    internal Size GetTargetSize(Control control)
     {
         var width = double.IsNaN(control.Width) ? control.Bounds.Width : control.Width;
         var height = double.IsNaN(control.Height) ? control.Bounds.Height : control.Height;
         return new Size(width, height);
     }
 
-    internal void SetDesignSize(Control control, Size size)
+    internal void SetTargetSize(Control control, Size size)
     {
-        var coerced = CoerceDesignSize(control, size);
+        var coerced = CoerceTargetSize(control, size);
 
         if (!_suppressEditRecording)
             _activeEdit?.RecordSize(this, control, coerced);
@@ -188,14 +188,14 @@ public partial class SurfaceView
     /// При <c>Max &lt; Min</c> побеждает минимум — так же, как в самой Avalonia.
     /// </para>
     /// <para>
-    /// Минимум редактора (<see cref="DesignEditorInteractionOptions.ResizeMinSize"/>) сюда
+    /// Минимум редактора (<see cref="SurfaceInteractionOptions.ResizeMinSize"/>) сюда
     /// <b>не входит</b>: он предел жеста, а не свойство контрола. Пока он стоял здесь, его
     /// получала любая запись размера — в том числе та, которой вход в жест фиксирует
     /// текущий размер, и та, которой отмена возвращает записанный. Контрол мельче порога
     /// раздувался от простого нажатия на ручку, а отмена не возвращала его обратно.
     /// </para>
     /// </remarks>
-    internal Size CoerceDesignSize(Control control, Size size)
+    internal Size CoerceTargetSize(Control control, Size size)
     {
         return new Size(
             ClampSize(size.Width, control.MinWidth, control.MaxWidth),
@@ -205,7 +205,7 @@ public partial class SurfaceView
     private static double ClampSize(double value, double min, double max)
         => Math.Max(Math.Min(value, max), min);
 
-    private protected void SetDesignZIndex(Control control, int zIndex)
+    private protected void SetTargetZIndex(Control control, int zIndex)
     {
         if (!_suppressEditRecording)
             _activeEdit?.RecordZIndex(this, control, zIndex);
@@ -216,22 +216,22 @@ public partial class SurfaceView
     /// <summary>
     /// Отменяет изменение, возвращая target в состояние до него.
     /// </summary>
-    /// <param name="change">Изменение из <see cref="DesignEditCompletedEventArgs.Changes"/>.</param>
+    /// <param name="change">Изменение из <see cref="SurfaceEditCompletedEventArgs.Changes"/>.</param>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="change"/> равен <see langword="null"/>.</exception>
     /// <remarks>
     /// Разбирать конкретный тип изменения приложению не нужно: стек отмены пишется
     /// одинаково для геометрии и для порядка перекрытия.
     /// </remarks>
-    public void Revert(DesignChange change) => Apply(change, revert: true);
+    public void Revert(TargetChange change) => Apply(change, revert: true);
 
     /// <summary>
     /// Повторяет ранее отменённое изменение.
     /// </summary>
-    /// <param name="change">Изменение из <see cref="DesignEditCompletedEventArgs.Changes"/>.</param>
+    /// <param name="change">Изменение из <see cref="SurfaceEditCompletedEventArgs.Changes"/>.</param>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="change"/> равен <see langword="null"/>.</exception>
-    public void Reapply(DesignChange change) => Apply(change, revert: false);
+    public void Reapply(TargetChange change) => Apply(change, revert: false);
 
-    private void Apply(DesignChange change, bool revert)
+    private void Apply(TargetChange change, bool revert)
     {
         if (change == null)
             throw new ArgumentNullException(nameof(change));
@@ -256,7 +256,7 @@ public partial class SurfaceView
         _suppressEditRecording = true;
         try
         {
-            SetDesignZIndex(target, zIndex);
+            SetTargetZIndex(target, zIndex);
         }
         finally
         {
@@ -271,8 +271,8 @@ public partial class SurfaceView
     /// <param name="bounds">Целевая геометрия в design-координатах.</param>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="target"/> равен <see langword="null"/>.</exception>
     /// <remarks>
-    /// Предназначен для отмены и повтора: принимает <see cref="DesignGeometryChange.OldBounds"/>
-    /// или <see cref="DesignGeometryChange.NewBounds"/> напрямую. Запись изменений на время
+    /// Предназначен для отмены и повтора: принимает <see cref="GeometryChange.OldBounds"/>
+    /// или <see cref="GeometryChange.NewBounds"/> напрямую. Запись изменений на время
     /// вызова подавляется, поэтому отмена не порождает новую запись в стеке.
     /// </remarks>
     /// <example>
@@ -290,8 +290,8 @@ public partial class SurfaceView
         _suppressEditRecording = true;
         try
         {
-            SetDesignSize(target, bounds.Size);
-            SetDesignPosition(target, bounds.Position);
+            SetTargetSize(target, bounds.Size);
+            SetTargetPosition(target, bounds.Position);
         }
         finally
         {
@@ -322,12 +322,12 @@ public partial class SurfaceView
     /// без единого признака. Поздняя запись хуже своевременной, но несравнимо лучше
     /// потерянной.
     /// </remarks>
-    private protected void BeginEdit(DesignEditKind kind)
+    private protected void BeginEdit(SurfaceEditKind kind)
     {
         if (_activeEdit != null)
             CommitEdit();
 
-        _activeEdit = new DesignEditScope(kind);
+        _activeEdit = new SurfaceEditScope(kind);
     }
 
     /// <summary>
@@ -335,7 +335,7 @@ public partial class SurfaceView
     /// </summary>
     /// <returns><see langword="true"/>, если изменения были опубликованы.</returns>
     /// <remarks>
-    /// Ответ нужен точке записи снаружи жеста: <see cref="SetDesignGeometry"/> обязан
+    /// Ответ нужен точке записи снаружи жеста: <see cref="SetTargetGeometry"/> обязан
     /// сказать хосту, приняли его правку или раскладка её отсекла, а перечитать
     /// design-координаты сразу нельзя — они отстают на проход диспетчера.
     /// </remarks>
@@ -351,7 +351,7 @@ public partial class SurfaceView
         if (changes.Count == 0)
             return false;
 
-        EditCompleted?.Invoke(this, new DesignEditCompletedEventArgs(scope.Kind, changes));
+        EditCompleted?.Invoke(this, new SurfaceEditCompletedEventArgs(scope.Kind, changes));
         return true;
     }
 
@@ -443,12 +443,12 @@ public partial class SurfaceView
     /// Стек правок принадлежит хосту, поэтому редактор ничего не отменяет сам.
     /// Без подписчика нажатие остаётся необработанным и всплывает дальше.
     /// </remarks>
-    public event EventHandler<DesignEditorHistoryRequestedEventArgs>? UndoRequested;
+    public event EventHandler<SurfaceHistoryRequestedEventArgs>? UndoRequested;
 
     /// <summary>
     /// Возникает, когда пользователь просит повторить отменённую правку.
     /// </summary>
-    public event EventHandler<DesignEditorHistoryRequestedEventArgs>? RedoRequested;
+    public event EventHandler<SurfaceHistoryRequestedEventArgs>? RedoRequested;
 
     /// <summary>
     /// Поднимает запрос к истории правок.
@@ -459,15 +459,15 @@ public partial class SurfaceView
     /// Обход останавливается на первом выполнившем — по той же причине, что у удаления
     /// и перестановки: второй обработчик отменял бы уже не то, о чём его спросили.
     /// </remarks>
-    private protected bool TryRequestHistory(EventHandler<DesignEditorHistoryRequestedEventArgs>? handler)
+    private protected bool TryRequestHistory(EventHandler<SurfaceHistoryRequestedEventArgs>? handler)
     {
         if (handler == null)
             return false;
 
-        var args = new DesignEditorHistoryRequestedEventArgs();
+        var args = new SurfaceHistoryRequestedEventArgs();
         foreach (var invocation in handler.GetInvocationList())
         {
-            ((EventHandler<DesignEditorHistoryRequestedEventArgs>)invocation)(this, args);
+            ((EventHandler<SurfaceHistoryRequestedEventArgs>)invocation)(this, args);
 
             if (args.Handled)
                 break;

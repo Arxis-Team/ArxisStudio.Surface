@@ -14,13 +14,13 @@ public partial class DesignEditor
     /// <summary>
     /// Идентификатор свойства линий выравнивания, найденных во время жеста.
     /// </summary>
-    public static readonly AttachedProperty<IReadOnlyList<DesignSnapGuide>> SnapGuidesProperty =
+    public static readonly AttachedProperty<IReadOnlyList<SurfaceSnapGuide>> SnapGuidesProperty =
         SurfaceSnapping.SnapGuidesProperty.AddOwner<DesignEditor>();
 
     /// <summary>
     /// Идентификатор свойства подсказок о равных интервалах.
     /// </summary>
-    public static readonly AttachedProperty<IReadOnlyList<DesignSpacingHint>> SpacingHintsProperty =
+    public static readonly AttachedProperty<IReadOnlyList<SurfaceSpacingHint>> SpacingHintsProperty =
         SurfaceSnapping.SpacingHintsProperty.AddOwner<DesignEditor>();
 
     private readonly SnapService _snap;
@@ -30,12 +30,12 @@ public partial class DesignEditor
     /// <summary>
     /// Получает линии выравнивания, найденные во время жеста.
     /// </summary>
-    public IReadOnlyList<DesignSnapGuide> SnapGuides => GetValue(SnapGuidesProperty);
+    public IReadOnlyList<SurfaceSnapGuide> SnapGuides => GetValue(SnapGuidesProperty);
 
     /// <summary>
     /// Получает подсказки о равных интервалах, найденные во время жеста.
     /// </summary>
-    public IReadOnlyList<DesignSpacingHint> SpacingHints => GetValue(SpacingHintsProperty);
+    public IReadOnlyList<SurfaceSpacingHint> SpacingHints => GetValue(SpacingHintsProperty);
 
     internal bool ShouldSnap(KeyModifiers modifiers) => Snap.ShouldSnap(modifiers);
 

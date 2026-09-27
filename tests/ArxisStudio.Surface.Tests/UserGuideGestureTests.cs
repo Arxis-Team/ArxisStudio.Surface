@@ -35,12 +35,12 @@ public class UserGuideGestureTests
     /// <summary>Координата вертикальной направляющей в мировых единицах.</summary>
     private const double GuideX = 150;
 
-    private sealed record Log(List<DesignGuideChangeRequestedEventArgs> Requests);
+    private sealed record Log(List<SurfaceGuideChangeRequestedEventArgs> Requests);
 
     /// <summary>Переводит точку редактора в координаты окна.</summary>
     private static Point InWindow(double x, double y) => new(x + Inset, y + Inset);
 
-    private static (EditorHarness Harness, ObservableCollection<DesignGuide> Guides) Create()
+    private static (EditorHarness Harness, ObservableCollection<SurfaceGuide> Guides) Create()
     {
         var nodes = new List<TestNode> { new("guide0") };
 
@@ -63,7 +63,7 @@ public class UserGuideGestureTests
         editor.InteractionOptions.IsSnapToGridEnabled = false;
         editor.InteractionOptions.IsSnapToGuidesEnabled = false;
 
-        var guides = new ObservableCollection<DesignGuide> { DesignGuide.Vertical(GuideX) };
+        var guides = new ObservableCollection<SurfaceGuide> { SurfaceGuide.Vertical(GuideX) };
         editor.Guides = guides;
 
         var window = new Window
@@ -83,7 +83,7 @@ public class UserGuideGestureTests
 
     private static Log Listen(EditorHarness harness, bool handle = false)
     {
-        var log = new Log(new List<DesignGuideChangeRequestedEventArgs>());
+        var log = new Log(new List<SurfaceGuideChangeRequestedEventArgs>());
         harness.Editor.GuideChangeRequested += (_, e) =>
         {
             log.Requests.Add(e);
@@ -113,9 +113,9 @@ public class UserGuideGestureTests
         DragGuide(harness, new Point(GuideX, 300), new Point(GuideX + 60, 300));
 
         var request = Assert.Single(log.Requests);
-        Assert.Equal(DesignGuideChangeKind.Move, request.Kind);
-        Assert.Equal(DesignGuide.Vertical(GuideX), request.Original);
-        Assert.Equal(DesignGuide.Vertical(GuideX + 60), request.Guide);
+        Assert.Equal(SurfaceGuideChangeKind.Move, request.Kind);
+        Assert.Equal(SurfaceGuide.Vertical(GuideX), request.Original);
+        Assert.Equal(SurfaceGuide.Vertical(GuideX + 60), request.Guide);
     }
 
     /// <summary>
@@ -133,8 +133,8 @@ public class UserGuideGestureTests
 
         DragGuide(harness, new Point(GuideX, 300), new Point(GuideX + 60, 300));
 
-        Assert.Equal(DesignGuide.Vertical(GuideX), Assert.Single(guides));
-        Assert.Equal(DesignGuide.Vertical(GuideX), Assert.Single(harness.Editor.UserGuides));
+        Assert.Equal(SurfaceGuide.Vertical(GuideX), Assert.Single(guides));
+        Assert.Equal(SurfaceGuide.Vertical(GuideX), Assert.Single(harness.Editor.UserGuides));
     }
 
     [AvaloniaFact]
@@ -149,7 +149,7 @@ public class UserGuideGestureTests
 
         DragGuide(harness, new Point(GuideX, 300), new Point(GuideX + 60, 300));
 
-        Assert.Equal(DesignGuide.Vertical(GuideX + 60), Assert.Single(harness.Editor.UserGuides));
+        Assert.Equal(SurfaceGuide.Vertical(GuideX + 60), Assert.Single(harness.Editor.UserGuides));
     }
 
     [AvaloniaFact]
@@ -250,7 +250,7 @@ public class UserGuideGestureTests
 
         // И линия по-прежнему на месте: её снова можно схватить.
         DragGuide(harness, new Point(GuideX, 300), new Point(GuideX + 60, 300));
-        Assert.Equal(DesignGuide.Vertical(GuideX), Assert.Single(guides));
+        Assert.Equal(SurfaceGuide.Vertical(GuideX), Assert.Single(guides));
     }
 
     // ---- Удаление -------------------------------------------------------------
@@ -271,8 +271,8 @@ public class UserGuideGestureTests
         harness.RunLayout();
 
         var request = Assert.Single(log.Requests);
-        Assert.Equal(DesignGuideChangeKind.Remove, request.Kind);
-        Assert.Equal(DesignGuide.Vertical(GuideX), request.Guide);
+        Assert.Equal(SurfaceGuideChangeKind.Remove, request.Kind);
+        Assert.Equal(SurfaceGuide.Vertical(GuideX), request.Guide);
     }
 
     // ---- Превью ---------------------------------------------------------------
@@ -287,7 +287,7 @@ public class UserGuideGestureTests
         harness.Window.MouseMove(InWindow(GuideX + 60, 300));
         harness.RunLayout();
 
-        Assert.Equal(DesignGuide.Vertical(GuideX + 60), harness.Editor.GuidePreview);
+        Assert.Equal(SurfaceGuide.Vertical(GuideX + 60), harness.Editor.GuidePreview);
 
         harness.Window.MouseUp(InWindow(GuideX + 60, 300), MouseButton.Left);
         harness.RunLayout();
@@ -319,7 +319,7 @@ public class UserGuideGestureTests
         harness.RunLayout();
 
         Assert.NotNull(harness.Editor.GuidePreview);
-        Assert.Empty(harness.Editor.SelectedDesignTargets);
+        Assert.Empty(harness.Editor.SelectedTargets);
 
         harness.Window.MouseUp(InWindow(onBoth.X + 40, onBoth.Y), MouseButton.Left);
     }
@@ -342,7 +342,7 @@ public class UserGuideGestureTests
         harness.RunLayout();
 
         Assert.Null(harness.Editor.GuidePreview);
-        Assert.NotEmpty(harness.Editor.SelectedDesignTargets);
+        Assert.NotEmpty(harness.Editor.SelectedTargets);
     }
 
     // ---- Привязка -------------------------------------------------------------
@@ -357,7 +357,7 @@ public class UserGuideGestureTests
         DragGuide(harness, new Point(GuideX, 300), new Point(213, 300));
 
         // Шаг сетки 20: 213 садится на 220.
-        Assert.Equal(DesignGuide.Vertical(220), Assert.Single(log.Requests).Guide);
+        Assert.Equal(SurfaceGuide.Vertical(220), Assert.Single(log.Requests).Guide);
     }
 
     [AvaloniaFact]
@@ -369,6 +369,6 @@ public class UserGuideGestureTests
 
         DragGuide(harness, new Point(GuideX, 300), new Point(213, 300), RawInputModifiers.Alt);
 
-        Assert.Equal(DesignGuide.Vertical(213), Assert.Single(log.Requests).Guide);
+        Assert.Equal(SurfaceGuide.Vertical(213), Assert.Single(log.Requests).Guide);
     }
 }

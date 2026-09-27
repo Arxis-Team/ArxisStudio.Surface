@@ -28,13 +28,13 @@ public class SelectionEventTests
         ContainerLocation.X + EditorHarness.SiblingOffset + (EditorHarness.NestedWidth / 2),
         ContainerLocation.Y + EditorHarness.NestedOffset + (EditorHarness.NestedHeight / 2));
 
-    private static (EditorHarness Harness, List<DesignSelectionChangedEventArgs> Events) Create()
+    private static (EditorHarness Harness, List<SurfaceSelectionChangedEventArgs> Events) Create()
     {
         var harness = EditorHarness.Create();
         harness.PlaceContainer(0, ContainerLocation, ContainerSize);
 
-        var events = new List<DesignSelectionChangedEventArgs>();
-        harness.Editor.DesignSelectionChanged += (_, e) => events.Add(e);
+        var events = new List<SurfaceSelectionChangedEventArgs>();
+        harness.Editor.SurfaceSelectionChanged += (_, e) => events.Add(e);
         return (harness, events);
     }
 
@@ -184,7 +184,7 @@ public class SelectionEventTests
         harness.PlaceContainer(0, ContainerLocation, ContainerSize);
 
         Click(harness, NestedCentre);
-        var snapshot = harness.Editor.SelectedDesignTargets;
+        var snapshot = harness.Editor.SelectedTargets;
 
         harness.Window.MouseDown(NestedCentre, MouseButton.Left);
         harness.Window.MouseMove(NestedCentre + new Vector(10, 6));
@@ -192,8 +192,8 @@ public class SelectionEventTests
         harness.Window.MouseUp(NestedCentre + new Vector(50, 40), MouseButton.Left);
         harness.RunLayout();
 
-        // Ссылка та же: привязки к SelectedDesignTargets не пересчитываются
+        // Ссылка та же: привязки к SelectedTargets не пересчитываются
         // на каждом кадре жеста.
-        Assert.Same(snapshot, harness.Editor.SelectedDesignTargets);
+        Assert.Same(snapshot, harness.Editor.SelectedTargets);
     }
 }

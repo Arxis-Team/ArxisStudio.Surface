@@ -177,7 +177,7 @@ public class AutoPanTests
     public void A_Panned_Drag_Is_Still_One_Edit()
     {
         var harness = Create();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         GrabFormAndMoveTo(harness, NearRightEdge);

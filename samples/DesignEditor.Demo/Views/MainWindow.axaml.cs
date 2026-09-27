@@ -79,7 +79,7 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel viewModel)
             return;
 
-        Resources["DesignEditor.Grid.CellSize"] = viewModel.GridCellSize;
+        Resources["Surface.Grid.CellSize"] = viewModel.GridCellSize;
     }
 
     private void UpdateHistoryButtons()
@@ -91,7 +91,7 @@ public partial class MainWindow : Window
             redo.IsEnabled = _history?.CanRedo ?? false;
     }
 
-    private void Editor_OnDeleteRequested(object? sender, DesignEditorDeleteRequestedEventArgs e)
+    private void Editor_OnDeleteRequested(object? sender, SurfaceDeleteRequestedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)
             return;
@@ -124,7 +124,7 @@ public partial class MainWindow : Window
     /// Редактор направляющую не двигает и не убирает — он показывает, куда она встанет,
     /// и просит. Пока этот обработчик не выставит <c>Handled</c>, линия остаётся на месте.
     /// </remarks>
-    private void Editor_OnGuideChangeRequested(object? sender, DesignGuideChangeRequestedEventArgs e)
+    private void Editor_OnGuideChangeRequested(object? sender, SurfaceGuideChangeRequestedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)
             return;
@@ -132,11 +132,11 @@ public partial class MainWindow : Window
         var guides = viewModel.Guides;
         switch (e.Kind)
         {
-            case DesignGuideChangeKind.Add:
+            case SurfaceGuideChangeKind.Add:
                 guides.Add(e.Guide);
                 break;
 
-            case DesignGuideChangeKind.Move:
+            case SurfaceGuideChangeKind.Move:
                 var index = e.Original is { } original ? guides.IndexOf(original) : -1;
                 if (index < 0)
                     return;
@@ -144,7 +144,7 @@ public partial class MainWindow : Window
                 guides[index] = e.Guide;
                 break;
 
-            case DesignGuideChangeKind.Remove:
+            case SurfaceGuideChangeKind.Remove:
                 if (!guides.Remove(e.Guide))
                     return;
 

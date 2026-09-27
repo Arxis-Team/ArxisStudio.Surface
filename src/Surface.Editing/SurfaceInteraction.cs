@@ -7,7 +7,7 @@ namespace ArxisStudio.Surface.Editing;
 /// <summary>
 /// Attached API политики редактирования для designer targets.
 /// </summary>
-public static class DesignInteraction
+public static class SurfaceInteraction
 {
     /// <summary>
     /// Идентификатор attached-свойства политики resize.
@@ -15,7 +15,7 @@ public static class DesignInteraction
     public static readonly AttachedProperty<ResizePolicy> ResizePolicyProperty =
         AvaloniaProperty.RegisterAttached<Control, ResizePolicy>(
             "ResizePolicy",
-            typeof(DesignInteraction),
+            typeof(SurfaceInteraction),
             ResizePolicy.All,
             inherits: false);
 
@@ -25,7 +25,7 @@ public static class DesignInteraction
     public static readonly AttachedProperty<MovePolicy> MovePolicyProperty =
         AvaloniaProperty.RegisterAttached<Control, MovePolicy>(
             "MovePolicy",
-            typeof(DesignInteraction),
+            typeof(SurfaceInteraction),
             MovePolicy.Both,
             inherits: false);
 

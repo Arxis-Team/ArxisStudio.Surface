@@ -139,7 +139,7 @@ public class ContainmentCharacterizationTests
         operation.Update(harness.Editor, new Vector(500, 0));
         harness.RunLayout();
 
-        var right = harness.Editor.GetDesignPosition(sibling).X + harness.Editor.GetDesignSize(sibling).Width;
+        var right = harness.Editor.GetTargetPosition(sibling).X + harness.Editor.GetTargetSize(sibling).Width;
 
         // Ограничение применяется к рамке группы целиком, поэтому пропорции внутри
         // сохраняются, а крайний target останавливается ровно на границе формы.

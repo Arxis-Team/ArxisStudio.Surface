@@ -30,11 +30,11 @@ public class GeometryApiTests
         var harness = Create();
         var nested = harness.Nested(0);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Assert.True(harness.Editor.TryGetDesignBounds(nested, out var before));
-        Assert.True(harness.Editor.SetDesignGeometry(nested, new Rect(140, 160, 80, 50)));
+        Assert.True(harness.Editor.SetTargetGeometry(nested, new Rect(140, 160, 80, 50)));
         harness.RunLayout();
 
         Assert.True(harness.Editor.TryGetDesignBounds(nested, out var after));
@@ -61,16 +61,16 @@ public class GeometryApiTests
     {
         var harness = Create();
         var nested = harness.Nested(0);
-        var kinds = new List<DesignEditKind>();
+        var kinds = new List<SurfaceEditKind>();
         harness.Editor.EditCompleted += (_, e) => kinds.Add(e.Kind);
 
         Assert.True(harness.Editor.TryGetDesignBounds(nested, out var start));
-        harness.Editor.SetDesignGeometry(nested, new Rect(start.X + 20, start.Y, start.Width, start.Height));
+        harness.Editor.SetTargetGeometry(nested, new Rect(start.X + 20, start.Y, start.Width, start.Height));
         harness.RunLayout();
-        harness.Editor.SetDesignGeometry(nested, new Rect(start.X + 20, start.Y, start.Width + 20, start.Height));
+        harness.Editor.SetTargetGeometry(nested, new Rect(start.X + 20, start.Y, start.Width + 20, start.Height));
         harness.RunLayout();
 
-        Assert.Equal(new[] { DesignEditKind.Move, DesignEditKind.Resize }, kinds);
+        Assert.Equal(new[] { SurfaceEditKind.Move, SurfaceEditKind.Resize }, kinds);
     }
 
     /// <summary>
@@ -87,11 +87,11 @@ public class GeometryApiTests
         harness.PlaceContainer(0, new Point(100, 100), new Size(260, 240));
         var field = harness.Find<Avalonia.Controls.TextBox>(0, "Field");
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         Assert.True(harness.Editor.TryGetDesignBounds(field, out var before));
-        Assert.True(harness.Editor.SetDesignGeometry(field, new Rect(before.X + 40, before.Y + 40, 120, 44)));
+        Assert.True(harness.Editor.SetTargetGeometry(field, new Rect(before.X + 40, before.Y + 40, 120, 44)));
         harness.RunLayout();
 
         Assert.True(harness.Editor.TryGetDesignBounds(field, out var after));
@@ -103,7 +103,7 @@ public class GeometryApiTests
         // Экран сам по себе этого не показывает — панель вернула бы контрол на место
         // и без отсечки, а стек отмены хранил бы перемещение, которого не было.
         Assert.NotNull(edit);
-        var change = Assert.IsType<DesignGeometryChange>(Assert.Single(edit.Changes));
+        var change = Assert.IsType<GeometryChange>(Assert.Single(edit.Changes));
         Assert.Equal(change.OldBounds.Position, change.NewBounds.Position);
     }
 
@@ -117,23 +117,23 @@ public class GeometryApiTests
 
         Assert.True(harness.Editor.TryGetDesignBounds(nested, out var bounds));
 
-        Assert.False(harness.Editor.SetDesignGeometry(nested, bounds));
+        Assert.False(harness.Editor.SetTargetGeometry(nested, bounds));
         Assert.Equal(0, edits);
     }
 
     [AvaloniaFact]
-    public void SetDesignGeometry_Rejects_Null_Target()
+    public void SetTargetGeometry_Rejects_Null_Target()
     {
         var harness = Create();
 
-        Assert.Throws<System.ArgumentNullException>(() => harness.Editor.SetDesignGeometry(null!, default));
+        Assert.Throws<System.ArgumentNullException>(() => harness.Editor.SetTargetGeometry(null!, default));
     }
 
     /// <summary>
     /// Политики ограничивают жест, а не хоста.
     /// </summary>
     /// <remarks>
-    /// <c>DesignInteraction</c> — это правила <b>взаимодействия</b>: их спрашивают точки
+    /// <c>SurfaceInteraction</c> — это правила <b>взаимодействия</b>: их спрашивают точки
     /// жеста, и они говорят «мышью этот элемент не двигать». Вызов API — не жест, а
     /// просьба самого хоста, который эту пометку и поставил; запрещать ему значило бы
     /// сделать заблокированный элемент неподвижным навсегда, ведь и отмена возвращает
@@ -146,11 +146,11 @@ public class GeometryApiTests
     {
         var harness = Create();
         var nested = harness.Nested(0);
-        DesignInteraction.SetMovePolicy(nested, MovePolicy.None);
-        DesignInteraction.SetResizePolicy(nested, ResizePolicy.None);
+        SurfaceInteraction.SetMovePolicy(nested, MovePolicy.None);
+        SurfaceInteraction.SetResizePolicy(nested, ResizePolicy.None);
 
         Assert.True(harness.Editor.TryGetDesignBounds(nested, out var before));
-        Assert.True(harness.Editor.SetDesignGeometry(nested, new Rect(before.X + 40, before.Y + 40, 90, 70)));
+        Assert.True(harness.Editor.SetTargetGeometry(nested, new Rect(before.X + 40, before.Y + 40, 90, 70)));
         harness.RunLayout();
 
         Assert.True(harness.Editor.TryGetDesignBounds(nested, out var after));
@@ -158,7 +158,7 @@ public class GeometryApiTests
 
         // Читалка при этом честно говорит, что элемент заблокирован: по ней хост и
         // гасит поля, если запрет должен действовать и в его интерфейсе.
-        harness.Editor.SelectDesignTarget(nested);
+        harness.Editor.SelectTarget(nested);
         harness.RunLayout();
         Assert.Equal(MovePolicy.None, harness.Editor.PrimarySelectionMovePolicy);
     }

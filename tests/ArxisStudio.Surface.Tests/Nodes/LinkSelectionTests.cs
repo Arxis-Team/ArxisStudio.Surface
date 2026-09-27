@@ -154,7 +154,7 @@ public class LinkSelectionTests
         Click(stand, middle);
 
         Assert.Empty(stand.Editor.SelectedLinks);
-        Assert.Contains(stand.Editor.SelectedDesignTargets, t => ReferenceEquals(t.Target, stand.Nodes.Node(3)));
+        Assert.Contains(stand.Editor.SelectedTargets, t => ReferenceEquals(t.Target, stand.Nodes.Node(3)));
     }
 
     [AvaloniaFact]
@@ -163,16 +163,16 @@ public class LinkSelectionTests
         var stand = Create();
 
         Click(stand, stand.Nodes.GripOf(0));
-        Assert.NotEmpty(stand.Editor.SelectedDesignTargets);
+        Assert.NotEmpty(stand.Editor.SelectedTargets);
 
         Click(stand, Middle(stand, stand.First));
-        Assert.Empty(stand.Editor.SelectedDesignTargets);
+        Assert.Empty(stand.Editor.SelectedTargets);
         Assert.Equal([stand.First], stand.Editor.SelectedLinks);
 
         Click(stand, stand.Nodes.GripOf(0));
         Assert.Empty(stand.Editor.SelectedLinks);
         Assert.False(stand.Nodes.LinkOf(stand.First).IsSelected);
-        Assert.NotEmpty(stand.Editor.SelectedDesignTargets);
+        Assert.NotEmpty(stand.Editor.SelectedTargets);
     }
 
     [AvaloniaFact]

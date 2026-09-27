@@ -63,7 +63,7 @@ public class ReconciliationCharacterizationTests
 
         Select(harness, nested);
         Select(harness, sibling, additive: true);
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         var layer = harness.Editor.GetVisualDescendants().OfType<SelectionAdornerLayer>().Single();
 

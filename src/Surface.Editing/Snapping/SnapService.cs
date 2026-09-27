@@ -40,7 +40,7 @@ internal sealed class SnapService : ISurfacePositionModifier
         _extraNeighbours = extraNeighbours;
     }
 
-    private DesignEditorInteractionOptions Options => _view.InteractionOptions;
+    private SurfaceInteractionOptions Options => _view.InteractionOptions;
 
     /// <summary>
     /// Определяет, должна ли действовать привязка к сетке при текущих модификаторах.
@@ -74,7 +74,7 @@ internal sealed class SnapService : ISurfacePositionModifier
     /// Возвращает действующий шаг привязки.
     /// </summary>
     /// <remarks>
-    /// Явно заданный <see cref="DesignEditorInteractionOptions.SnapStep"/> имеет приоритет;
+    /// Явно заданный <see cref="SurfaceInteractionOptions.SnapStep"/> имеет приоритет;
     /// иначе шаг берётся у сетки шаблона. Это не даёт сетке рисовать одну структуру,
     /// а привязке использовать другую.
     /// </remarks>
@@ -137,9 +137,9 @@ internal sealed class SnapService : ISurfacePositionModifier
     /// </summary>
     public void End()
     {
-        PublishSpacingHints(Array.Empty<DesignSpacingHint>());
+        PublishSpacingHints(Array.Empty<SurfaceSpacingHint>());
         _neighbours = null;
-        PublishSnapGuides(Array.Empty<DesignSnapGuide>());
+        PublishSnapGuides(Array.Empty<SurfaceSnapGuide>());
     }
 
     /// <summary>
@@ -158,14 +158,14 @@ internal sealed class SnapService : ISurfacePositionModifier
 
         if (neighbours is not { Count: > 0 } || IsBypassed(modifiers))
         {
-            PublishSnapGuides(Array.Empty<DesignSnapGuide>());
-            PublishSpacingHints(Array.Empty<DesignSpacingHint>());
+            PublishSnapGuides(Array.Empty<SurfaceSnapGuide>());
+            PublishSpacingHints(Array.Empty<SurfaceSpacingHint>());
             return SnapPosition(proposed, modifiers);
         }
 
         var snapToGrid = ShouldSnap(modifiers);
 
-        DesignSnapGuideResolver.TryResolveOffset(
+        SurfaceSnapGuideResolver.TryResolveOffset(
             new Rect(proposed, size),
             neighbours,
             ResolveTolerance(),
@@ -183,7 +183,7 @@ internal sealed class SnapService : ISurfacePositionModifier
 
         if (Options.IsEqualSpacingEnabled && (!snappedX || !snappedY))
         {
-            DesignSpacingResolver.TryResolveOffset(
+            SurfaceSpacingResolver.TryResolveOffset(
                 new Rect(proposed, size),
                 neighbours,
                 ResolveTolerance(),
@@ -198,10 +198,10 @@ internal sealed class SnapService : ISurfacePositionModifier
         var result = new Point(x, y);
         var bounds = new Rect(result, size);
 
-        PublishSnapGuides(DesignSnapGuideResolver.CollectGuides(bounds, neighbours));
+        PublishSnapGuides(SurfaceSnapGuideResolver.CollectGuides(bounds, neighbours));
         PublishSpacingHints(Options.IsEqualSpacingEnabled
-            ? DesignSpacingResolver.CollectHints(bounds, neighbours)
-            : Array.Empty<DesignSpacingHint>());
+            ? SurfaceSpacingResolver.CollectHints(bounds, neighbours)
+            : Array.Empty<SurfaceSpacingHint>());
 
         return result;
 
@@ -255,7 +255,7 @@ internal sealed class SnapService : ISurfacePositionModifier
             return edge;
 
         if (HasNeighbours &&
-            DesignSnapGuideResolver.TryResolveEdge(
+            SurfaceSnapGuideResolver.TryResolveEdge(
                 edge, _neighbours!, ResolveTolerance(), xAxis, out var guided))
         {
             return guided;
@@ -266,7 +266,7 @@ internal sealed class SnapService : ISurfacePositionModifier
         // свой зазор, и вопрос один: где должен встать двигающийся.
         if (HasNeighbours &&
             Options.IsEqualSpacingEnabled &&
-            DesignSpacingResolver.TryResolveEdge(
+            SurfaceSpacingResolver.TryResolveEdge(
                 proposed, _neighbours!, ResolveTolerance(), xAxis, farEdge, out var spaced))
         {
             return spaced;
@@ -281,12 +281,12 @@ internal sealed class SnapService : ISurfacePositionModifier
     public void PublishApplied(Rect bounds)
     {
         PublishSnapGuides(HasNeighbours
-            ? DesignSnapGuideResolver.CollectGuides(bounds, _neighbours!)
-            : Array.Empty<DesignSnapGuide>());
+            ? SurfaceSnapGuideResolver.CollectGuides(bounds, _neighbours!)
+            : Array.Empty<SurfaceSnapGuide>());
 
         PublishSpacingHints(HasNeighbours && Options.IsEqualSpacingEnabled
-            ? DesignSpacingResolver.CollectHints(bounds, _neighbours!)
-            : Array.Empty<DesignSpacingHint>());
+            ? SurfaceSpacingResolver.CollectHints(bounds, _neighbours!)
+            : Array.Empty<SurfaceSpacingHint>());
     }
 
     /// <summary>
@@ -401,7 +401,7 @@ internal sealed class SnapService : ISurfacePositionModifier
     /// протяжки, а линии меняются редко. Без сравнения слой перерисовывался бы
     /// каждый кадр впустую.
     /// </remarks>
-    private void PublishSnapGuides(IReadOnlyList<DesignSnapGuide> guides)
+    private void PublishSnapGuides(IReadOnlyList<SurfaceSnapGuide> guides)
     {
         if (AreSame(SurfaceSnapping.GetSnapGuides(_view), guides))
             return;
@@ -412,7 +412,7 @@ internal sealed class SnapService : ISurfacePositionModifier
     /// <summary>
     /// Публикует подсказки о равных интервалах, если набор изменился.
     /// </summary>
-    private void PublishSpacingHints(IReadOnlyList<DesignSpacingHint> hints)
+    private void PublishSpacingHints(IReadOnlyList<SurfaceSpacingHint> hints)
     {
         if (AreSame(SurfaceSnapping.GetSpacingHints(_view), hints))
             return;

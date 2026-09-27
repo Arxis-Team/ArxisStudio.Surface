@@ -242,7 +242,7 @@ internal class ItemIdleState : SurfaceItemState
 
         // Контейнер может быть вложен в другой контейнер. Индексный выбор работает
         // только с item'ами верхнего уровня, поэтому selection адресуется владельцу,
-        // а сам Container участвует дальше как design target.
+        // а сам Container участвует дальше как target.
         var owner = editor.ResolveOwningItem(Container);
         if (owner == null) return;
 
@@ -326,7 +326,7 @@ internal class ItemDraggingState : SurfaceItemState
     {
         var editor = Container.FindAncestorOfType<SurfaceView>();
         _dragTarget = editor?.ResolveInteractionTarget(Container) ?? Container;
-        _elementStartLocation = editor?.GetDesignPosition(_dragTarget) ?? Container.Location;
+        _elementStartLocation = editor?.GetTargetPosition(_dragTarget) ?? Container.Location;
         _previousAppliedDelta = Vector.Zero;
         if (editor != null)
             _initialPointerWorld = editor.GetWorldPosition(_initialPointerPosition);
@@ -417,7 +417,7 @@ internal class ItemDraggingState : SurfaceItemState
         // двигаются ровно на столько же и взаимное расположение сохраняется.
         var effectiveDelta = snapped - _elementStartLocation;
 
-        editor.SetDesignPosition(_dragTarget, snapped);
+        editor.SetTargetPosition(_dragTarget, snapped);
         var frameDelta = effectiveDelta - _previousAppliedDelta;
         Container.RaiseEvent(new DragDeltaEventArgs(frameDelta.X, frameDelta.Y) { RoutedEvent = SurfaceItem.DragDeltaEvent });
         _previousAppliedDelta = effectiveDelta;

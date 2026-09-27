@@ -57,7 +57,7 @@ public class DragEventTests
     /// «до» и «после» оказались бы взяты из разных моментов.
     /// </remarks>
     private static Point Position(EditorHarness harness) =>
-        harness.Editor.GetDesignPosition(harness.Nested(0));
+        harness.Editor.GetTargetPosition(harness.Nested(0));
 
     private static void Drag(EditorHarness harness, Vector delta)
     {
@@ -134,7 +134,7 @@ public class DragEventTests
     public void A_Blocked_Axis_Never_Appears_In_The_Deltas()
     {
         var (harness, log) = Create();
-        DesignInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.X);
+        SurfaceInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.X);
 
         Drag(harness, new Vector(40, 30));
 

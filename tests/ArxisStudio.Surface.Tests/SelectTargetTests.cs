@@ -9,7 +9,7 @@ using ArxisStudio.Surface;
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Контракт публичного <see cref="SurfaceView.SelectDesignTarget"/>.
+/// Контракт публичного <see cref="SurfaceView.SelectTarget"/>.
 /// </summary>
 /// <remarks>
 /// Стенд намеренно на <b>двух</b> контейнерах. Прежние тесты этого метода жили в одном,
@@ -18,12 +18,12 @@ namespace ArxisStudio.Tests;
 /// индексного слоя не наблюдаема.
 /// <para>
 /// Проверяется только публичное состояние: <c>SelectedItems</c>, <c>Selection</c>,
-/// <c>SelectedDesignTargets</c>, <c>PrimarySelectionTarget.Scope</c> и счётчик событий.
+/// <c>SelectedTargets</c>, <c>PrimarySelectionTarget.Scope</c> и счётчик событий.
 /// Внутренний список target'ов тесты не трогают — он и есть то, что этап рефакторинга
 /// переписывает.
 /// </para>
 /// </remarks>
-public class SelectDesignTargetTests
+public class SelectTargetTests
 {
     private static EditorHarness CreateTwo()
     {
@@ -33,10 +33,10 @@ public class SelectDesignTargetTests
         return harness;
     }
 
-    private static List<DesignSelectionChangedEventArgs> Watch(EditorHarness harness)
+    private static List<SurfaceSelectionChangedEventArgs> Watch(EditorHarness harness)
     {
-        var events = new List<DesignSelectionChangedEventArgs>();
-        harness.Editor.DesignSelectionChanged += (_, e) => events.Add(e);
+        var events = new List<SurfaceSelectionChangedEventArgs>();
+        harness.Editor.SurfaceSelectionChanged += (_, e) => events.Add(e);
         return events;
     }
 
@@ -45,10 +45,10 @@ public class SelectDesignTargetTests
     {
         var harness = CreateTwo();
 
-        Assert.True(harness.Editor.SelectDesignTarget(harness.Container(0)));
+        Assert.True(harness.Editor.SelectTarget(harness.Container(0)));
 
-        var primary = Assert.Single(harness.Editor.SelectedDesignTargets);
-        Assert.Equal(DesignSelectionScope.Container, primary.Scope);
+        var primary = Assert.Single(harness.Editor.SelectedTargets);
+        Assert.Equal(SurfaceSelectionScope.Container, primary.Scope);
         Assert.Same(harness.Container(0), primary.Target);
     }
 
@@ -57,14 +57,14 @@ public class SelectDesignTargetTests
     {
         var harness = CreateTwo();
 
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
-        harness.Editor.SelectDesignTarget(harness.Named(1, "Nested"));
+        harness.Editor.SelectTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Named(1, "Nested"));
         harness.RunLayout();
 
         // Замена обязана снять и индексный слой. В одном контейнере это не видно:
         // там Selection и так остаётся прежним.
         Assert.Single(harness.Editor.SelectedItems!);
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.Same(harness.Named(1, "Nested"), harness.Editor.PrimarySelectionTarget!.Target);
     }
 
@@ -72,10 +72,10 @@ public class SelectDesignTargetTests
     public void A_Replacing_Call_Raises_One_Event()
     {
         var harness = CreateTwo();
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
 
         var events = Watch(harness);
-        harness.Editor.SelectDesignTarget(harness.Named(1, "Nested"));
+        harness.Editor.SelectTarget(harness.Named(1, "Nested"));
 
         // Два события, первое с пустым выделением, — это не деталь реализации:
         // хост, зеркалящий выделение в своё дерево, гасит подсветку между ними.
@@ -87,10 +87,10 @@ public class SelectDesignTargetTests
     public void Re_Selecting_The_Same_Target_Raises_Nothing()
     {
         var harness = CreateTwo();
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
 
         var events = Watch(harness);
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
 
         Assert.Empty(events);
     }
@@ -100,13 +100,13 @@ public class SelectDesignTargetTests
     {
         var harness = CreateTwo();
 
-        Assert.True(harness.Editor.SelectDesignTarget(harness.Container(0)));
-        Assert.True(harness.Editor.SelectDesignTarget(harness.Container(1), additive: true));
+        Assert.True(harness.Editor.SelectTarget(harness.Container(0)));
+        Assert.True(harness.Editor.SelectTarget(harness.Container(1), additive: true));
         harness.RunLayout();
 
         // Ctrl + Shift + Click строит ровно это состояние — см. ContainerSelectionGestureTests.
         // Единственный публичный сеттер обязан уметь то же.
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasMultipleContainerSelection);
     }
 
@@ -122,7 +122,7 @@ public class SelectDesignTargetTests
         // Хост выбрал форму — значит выбрана форма, а не её первый ребёнок.
         var primary = harness.Editor.PrimarySelectionTarget;
         Assert.NotNull(primary);
-        Assert.Equal(DesignSelectionScope.Container, primary!.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, primary!.Scope);
         Assert.Same(harness.Container(0), primary.Target);
     }
 
@@ -133,20 +133,20 @@ public class SelectDesignTargetTests
         harness.Editor.SelectedIndex = 0;
         harness.RunLayout();
 
-        var before = harness.Editor.SelectedDesignTargetsCount;
-        harness.Editor.SelectDesignTarget(harness.Named(0, "Sibling"), additive: true);
+        var before = harness.Editor.SelectedTargetsCount;
+        harness.Editor.SelectTarget(harness.Named(0, "Sibling"), additive: true);
         harness.RunLayout();
 
         // Добавление обязано добавлять: неявный target контейнера не должен
         // молча исчезать от вызова, который просили считать additive.
-        Assert.Equal(before + 1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(before + 1, harness.Editor.SelectedTargetsCount);
     }
 
     [AvaloniaFact]
     public void Clearing_Selected_Items_Clears_Both_Layers()
     {
         var harness = CreateTwo();
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
         harness.RunLayout();
 
         // Документировано как единственный способ снять выделение снаружи,
@@ -154,7 +154,7 @@ public class SelectDesignTargetTests
         harness.Editor.SelectedItems!.Clear();
         harness.RunLayout();
 
-        Assert.Equal(0, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(0, harness.Editor.SelectedTargetsCount);
         Assert.Null(harness.Editor.PrimarySelectionTarget);
     }
 
@@ -167,7 +167,7 @@ public class SelectDesignTargetTests
         sibling.Height = 0;
         harness.RunLayout();
 
-        var applied = harness.Editor.SelectDesignTarget(sibling);
+        var applied = harness.Editor.SelectTarget(sibling);
         harness.RunLayout();
 
         // Отказаться можно. Сказать «выбрано» и выбрать другой контрол — нельзя:
@@ -175,7 +175,7 @@ public class SelectDesignTargetTests
         if (applied)
             Assert.Same(sibling, harness.Editor.PrimarySelectionTarget!.Target);
         else
-            Assert.DoesNotContain(harness.Editor.SelectedDesignTargets, t => ReferenceEquals(t.Target, sibling));
+            Assert.DoesNotContain(harness.Editor.SelectedTargets, t => ReferenceEquals(t.Target, sibling));
     }
 
     [AvaloniaFact]
@@ -192,6 +192,6 @@ public class SelectDesignTargetTests
 
         // Обход авторской разметки внутрь шаблонов не спускается — именно поэтому
         // клик по кнопке не выбирает её надпись. Публичный вход обязан судить так же.
-        Assert.False(harness.Editor.SelectDesignTarget(part));
+        Assert.False(harness.Editor.SelectTarget(part));
     }
 }

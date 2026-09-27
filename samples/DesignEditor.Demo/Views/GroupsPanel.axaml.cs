@@ -19,8 +19,8 @@ namespace DesignEditor.Demo.Views;
 /// <remarks>
 /// Панель не знает ни одного внутреннего типа библиотеки: состав читается
 /// <see cref="Editor.GetGroups"/>, подписи строятся публичным
-/// <see cref="DesignSelectionTarget"/>, выбор задаётся
-/// <see cref="Editor.SelectDesignTarget"/>, а группировка — <see cref="Editor.GroupSelection"/>
+/// <see cref="SurfaceSelectionTarget"/>, выбор задаётся
+/// <see cref="Editor.SelectTarget"/>, а группировка — <see cref="Editor.GroupSelection"/>
 /// и <see cref="Editor.UngroupSelection"/>.
 /// <para>
 /// Показываются <b>группы</b>, а не всё дерево контролов, и это не упрощение: публично
@@ -30,7 +30,7 @@ namespace DesignEditor.Demo.Views;
 /// <para>
 /// Чтение групп — запрос, а не снимок: редактор не владеет деревом и не может сообщить
 /// о пометке, которую поставил не он. Поэтому панель пересобирается на событиях самого
-/// редактора (<see cref="Editor.DesignSelectionChanged"/> и <see cref="Editor.EditCompleted"/>),
+/// редактора (<see cref="Editor.SurfaceSelectionChanged"/> и <see cref="Editor.EditCompleted"/>),
 /// а на всё остальное есть кнопка обновления — это честная цена pull-модели, а не недоделка.
 /// </para>
 /// </remarks>
@@ -106,7 +106,7 @@ public partial class GroupsPanel : UserControl
     {
         if (_attached != null)
         {
-            _attached.DesignSelectionChanged -= OnDesignSelectionChanged;
+            _attached.SurfaceSelectionChanged -= OnSurfaceSelectionChanged;
             _attached.EditCompleted -= OnEditCompleted;
             _attached.LayoutUpdated -= OnEditorLayoutUpdated;
         }
@@ -120,7 +120,7 @@ public partial class GroupsPanel : UserControl
             return;
         }
 
-        _attached.DesignSelectionChanged += OnDesignSelectionChanged;
+        _attached.SurfaceSelectionChanged += OnSurfaceSelectionChanged;
         _attached.EditCompleted += OnEditCompleted;
 
         // Контейнеры существуют только после layout-прохода, поэтому первая сборка
@@ -137,9 +137,9 @@ public partial class GroupsPanel : UserControl
         Rebuild();
     }
 
-    private void OnDesignSelectionChanged(object? sender, DesignSelectionChangedEventArgs e) => Rebuild();
+    private void OnSurfaceSelectionChanged(object? sender, SurfaceSelectionChangedEventArgs e) => Rebuild();
 
-    private void OnEditCompleted(object? sender, DesignEditCompletedEventArgs e) => Rebuild();
+    private void OnEditCompleted(object? sender, SurfaceEditCompletedEventArgs e) => Rebuild();
 
     /// <summary>
     /// Перечитывает группы у редактора.
@@ -236,7 +236,7 @@ public partial class GroupsPanel : UserControl
         var rows = new List<GroupNode>();
 
         var selected = new HashSet<Control>();
-        foreach (var target in editor.SelectedDesignTargets)
+        foreach (var target in editor.SelectedTargets)
             selected.Add(target.Target);
 
         for (var index = 0; index < editor.ItemCount; index++)
@@ -360,14 +360,14 @@ public partial class GroupsPanel : UserControl
     }
 
     private static string TitleOf(DesignEditorItem container, Control member) =>
-        new DesignSelectionTarget(container, member).DisplayName;
+        new SurfaceSelectionTarget(container, member).DisplayName;
 
     private static string TitleOf(Editor editor, int index, DesignEditorItem container)
     {
         if (editor.Items[index] is DesignItemViewModel item)
             return item.Title;
 
-        return new DesignSelectionTarget(container, container).DisplayName;
+        return new SurfaceSelectionTarget(container, container).DisplayName;
     }
 
     private void Row_OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -401,11 +401,11 @@ public partial class GroupsPanel : UserControl
         switch (node.Kind)
         {
             case GroupNodeKind.Form when node.Container != null:
-                editor.SelectDesignTarget(node.Container, additive);
+                editor.SelectTarget(node.Container, additive);
                 break;
 
             case GroupNodeKind.Member when node.Target != null:
-                editor.SelectDesignTarget(node.Target, additive);
+                editor.SelectTarget(node.Target, additive);
                 break;
 
             case GroupNodeKind.Group when node.Container != null && node.GroupPath != null:
@@ -421,14 +421,14 @@ public partial class GroupsPanel : UserControl
     /// </summary>
     /// <remarks>
     /// Раскрытие клика до всей группы — поведение указателя над холстом; публичный
-    /// <see cref="Editor.SelectDesignTarget"/> работает с одним target'ом, поэтому
+    /// <see cref="Editor.SelectTarget"/> работает с одним target'ом, поэтому
     /// панель набирает участников сама: первый заменяет выбор, остальные добавляются.
     /// </remarks>
     private static void SelectGroup(Editor editor, GroupNode node)
     {
         var members = editor.GetGroupMembers(node.Container!, node.GroupPath!);
         for (var i = 0; i < members.Count; i++)
-            editor.SelectDesignTarget(members[i], additive: i > 0);
+            editor.SelectTarget(members[i], additive: i > 0);
     }
 
     /// <summary>

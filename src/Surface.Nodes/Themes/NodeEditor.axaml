@@ -14,7 +14,7 @@
         остальное лежит под ViewportTransform, в мировых координатах.
     -->
     <ControlTheme x:Key="{x:Type nodes:NodeEditor}" TargetType="nodes:NodeEditor">
-        <Setter Property="Background" Value="{DynamicResource DesignEditor.BackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource Surface.BackgroundBrush}" />
         <Setter Property="ClipToBounds" Value="True" />
         <Setter Property="Template">
             <ControlTemplate>
@@ -22,7 +22,7 @@
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}">
                     <Grid>
-                        <surface:DesignGrid Name="PART_Grid"
+                        <surface:SurfaceGrid Name="PART_Grid"
                                             ViewportLocation="{TemplateBinding ViewportLocation}"
                                             ViewportZoom="{TemplateBinding ViewportZoom}"
                                             IsVisible="{TemplateBinding ShowGrid}" />
@@ -76,9 +76,9 @@
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
                             <Rectangle Name="PART_Marquee"
-                                       Stroke="{DynamicResource DesignEditor.MarqueeStrokeBrush}"
-                                       StrokeThickness="{DynamicResource DesignEditor.Selection.StrokeThickness}"
-                                       Fill="{DynamicResource DesignEditor.MarqueeFillBrush}"
+                                       Stroke="{DynamicResource Surface.MarqueeStrokeBrush}"
+                                       StrokeThickness="{DynamicResource Surface.Selection.StrokeThickness}"
+                                       Fill="{DynamicResource Surface.MarqueeFillBrush}"
                                        RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource NodeEditor.InverseScaleConverter}}"
                                        RenderTransformOrigin="0,0"
                                        Canvas.Top="{Binding SelectedArea.Y, RelativeSource={RelativeSource TemplatedParent}}"
@@ -106,13 +106,13 @@
                         <editing:SnapGuideLayer Name="PART_SnapGuideLayer"
                                                 IsHitTestVisible="False"
                                                 Editor="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                                LineBrush="{DynamicResource DesignEditor.SnapGuideBrush}"
-                                                CentreLineBrush="{DynamicResource DesignEditor.SnapGuide.CentreBrush}"
-                                                SpacingBrush="{DynamicResource DesignEditor.SpacingBrush}"
-                                                UserGuideBrush="{DynamicResource DesignEditor.UserGuideBrush}"
-                                                LineDashStyle="{DynamicResource DesignEditor.SnapGuide.DashStyle}"
-                                                UserGuideDashStyle="{DynamicResource DesignEditor.UserGuide.DashStyle}"
-                                                LineThickness="{DynamicResource DesignEditor.SnapGuide.Thickness}" />
+                                                LineBrush="{DynamicResource Surface.SnapGuideBrush}"
+                                                CentreLineBrush="{DynamicResource Surface.SnapGuide.CentreBrush}"
+                                                SpacingBrush="{DynamicResource Surface.SpacingBrush}"
+                                                UserGuideBrush="{DynamicResource Surface.UserGuideBrush}"
+                                                LineDashStyle="{DynamicResource Surface.SnapGuide.DashStyle}"
+                                                UserGuideDashStyle="{DynamicResource Surface.UserGuide.DashStyle}"
+                                                LineThickness="{DynamicResource Surface.SnapGuide.Thickness}" />
                     </Grid>
                 </Border>
             </ControlTemplate>

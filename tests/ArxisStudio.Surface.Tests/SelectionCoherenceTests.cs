@@ -44,10 +44,10 @@ public class SelectionCoherenceTests
     private static int CountEvents(EditorHarness harness, Action act)
     {
         var n = 0;
-        void H(object? s, DesignSelectionChangedEventArgs e) => n++;
-        harness.Editor.DesignSelectionChanged += H;
+        void H(object? s, SurfaceSelectionChangedEventArgs e) => n++;
+        harness.Editor.SurfaceSelectionChanged += H;
         try { act(); }
-        finally { harness.Editor.DesignSelectionChanged -= H; }
+        finally { harness.Editor.SurfaceSelectionChanged -= H; }
         return n;
     }
 
@@ -67,7 +67,7 @@ public class SelectionCoherenceTests
         var harness = Create();
         var events = CountEvents(harness, () => Drag(harness, new Point(285, 235), new Point(105, 105)));
 
-        Assert.True(harness.Editor.SelectedDesignTargetsCount >= 2, $"выбрано {harness.Editor.SelectedDesignTargetsCount}");
+        Assert.True(harness.Editor.SelectedTargetsCount >= 2, $"выбрано {harness.Editor.SelectedTargetsCount}");
         Assert.Equal(1, events);
     }
 
@@ -76,11 +76,11 @@ public class SelectionCoherenceTests
     public void Marquee_Over_Nothing_Clears_In_One_Event()
     {
         var harness = Create();
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
 
         var events = CountEvents(harness, () => Drag(harness, new Point(650, 400), new Point(750, 500)));
 
-        Assert.Empty(harness.Editor.SelectedDesignTargets);
+        Assert.Empty(harness.Editor.SelectedTargets);
         Assert.Equal(1, events);
     }
 
@@ -92,9 +92,9 @@ public class SelectionCoherenceTests
         Drag(harness, new Point(50, 50), new Point(650, 300), RawInputModifiers.Control);
 
         Assert.Equal(2, harness.Editor.SelectedItems!.Count);
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
-        Assert.All(harness.Editor.SelectedDesignTargets,
-            t => Assert.Equal(DesignSelectionScope.Container, t.Scope));
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
+        Assert.All(harness.Editor.SelectedTargets,
+            t => Assert.Equal(SurfaceSelectionScope.Container, t.Scope));
     }
 
     /// <summary>Правый клик по ребёнку формы, выбранной целиком, переводит выбор на ребёнка в обоих слоях.</summary>
@@ -102,8 +102,8 @@ public class SelectionCoherenceTests
     public async Task Right_Click_Retarget_Keeps_Both_Layers_In_Step()
     {
         var harness = Create();
-        harness.Editor.SelectDesignTarget(harness.Container(0));
-        Assert.Equal(DesignSelectionScope.Container, harness.Editor.PrimarySelectionTarget!.Scope);
+        harness.Editor.SelectTarget(harness.Container(0));
+        Assert.Equal(SurfaceSelectionScope.Container, harness.Editor.PrimarySelectionTarget!.Scope);
 
         harness.Window.MouseDown(new Point(120, 120), MouseButton.Right);
         harness.Window.MouseUp(new Point(120, 120), MouseButton.Right);
@@ -111,7 +111,7 @@ public class SelectionCoherenceTests
         await Task.Yield();
 
         Assert.Single(harness.Editor.SelectedItems!);
-        Assert.Single(harness.Editor.SelectedDesignTargets);
+        Assert.Single(harness.Editor.SelectedTargets);
         Assert.Same(harness.Nested(0), harness.Editor.PrimarySelectionTarget!.Target);
     }
 
@@ -123,12 +123,12 @@ public class SelectionCoherenceTests
         harness.Editor.Focus();
 
         harness.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control);
-        var first = harness.Editor.SelectedDesignTargetsCount;
+        var first = harness.Editor.SelectedTargetsCount;
         harness.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
         harness.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control);
 
         Assert.Equal(2, first);
-        Assert.Equal(first, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(first, harness.Editor.SelectedTargetsCount);
         Assert.Equal(first, harness.Editor.SelectedItems!.Count);
     }
 
@@ -138,11 +138,11 @@ public class SelectionCoherenceTests
     {
         var harness = Create();
         Drag(harness, new Point(285, 235), new Point(105, 105));
-        var first = harness.Editor.SelectedDesignTargetsCount;
+        var first = harness.Editor.SelectedTargetsCount;
 
         Drag(harness, new Point(285, 235), new Point(105, 105), RawInputModifiers.Shift);
 
-        Assert.Equal(first, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(first, harness.Editor.SelectedTargetsCount);
     }
 
     /// <summary>Вкладывает контейнер в форму 0, с одним размеченным ребёнком.</summary>
@@ -190,7 +190,7 @@ public class SelectionCoherenceTests
         harness.Editor.CommitSelection(new Rect(145, 145, 100, 80), isCtrlPressed: false);
         harness.RunLayout();
 
-        var targets = harness.Editor.SelectedDesignTargets.Select(t => (Control)t.Target).ToList();
+        var targets = harness.Editor.SelectedTargets.Select(t => (Control)t.Target).ToList();
         Assert.Contains(targets, t => t.Name == "InnerChild");
         Assert.Single(harness.Editor.SelectedItems!);
         Assert.Same(harness.Nodes[0], harness.Editor.SelectedItems![0]);

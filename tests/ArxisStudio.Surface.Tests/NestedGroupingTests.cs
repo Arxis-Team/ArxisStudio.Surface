@@ -266,13 +266,13 @@ public class NestedGroupingTests
         var harness = CreateNested(out _, out _);
 
         Click(harness, "A");
-        Assert.Equal(3, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(3, harness.Editor.SelectedTargetsCount);
 
         Click(harness, "A");
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         Click(harness, "A");
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
     }
 
     /// <summary>
@@ -280,15 +280,15 @@ public class NestedGroupingTests
     /// </summary>
     /// <remarks>
     /// Рамка группы обещает жест над всем её составом. Выбрать часть указателем нельзя,
-    /// но можно публичным <c>SelectDesignTarget</c> — и тогда рамка соврала бы.
+    /// но можно публичным <c>SelectTarget</c> — и тогда рамка соврала бы.
     /// </remarks>
     [AvaloniaFact]
     public void A_Partly_Selected_Group_Is_Not_A_Cluster()
     {
         var harness = CreateWithGroup();
 
-        harness.Editor.SelectDesignTarget(Cell(harness, "A"), additive: false);
-        harness.Editor.SelectDesignTarget(Cell(harness, "C"), additive: true);
+        harness.Editor.SelectTarget(Cell(harness, "A"), additive: false);
+        harness.Editor.SelectTarget(Cell(harness, "C"), additive: true);
         harness.RunLayout();
 
         var adorners = harness.Editor.SecondarySelectionAdorners;
@@ -354,11 +354,11 @@ public class NestedGroupingTests
         var harness = CreateTwoGroups();
 
         Click(harness, "A");
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         Click(harness, "C", RawInputModifiers.Shift);
 
-        Assert.Equal(4, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(4, harness.Editor.SelectedTargetsCount);
         Assert.Equal(2, harness.Editor.SecondarySelectionAdorners.Count);
         Assert.All(
             harness.Editor.SecondarySelectionAdorners,
@@ -379,11 +379,11 @@ public class NestedGroupingTests
 
         Click(harness, "A");
         Click(harness, "C", RawInputModifiers.Shift);
-        Assert.Equal(4, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(4, harness.Editor.SelectedTargetsCount);
 
         Click(harness, "D", RawInputModifiers.Shift);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasGroupSelection);
     }
 
@@ -402,14 +402,14 @@ public class NestedGroupingTests
 
         Click(harness, "A");
         Click(harness, "C", RawInputModifiers.Shift);
-        Assert.Equal(4, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(4, harness.Editor.SelectedTargetsCount);
 
         var point = harness.CentreOf(Cell(harness, "C"));
         harness.Window.MouseDown(point, MouseButton.Right);
         harness.Window.MouseUp(point, MouseButton.Right);
         harness.RunLayout();
 
-        Assert.Equal(4, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(4, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.CanGroupSelection());
         Assert.True(harness.Editor.GroupSelection());
     }
@@ -433,7 +433,7 @@ public class NestedGroupingTests
     {
         var members = harness.Editor.GetGroupMembers(harness.Container(0), path);
         for (var i = 0; i < members.Count; i++)
-            harness.Editor.SelectDesignTarget(members[i], additive: i > 0);
+            harness.Editor.SelectTarget(members[i], additive: i > 0);
 
         harness.RunLayout();
     }
@@ -456,11 +456,11 @@ public class NestedGroupingTests
         Click(harness, "A");
         Click(harness, "A");
         Click(harness, "A");
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
 
         SelectByApi(harness, outer);
 
-        Assert.Equal(4, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(4, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasGroupSelection);
     }
 
@@ -484,7 +484,7 @@ public class NestedGroupingTests
 
         SelectByApi(harness, inner);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasGroupSelection);
     }
 
@@ -503,8 +503,8 @@ public class NestedGroupingTests
         var inner = PathOf(harness, "A")!;
 
         // Клик по строке участника в панели выбирает один контрол из группы.
-        harness.Editor.SelectDesignTarget(Cell(harness, "A"));
-        harness.Editor.SelectDesignTarget(Cell(harness, "C"), additive: true);
+        harness.Editor.SelectTarget(Cell(harness, "A"));
+        harness.Editor.SelectTarget(Cell(harness, "C"), additive: true);
         harness.RunLayout();
 
         Assert.True(harness.Editor.GroupSelection());
@@ -591,7 +591,7 @@ public class NestedGroupingTests
         var harness = CreateWithGroup();
         Select(harness, "A", "C");
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         StartClusterResize(harness);
@@ -601,7 +601,7 @@ public class NestedGroupingTests
         harness.RunLayout();
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Resize, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Resize, edit.Kind);
     }
 
     /// <summary>

@@ -70,8 +70,8 @@ public class GroupSnapTests
 
     private static void SelectPair(EditorHarness harness)
     {
-        harness.Editor.SelectDesignTarget(harness.Named(0, "Mate"));
-        harness.Editor.SelectDesignTarget(harness.Named(0, "Grabbed"), additive: true);
+        harness.Editor.SelectTarget(harness.Named(0, "Mate"));
+        harness.Editor.SelectTarget(harness.Named(0, "Grabbed"), additive: true);
         harness.RunLayout();
     }
 
@@ -87,7 +87,7 @@ public class GroupSnapTests
     }
 
     private static double X(EditorHarness harness, string name) =>
-        harness.Editor.GetDesignPosition(harness.Named(0, name)).X;
+        harness.Editor.GetTargetPosition(harness.Named(0, name)).X;
 
     /// <summary>
     /// Притягивается рамка группы, а не схваченный элемент.
@@ -247,7 +247,7 @@ public class GroupSnapTests
     public void A_Single_Drag_Still_Uses_The_Element()
     {
         var harness = Create();
-        harness.Editor.SelectDesignTarget(harness.Named(0, "Grabbed"));
+        harness.Editor.SelectTarget(harness.Named(0, "Grabbed"));
         harness.RunLayout();
 
         DragGrabbed(harness, 5);

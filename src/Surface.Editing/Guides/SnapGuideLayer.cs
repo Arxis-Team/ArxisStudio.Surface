@@ -10,7 +10,7 @@ namespace ArxisStudio.Surface.Editing;
 /// Слой направляющих, отрисованных с точностью до физического пикселя.
 /// </summary>
 /// <remarks>
-/// Собственной трансформации у контрола нет — как и у <see cref="DesignGrid"/>,
+/// Собственной трансформации у контрола нет — как и у <see cref="SurfaceGrid"/>,
 /// он получает viewport напрямую и пересчитывает мировые координаты в экранные сам.
 /// Только так толщина линии остаётся пиксельной на любом масштабе: направляющая,
 /// растущая вместе с зумом, перестаёт быть указателем и начинает закрывать макет.
@@ -25,20 +25,20 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Идентификатор свойства набора направляющих в мировых координатах.
     /// </summary>
-    public static readonly StyledProperty<IReadOnlyList<DesignSnapGuide>?> GuidesProperty =
-        AvaloniaProperty.Register<SnapGuideLayer, IReadOnlyList<DesignSnapGuide>?>(nameof(Guides));
+    public static readonly StyledProperty<IReadOnlyList<SurfaceSnapGuide>?> GuidesProperty =
+        AvaloniaProperty.Register<SnapGuideLayer, IReadOnlyList<SurfaceSnapGuide>?>(nameof(Guides));
 
     /// <summary>
     /// Идентификатор свойства пользовательских направляющих.
     /// </summary>
-    public static readonly StyledProperty<IReadOnlyList<DesignGuide>?> UserGuidesProperty =
-        AvaloniaProperty.Register<SnapGuideLayer, IReadOnlyList<DesignGuide>?>(nameof(UserGuides));
+    public static readonly StyledProperty<IReadOnlyList<SurfaceGuide>?> UserGuidesProperty =
+        AvaloniaProperty.Register<SnapGuideLayer, IReadOnlyList<SurfaceGuide>?>(nameof(UserGuides));
 
     /// <summary>
     /// Идентификатор свойства направляющей, показываемой во время перемещения.
     /// </summary>
-    public static readonly StyledProperty<DesignGuide?> GuidePreviewProperty =
-        AvaloniaProperty.Register<SnapGuideLayer, DesignGuide?>(nameof(GuidePreview));
+    public static readonly StyledProperty<SurfaceGuide?> GuidePreviewProperty =
+        AvaloniaProperty.Register<SnapGuideLayer, SurfaceGuide?>(nameof(GuidePreview));
 
     /// <summary>
     /// Идентификатор свойства видимости пользовательских направляющих.
@@ -73,8 +73,8 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Идентификатор свойства подсказок о равных интервалах.
     /// </summary>
-    public static readonly StyledProperty<IReadOnlyList<DesignSpacingHint>?> SpacingHintsProperty =
-        AvaloniaProperty.Register<SnapGuideLayer, IReadOnlyList<DesignSpacingHint>?>(nameof(SpacingHints));
+    public static readonly StyledProperty<IReadOnlyList<SurfaceSpacingHint>?> SpacingHintsProperty =
+        AvaloniaProperty.Register<SnapGuideLayer, IReadOnlyList<SurfaceSpacingHint>?>(nameof(SpacingHints));
 
     /// <summary>
     /// Идентификатор свойства кисти подсказок о равных интервалах.
@@ -145,7 +145,7 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Получает или задает набор направляющих в мировых координатах.
     /// </summary>
-    public IReadOnlyList<DesignSnapGuide>? Guides
+    public IReadOnlyList<SurfaceSnapGuide>? Guides
     {
         get => GetValue(GuidesProperty);
         set => SetValue(GuidesProperty, value);
@@ -154,7 +154,7 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Получает или задает пользовательские направляющие.
     /// </summary>
-    public IReadOnlyList<DesignGuide>? UserGuides
+    public IReadOnlyList<SurfaceGuide>? UserGuides
     {
         get => GetValue(UserGuidesProperty);
         set => SetValue(UserGuidesProperty, value);
@@ -163,7 +163,7 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Получает или задает направляющую, показываемую во время перемещения.
     /// </summary>
-    public DesignGuide? GuidePreview
+    public SurfaceGuide? GuidePreview
     {
         get => GetValue(GuidePreviewProperty);
         set => SetValue(GuidePreviewProperty, value);
@@ -228,7 +228,7 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Получает или задает подсказки о равных интервалах.
     /// </summary>
-    public IReadOnlyList<DesignSpacingHint>? SpacingHints
+    public IReadOnlyList<SurfaceSpacingHint>? SpacingHints
     {
         get => GetValue(SpacingHintsProperty);
         set => SetValue(SpacingHintsProperty, value);
@@ -350,13 +350,13 @@ public class SnapGuideLayer : Control
         for (var i = 0; i < guides.Count; i++)
         {
             var guide = guides[i];
-            var pen = guide.Kind == DesignSnapGuideKind.Centre ? centrePen : edgePen;
-            var vertical = guide.Orientation == DesignSnapGuideOrientation.Vertical;
+            var pen = guide.Kind == SurfaceSnapGuideKind.Centre ? centrePen : edgePen;
+            var vertical = guide.Orientation == SurfaceSnapGuideOrientation.Vertical;
 
             var lineOrigin = vertical ? origin.X : origin.Y;
             var spanOrigin = vertical ? origin.Y : origin.X;
 
-            var position = DesignGrid.SnapToDevicePixel((guide.Position - lineOrigin) * zoom, scaling);
+            var position = SurfaceGrid.SnapToDevicePixel((guide.Position - lineOrigin) * zoom, scaling);
             var start = (guide.Start - spanOrigin) * zoom;
             var end = (guide.End - spanOrigin) * zoom;
 
@@ -387,7 +387,7 @@ public class SnapGuideLayer : Control
             return;
 
         var pen = new Pen(brush, thickness, UserGuideDashStyle);
-        guides ??= Array.Empty<DesignGuide>();
+        guides ??= Array.Empty<SurfaceGuide>();
 
         for (var i = 0; i < guides.Count; i++)
             DrawUserGuide(context, pen, guides[i], origin, zoom, scaling);
@@ -401,14 +401,14 @@ public class SnapGuideLayer : Control
     /// <summary>
     /// Рисует одну пользовательскую направляющую через весь слой.
     /// </summary>
-    private void DrawUserGuide(DrawingContext context, IPen pen, DesignGuide guide, Point origin, double zoom, double scaling)
+    private void DrawUserGuide(DrawingContext context, IPen pen, SurfaceGuide guide, Point origin, double zoom, double scaling)
     {
         var size = Bounds.Size;
 
         {
-            if (guide.Orientation == DesignGuideOrientation.Vertical)
+            if (guide.Orientation == SurfaceGuideOrientation.Vertical)
             {
-                var x = DesignGrid.SnapToDevicePixel((guide.Position - origin.X) * zoom, scaling);
+                var x = SurfaceGrid.SnapToDevicePixel((guide.Position - origin.X) * zoom, scaling);
                 if (x < 0 || x > size.Width)
                     return;
 
@@ -416,7 +416,7 @@ public class SnapGuideLayer : Control
             }
             else
             {
-                var y = DesignGrid.SnapToDevicePixel((guide.Position - origin.Y) * zoom, scaling);
+                var y = SurfaceGrid.SnapToDevicePixel((guide.Position - origin.Y) * zoom, scaling);
                 if (y < 0 || y > size.Height)
                     return;
 
@@ -451,14 +451,14 @@ public class SnapGuideLayer : Control
         for (var i = 0; i < hints.Count; i++)
         {
             var hint = hints[i];
-            var along = hint.Orientation == DesignSnapGuideOrientation.Vertical;
+            var along = hint.Orientation == SurfaceSnapGuideOrientation.Vertical;
 
             var lineOrigin = along ? origin.X : origin.Y;
             var crossOrigin = along ? origin.Y : origin.X;
 
             var from = (hint.Start - lineOrigin) * zoom;
             var to = (hint.End - lineOrigin) * zoom;
-            var at = DesignGrid.SnapToDevicePixel((hint.Position - crossOrigin) * zoom, scaling);
+            var at = SurfaceGrid.SnapToDevicePixel((hint.Position - crossOrigin) * zoom, scaling);
 
             if (along)
             {

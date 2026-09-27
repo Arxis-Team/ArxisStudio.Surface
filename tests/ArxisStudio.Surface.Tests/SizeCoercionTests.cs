@@ -31,7 +31,7 @@ public class SizeCoercionTests
         var nested = harness.Nested(0);
         nested.MaxWidth = 80;
 
-        harness.Editor.SetDesignSize(nested, new Size(500, 40));
+        harness.Editor.SetTargetSize(nested, new Size(500, 40));
 
         Assert.Equal(80, nested.Width, 1);
     }
@@ -45,7 +45,7 @@ public class SizeCoercionTests
         nested.MinWidth = 120;
         nested.MaxWidth = 40;
 
-        harness.Editor.SetDesignSize(nested, new Size(500, 40));
+        harness.Editor.SetTargetSize(nested, new Size(500, 40));
 
         // Тот же порядок, что в самой Avalonia: сначала максимум, потом минимум.
         Assert.Equal(120, nested.Width, 1);
@@ -55,7 +55,7 @@ public class SizeCoercionTests
     /// Минимум редактора — предел жеста, а не свойство шва записи.
     /// </summary>
     /// <remarks>
-    /// Раньше <c>ResizeMinSize</c> участвовал прямо в <c>CoerceDesignSize</c>, то есть
+    /// Раньше <c>ResizeMinSize</c> участвовал прямо в <c>CoerceTargetSize</c>, то есть
     /// применялся к <b>любой</b> записи размера. Отсюда шёл дефект: вход в жест сам
     /// записывает текущий размер, чтобы было от чего считать, — и контрол мельче порога
     /// раздувался от простого нажатия на ручку, без единой дельты. Тем же путём
@@ -68,7 +68,7 @@ public class SizeCoercionTests
         harness.PlaceContainer(0, CardLocation, new Size(300, 300));
         var nested = harness.Nested(0);
 
-        harness.Editor.SetDesignSize(nested, new Size(1, 1));
+        harness.Editor.SetTargetSize(nested, new Size(1, 1));
 
         Assert.Equal(1, nested.Width, 1);
         Assert.Equal(1, nested.Height, 1);
@@ -95,13 +95,13 @@ public class SizeCoercionTests
 
         // Цель ниже минимума по высоте: 40 против 60.
         harness.Editor.InteractionOptions.ResizeMinSize = 60;
-        var before = harness.Editor.GetDesignSize(nested);
+        var before = harness.Editor.GetTargetSize(nested);
 
         container.PushState(new ItemResizingState(container, nested, ResizeDirection.Bottom));
         harness.RunLayout();
 
-        Assert.Equal(before.Width, harness.Editor.GetDesignSize(nested).Width, 1);
-        Assert.Equal(before.Height, harness.Editor.GetDesignSize(nested).Height, 1);
+        Assert.Equal(before.Width, harness.Editor.GetTargetSize(nested).Width, 1);
+        Assert.Equal(before.Height, harness.Editor.GetTargetSize(nested).Height, 1);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public class SizeCoercionTests
         var nested = harness.Nested(0);
 
         harness.Editor.InteractionOptions.ResizeMinSize = 60;
-        var before = harness.Editor.GetDesignSize(nested);
+        var before = harness.Editor.GetTargetSize(nested);
 
         var state = new ItemResizingState(container, nested, ResizeDirection.Bottom);
         container.PushState(state);
@@ -129,7 +129,7 @@ public class SizeCoercionTests
 
         harness.RunLayout();
 
-        Assert.Equal(before.Height, harness.Editor.GetDesignSize(nested).Height, 1);
+        Assert.Equal(before.Height, harness.Editor.GetTargetSize(nested).Height, 1);
     }
 
     /// <summary>
@@ -150,7 +150,7 @@ public class SizeCoercionTests
 
         harness.RunLayout();
 
-        Assert.Equal(minimum, harness.Editor.GetDesignSize(nested).Width, 1);
+        Assert.Equal(minimum, harness.Editor.GetTargetSize(nested).Width, 1);
     }
 
     [AvaloniaFact]
@@ -201,10 +201,10 @@ public class SizeCoercionTests
         // Запрошенный масштаб 2.0 поднял бы capped до 200 при пределе 150.
         operation.Update(editor, new Vector(200, 0));
 
-        Assert.Equal(150, editor.GetDesignSize(capped).Width, 6);
+        Assert.Equal(150, editor.GetTargetSize(capped).Width, 6);
 
         // Главное: сосед не уезжает от рамки — позиция считается от того же
         // зажатого масштаба, что и размер.
-        Assert.Equal(150, editor.GetDesignPosition(free).X, 6);
+        Assert.Equal(150, editor.GetTargetPosition(free).X, 6);
     }
 }

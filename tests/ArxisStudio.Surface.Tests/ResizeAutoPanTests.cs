@@ -40,7 +40,7 @@ public class ResizeAutoPanTests
         harness.Window.MouseUp(inside, MouseButton.Left, RawInputModifiers.Control);
         harness.RunLayout();
 
-        Assert.Same(harness.Container(0), Assert.Single(harness.Editor.SelectedDesignTargets).Target);
+        Assert.Same(harness.Container(0), Assert.Single(harness.Editor.SelectedTargets).Target);
         return harness;
     }
 
@@ -56,7 +56,7 @@ public class ResizeAutoPanTests
         return thumb.TranslatePoint(new Point(thumb.Bounds.Width / 2, thumb.Bounds.Height / 2), harness.Editor)!.Value;
     }
 
-    private static double WidthOf(EditorHarness harness) => harness.Editor.GetDesignSize(harness.Container(0)).Width;
+    private static double WidthOf(EditorHarness harness) => harness.Editor.GetTargetSize(harness.Container(0)).Width;
 
     private static void GrabRightHandleAndMoveTo(EditorHarness harness, Point to)
     {
@@ -120,7 +120,7 @@ public class ResizeAutoPanTests
     public void A_Panned_Resize_Is_Still_One_Edit()
     {
         var harness = CreateWithFormSelected();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         GrabRightHandleAndMoveTo(harness, NearRightEdge);
@@ -128,7 +128,7 @@ public class ResizeAutoPanTests
         harness.Window.MouseUp(NearRightEdge, MouseButton.Left);
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Resize, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Resize, edit.Kind);
     }
 
     [AvaloniaFact]

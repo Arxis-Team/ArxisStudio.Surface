@@ -38,7 +38,7 @@
         <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
         <!--
             Сетка больше не описывается в демо: её предоставляет сама библиотека
-            через DesignGrid в шаблоне DesignEditor. Палитра и шаг настраиваются
+            через SurfaceGrid в шаблоне DesignEditor. Палитра и шаг настраиваются
             ресурсами DesignEditor.Grid.*.
         -->
     </Window.Resources>
@@ -75,11 +75,11 @@
                                x:Name="Properties"
                                Editor="{Binding #Editor}" />
 
-        <surface:DesignRuler Grid.Row="0" Grid.Column="2"
+        <surface:SurfaceRuler Grid.Row="0" Grid.Column="2"
                                    x:Name="TopRuler"
                                    Orientation="Horizontal"
                                    Editor="{Binding #Editor}" />
-        <surface:DesignRuler Grid.Row="1" Grid.Column="1"
+        <surface:SurfaceRuler Grid.Row="1" Grid.Column="1"
                                    Orientation="Vertical"
                                    Editor="{Binding #Editor}"
                                    IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />
@@ -93,7 +93,7 @@
                                  ShowGuides="False"
                                  ViewportZoom="{Binding Zoom, Mode=TwoWay}">
             <surface:DesignEditor.InputGestures>
-                <surface:DesignEditorInputGestures PanButton="Middle"
+                <surface:SurfaceInputGestures PanButton="Middle"
                                                        PanModifiers="None"
                                                        MarqueeButton="Left"
                                                        MarqueeModifiers="None"
@@ -102,7 +102,7 @@
                                                        AdditiveSelectionModifiers="Shift" />
             </surface:DesignEditor.InputGestures>
             <surface:DesignEditor.InteractionOptions>
-                <surface:DesignEditorInteractionOptions ZoomStep="1.1"
+                <surface:SurfaceInteractionOptions ZoomStep="1.1"
                                                            DragStartThreshold="3"
                                                            ResizeMinSize="10" />
             </surface:DesignEditor.InteractionOptions>
@@ -114,7 +114,7 @@
                 есть свой элемент под указателем.
             -->
             <surface:DesignEditor.Cursors>
-                <surface:DesignEditorCursors Move="SizeAll"
+                <surface:SurfaceCursors Move="SizeAll"
                                                  Blocked="No"
                                                  Pan="Hand"
                                                  Marquee="Cross"
@@ -359,7 +359,7 @@
                                FontSize="10"
                                Margin="10,0,0,0"
                                VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.SelectedDesignTargetsCount, StringFormat='{}{0}'}"
+                    <TextBlock Text="{Binding #Editor.SelectedTargetsCount, StringFormat='{}{0}'}"
                                Foreground="#7EE787"
                                FontSize="11"
                                FontWeight="SemiBold"

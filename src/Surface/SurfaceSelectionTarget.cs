@@ -9,7 +9,7 @@ namespace ArxisStudio.Surface;
 /// <summary>
 /// Определяет уровень выбранного target в редакторе.
 /// </summary>
-public enum DesignSelectionScope
+public enum SurfaceSelectionScope
 {
     /// <summary>
     /// Выбран весь контейнер <see cref="SurfaceItem"/>.
@@ -23,30 +23,30 @@ public enum DesignSelectionScope
 }
 
 /// <summary>
-/// Аргументы изменения набора выбранных design targets.
+/// Аргументы изменения набора выбранных targets.
 /// </summary>
 /// <remarks>
 /// Событие отличается от <c>SelectingItemsControl.SelectionChanged</c>: тот работает
-/// на уровне элементов <c>ItemsSource</c>, а этот — на уровне design targets, включая
+/// на уровне элементов <c>ItemsSource</c>, а этот — на уровне targets, включая
 /// вложенные контролы и вложенные контейнеры.
 /// <para>
-/// Наборы сравниваются по <see cref="DesignSelectionTarget.Target"/>, а не по самим
-/// экземплярам <see cref="DesignSelectionTarget"/>: они пересоздаются при каждой
+/// Наборы сравниваются по <see cref="SurfaceSelectionTarget.Target"/>, а не по самим
+/// экземплярам <see cref="SurfaceSelectionTarget"/>: они пересоздаются при каждой
 /// пересборке overlay и сравнивать их по ссылке бессмысленно.
 /// </para>
 /// </remarks>
-public sealed class DesignSelectionChangedEventArgs : EventArgs
+public sealed class SurfaceSelectionChangedEventArgs : EventArgs
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignSelectionChangedEventArgs"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceSelectionChangedEventArgs"/>.
     /// </summary>
-    public DesignSelectionChangedEventArgs(
-        IReadOnlyList<DesignSelectionTarget> oldTargets,
-        IReadOnlyList<DesignSelectionTarget> newTargets,
-        IReadOnlyList<DesignSelectionTarget> added,
-        IReadOnlyList<DesignSelectionTarget> removed,
-        DesignSelectionTarget? oldPrimary,
-        DesignSelectionTarget? newPrimary)
+    public SurfaceSelectionChangedEventArgs(
+        IReadOnlyList<SurfaceSelectionTarget> oldTargets,
+        IReadOnlyList<SurfaceSelectionTarget> newTargets,
+        IReadOnlyList<SurfaceSelectionTarget> added,
+        IReadOnlyList<SurfaceSelectionTarget> removed,
+        SurfaceSelectionTarget? oldPrimary,
+        SurfaceSelectionTarget? newPrimary)
     {
         OldTargets = oldTargets ?? throw new ArgumentNullException(nameof(oldTargets));
         NewTargets = newTargets ?? throw new ArgumentNullException(nameof(newTargets));
@@ -59,32 +59,32 @@ public sealed class DesignSelectionChangedEventArgs : EventArgs
     /// <summary>
     /// Получает набор targets до изменения.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> OldTargets { get; }
+    public IReadOnlyList<SurfaceSelectionTarget> OldTargets { get; }
 
     /// <summary>
     /// Получает набор targets после изменения.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> NewTargets { get; }
+    public IReadOnlyList<SurfaceSelectionTarget> NewTargets { get; }
 
     /// <summary>
     /// Получает targets, появившиеся в выделении.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> Added { get; }
+    public IReadOnlyList<SurfaceSelectionTarget> Added { get; }
 
     /// <summary>
     /// Получает targets, выбывшие из выделения.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> Removed { get; }
+    public IReadOnlyList<SurfaceSelectionTarget> Removed { get; }
 
     /// <summary>
     /// Получает primary target до изменения.
     /// </summary>
-    public DesignSelectionTarget? OldPrimary { get; }
+    public SurfaceSelectionTarget? OldPrimary { get; }
 
     /// <summary>
     /// Получает primary target после изменения.
     /// </summary>
-    public DesignSelectionTarget? NewPrimary { get; }
+    public SurfaceSelectionTarget? NewPrimary { get; }
 
     /// <summary>
     /// Получает значение, указывающее, что сменился именно primary target.
@@ -100,14 +100,14 @@ public sealed class DesignSelectionChangedEventArgs : EventArgs
 /// <summary>
 /// Представляет публичную запись о выбранном target редактора.
 /// </summary>
-public sealed class DesignSelectionTarget
+public sealed class SurfaceSelectionTarget
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignSelectionTarget"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceSelectionTarget"/>.
     /// </summary>
     /// <param name="container">Контейнер, которому принадлежит выбранный target.</param>
     /// <param name="target">Выбранный visual target.</param>
-    public DesignSelectionTarget(SurfaceItem container, Control target)
+    public SurfaceSelectionTarget(SurfaceItem container, Control target)
         : this(container, target, ResolveGroupKey(container, target))
     {
     }
@@ -122,7 +122,7 @@ public sealed class DesignSelectionTarget
     /// Снимок выделения пересобирается на каждом кадре жеста, а поверхность ключ знает сама:
     /// искать её подъёмом по дереву на каждый target значило бы платить за это в жесте.
     /// </remarks>
-    internal DesignSelectionTarget(SurfaceItem container, Control target, string? groupId)
+    internal SurfaceSelectionTarget(SurfaceItem container, Control target, string? groupId)
     {
         Container = container ?? throw new ArgumentNullException(nameof(container));
         Target = target ?? throw new ArgumentNullException(nameof(target));
@@ -131,8 +131,8 @@ public sealed class DesignSelectionTarget
         // вложенный SurfaceItem — это контейнер, даже если владеющий item
         // верхнего уровня другой.
         Scope = target is SurfaceItem
-            ? DesignSelectionScope.Container
-            : DesignSelectionScope.NestedTarget;
+            ? SurfaceSelectionScope.Container
+            : SurfaceSelectionScope.NestedTarget;
 
         Depth = CalculateDepth(target);
         DisplayName = CreateDisplayName(target);
@@ -165,7 +165,7 @@ public sealed class DesignSelectionTarget
     /// <summary>
     /// Получает уровень выбора: контейнер или nested target.
     /// </summary>
-    public DesignSelectionScope Scope { get; }
+    public SurfaceSelectionScope Scope { get; }
 
     /// <summary>
     /// Получает глубину вложенности target в дереве контейнеров.

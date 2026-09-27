@@ -9,14 +9,14 @@
 
     <!-- Временная marquee-рамка для area-selection в PART_InteractionOverlayLayer. -->
     <ControlTheme x:Key="SelectionRectangleStyle" TargetType="Rectangle">
-        <Setter Property="Stroke" Value="{DynamicResource DesignEditor.MarqueeStrokeBrush}" />
-        <Setter Property="StrokeThickness" Value="{DynamicResource DesignEditor.Selection.StrokeThickness}" />
-        <Setter Property="Fill" Value="{DynamicResource DesignEditor.MarqueeFillBrush}" />
+        <Setter Property="Stroke" Value="{DynamicResource Surface.MarqueeStrokeBrush}" />
+        <Setter Property="StrokeThickness" Value="{DynamicResource Surface.Selection.StrokeThickness}" />
+        <Setter Property="Fill" Value="{DynamicResource Surface.MarqueeFillBrush}" />
         <Setter Property="IsHitTestVisible" Value="False"/>
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type uidesigner:DesignEditor}" TargetType="uidesigner:DesignEditor">
-        <Setter Property="Background" Value="{DynamicResource DesignEditor.BackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource Surface.BackgroundBrush}" />
         <Setter Property="ClipToBounds" Value="True" />
         <Setter Property="SelectionRectangleStyle" Value="{StaticResource SelectionRectangleStyle}" />
         <Setter Property="Template">
@@ -31,7 +31,7 @@
                             viewport напрямую, поэтому ей не нужен ViewportTransform:
                             толщина линий остаётся пиксельной на любом масштабе.
                         -->
-                        <surface:DesignGrid Name="PART_Grid"
+                        <surface:SurfaceGrid Name="PART_Grid"
                                              ViewportLocation="{TemplateBinding ViewportLocation}"
                                              ViewportZoom="{TemplateBinding ViewportZoom}"
                                              IsVisible="{TemplateBinding ShowGrid}" />
@@ -175,14 +175,14 @@
                                                  ShowUserGuides="{TemplateBinding ShowGuides}"
                                                  ShowSnapGuides="{TemplateBinding ShowSnapGuides}"
                                                  GuidePreview="{TemplateBinding GuidePreview}"
-                                                 UserGuideBrush="{DynamicResource DesignEditor.UserGuideBrush}"
-                                                 LineBrush="{DynamicResource DesignEditor.SnapGuideBrush}"
-                                                 CentreLineBrush="{DynamicResource DesignEditor.SnapGuide.CentreBrush}"
+                                                 UserGuideBrush="{DynamicResource Surface.UserGuideBrush}"
+                                                 LineBrush="{DynamicResource Surface.SnapGuideBrush}"
+                                                 CentreLineBrush="{DynamicResource Surface.SnapGuide.CentreBrush}"
                                                  SpacingHints="{TemplateBinding SpacingHints}"
-                                                 SpacingBrush="{DynamicResource DesignEditor.SpacingBrush}"
-                                                 LineDashStyle="{DynamicResource DesignEditor.SnapGuide.DashStyle}"
-                                                 UserGuideDashStyle="{DynamicResource DesignEditor.UserGuide.DashStyle}"
-                                                 LineThickness="{DynamicResource DesignEditor.SnapGuide.Thickness}"
+                                                 SpacingBrush="{DynamicResource Surface.SpacingBrush}"
+                                                 LineDashStyle="{DynamicResource Surface.SnapGuide.DashStyle}"
+                                                 UserGuideDashStyle="{DynamicResource Surface.UserGuide.DashStyle}"
+                                                 LineThickness="{DynamicResource Surface.SnapGuide.Thickness}"
                                                  ViewportLocation="{TemplateBinding ViewportLocation}"
                                                  ViewportZoom="{TemplateBinding ViewportZoom}" />
                     </Grid>

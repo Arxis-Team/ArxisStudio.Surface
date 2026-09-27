@@ -29,65 +29,65 @@ namespace ArxisStudio.Surface;
 /// он рисует в экранных координатах, пересчитывая мировые сам.
 /// </para>
 /// </remarks>
-public class DesignGrid : Control
+public class SurfaceGrid : Control
 {
     /// <summary>
     /// Идентификатор свойства кисти фона.
     /// </summary>
     public static readonly StyledProperty<IBrush?> BackgroundProperty =
-        AvaloniaProperty.Register<DesignGrid, IBrush?>(nameof(Background));
+        AvaloniaProperty.Register<SurfaceGrid, IBrush?>(nameof(Background));
 
     /// <summary>
     /// Идентификатор свойства шага сетки в мировых единицах.
     /// </summary>
     public static readonly StyledProperty<double> CellSizeProperty =
-        AvaloniaProperty.Register<DesignGrid, double>(nameof(CellSize), 20.0);
+        AvaloniaProperty.Register<SurfaceGrid, double>(nameof(CellSize), 20.0);
 
     /// <summary>
     /// Идентификатор свойства периода мажорных линий, в ячейках.
     /// </summary>
     public static readonly StyledProperty<int> MajorIntervalProperty =
-        AvaloniaProperty.Register<DesignGrid, int>(nameof(MajorInterval), 5);
+        AvaloniaProperty.Register<SurfaceGrid, int>(nameof(MajorInterval), 5);
 
     /// <summary>
     /// Идентификатор свойства кисти обычных линий.
     /// </summary>
     public static readonly StyledProperty<IBrush?> LineBrushProperty =
-        AvaloniaProperty.Register<DesignGrid, IBrush?>(nameof(LineBrush));
+        AvaloniaProperty.Register<SurfaceGrid, IBrush?>(nameof(LineBrush));
 
     /// <summary>
     /// Идентификатор свойства кисти мажорных линий.
     /// </summary>
     public static readonly StyledProperty<IBrush?> MajorLineBrushProperty =
-        AvaloniaProperty.Register<DesignGrid, IBrush?>(nameof(MajorLineBrush));
+        AvaloniaProperty.Register<SurfaceGrid, IBrush?>(nameof(MajorLineBrush));
 
     /// <summary>
     /// Идентификатор свойства толщины линий в физических пикселях.
     /// </summary>
     public static readonly StyledProperty<double> LineThicknessProperty =
-        AvaloniaProperty.Register<DesignGrid, double>(nameof(LineThickness), 1.0);
+        AvaloniaProperty.Register<SurfaceGrid, double>(nameof(LineThickness), 1.0);
 
     /// <summary>
     /// Идентификатор свойства минимального экранного шага, при котором линии ещё рисуются.
     /// </summary>
     public static readonly StyledProperty<double> MinCellSizeProperty =
-        AvaloniaProperty.Register<DesignGrid, double>(nameof(MinCellSize), 6.0);
+        AvaloniaProperty.Register<SurfaceGrid, double>(nameof(MinCellSize), 6.0);
 
     /// <summary>
     /// Идентификатор свойства положения viewport в мировых координатах.
     /// </summary>
     public static readonly StyledProperty<Point> ViewportLocationProperty =
-        AvaloniaProperty.Register<DesignGrid, Point>(nameof(ViewportLocation));
+        AvaloniaProperty.Register<SurfaceGrid, Point>(nameof(ViewportLocation));
 
     /// <summary>
     /// Идентификатор свойства масштаба viewport.
     /// </summary>
     public static readonly StyledProperty<double> ViewportZoomProperty =
-        AvaloniaProperty.Register<DesignGrid, double>(nameof(ViewportZoom), 1.0);
+        AvaloniaProperty.Register<SurfaceGrid, double>(nameof(ViewportZoom), 1.0);
 
-    static DesignGrid()
+    static SurfaceGrid()
     {
-        AffectsRender<DesignGrid>(
+        AffectsRender<SurfaceGrid>(
             BackgroundProperty,
             CellSizeProperty,
             MajorIntervalProperty,

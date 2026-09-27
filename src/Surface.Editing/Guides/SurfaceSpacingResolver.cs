@@ -11,16 +11,16 @@ namespace ArxisStudio.Surface.Editing;
 /// <see cref="Start"/> и <see cref="End"/> — границы зазора по его оси,
 /// <see cref="Position"/> — координата, на которой отрезок рисуется по другой оси.
 /// </remarks>
-public readonly struct DesignSpacingHint : IEquatable<DesignSpacingHint>
+public readonly struct SurfaceSpacingHint : IEquatable<SurfaceSpacingHint>
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignSpacingHint"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceSpacingHint"/>.
     /// </summary>
     /// <param name="orientation">Ось, вдоль которой измерен зазор.</param>
     /// <param name="start">Начало зазора.</param>
     /// <param name="end">Конец зазора.</param>
     /// <param name="position">Координата отрисовки по другой оси.</param>
-    public DesignSpacingHint(DesignSnapGuideOrientation orientation, double start, double end, double position)
+    public SurfaceSpacingHint(SurfaceSnapGuideOrientation orientation, double start, double end, double position)
     {
         Orientation = orientation;
         Start = start;
@@ -30,10 +30,10 @@ public readonly struct DesignSpacingHint : IEquatable<DesignSpacingHint>
 
     /// <summary>Получает ось, вдоль которой измерен зазор.</summary>
     /// <remarks>
-    /// <see cref="DesignSnapGuideOrientation.Vertical"/> означает зазор по оси X —
+    /// <see cref="SurfaceSnapGuideOrientation.Vertical"/> означает зазор по оси X —
     /// та же конвенция, что и у направляющей, которая при этом вертикальна.
     /// </remarks>
-    public DesignSnapGuideOrientation Orientation { get; }
+    public SurfaceSnapGuideOrientation Orientation { get; }
 
     /// <summary>Получает начало зазора.</summary>
     public double Start { get; }
@@ -45,14 +45,14 @@ public readonly struct DesignSpacingHint : IEquatable<DesignSpacingHint>
     public double Position { get; }
 
     /// <inheritdoc />
-    public bool Equals(DesignSpacingHint other)
+    public bool Equals(SurfaceSpacingHint other)
         => Orientation == other.Orientation
            && Start.Equals(other.Start)
            && End.Equals(other.End)
            && Position.Equals(other.Position);
 
     /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is DesignSpacingHint other && Equals(other);
+    public override bool Equals(object? obj) => obj is SurfaceSpacingHint other && Equals(other);
 
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(Orientation, Start, End, Position);
@@ -62,7 +62,7 @@ public readonly struct DesignSpacingHint : IEquatable<DesignSpacingHint>
 /// Считает положение, при котором зазоры вокруг элемента становятся равными.
 /// </summary>
 /// <remarks>
-/// Здесь, как и в <see cref="DesignSnapGuideResolver"/>, только арифметика: соседи
+/// Здесь, как и в <see cref="SurfaceSnapGuideResolver"/>, только арифметика: соседи
 /// приходят готовыми прямоугольниками в мировых координатах.
 /// <para>
 /// Отличие от выравнивания в том, что сравниваются <b>зазоры</b>, а не координаты.
@@ -80,7 +80,7 @@ public readonly struct DesignSpacingHint : IEquatable<DesignSpacingHint>
 /// ближайший — то же правило, что и у выравнивания.
 /// </para>
 /// </remarks>
-internal static class DesignSpacingResolver
+internal static class SurfaceSpacingResolver
 {
     /// <summary>
     /// Допуск совпадения зазоров при сборе подсказок: смещение уже применено,
@@ -197,14 +197,14 @@ internal static class DesignSpacingResolver
     /// он попал: два подряд при положении посередине, два и больше при повторе шага.
     /// Одинокий зазор ничего не значит и не рисуется.
     /// </remarks>
-    internal static IReadOnlyList<DesignSpacingHint> CollectHints(Rect bounds, IReadOnlyList<Rect> neighbours)
+    internal static IReadOnlyList<SurfaceSpacingHint> CollectHints(Rect bounds, IReadOnlyList<Rect> neighbours)
     {
-        List<DesignSpacingHint>? hints = null;
+        List<SurfaceSpacingHint>? hints = null;
 
         CollectAxis(bounds, neighbours, xAxis: true, ref hints);
         CollectAxis(bounds, neighbours, xAxis: false, ref hints);
 
-        return (IReadOnlyList<DesignSpacingHint>?)hints ?? Array.Empty<DesignSpacingHint>();
+        return (IReadOnlyList<SurfaceSpacingHint>?)hints ?? Array.Empty<SurfaceSpacingHint>();
     }
 
     private static bool TryResolveAxis(
@@ -259,7 +259,7 @@ internal static class DesignSpacingResolver
         Rect bounds,
         IReadOnlyList<Rect> neighbours,
         bool xAxis,
-        ref List<DesignSpacingHint>? hints)
+        ref List<SurfaceSpacingHint>? hints)
     {
         var row = BuildRow(bounds, neighbours, xAxis);
 
@@ -291,11 +291,11 @@ internal static class DesignSpacingResolver
                 continue;
 
             var orientation = xAxis
-                ? DesignSnapGuideOrientation.Vertical
-                : DesignSnapGuideOrientation.Horizontal;
+                ? SurfaceSnapGuideOrientation.Vertical
+                : SurfaceSnapGuideOrientation.Horizontal;
 
-            hints ??= new List<DesignSpacingHint>();
-            hints.Add(new DesignSpacingHint(
+            hints ??= new List<SurfaceSpacingHint>();
+            hints.Add(new SurfaceSpacingHint(
                 orientation,
                 End(items[i], xAxis),
                 Start(items[i + 1], xAxis),

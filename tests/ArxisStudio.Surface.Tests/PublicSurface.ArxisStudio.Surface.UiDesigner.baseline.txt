@@ -9,8 +9,8 @@ enum ArxisStudio.Surface.UiDesigner.DesignContentMode
     value Loaded = 1
 class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia GroupStoreProperty -> GroupStore : IDesignGroupStore (direct)
-    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (attached) = null
-    avalonia GuidesProperty -> Guides : IEnumerable<DesignGuide> (attached) = null
+    avalonia GuidePreviewProperty -> GuidePreview : Nullable<SurfaceGuide> (attached) = null
+    avalonia GuidesProperty -> Guides : IEnumerable<SurfaceGuide> (attached) = null
     avalonia HasGroupSelectionProperty -> HasGroupSelection : Boolean (direct)
     avalonia HasMultipleContainerSelectionProperty -> HasMultipleContainerSelection : Boolean (direct)
     avalonia HasMultipleNestedSelectionProperty -> HasMultipleNestedSelection : Boolean (direct)
@@ -26,12 +26,12 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia ShowGuidesProperty -> ShowGuides : Boolean (attached) = true
     avalonia ShowRulersProperty -> ShowRulers : Boolean (attached) = true
     avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (attached) = true
-    avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<DesignSnapGuide> (attached) = <DesignSnapGuide[]>
-    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (attached) = <DesignSpacingHint[]>
-    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (attached) = <DesignGuide[]>
+    avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<SurfaceSnapGuide> (attached) = <SurfaceSnapGuide[]>
+    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<SurfaceSpacingHint> (attached) = <SurfaceSpacingHint[]>
+    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<SurfaceGuide> (attached) = <SurfaceGuide[]>
     ctor .ctor()
     event EventHandler<DesignEditorReorderRequestedEventArgs> ReorderRequested
-    event EventHandler<DesignGuideChangeRequestedEventArgs> GuideChangeRequested
+    event EventHandler<SurfaceGuideChangeRequestedEventArgs> GuideChangeRequested
     method Boolean BringForward()
     method Boolean BringToFront()
     method Boolean CanGroupSelection()
@@ -62,12 +62,12 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property Boolean ShowSnapGuides { get; set; }
     property ControlTheme SelectionRectangleStyle { get; set; }
     property IDesignGroupStore GroupStore { get; set; }
-    property IEnumerable<DesignGuide> Guides { get; set; }
-    property IReadOnlyList<DesignGuide> UserGuides { get; }
-    property IReadOnlyList<DesignSnapGuide> SnapGuides { get; }
-    property IReadOnlyList<DesignSpacingHint> SpacingHints { get; }
+    property IEnumerable<SurfaceGuide> Guides { get; set; }
+    property IReadOnlyList<SurfaceGuide> UserGuides { get; }
+    property IReadOnlyList<SurfaceSnapGuide> SnapGuides { get; }
+    property IReadOnlyList<SurfaceSpacingHint> SpacingHints { get; }
     property MovePolicy PrimarySelectionMovePolicy { get; }
-    property Nullable<DesignGuide> GuidePreview { get; }
+    property Nullable<SurfaceGuide> GuidePreview { get; }
     property Rect ReorderIndicator { get; }
     property Rect SelectionBounds { get; }
     property ResizePolicy PrimarySelectionResizePolicy { get; }
@@ -93,7 +93,7 @@ sealed class ArxisStudio.Surface.UiDesigner.DesignGroupAttachedStore
     method String GetGroup(Control)
     method Void SetGroup(Control, String)
     property DesignGroupAttachedStore Default { get; }
-sealed class ArxisStudio.Surface.UiDesigner.DesignGroupChange : DesignChange
+sealed class ArxisStudio.Surface.UiDesigner.DesignGroupChange : TargetChange
     ctor .ctor(Control, String, String)
     property String NewId { get; }
     property String OldId { get; }

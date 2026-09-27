@@ -44,7 +44,7 @@ public partial class SurfaceView
         if (GetEffectiveMovePolicy(sourceTarget) == MovePolicy.None)
             return;
 
-        BeginEdit(DesignEditKind.Move);
+        BeginEdit(SurfaceEditKind.Move);
         _groupDragOperation = GroupDragOperation.TryCreate(this, sourceContainer, sourceTarget);
     }
 
@@ -88,7 +88,7 @@ public partial class SurfaceView
                 continue;
 
             var target = ResolveInteractionTarget(container);
-            SetDesignPosition(target, GetDesignPosition(target) + ApplyMovePolicy(target, delta));
+            SetTargetPosition(target, GetTargetPosition(target) + ApplyMovePolicy(target, delta));
         }
 
         e.Handled = true;

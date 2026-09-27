@@ -43,9 +43,9 @@ internal sealed class UserGuideService
     /// <summary>
     /// Запрос на изменение набора направляющих. Отправитель — поверхность.
     /// </summary>
-    public event EventHandler<DesignGuideChangeRequestedEventArgs>? ChangeRequested;
+    public event EventHandler<SurfaceGuideChangeRequestedEventArgs>? ChangeRequested;
 
-    private IReadOnlyList<DesignGuide> Current => SurfaceGuides.GetUserGuides(_view);
+    private IReadOnlyList<SurfaceGuide> Current => SurfaceGuides.GetUserGuides(_view);
 
     /// <summary>
     /// Обрабатывает смену коллекции пользовательских направляющих.
@@ -75,7 +75,7 @@ internal sealed class UserGuideService
     {
         var source = SurfaceGuides.GetGuides(_view);
         var next = source == null
-            ? Array.Empty<DesignGuide>()
+            ? Array.Empty<SurfaceGuide>()
             : source.ToArray();
 
         var current = Current;
@@ -122,7 +122,7 @@ internal sealed class UserGuideService
         for (var i = 0; i < guides.Count; i++)
         {
             var guide = guides[i];
-            result.Add(guide.Orientation == DesignGuideOrientation.Vertical
+            result.Add(guide.Orientation == SurfaceGuideOrientation.Vertical
                 ? new Rect(guide.Position, extent.Y, 0, extent.Height)
                 : new Rect(extent.X, guide.Position, extent.Width, 0));
         }
@@ -143,7 +143,7 @@ internal sealed class UserGuideService
     /// <summary>
     /// Ищет направляющую под точкой в координатах поверхности.
     /// </summary>
-    public bool TryFindGuideAtPoint(Point viewportPoint, out DesignGuide guide)
+    public bool TryFindGuideAtPoint(Point viewportPoint, out SurfaceGuide guide)
     {
         guide = default;
 
@@ -167,7 +167,7 @@ internal sealed class UserGuideService
         for (var i = 0; i < guides.Count; i++)
         {
             var candidate = guides[i];
-            var world1D = candidate.Orientation == DesignGuideOrientation.Vertical ? world.X : world.Y;
+            var world1D = candidate.Orientation == SurfaceGuideOrientation.Vertical ? world.X : world.Y;
             var distance = Math.Abs(world1D - candidate.Position) * zoom;
 
             if (distance > GuideGrabPixels || distance >= best)
@@ -188,10 +188,10 @@ internal sealed class UserGuideService
     /// Привязка к сетке действует и здесь: направляющую ставят по макету, а он стоит
     /// на той же сетке. Модификатор обхода снимает её так же, как и при перетаскивании.
     /// </remarks>
-    public double ResolvePosition(Point viewportPoint, DesignGuideOrientation orientation, KeyModifiers modifiers)
+    public double ResolvePosition(Point viewportPoint, SurfaceGuideOrientation orientation, KeyModifiers modifiers)
     {
         var world = _view.GetWorldPosition(viewportPoint);
-        var value = orientation == DesignGuideOrientation.Vertical ? world.X : world.Y;
+        var value = orientation == SurfaceGuideOrientation.Vertical ? world.X : world.Y;
 
         return _view.GetService<SnapService>() is { } snap && snap.ShouldSnap(modifiers)
             ? snap.SnapCoordinate(value)
@@ -206,16 +206,16 @@ internal sealed class UserGuideService
     /// Обход подписчиков останавливается на первом выполнившем: запрос описывает набор,
     /// снятый до правки, и следующему он говорил бы о состоянии, которого уже нет.
     /// </remarks>
-    public bool RequestChange(DesignGuideChangeKind kind, DesignGuide guide, DesignGuide? original)
+    public bool RequestChange(SurfaceGuideChangeKind kind, SurfaceGuide guide, SurfaceGuide? original)
     {
         var handler = ChangeRequested;
         if (handler == null)
             return false;
 
-        var args = new DesignGuideChangeRequestedEventArgs(kind, guide, original);
+        var args = new SurfaceGuideChangeRequestedEventArgs(kind, guide, original);
         foreach (var entry in handler.GetInvocationList())
         {
-            ((EventHandler<DesignGuideChangeRequestedEventArgs>)entry)(_view, args);
+            ((EventHandler<SurfaceGuideChangeRequestedEventArgs>)entry)(_view, args);
             if (args.Handled)
                 return true;
         }
@@ -231,7 +231,7 @@ internal sealed class UserGuideService
     /// и просить его о правке на каждом кадре протяжки значило бы двадцать запросов
     /// в секунду вместо одного.
     /// </remarks>
-    public void SetPreview(DesignGuide? guide) => SurfaceGuides.SetGuidePreview(_view, guide);
+    public void SetPreview(SurfaceGuide? guide) => SurfaceGuides.SetGuidePreview(_view, guide);
 
     /// <summary>
     /// Перехватывает нажатие на направляющую до того, как его увидит содержимое.

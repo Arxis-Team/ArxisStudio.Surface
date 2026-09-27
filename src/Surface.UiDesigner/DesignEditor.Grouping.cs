@@ -125,8 +125,8 @@ public partial class DesignEditor
     /// Шов записи принадлежности к группе.
     /// </summary>
     /// <remarks>
-    /// Третий шов рядом с <c>SetDesignPosition</c>/<c>SetDesignSize</c> и
-    /// <c>SetDesignZIndex</c>, и заведён по той же причине: единственная точка записи —
+    /// Третий шов рядом с <c>SetTargetPosition</c>/<c>SetTargetSize</c> и
+    /// <c>SetTargetZIndex</c>, и заведён по той же причине: единственная точка записи —
     /// единственное место, где изменение попадает в контракт.
     /// </remarks>
     private void SetDesignGroup(Control target, string? id)
@@ -200,7 +200,7 @@ public partial class DesignEditor
         var path = DesignGroupPath.Append(parent, NextGroupId(host!, parent));
         var members = new List<Control>();
 
-        BeginEdit(DesignEditKind.Group);
+        BeginEdit(SurfaceEditKind.Group);
         foreach (var cluster in clusters)
         {
             foreach (var member in cluster.Members)
@@ -244,7 +244,7 @@ public partial class DesignEditor
         if (groups.Count == 0)
             return false;
 
-        BeginEdit(DesignEditKind.Group);
+        BeginEdit(SurfaceEditKind.Group);
         foreach (var cluster in groups)
         {
             var parent = DesignGroupPath.Parent(cluster.GroupPath);
@@ -303,7 +303,7 @@ public partial class DesignEditor
         if (string.Equals(renamed, path, StringComparison.Ordinal) || IsGroupPathTaken(container, renamed!))
             return false;
 
-        BeginEdit(DesignEditKind.Group);
+        BeginEdit(SurfaceEditKind.Group);
         foreach (var member in members)
             SetDesignGroup(member, DesignGroupPath.Rebase(GetGroupOf(member), path, renamed));
 
@@ -404,7 +404,7 @@ public partial class DesignEditor
         host = null;
         clusters = Array.Empty<SelectionCluster>();
 
-        var targets = SelectedDesignTargets;
+        var targets = SelectedTargets;
         if (targets.Count == 0)
             return false;
 
@@ -418,7 +418,7 @@ public partial class DesignEditor
             if (target is DesignEditorItem)
                 return false;
 
-            var owner = FindDesignHost(target);
+            var owner = FindTargetHost(target);
             if (owner == null)
                 return false;
 
@@ -675,7 +675,7 @@ public partial class DesignEditor
     /// <para>
     /// Правил два. Выбран ровно состав какой-то группы — значит смотрим на неё
     /// <b>снаружи</b>, и открытым остаётся её родитель: иначе группа, выбранная не
-    /// указателем, а через <see cref="SurfaceView.SelectDesignTarget"/>, рисовалась бы участниками
+    /// указателем, а через <see cref="SurfaceView.SelectTarget"/>, рисовалась бы участниками
     /// поодиночке. Именно так и ломался выбор из панели групп: вход, открытый двойным
     /// кликом, переживал его и разбивал выделение на отдельные контролы.
     /// </para>
@@ -726,7 +726,7 @@ public partial class DesignEditor
             if (GetGroupOf(target) is not { } current)
                 return false;
 
-            if (FindDesignHost(target) is not { } owner)
+            if (FindTargetHost(target) is not { } owner)
                 return false;
 
             if (host == null)

@@ -236,7 +236,7 @@ public class PendingLinkTests
         DragLink(stand, from, from + new Vector(80, 60));
 
         Assert.Equal(new Point(100, 100), stand.Node(0).Location);
-        Assert.Empty(stand.Editor.SelectedDesignTargets);
+        Assert.Empty(stand.Editor.SelectedTargets);
     }
 
     [AvaloniaFact]
@@ -321,11 +321,11 @@ public class PendingLinkTests
         var stand = Create();
         stand.Window.MouseDown(stand.GripOf(0), MouseButton.Left);
         stand.Window.MouseUp(stand.GripOf(0), MouseButton.Left);
-        Assert.NotEmpty(stand.Editor.SelectedDesignTargets);
+        Assert.NotEmpty(stand.Editor.SelectedTargets);
 
         stand.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
 
-        Assert.Empty(stand.Editor.SelectedDesignTargets);
+        Assert.Empty(stand.Editor.SelectedTargets);
     }
 
     [AvaloniaFact]

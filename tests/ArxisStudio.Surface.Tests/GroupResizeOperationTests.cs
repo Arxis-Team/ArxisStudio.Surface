@@ -12,8 +12,8 @@ namespace ArxisStudio.Tests;
 /// Пропорциональное изменение размера группы контейнеров.
 /// </summary>
 /// <remarks>
-/// Контролы намеренно не помещаются в дерево: <c>SetDesignPosition</c> тогда пишет
-/// прямо в <c>Layout.DesignX/DesignY</c>, а <c>GetDesignPosition</c> читает их обратно.
+/// Контролы намеренно не помещаются в дерево: <c>SetTargetPosition</c> тогда пишет
+/// прямо в <c>Layout.DesignX/DesignY</c>, а <c>GetTargetPosition</c> читает их обратно.
 /// Это делает тест проверкой чистой арифметики операции.
 /// </remarks>
 public class GroupResizeOperationTests
@@ -24,7 +24,7 @@ public class GroupResizeOperationTests
         => new Border { Width = width, Height = height };
 
     private static Rect BoundsOf(DesignEditor editor, Control control)
-        => new(editor.GetDesignPosition(control), editor.GetDesignSize(control));
+        => new(editor.GetTargetPosition(control), editor.GetTargetSize(control));
 
     [AvaloniaFact]
     public void Targets_Scale_Proportionally()

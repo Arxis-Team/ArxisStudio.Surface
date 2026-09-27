@@ -25,38 +25,38 @@ public class ThemeTests
     /// <summary>Ключи, которые README предъявляет как настраиваемые снаружи.</summary>
     private static readonly string[] DocumentedKeys =
     {
-        "DesignEditor.BackgroundBrush",
-        "DesignEditor.MarqueeStrokeBrush",
-        "DesignEditor.MarqueeFillBrush",
+        "Surface.BackgroundBrush",
+        "Surface.MarqueeStrokeBrush",
+        "Surface.MarqueeFillBrush",
         "DesignEditor.ReorderIndicatorBrush",
-        "DesignEditor.SnapGuideBrush",
-        "DesignEditor.SnapGuide.Thickness",
-        "DesignEditor.SnapGuide.CentreBrush",
-        "DesignEditor.SnapGuide.DashStyle",
-        "DesignEditor.UserGuideBrush",
-        "DesignEditor.UserGuide.DashStyle",
-        "DesignEditor.Ruler.BackgroundBrush",
-        "DesignEditor.Ruler.TickBrush",
-        "DesignEditor.Ruler.LabelBrush",
-        "DesignEditor.Ruler.Thickness",
-        "DesignEditor.Ruler.CursorHorizontal",
-        "DesignEditor.Ruler.CursorVertical",
-        "DesignEditor.SelectionAdorner.CursorTopLeft",
-        "DesignEditor.SelectionAdorner.CursorTop",
-        "DesignEditor.SelectionAdorner.CursorTopRight",
-        "DesignEditor.SelectionAdorner.CursorLeft",
-        "DesignEditor.SelectionAdorner.CursorRight",
-        "DesignEditor.SelectionAdorner.CursorBottomLeft",
-        "DesignEditor.SelectionAdorner.CursorBottom",
-        "DesignEditor.SelectionAdorner.CursorBottomRight",
-        "DesignEditor.Grid.CellSize",
-        "DesignEditor.Grid.MajorInterval",
-        "DesignEditor.Grid.LineThickness",
-        "DesignEditor.Grid.MinCellSize",
-        "DesignEditor.Grid.LineBrush",
-        "DesignEditor.Grid.MajorLineBrush",
-        "DesignEditor.Selection.StrokeThickness",
-        "DesignEditor.SelectionAdorner.HandleSize",
+        "Surface.SnapGuideBrush",
+        "Surface.SnapGuide.Thickness",
+        "Surface.SnapGuide.CentreBrush",
+        "Surface.SnapGuide.DashStyle",
+        "Surface.UserGuideBrush",
+        "Surface.UserGuide.DashStyle",
+        "Surface.Ruler.BackgroundBrush",
+        "Surface.Ruler.TickBrush",
+        "Surface.Ruler.LabelBrush",
+        "Surface.Ruler.Thickness",
+        "Surface.Ruler.CursorHorizontal",
+        "Surface.Ruler.CursorVertical",
+        "Surface.SelectionAdorner.CursorTopLeft",
+        "Surface.SelectionAdorner.CursorTop",
+        "Surface.SelectionAdorner.CursorTopRight",
+        "Surface.SelectionAdorner.CursorLeft",
+        "Surface.SelectionAdorner.CursorRight",
+        "Surface.SelectionAdorner.CursorBottomLeft",
+        "Surface.SelectionAdorner.CursorBottom",
+        "Surface.SelectionAdorner.CursorBottomRight",
+        "Surface.Grid.CellSize",
+        "Surface.Grid.MajorInterval",
+        "Surface.Grid.LineThickness",
+        "Surface.Grid.MinCellSize",
+        "Surface.Grid.LineBrush",
+        "Surface.Grid.MajorLineBrush",
+        "Surface.Selection.StrokeThickness",
+        "Surface.SelectionAdorner.HandleSize",
         "DesignEditorItem.BorderThickness",
         "DesignEditorItem.CornerRadius",
         "DesignEditorItem.OutlineOpacity"
@@ -98,8 +98,8 @@ public class ThemeTests
         var editor = new DesignEditor();
         var window = Show(editor);
 
-        window.TryFindResource("DesignEditor.BackgroundBrush", ThemeVariant.Light, out var light);
-        window.TryFindResource("DesignEditor.BackgroundBrush", ThemeVariant.Dark, out var dark);
+        window.TryFindResource("Surface.BackgroundBrush", ThemeVariant.Light, out var light);
+        window.TryFindResource("Surface.BackgroundBrush", ThemeVariant.Dark, out var dark);
 
         // ThemeDictionaries существуют ровно ради этого: варианты различаются
         // без дублирования ControlTheme.
@@ -130,7 +130,7 @@ public class ThemeTests
 
         // Ручка сидит на краю выделения, значит наружу торчит ровно половина.
         // Отступ был литералом -4 под размер 8: переопределение задокументированного
-        // DesignEditor.SelectionAdorner.HandleSize молча сдвигало все ручки.
+        // Surface.SelectionAdorner.HandleSize молча сдвигало все ручки.
         var expected = -handleSize / 2;
         Assert.Equal(expected, thumb.Margin.Left);
         Assert.Equal(expected, thumb.Margin.Top);

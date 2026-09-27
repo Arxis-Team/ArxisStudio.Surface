@@ -16,7 +16,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 
@@ -164,7 +164,7 @@ public partial class DesignEditor
 
         foreach (var info in perTarget)
         {
-            if (info.Target is not { } target || FindDesignHost(target) is not { } host)
+            if (info.Target is not { } target || FindTargetHost(target) is not { } host)
                 continue;
 
             infoByTarget[target] = info;
@@ -290,7 +290,7 @@ public partial class DesignEditor
         _primarySelectionItem = null;
         _primarySelectionControl = null;
         UpdatePrimaryPlacementReadout(null);
-        ApplySelectionSnapshot(Array.Empty<DesignSelectionTarget>());
+        ApplySelectionSnapshot(Array.Empty<SurfaceSelectionTarget>());
         SyncSelectedTargetSubscriptions();
         UpdateSelectionAdornerPolicies();
     }

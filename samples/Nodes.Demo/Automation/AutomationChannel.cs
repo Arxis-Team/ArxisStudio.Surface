@@ -207,7 +207,7 @@ internal sealed class AutomationChannel
     private Dictionary<string, object?> State()
     {
         var document = _window.Document;
-        var selectedNodes = _editor.SelectedDesignTargets
+        var selectedNodes = _editor.SelectedTargets
             .Select(t => _editor.ItemFromContainer(t.Container))
             .ToHashSet();
 

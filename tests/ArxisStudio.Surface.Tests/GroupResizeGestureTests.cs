@@ -67,14 +67,14 @@ public class GroupResizeGestureTests
         var first = harness.Container(0);
         var second = harness.Container(1);
 
-        var firstBefore = harness.Editor.GetDesignSize(first).Width;
-        var secondBefore = harness.Editor.GetDesignSize(second).Width;
+        var firstBefore = harness.Editor.GetTargetSize(first).Width;
+        var secondBefore = harness.Editor.GetTargetSize(second).Width;
 
         DragGroupHandle(harness, ResizeDirection.Right, new Vector(-100, 0));
 
         // Жест обязан дойти до операции — иначе рамка живёт своей жизнью.
-        Assert.True(harness.Editor.GetDesignSize(first).Width < firstBefore);
-        Assert.True(harness.Editor.GetDesignSize(second).Width < secondBefore);
+        Assert.True(harness.Editor.GetTargetSize(first).Width < firstBefore);
+        Assert.True(harness.Editor.GetTargetSize(second).Width < secondBefore);
     }
 
     [AvaloniaFact]
@@ -100,7 +100,7 @@ public class GroupResizeGestureTests
         SelectNested(harness, harness.Nested(0));
         SelectNested(harness, harness.Named(0, "Sibling"), additive: true);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasMultipleNestedSelection);
 
         // Общей рамки с ручками у вложенной группы нет — каждый target
@@ -112,7 +112,7 @@ public class GroupResizeGestureTests
     private static Rect BoundsOf(EditorHarness harness, int index)
     {
         var container = harness.Container(index);
-        return new Rect(harness.Editor.GetDesignPosition(container), harness.Editor.GetDesignSize(container));
+        return new Rect(harness.Editor.GetTargetPosition(container), harness.Editor.GetTargetSize(container));
     }
 
     private static EditorHarness CreateWithGroupSelection() => CreateWithContainerSelection();

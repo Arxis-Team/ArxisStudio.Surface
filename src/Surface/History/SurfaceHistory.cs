@@ -157,18 +157,18 @@ public sealed class SurfaceHistory : IDisposable
         _view.RedoRequested -= OnRedoRequested;
     }
 
-    private void OnEditCompleted(object? sender, DesignEditCompletedEventArgs e)
+    private void OnEditCompleted(object? sender, SurfaceEditCompletedEventArgs e)
         => Push(new EditTransaction(_view, e.Changes));
 
     // Нажатие забирается, только если история действительно что-то сделала: иначе
     // сочетание уходит дальше, как у поверхности без подписчика.
-    private void OnUndoRequested(object? sender, DesignEditorHistoryRequestedEventArgs e)
+    private void OnUndoRequested(object? sender, SurfaceHistoryRequestedEventArgs e)
     {
         if (!e.Handled)
             e.Handled = Undo();
     }
 
-    private void OnRedoRequested(object? sender, DesignEditorHistoryRequestedEventArgs e)
+    private void OnRedoRequested(object? sender, SurfaceHistoryRequestedEventArgs e)
     {
         if (!e.Handled)
             e.Handled = Redo();
@@ -184,9 +184,9 @@ public sealed class SurfaceHistory : IDisposable
     private sealed class EditTransaction : ISurfaceChange
     {
         private readonly SurfaceView _view;
-        private readonly IReadOnlyList<DesignChange> _changes;
+        private readonly IReadOnlyList<TargetChange> _changes;
 
-        public EditTransaction(SurfaceView view, IReadOnlyList<DesignChange> changes)
+        public EditTransaction(SurfaceView view, IReadOnlyList<TargetChange> changes)
         {
             _view = view;
             _changes = changes;

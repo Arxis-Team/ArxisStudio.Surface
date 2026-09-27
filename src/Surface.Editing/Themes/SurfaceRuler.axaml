@@ -9,20 +9,20 @@
         Толщина по умолчанию одна на обе ориентации, поэтому угол между линейками
         получается квадратным без отдельной настройки.
     -->
-    <ControlTheme x:Key="{x:Type editing:DesignRuler}" TargetType="editing:DesignRuler">
-        <Setter Property="Background" Value="{DynamicResource DesignEditor.Ruler.BackgroundBrush}" />
-        <Setter Property="TickBrush" Value="{DynamicResource DesignEditor.Ruler.TickBrush}" />
-        <Setter Property="LabelBrush" Value="{DynamicResource DesignEditor.Ruler.LabelBrush}" />
-        <Setter Property="LabelFontSize" Value="{DynamicResource DesignEditor.Ruler.LabelFontSize}" />
+    <ControlTheme x:Key="{x:Type editing:SurfaceRuler}" TargetType="editing:SurfaceRuler">
+        <Setter Property="Background" Value="{DynamicResource Surface.Ruler.BackgroundBrush}" />
+        <Setter Property="TickBrush" Value="{DynamicResource Surface.Ruler.TickBrush}" />
+        <Setter Property="LabelBrush" Value="{DynamicResource Surface.Ruler.LabelBrush}" />
+        <Setter Property="LabelFontSize" Value="{DynamicResource Surface.Ruler.LabelFontSize}" />
 
         <Style Selector="^[Orientation=Horizontal]">
-            <Setter Property="Height" Value="{DynamicResource DesignEditor.Ruler.Thickness}" />
-            <Setter Property="Cursor" Value="{DynamicResource DesignEditor.Ruler.CursorHorizontal}" />
+            <Setter Property="Height" Value="{DynamicResource Surface.Ruler.Thickness}" />
+            <Setter Property="Cursor" Value="{DynamicResource Surface.Ruler.CursorHorizontal}" />
         </Style>
 
         <Style Selector="^[Orientation=Vertical]">
-            <Setter Property="Width" Value="{DynamicResource DesignEditor.Ruler.Thickness}" />
-            <Setter Property="Cursor" Value="{DynamicResource DesignEditor.Ruler.CursorVertical}" />
+            <Setter Property="Width" Value="{DynamicResource Surface.Ruler.Thickness}" />
+            <Setter Property="Cursor" Value="{DynamicResource Surface.Ruler.CursorVertical}" />
         </Style>
     </ControlTheme>
 

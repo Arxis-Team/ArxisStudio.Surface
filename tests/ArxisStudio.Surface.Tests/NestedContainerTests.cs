@@ -163,7 +163,7 @@ public class NestedContainerTests
 
         // Вложенный контейнер выбирается как target внутри владеющего item'а:
         // индексная модель Avalonia продолжает оперировать верхним уровнем,
-        // а сам вложенный DesignEditorItem становится design target.
+        // а сам вложенный DesignEditorItem становится target.
         var primary = editor.PrimarySelectionTarget;
         Assert.NotNull(primary);
         Assert.Same(inner, primary!.Target);
@@ -199,7 +199,7 @@ public class NestedContainerTests
 
         // Scope определяется типом target: вложенный DesignEditorItem — контейнер,
         // хотя владеющий item верхнего уровня другой.
-        Assert.Equal(DesignSelectionScope.Container, primary.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, primary.Scope);
         Assert.NotSame(primary.Container, primary.Target);
     }
 
@@ -210,8 +210,8 @@ public class NestedContainerTests
         var outer = (DesignEditorItem)editor.ContainerFromItem(item)!;
         var inner = Inner(editor);
 
-        Assert.Equal(0, new DesignSelectionTarget(outer, outer).Depth);
-        Assert.Equal(1, new DesignSelectionTarget(outer, inner).Depth);
+        Assert.Equal(0, new SurfaceSelectionTarget(outer, outer).Depth);
+        Assert.Equal(1, new SurfaceSelectionTarget(outer, inner).Depth);
     }
 
     [AvaloniaFact]
@@ -225,7 +225,7 @@ public class NestedContainerTests
         editor.CommitSelection(new Rect(125, 125, 50, 50), isCtrlPressed: false);
         RunLayout(window);
 
-        var targets = editor.SelectedDesignTargets.Select(t => t.Target).ToList();
+        var targets = editor.SelectedTargets.Select(t => t.Target).ToList();
 
         Assert.Contains(Named(editor, "InnerChild"), targets);
 
@@ -245,7 +245,7 @@ public class NestedContainerTests
         editor.CommitSelection(new Rect(125, 125, 125, 50), isCtrlPressed: false);
         RunLayout(window);
 
-        var targets = editor.SelectedDesignTargets.Select(t => t.Target).ToList();
+        var targets = editor.SelectedTargets.Select(t => t.Target).ToList();
 
         Assert.Contains(Named(editor, "OuterChild"), targets);
         Assert.Contains(Inner(editor), targets);
@@ -273,7 +273,7 @@ public class NestedContainerTests
         window.MouseUp(outerChildPoint, MouseButton.Left, RawInputModifiers.Shift);
         RunLayout(window);
 
-        var targets = editor.SelectedDesignTargets.Select(t => t.Target).ToList();
+        var targets = editor.SelectedTargets.Select(t => t.Target).ToList();
         Assert.DoesNotContain(Named(editor, "OuterChild"), targets);
     }
 
@@ -305,13 +305,13 @@ public class NestedContainerTests
     /// указателем выбирается без вопросов.
     /// </remarks>
     [AvaloniaFact]
-    public void SelectDesignTarget_Selects_A_Control_Inside_A_Nested_Container()
+    public void SelectTarget_Selects_A_Control_Inside_A_Nested_Container()
     {
         var (window, editor, _) = Create();
 
         var innerChild = Named(editor, "InnerChild");
 
-        Assert.True(editor.SelectDesignTarget(innerChild));
+        Assert.True(editor.SelectTarget(innerChild));
 
         RunLayout(window);
 
@@ -319,17 +319,17 @@ public class NestedContainerTests
     }
 
     [AvaloniaFact]
-    public void SelectDesignTarget_Selects_A_Container_Whole()
+    public void SelectTarget_Selects_A_Container_Whole()
     {
         var (window, editor, _) = Create();
 
         var container = (DesignEditorItem)editor.ContainerFromIndex(0)!;
 
-        Assert.True(editor.SelectDesignTarget(container));
+        Assert.True(editor.SelectTarget(container));
 
         RunLayout(window);
 
         Assert.Same(container, editor.PrimarySelectionTarget!.Target);
-        Assert.Equal(DesignSelectionScope.Container, editor.PrimarySelectionTarget.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, editor.PrimarySelectionTarget.Scope);
     }
 }

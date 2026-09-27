@@ -7,9 +7,9 @@ namespace ArxisStudio.Surface;
 /// </summary>
 /// <remarks>
 /// Этот объект задает числовые параметры поведения редактора (масштабирование, пороги и ограничения).
-/// Кнопки мыши и модификаторы клавиатуры настраиваются отдельно через <see cref="DesignEditorInputGestures"/>.
+/// Кнопки мыши и модификаторы клавиатуры настраиваются отдельно через <see cref="SurfaceInputGestures"/>.
 /// </remarks>
-public class DesignEditorInteractionOptions : AvaloniaObject
+public class SurfaceInteractionOptions : AvaloniaObject
 {
     /// <summary>
     /// Идентификатор свойства коэффициента шага масштабирования колесом мыши.
@@ -19,7 +19,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// По умолчанию: <c>1.1</c>.
     /// </remarks>
     public static readonly StyledProperty<double> ZoomStepProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(ZoomStep),
             1.1);
 
@@ -32,7 +32,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// ни с чем не спутать. По умолчанию: <see langword="true"/>.
     /// </remarks>
     public static readonly StyledProperty<bool> IsPinchZoomEnabledProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, bool>(
             nameof(IsPinchZoomEnabled),
             true);
 
@@ -44,7 +44,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// жест продолжается за пределы видимого. По умолчанию: <see langword="true"/>.
     /// </remarks>
     public static readonly StyledProperty<bool> IsAutoPanEnabledProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, bool>(
             nameof(IsAutoPanEnabled),
             true);
 
@@ -56,7 +56,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// По умолчанию: <c>32.0</c>.
     /// </remarks>
     public static readonly StyledProperty<double> AutoPanEdgeProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(AutoPanEdge),
             32.0);
 
@@ -68,7 +68,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// растёт от нуля до этой величины. По умолчанию: <c>900.0</c>.
     /// </remarks>
     public static readonly StyledProperty<double> AutoPanSpeedProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(AutoPanSpeed),
             900.0);
 
@@ -77,7 +77,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// </summary>
     /// <remarks>По умолчанию: <c>3.0</c>.</remarks>
     public static readonly StyledProperty<double> DragStartThresholdProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(DragStartThreshold),
             3.0);
 
@@ -86,7 +86,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// </summary>
     /// <remarks>По умолчанию: <c>10.0</c>.</remarks>
     public static readonly StyledProperty<double> ResizeMinSizeProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(ResizeMinSize),
             10.0);
 
@@ -157,7 +157,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства привязки к сетке.
     /// </summary>
     public static readonly StyledProperty<bool> IsSnapToGridEnabledProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, bool>(
             nameof(IsSnapToGridEnabled),
             true);
 
@@ -165,7 +165,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства ограничения размера границами владеющего контейнера.
     /// </summary>
     public static readonly StyledProperty<bool> IsResizeContainedToParentProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, bool>(
             nameof(IsResizeContainedToParent),
             true);
 
@@ -192,7 +192,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства шага привязки.
     /// </summary>
     public static readonly StyledProperty<double> SnapStepProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(SnapStep),
             double.NaN);
 
@@ -214,7 +214,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// </summary>
     /// <remarks>
     /// <see cref="double.NaN"/> означает «следовать за сеткой»: шаг берётся из
-    /// <see cref="DesignGrid.CellSize"/> шаблона редактора. Так настройки
+    /// <see cref="SurfaceGrid.CellSize"/> шаблона редактора. Так настройки
     /// не расходятся: сетка не может обещать одну структуру, а привязка давать другую.
     /// </remarks>
     public double SnapStep
@@ -227,7 +227,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства привязки к направляющим.
     /// </summary>
     public static readonly StyledProperty<bool> IsSnapToGuidesEnabledProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, bool>(
             nameof(IsSnapToGuidesEnabled),
             true);
 
@@ -235,7 +235,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства подсказок о равных интервалах.
     /// </summary>
     public static readonly StyledProperty<bool> IsEqualSpacingEnabledProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, bool>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, bool>(
             nameof(IsEqualSpacingEnabled),
             true);
 
@@ -243,7 +243,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства радиуса захвата направляющей, в пикселях экрана.
     /// </summary>
     public static readonly StyledProperty<double> SnapGuideToleranceProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(SnapGuideTolerance),
             6.0);
 
@@ -297,7 +297,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства шага смещения стрелками.
     /// </summary>
     public static readonly StyledProperty<double> NudgeStepProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(NudgeStep),
             1.0);
 
@@ -305,7 +305,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Идентификатор свойства увеличенного шага смещения стрелками.
     /// </summary>
     public static readonly StyledProperty<double> LargeNudgeStepProperty =
-        AvaloniaProperty.Register<DesignEditorInteractionOptions, double>(
+        AvaloniaProperty.Register<SurfaceInteractionOptions, double>(
             nameof(LargeNudgeStep),
             10.0);
 
@@ -322,7 +322,7 @@ public class DesignEditorInteractionOptions : AvaloniaObject
     /// Получает или задает шаг смещения стрелками с модификатором.
     /// </summary>
     /// <remarks>
-    /// Модификатор задаётся через <see cref="DesignEditorInputGestures.LargeNudgeModifiers"/>.
+    /// Модификатор задаётся через <see cref="SurfaceInputGestures.LargeNudgeModifiers"/>.
     /// Значение обычно кратно шагу сетки, чтобы крупное смещение попадало по ячейкам.
     /// </remarks>
     public double LargeNudgeStep

@@ -97,8 +97,8 @@ internal sealed class GroupResizeOperation
             var newWidth = initialTargetBounds.Width * scaleX;
             var newHeight = initialTargetBounds.Height * scaleY;
 
-            editor.SetDesignSize(target.Target, new Size(newWidth, newHeight));
-            editor.SetDesignPosition(target.Target, new Point(newX, newY));
+            editor.SetTargetSize(target.Target, new Size(newWidth, newHeight));
+            editor.SetTargetPosition(target.Target, new Point(newX, newY));
         }
     }
 

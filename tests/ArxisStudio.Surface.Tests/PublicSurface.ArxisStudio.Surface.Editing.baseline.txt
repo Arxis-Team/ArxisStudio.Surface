@@ -1,81 +1,3 @@
-struct ArxisStudio.Surface.Editing.DesignGuide : ValueType
-    ctor .ctor(DesignGuideOrientation, Double)
-    method Boolean Equals(DesignGuide)
-    method Boolean Equals(Object)
-    method Boolean op_Equality(DesignGuide, DesignGuide)
-    method Boolean op_Inequality(DesignGuide, DesignGuide)
-    method DesignGuide Horizontal(Double)
-    method DesignGuide Vertical(Double)
-    method Int32 GetHashCode()
-    method String ToString()
-    property DesignGuideOrientation Orientation { get; }
-    property Double Position { get; }
-enum ArxisStudio.Surface.Editing.DesignGuideChangeKind
-    value Add = 0
-    value Move = 1
-    value Remove = 2
-sealed class ArxisStudio.Surface.Editing.DesignGuideChangeRequestedEventArgs : EventArgs
-    ctor .ctor(DesignGuideChangeKind, DesignGuide, Nullable<DesignGuide>)
-    property Boolean Handled { get; set; }
-    property DesignGuide Guide { get; }
-    property DesignGuideChangeKind Kind { get; }
-    property Nullable<DesignGuide> Original { get; }
-enum ArxisStudio.Surface.Editing.DesignGuideOrientation
-    value Horizontal = 1
-    value Vertical = 0
-static class ArxisStudio.Surface.Editing.DesignInteraction
-    avalonia MovePolicyProperty -> MovePolicy : MovePolicy (attached) = Both
-    avalonia ResizePolicyProperty -> ResizePolicy : ResizePolicy (attached) = All
-    method MovePolicy GetMovePolicy(AvaloniaObject)
-    method ResizePolicy GetResizePolicy(AvaloniaObject)
-    method Void SetMovePolicy(AvaloniaObject, MovePolicy)
-    method Void SetResizePolicy(AvaloniaObject, ResizePolicy)
-class ArxisStudio.Surface.Editing.DesignRuler : Control
-    avalonia BackgroundProperty -> Background : IBrush (styled) = null
-    avalonia EditorProperty -> Editor : SurfaceView (styled) = null
-    avalonia IsScaleVisibleProperty -> IsScaleVisible : Boolean (styled) = true
-    avalonia LabelBrushProperty -> LabelBrush : IBrush (styled) = null
-    avalonia LabelFontSizeProperty -> LabelFontSize : Double (styled) = 9
-    avalonia OrientationProperty -> Orientation : Orientation (styled) = Horizontal
-    avalonia TickBrushProperty -> TickBrush : IBrush (styled) = null
-    ctor .ctor()
-    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
-    method Void OnPointerMoved(PointerEventArgs)
-    method Void OnPointerPressed(PointerPressedEventArgs)
-    method Void OnPointerReleased(PointerReleasedEventArgs)
-    method Void Render(DrawingContext)
-    property Boolean IsScaleVisible { get; set; }
-    property Double LabelFontSize { get; set; }
-    property IBrush Background { get; set; }
-    property IBrush LabelBrush { get; set; }
-    property IBrush TickBrush { get; set; }
-    property Orientation Orientation { get; set; }
-    property SurfaceView Editor { get; set; }
-struct ArxisStudio.Surface.Editing.DesignSnapGuide : ValueType
-    ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double, DesignSnapGuideKind)
-    method Boolean Equals(DesignSnapGuide)
-    method Boolean Equals(Object)
-    method Int32 GetHashCode()
-    property DesignSnapGuideKind Kind { get; }
-    property DesignSnapGuideOrientation Orientation { get; }
-    property Double End { get; }
-    property Double Position { get; }
-    property Double Start { get; }
-enum ArxisStudio.Surface.Editing.DesignSnapGuideKind
-    value Centre = 1
-    value Edge = 0
-enum ArxisStudio.Surface.Editing.DesignSnapGuideOrientation
-    value Horizontal = 1
-    value Vertical = 0
-struct ArxisStudio.Surface.Editing.DesignSpacingHint : ValueType
-    ctor .ctor(DesignSnapGuideOrientation, Double, Double, Double)
-    method Boolean Equals(DesignSpacingHint)
-    method Boolean Equals(Object)
-    method Int32 GetHashCode()
-    property DesignSnapGuideOrientation Orientation { get; }
-    property Double End { get; }
-    property Double Position { get; }
-    property Double Start { get; }
 class ArxisStudio.Surface.Editing.SelectionAdorner : TemplatedControl
     avalonia AdornerBrushProperty -> AdornerBrush : IBrush (styled) = <ImmutableSolidColorBrush>
     avalonia FillProperty -> Fill : IBrush (styled) = <ImmutableSolidColorBrush>
@@ -112,18 +34,18 @@ enum ArxisStudio.Surface.Editing.SelectionAdornerRole
 class ArxisStudio.Surface.Editing.SnapGuideLayer : Control
     avalonia CentreLineBrushProperty -> CentreLineBrush : IBrush (styled) = null
     avalonia EditorProperty -> Editor : SurfaceView (styled) = null
-    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (styled) = null
-    avalonia GuidesProperty -> Guides : IReadOnlyList<DesignSnapGuide> (styled) = null
+    avalonia GuidePreviewProperty -> GuidePreview : Nullable<SurfaceGuide> (styled) = null
+    avalonia GuidesProperty -> Guides : IReadOnlyList<SurfaceSnapGuide> (styled) = null
     avalonia LineBrushProperty -> LineBrush : IBrush (styled) = null
     avalonia LineDashStyleProperty -> LineDashStyle : IDashStyle (styled) = null
     avalonia LineThicknessProperty -> LineThickness : Double (styled) = 1
     avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (styled) = true
     avalonia ShowUserGuidesProperty -> ShowUserGuides : Boolean (styled) = true
     avalonia SpacingBrushProperty -> SpacingBrush : IBrush (styled) = null
-    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (styled) = null
+    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<SurfaceSpacingHint> (styled) = null
     avalonia UserGuideBrushProperty -> UserGuideBrush : IBrush (styled) = null
     avalonia UserGuideDashStyleProperty -> UserGuideDashStyle : IDashStyle (styled) = null
-    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (styled) = null
+    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<SurfaceGuide> (styled) = null
     avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
     avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
     ctor .ctor()
@@ -138,31 +60,63 @@ class ArxisStudio.Surface.Editing.SnapGuideLayer : Control
     property IBrush UserGuideBrush { get; set; }
     property IDashStyle LineDashStyle { get; set; }
     property IDashStyle UserGuideDashStyle { get; set; }
-    property IReadOnlyList<DesignGuide> UserGuides { get; set; }
-    property IReadOnlyList<DesignSnapGuide> Guides { get; set; }
-    property IReadOnlyList<DesignSpacingHint> SpacingHints { get; set; }
-    property Nullable<DesignGuide> GuidePreview { get; set; }
+    property IReadOnlyList<SurfaceGuide> UserGuides { get; set; }
+    property IReadOnlyList<SurfaceSnapGuide> Guides { get; set; }
+    property IReadOnlyList<SurfaceSpacingHint> SpacingHints { get; set; }
+    property Nullable<SurfaceGuide> GuidePreview { get; set; }
     property Point ViewportLocation { get; set; }
     property SurfaceView Editor { get; set; }
+struct ArxisStudio.Surface.Editing.SurfaceGuide : ValueType
+    ctor .ctor(SurfaceGuideOrientation, Double)
+    method Boolean Equals(Object)
+    method Boolean Equals(SurfaceGuide)
+    method Boolean op_Equality(SurfaceGuide, SurfaceGuide)
+    method Boolean op_Inequality(SurfaceGuide, SurfaceGuide)
+    method Int32 GetHashCode()
+    method String ToString()
+    method SurfaceGuide Horizontal(Double)
+    method SurfaceGuide Vertical(Double)
+    property Double Position { get; }
+    property SurfaceGuideOrientation Orientation { get; }
+enum ArxisStudio.Surface.Editing.SurfaceGuideChangeKind
+    value Add = 0
+    value Move = 1
+    value Remove = 2
+sealed class ArxisStudio.Surface.Editing.SurfaceGuideChangeRequestedEventArgs : EventArgs
+    ctor .ctor(SurfaceGuideChangeKind, SurfaceGuide, Nullable<SurfaceGuide>)
+    property Boolean Handled { get; set; }
+    property Nullable<SurfaceGuide> Original { get; }
+    property SurfaceGuide Guide { get; }
+    property SurfaceGuideChangeKind Kind { get; }
+enum ArxisStudio.Surface.Editing.SurfaceGuideOrientation
+    value Horizontal = 1
+    value Vertical = 0
 static class ArxisStudio.Surface.Editing.SurfaceGuides
-    avalonia GuidePreviewProperty -> GuidePreview : Nullable<DesignGuide> (attached) = null
-    avalonia GuidesProperty -> Guides : IEnumerable<DesignGuide> (attached) = null
+    avalonia GuidePreviewProperty -> GuidePreview : Nullable<SurfaceGuide> (attached) = null
+    avalonia GuidesProperty -> Guides : IEnumerable<SurfaceGuide> (attached) = null
     avalonia ShowGuidesProperty -> ShowGuides : Boolean (attached) = true
     avalonia ShowRulersProperty -> ShowRulers : Boolean (attached) = true
     avalonia ShowSnapGuidesProperty -> ShowSnapGuides : Boolean (attached) = true
-    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<DesignGuide> (attached) = <DesignGuide[]>
+    avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<SurfaceGuide> (attached) = <SurfaceGuide[]>
     method Boolean GetShowGuides(AvaloniaObject)
     method Boolean GetShowRulers(AvaloniaObject)
     method Boolean GetShowSnapGuides(AvaloniaObject)
-    method IEnumerable<DesignGuide> GetGuides(AvaloniaObject)
-    method IReadOnlyList<DesignGuide> GetUserGuides(AvaloniaObject)
-    method Nullable<DesignGuide> GetGuidePreview(AvaloniaObject)
-    method Void SetGuidePreview(AvaloniaObject, Nullable<DesignGuide>)
-    method Void SetGuides(AvaloniaObject, IEnumerable<DesignGuide>)
+    method IEnumerable<SurfaceGuide> GetGuides(AvaloniaObject)
+    method IReadOnlyList<SurfaceGuide> GetUserGuides(AvaloniaObject)
+    method Nullable<SurfaceGuide> GetGuidePreview(AvaloniaObject)
+    method Void SetGuidePreview(AvaloniaObject, Nullable<SurfaceGuide>)
+    method Void SetGuides(AvaloniaObject, IEnumerable<SurfaceGuide>)
     method Void SetShowGuides(AvaloniaObject, Boolean)
     method Void SetShowRulers(AvaloniaObject, Boolean)
     method Void SetShowSnapGuides(AvaloniaObject, Boolean)
-    method Void SetUserGuides(AvaloniaObject, IReadOnlyList<DesignGuide>)
+    method Void SetUserGuides(AvaloniaObject, IReadOnlyList<SurfaceGuide>)
+static class ArxisStudio.Surface.Editing.SurfaceInteraction
+    avalonia MovePolicyProperty -> MovePolicy : MovePolicy (attached) = Both
+    avalonia ResizePolicyProperty -> ResizePolicy : ResizePolicy (attached) = All
+    method MovePolicy GetMovePolicy(AvaloniaObject)
+    method ResizePolicy GetResizePolicy(AvaloniaObject)
+    method Void SetMovePolicy(AvaloniaObject, MovePolicy)
+    method Void SetResizePolicy(AvaloniaObject, ResizePolicy)
 class ArxisStudio.Surface.Editing.SurfaceMinimap : Control
     avalonia BackgroundProperty -> Background : IBrush (styled) = null
     avalonia EditorProperty -> Editor : SurfaceView (styled) = null
@@ -183,10 +137,56 @@ class ArxisStudio.Surface.Editing.SurfaceMinimap : Control
     property IBrush ViewportFill { get; set; }
     property IBrush ViewportStroke { get; set; }
     property SurfaceView Editor { get; set; }
+class ArxisStudio.Surface.Editing.SurfaceRuler : Control
+    avalonia BackgroundProperty -> Background : IBrush (styled) = null
+    avalonia EditorProperty -> Editor : SurfaceView (styled) = null
+    avalonia IsScaleVisibleProperty -> IsScaleVisible : Boolean (styled) = true
+    avalonia LabelBrushProperty -> LabelBrush : IBrush (styled) = null
+    avalonia LabelFontSizeProperty -> LabelFontSize : Double (styled) = 9
+    avalonia OrientationProperty -> Orientation : Orientation (styled) = Horizontal
+    avalonia TickBrushProperty -> TickBrush : IBrush (styled) = null
+    ctor .ctor()
+    method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
+    method Void OnPointerMoved(PointerEventArgs)
+    method Void OnPointerPressed(PointerPressedEventArgs)
+    method Void OnPointerReleased(PointerReleasedEventArgs)
+    method Void Render(DrawingContext)
+    property Boolean IsScaleVisible { get; set; }
+    property Double LabelFontSize { get; set; }
+    property IBrush Background { get; set; }
+    property IBrush LabelBrush { get; set; }
+    property IBrush TickBrush { get; set; }
+    property Orientation Orientation { get; set; }
+    property SurfaceView Editor { get; set; }
+struct ArxisStudio.Surface.Editing.SurfaceSnapGuide : ValueType
+    ctor .ctor(SurfaceSnapGuideOrientation, Double, Double, Double, SurfaceSnapGuideKind)
+    method Boolean Equals(Object)
+    method Boolean Equals(SurfaceSnapGuide)
+    method Int32 GetHashCode()
+    property Double End { get; }
+    property Double Position { get; }
+    property Double Start { get; }
+    property SurfaceSnapGuideKind Kind { get; }
+    property SurfaceSnapGuideOrientation Orientation { get; }
+enum ArxisStudio.Surface.Editing.SurfaceSnapGuideKind
+    value Centre = 1
+    value Edge = 0
+enum ArxisStudio.Surface.Editing.SurfaceSnapGuideOrientation
+    value Horizontal = 1
+    value Vertical = 0
 static class ArxisStudio.Surface.Editing.SurfaceSnapping
-    avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<DesignSnapGuide> (attached) = <DesignSnapGuide[]>
-    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<DesignSpacingHint> (attached) = <DesignSpacingHint[]>
-    method IReadOnlyList<DesignSnapGuide> GetSnapGuides(AvaloniaObject)
-    method IReadOnlyList<DesignSpacingHint> GetSpacingHints(AvaloniaObject)
-    method Void SetSnapGuides(AvaloniaObject, IReadOnlyList<DesignSnapGuide>)
-    method Void SetSpacingHints(AvaloniaObject, IReadOnlyList<DesignSpacingHint>)
+    avalonia SnapGuidesProperty -> SnapGuides : IReadOnlyList<SurfaceSnapGuide> (attached) = <SurfaceSnapGuide[]>
+    avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<SurfaceSpacingHint> (attached) = <SurfaceSpacingHint[]>
+    method IReadOnlyList<SurfaceSnapGuide> GetSnapGuides(AvaloniaObject)
+    method IReadOnlyList<SurfaceSpacingHint> GetSpacingHints(AvaloniaObject)
+    method Void SetSnapGuides(AvaloniaObject, IReadOnlyList<SurfaceSnapGuide>)
+    method Void SetSpacingHints(AvaloniaObject, IReadOnlyList<SurfaceSpacingHint>)
+struct ArxisStudio.Surface.Editing.SurfaceSpacingHint : ValueType
+    ctor .ctor(SurfaceSnapGuideOrientation, Double, Double, Double)
+    method Boolean Equals(Object)
+    method Boolean Equals(SurfaceSpacingHint)
+    method Int32 GetHashCode()
+    property Double End { get; }
+    property Double Position { get; }
+    property Double Start { get; }
+    property SurfaceSnapGuideOrientation Orientation { get; }

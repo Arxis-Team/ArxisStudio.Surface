@@ -31,7 +31,7 @@ public class SpacingResolverTests
         // то есть ровное положение это X = 180.
         var moving = new Rect(174, 110, 40, 40);
 
-        var found = DesignSpacingResolver.TryResolveOffset(
+        var found = SurfaceSpacingResolver.TryResolveOffset(
             moving, Row, tolerance: 8, out var offset, out var spacedX, out var spacedY);
 
         Assert.True(found);
@@ -46,7 +46,7 @@ public class SpacingResolverTests
     {
         var moving = new Rect(160, 110, 40, 40);
 
-        Assert.False(DesignSpacingResolver.TryResolveOffset(
+        Assert.False(SurfaceSpacingResolver.TryResolveOffset(
             moving, Row, tolerance: 8, out _, out _, out _));
     }
 
@@ -63,7 +63,7 @@ public class SpacingResolverTests
         var elsewhere = new Rect(0, 400, 100, 60);
         var moving = new Rect(174, 110, 40, 40);
 
-        Assert.False(DesignSpacingResolver.TryResolveOffset(
+        Assert.False(SurfaceSpacingResolver.TryResolveOffset(
             moving, new[] { elsewhere, Right }, tolerance: 8, out _, out _, out _));
     }
 
@@ -80,7 +80,7 @@ public class SpacingResolverTests
         var guide = new Rect(100, 0, 0, 800);
         var moving = new Rect(174, 110, 40, 40);
 
-        Assert.False(DesignSpacingResolver.TryResolveOffset(
+        Assert.False(SurfaceSpacingResolver.TryResolveOffset(
             moving, new[] { guide, Right }, tolerance: 8, out _, out _, out _));
     }
 
@@ -89,7 +89,7 @@ public class SpacingResolverTests
     {
         var moving = new Rect(174, 110, 40, 40);
 
-        Assert.False(DesignSpacingResolver.TryResolveOffset(
+        Assert.False(SurfaceSpacingResolver.TryResolveOffset(
             moving, new[] { Left }, tolerance: 8, out _, out _, out _));
     }
 
@@ -101,7 +101,7 @@ public class SpacingResolverTests
         var far = new Rect(-400, 100, 100, 60);
         var moving = new Rect(174, 110, 40, 40);
 
-        var found = DesignSpacingResolver.TryResolveOffset(
+        var found = SurfaceSpacingResolver.TryResolveOffset(
             moving, new[] { far, Left, Right }, tolerance: 8, out var offset, out _, out _);
 
         Assert.True(found);
@@ -115,7 +115,7 @@ public class SpacingResolverTests
         var below = new Rect(100, 300, 60, 100);
         var moving = new Rect(110, 176, 40, 40);
 
-        var found = DesignSpacingResolver.TryResolveOffset(
+        var found = SurfaceSpacingResolver.TryResolveOffset(
             moving, new[] { above, below }, tolerance: 8, out var offset, out var spacedX, out var spacedY);
 
         Assert.True(found);
@@ -145,7 +145,7 @@ public class SpacingResolverTests
     {
         var moving = new Rect(294, 110, 40, 40);
 
-        var found = DesignSpacingResolver.TryResolveOffset(
+        var found = SurfaceSpacingResolver.TryResolveOffset(
             moving, Run, tolerance: 8, out var offset, out var spacedX, out _);
 
         Assert.True(found);
@@ -167,7 +167,7 @@ public class SpacingResolverTests
 
         var moving = new Rect(216, 110, 40, 40);
 
-        var found = DesignSpacingResolver.TryResolveOffset(
+        var found = SurfaceSpacingResolver.TryResolveOffset(
             moving, after, tolerance: 8, out var offset, out _, out _);
 
         Assert.True(found);
@@ -194,10 +194,10 @@ public class SpacingResolverTests
             new Rect(400, 100, 100, 60)
         };
 
-        DesignSpacingResolver.TryResolveOffset(
+        SurfaceSpacingResolver.TryResolveOffset(
             new Rect(302, 110, 40, 40), neighbours, tolerance: 8, out var nearRepeat, out _, out _);
 
-        DesignSpacingResolver.TryResolveOffset(
+        SurfaceSpacingResolver.TryResolveOffset(
             new Rect(304, 110, 40, 40), neighbours, tolerance: 8, out var nearCentre, out _, out _);
 
         Assert.Equal(300, 302 + nearRepeat.X);
@@ -207,7 +207,7 @@ public class SpacingResolverTests
     [AvaloniaFact]
     public void A_Continued_Run_Shows_Both_Gaps()
     {
-        var hints = DesignSpacingResolver.CollectHints(new Rect(300, 110, 40, 40), Run);
+        var hints = SurfaceSpacingResolver.CollectHints(new Rect(300, 110, 40, 40), Run);
 
         Assert.Equal(2, hints.Count);
         Assert.All(hints, h => Assert.Equal(50, h.End - h.Start, 3));
@@ -228,7 +228,7 @@ public class SpacingResolverTests
             new Rect(300, 100, 100, 60)
         };
 
-        var hints = DesignSpacingResolver.CollectHints(new Rect(450, 110, 40, 40), run);
+        var hints = SurfaceSpacingResolver.CollectHints(new Rect(450, 110, 40, 40), run);
 
         Assert.Equal(3, hints.Count);
         Assert.All(hints, h => Assert.Equal(50, h.End - h.Start, 3));
@@ -252,7 +252,7 @@ public class SpacingResolverTests
         };
 
         // Элемент встал в 90 от последнего — его зазор ни с чем не совпал.
-        Assert.Empty(DesignSpacingResolver.CollectHints(new Rect(490, 110, 40, 40), run));
+        Assert.Empty(SurfaceSpacingResolver.CollectHints(new Rect(490, 110, 40, 40), run));
     }
 
     // ---- Изменение размера ----------------------------------------------------
@@ -270,7 +270,7 @@ public class SpacingResolverTests
         // Левый зазор 50 (150 - 100), значит правый край обязан встать на 250.
         var proposed = new Rect(150, 110, 94, 40);
 
-        var found = DesignSpacingResolver.TryResolveEdge(
+        var found = SurfaceSpacingResolver.TryResolveEdge(
             proposed, Row, tolerance: 8, xAxis: true, farEdge: true, out var resolved);
 
         Assert.True(found);
@@ -283,7 +283,7 @@ public class SpacingResolverTests
         // Правый зазор 50 (300 - 250), значит левый край обязан встать на 150.
         var proposed = new Rect(156, 110, 94, 40);
 
-        var found = DesignSpacingResolver.TryResolveEdge(
+        var found = SurfaceSpacingResolver.TryResolveEdge(
             proposed, Row, tolerance: 8, xAxis: true, farEdge: false, out var resolved);
 
         Assert.True(found);
@@ -303,7 +303,7 @@ public class SpacingResolverTests
     {
         var proposed = new Rect(200, 110, 6, 40);
 
-        Assert.False(DesignSpacingResolver.TryResolveEdge(
+        Assert.False(SurfaceSpacingResolver.TryResolveEdge(
             proposed, Row, tolerance: 8, xAxis: true, farEdge: true, out _));
     }
 
@@ -322,7 +322,7 @@ public class SpacingResolverTests
         // Шаг между соседями 50, значит правый край обязан встать на 250.
         var proposed = new Rect(0, 110, 244, 40);
 
-        var found = DesignSpacingResolver.TryResolveEdge(
+        var found = SurfaceSpacingResolver.TryResolveEdge(
             proposed, after, tolerance: 8, xAxis: true, farEdge: true, out var resolved);
 
         Assert.True(found);
@@ -334,7 +334,7 @@ public class SpacingResolverTests
     {
         var proposed = new Rect(150, 110, 80, 40);
 
-        Assert.False(DesignSpacingResolver.TryResolveEdge(
+        Assert.False(SurfaceSpacingResolver.TryResolveEdge(
             proposed, Row, tolerance: 8, xAxis: true, farEdge: true, out _));
     }
 
@@ -345,10 +345,10 @@ public class SpacingResolverTests
     {
         var bounds = new Rect(180, 110, 40, 40);
 
-        var hints = DesignSpacingResolver.CollectHints(bounds, Row);
+        var hints = SurfaceSpacingResolver.CollectHints(bounds, Row);
 
         Assert.Equal(2, hints.Count);
-        Assert.All(hints, h => Assert.Equal(DesignSnapGuideOrientation.Vertical, h.Orientation));
+        Assert.All(hints, h => Assert.Equal(SurfaceSnapGuideOrientation.Vertical, h.Orientation));
 
         // Оба отрезка меряют по 80 и лежат на одной высоте — середине общего перекрытия.
         Assert.All(hints, h => Assert.Equal(80, h.End - h.Start, 3));
@@ -366,7 +366,7 @@ public class SpacingResolverTests
     {
         var bounds = new Rect(200, 110, 40, 40);
 
-        Assert.Empty(DesignSpacingResolver.CollectHints(bounds, Row));
+        Assert.Empty(SurfaceSpacingResolver.CollectHints(bounds, Row));
     }
 
     /// <summary>
@@ -377,7 +377,7 @@ public class SpacingResolverTests
     {
         var bounds = new Rect(180, 110, 40, 40);
 
-        var hint = DesignSpacingResolver.CollectHints(bounds, Row)[0];
+        var hint = SurfaceSpacingResolver.CollectHints(bounds, Row)[0];
 
         // Общая полоса всех трёх — 110..150, её середина 130.
         Assert.Equal(130, hint.Position, 3);

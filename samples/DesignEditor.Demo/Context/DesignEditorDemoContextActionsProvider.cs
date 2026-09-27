@@ -11,7 +11,7 @@ using ArxisStudio.Surface.Editing;
 
 namespace DesignEditor.Demo.Context;
 
-public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContextActionProvider
+public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActionProvider
 {
     private sealed class InteractionPolicySnapshot
     {
@@ -21,28 +21,28 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
 
     private static readonly Dictionary<Control, InteractionPolicySnapshot> LockedTargets = new();
 
-    public ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
+    public ValueTask<IReadOnlyList<SurfaceContextAction>> GetActionsAsync(
         SurfaceView surface,
-        DesignEditorContextRequest request,
+        SurfaceContextRequest request,
         CancellationToken cancellationToken = default)
     {
         // Действия демо — действия дизайнера форм: над другой поверхностью им нечего делать.
         if (surface is not global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
-            return ValueTask.FromResult<IReadOnlyList<DesignEditorContextAction>>(Array.Empty<DesignEditorContextAction>());
+            return ValueTask.FromResult<IReadOnlyList<SurfaceContextAction>>(Array.Empty<SurfaceContextAction>());
 
         var actions = request.Scope switch
         {
-            DesignEditorContextScope.Surface => CreateSurfaceActions(editor),
-            DesignEditorContextScope.Container => CreateContainerActions(editor, request),
-            DesignEditorContextScope.NestedTarget => CreateNestedActions(editor, request),
-            DesignEditorContextScope.Selection => CreateSelectionActions(editor),
-            _ => Array.Empty<DesignEditorContextAction>()
+            SurfaceContextScope.Surface => CreateSurfaceActions(editor),
+            SurfaceContextScope.Container => CreateContainerActions(editor, request),
+            SurfaceContextScope.NestedTarget => CreateNestedActions(editor, request),
+            SurfaceContextScope.Selection => CreateSelectionActions(editor),
+            _ => Array.Empty<SurfaceContextAction>()
         };
 
         return ValueTask.FromResult(actions);
     }
 
-    private static IReadOnlyList<DesignEditorContextAction> CreateSurfaceActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
+    private static IReadOnlyList<SurfaceContextAction> CreateSurfaceActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
     {
         return new[]
         {
@@ -54,9 +54,9 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         };
     }
 
-    private static IReadOnlyList<DesignEditorContextAction> CreateContainerActions(
+    private static IReadOnlyList<SurfaceContextAction> CreateContainerActions(
         global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
-        DesignEditorContextRequest request)
+        SurfaceContextRequest request)
     {
         var hasTarget = request.Target != null;
         return new[]
@@ -85,9 +85,9 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         };
     }
 
-    private static IReadOnlyList<DesignEditorContextAction> CreateNestedActions(
+    private static IReadOnlyList<SurfaceContextAction> CreateNestedActions(
         global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
-        DesignEditorContextRequest request)
+        SurfaceContextRequest request)
     {
         var nestedTarget = request.Target?.Target;
         var hasTarget = nestedTarget != null;
@@ -129,7 +129,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         };
     }
 
-    private static IReadOnlyList<DesignEditorContextAction> CreateSelectionActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
+    private static IReadOnlyList<SurfaceContextAction> CreateSelectionActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
     {
         return new[]
         {
@@ -157,12 +157,12 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
                 "selection.distributeH",
                 "Распределить по горизонтали",
                 () => editor.DistributeHorizontally(),
-                editor.SelectedDesignTargetsCount >= 3),
+                editor.SelectedTargetsCount >= 3),
             Action(
                 "selection.distributeV",
                 "Распределить по вертикали",
                 () => editor.DistributeVertically(),
-                editor.SelectedDesignTargetsCount >= 3),
+                editor.SelectedTargetsCount >= 3),
             Separator("selection.sep2"),
             Action("selection.clear", "Снять выделение", () => editor.Selection.Clear())
         };
@@ -176,7 +176,7 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         viewModel.Elements.Add(element);
     }
 
-    private static void DeleteTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignEditorContextRequest request)
+    private static void DeleteTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, SurfaceContextRequest request)
     {
         if (editor.DataContext is not MainWindowViewModel viewModel || request.Target == null)
             return;
@@ -185,19 +185,19 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
             viewModel.Elements.Remove(element);
     }
 
-    private static void CenterTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignEditorContextRequest request)
+    private static void CenterTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, SurfaceContextRequest request)
     {
         if (request.Target?.Container is { } container)
             editor.CenterOnItem(container);
     }
 
-    private static void FitTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignEditorContextRequest request)
+    private static void FitTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, SurfaceContextRequest request)
     {
         if (request.Target?.Container is { } container)
             editor.FitToView(container);
     }
 
-    private static void ToggleNestedLock(DesignEditorContextRequest request)
+    private static void ToggleNestedLock(SurfaceContextRequest request)
     {
         if (request.Target?.Target is not Control target)
             return;
@@ -213,8 +213,8 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
 
     private static bool IsTargetLocked(Control target)
     {
-        return DesignInteraction.GetResizePolicy(target) == ResizePolicy.None &&
-               DesignInteraction.GetMovePolicy(target) == MovePolicy.None;
+        return SurfaceInteraction.GetResizePolicy(target) == ResizePolicy.None &&
+               SurfaceInteraction.GetMovePolicy(target) == MovePolicy.None;
     }
 
     private static void LockTarget(Control target)
@@ -223,36 +223,36 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         {
             LockedTargets[target] = new InteractionPolicySnapshot
             {
-                ResizePolicy = DesignInteraction.GetResizePolicy(target),
-                MovePolicy = DesignInteraction.GetMovePolicy(target)
+                ResizePolicy = SurfaceInteraction.GetResizePolicy(target),
+                MovePolicy = SurfaceInteraction.GetMovePolicy(target)
             };
         }
 
-        DesignInteraction.SetResizePolicy(target, ResizePolicy.None);
-        DesignInteraction.SetMovePolicy(target, MovePolicy.None);
+        SurfaceInteraction.SetResizePolicy(target, ResizePolicy.None);
+        SurfaceInteraction.SetMovePolicy(target, MovePolicy.None);
     }
 
     private static void UnlockTarget(Control target)
     {
         if (LockedTargets.TryGetValue(target, out var snapshot))
         {
-            DesignInteraction.SetResizePolicy(target, snapshot.ResizePolicy);
-            DesignInteraction.SetMovePolicy(target, snapshot.MovePolicy);
+            SurfaceInteraction.SetResizePolicy(target, snapshot.ResizePolicy);
+            SurfaceInteraction.SetMovePolicy(target, snapshot.MovePolicy);
             LockedTargets.Remove(target);
             return;
         }
 
-        DesignInteraction.SetResizePolicy(target, ResizePolicy.All);
-        DesignInteraction.SetMovePolicy(target, MovePolicy.Both);
+        SurfaceInteraction.SetResizePolicy(target, ResizePolicy.All);
+        SurfaceInteraction.SetMovePolicy(target, MovePolicy.Both);
     }
 
-    private static DesignEditorContextAction Action(
+    private static SurfaceContextAction Action(
         string id,
         string header,
         Action execute,
         bool isEnabled = true)
     {
-        return new DesignEditorContextAction
+        return new SurfaceContextAction
         {
             Id = id,
             Header = header,
@@ -261,9 +261,9 @@ public sealed class DesignEditorDemoContextActionsProvider : IDesignEditorContex
         };
     }
 
-    private static DesignEditorContextAction Separator(string id)
+    private static SurfaceContextAction Separator(string id)
     {
-        return new DesignEditorContextAction
+        return new SurfaceContextAction
         {
             Id = id,
             IsSeparator = true

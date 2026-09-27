@@ -27,7 +27,7 @@ public class ViewportTransformTests
     {
         var harness = EditorHarness.Create();
         harness.PlaceContainer(0, new Point(100, 100), new Size(200, 150));
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
         harness.RunLayout();
         return harness;
     }

@@ -70,7 +70,7 @@ internal sealed class GroupDragOperation
                 if (editor.GetEffectiveMovePolicy(target) == MovePolicy.None)
                     continue;
 
-                targets.Add(new GroupDragTarget(target, editor.GetDesignPosition(target)));
+                targets.Add(new GroupDragTarget(target, editor.GetTargetPosition(target)));
             }
         }
 
@@ -103,7 +103,7 @@ internal sealed class GroupDragOperation
         {
             var snapshot = _targets[i];
             var filteredDelta = editor.ApplyMovePolicy(snapshot.Target, _accumulatedDelta);
-            editor.SetDesignPosition(snapshot.Target, snapshot.InitialPosition + filteredDelta);
+            editor.SetTargetPosition(snapshot.Target, snapshot.InitialPosition + filteredDelta);
         }
     }
 

@@ -10,26 +10,26 @@
     -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="DesignEditor.BackgroundBrush" Color="#F5F7FA" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeStrokeBrush" Color="#0F6CBD" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeFillBrush" Color="#190F6CBD" />
+            <SolidColorBrush x:Key="Surface.BackgroundBrush" Color="#F5F7FA" />
+            <SolidColorBrush x:Key="Surface.MarqueeStrokeBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="Surface.MarqueeFillBrush" Color="#190F6CBD" />
 
-            <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#F5F7FA" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#E2E6EC" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#C9D0DA" />
+            <SolidColorBrush x:Key="Surface.Grid.BackgroundBrush" Color="#F5F7FA" />
+            <SolidColorBrush x:Key="Surface.Grid.LineBrush" Color="#E2E6EC" />
+            <SolidColorBrush x:Key="Surface.Grid.MajorLineBrush" Color="#C9D0DA" />
 
             <SolidColorBrush x:Key="SurfaceItem.SelectionBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="SurfaceItem.HoverBrush" Color="#660F6CBD" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="DesignEditor.BackgroundBrush" Color="#1E1E1E" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeStrokeBrush" Color="#1E90FF" />
-            <SolidColorBrush x:Key="DesignEditor.MarqueeFillBrush" Color="#1A1E90FF" />
+            <SolidColorBrush x:Key="Surface.BackgroundBrush" Color="#1E1E1E" />
+            <SolidColorBrush x:Key="Surface.MarqueeStrokeBrush" Color="#1E90FF" />
+            <SolidColorBrush x:Key="Surface.MarqueeFillBrush" Color="#1A1E90FF" />
 
-            <SolidColorBrush x:Key="DesignEditor.Grid.BackgroundBrush" Color="#141417" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.LineBrush" Color="#26292E" />
-            <SolidColorBrush x:Key="DesignEditor.Grid.MajorLineBrush" Color="#3E4451" />
+            <SolidColorBrush x:Key="Surface.Grid.BackgroundBrush" Color="#141417" />
+            <SolidColorBrush x:Key="Surface.Grid.LineBrush" Color="#26292E" />
+            <SolidColorBrush x:Key="Surface.Grid.MajorLineBrush" Color="#3E4451" />
 
             <SolidColorBrush x:Key="SurfaceItem.SelectionBrush" Color="#1E90FF" />
             <SolidColorBrush x:Key="SurfaceItem.HoverBrush" Color="#661E90FF" />
@@ -37,7 +37,7 @@
     </ResourceDictionary.ThemeDictionaries>
 
     <!-- Толщина рамки выделения: одна для рамки жеста и для рамок выбранного. -->
-    <x:Double x:Key="DesignEditor.Selection.StrokeThickness">1</x:Double>
+    <x:Double x:Key="Surface.Selection.StrokeThickness">1</x:Double>
 
     <!--
         Рамка выбранного контейнера ядра. Толщина — Thickness, а не число: её читает
@@ -47,9 +47,9 @@
     <Thickness x:Key="SurfaceItem.SelectionThickness">2</Thickness>
 
     <!-- Параметры сетки. CellSize задан в мировых единицах, LineThickness — в пикселях устройства. -->
-    <x:Double x:Key="DesignEditor.Grid.CellSize">20</x:Double>
-    <x:Int32 x:Key="DesignEditor.Grid.MajorInterval">5</x:Int32>
-    <x:Double x:Key="DesignEditor.Grid.LineThickness">1</x:Double>
-    <x:Double x:Key="DesignEditor.Grid.MinCellSize">6</x:Double>
+    <x:Double x:Key="Surface.Grid.CellSize">20</x:Double>
+    <x:Int32 x:Key="Surface.Grid.MajorInterval">5</x:Int32>
+    <x:Double x:Key="Surface.Grid.LineThickness">1</x:Double>
+    <x:Double x:Key="Surface.Grid.MinCellSize">6</x:Double>
 
 </ResourceDictionary>

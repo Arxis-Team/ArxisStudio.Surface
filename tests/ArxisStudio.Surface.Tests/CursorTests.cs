@@ -116,7 +116,7 @@ public class CursorTests
         harness.Editor.Cursors.Blocked = blocked;
 
         var nested = harness.Nested(0);
-        DesignInteraction.SetMovePolicy(nested, MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(nested, MovePolicy.None);
 
         var item = harness.Container(0);
         var before = item.Cursor;
@@ -144,7 +144,7 @@ public class CursorTests
     {
         var harness = Create();
         var nested = harness.Nested(0);
-        DesignInteraction.SetMovePolicy(nested, MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(nested, MovePolicy.None);
 
         var item = harness.Container(0);
         var before = item.Cursor;
@@ -169,7 +169,7 @@ public class CursorTests
     {
         var harness = Create();
         var nested = harness.Nested(0);
-        DesignInteraction.SetMovePolicy(nested, MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(nested, MovePolicy.None);
 
         var item = harness.Container(0);
         var writes = 0;
@@ -206,7 +206,7 @@ public class CursorTests
     {
         var harness = Create();
         var nested = harness.Nested(0);
-        DesignInteraction.SetMovePolicy(nested, MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(nested, MovePolicy.None);
 
         var item = harness.Container(0);
         var before = item.Cursor;
@@ -350,7 +350,7 @@ public class CursorTests
 
     // ---- Направляющие ---------------------------------------------------------
 
-    private static EditorHarness CreateGuide(DesignGuide guide)
+    private static EditorHarness CreateGuide(SurfaceGuide guide)
     {
         var harness = Create();
         harness.Editor.Guides = new[] { guide };
@@ -362,7 +362,7 @@ public class CursorTests
     [AvaloniaFact]
     public void Dragging_A_Vertical_Guide_Applies_Its_Cursor()
     {
-        var harness = CreateGuide(DesignGuide.Vertical(500));
+        var harness = CreateGuide(SurfaceGuide.Vertical(500));
         var vertical = new Cursor(StandardCursorType.SizeWestEast);
         var horizontal = new Cursor(StandardCursorType.SizeNorthSouth);
         harness.Editor.Cursors.GuideVertical = vertical;
@@ -383,7 +383,7 @@ public class CursorTests
     [AvaloniaFact]
     public void Dragging_A_Horizontal_Guide_Applies_Its_Cursor()
     {
-        var harness = CreateGuide(DesignGuide.Horizontal(400));
+        var harness = CreateGuide(SurfaceGuide.Horizontal(400));
         var vertical = new Cursor(StandardCursorType.SizeWestEast);
         var horizontal = new Cursor(StandardCursorType.SizeNorthSouth);
         harness.Editor.Cursors.GuideVertical = vertical;
@@ -403,7 +403,7 @@ public class CursorTests
     [AvaloniaFact]
     public void Each_Gesture_Has_Its_Own_Default()
     {
-        var cursors = new DesignEditorCursors();
+        var cursors = new SurfaceCursors();
 
         Assert.Same(cursors.ResolveMove(), cursors.ResolveMove());
 
@@ -428,7 +428,7 @@ public class CursorTests
     [AvaloniaFact]
     public void Guide_Cursors_Follow_The_Orientation()
     {
-        var cursors = new DesignEditorCursors();
+        var cursors = new SurfaceCursors();
         var vertical = new Cursor(StandardCursorType.SizeWestEast);
         cursors.GuideVertical = vertical;
 
@@ -452,7 +452,7 @@ public class CursorTests
         var custom = new Cursor(StandardCursorType.Help);
         var adorner = new SelectionAdorner { Width = 120, Height = 90, ShowHandles = true };
         var window = new Window { Width = 400, Height = 300, Content = adorner };
-        window.Resources["DesignEditor.SelectionAdorner.CursorTopLeft"] = custom;
+        window.Resources["Surface.SelectionAdorner.CursorTopLeft"] = custom;
         window.Show();
 
         var manager = window.GetLayoutManager();

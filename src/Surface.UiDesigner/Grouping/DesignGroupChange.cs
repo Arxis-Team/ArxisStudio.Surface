@@ -6,9 +6,9 @@ using Avalonia.Controls;
 namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
-/// Описывает изменение принадлежности одного design target к группе.
+/// Описывает изменение принадлежности одного target к группе.
 /// </summary>
-public sealed class DesignGroupChange : DesignChange
+public sealed class DesignGroupChange : TargetChange
 {
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="DesignGroupChange"/>.

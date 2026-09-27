@@ -10,7 +10,7 @@ using ArxisStudio.Surface;
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Порядок перекрытия design targets.
+/// Порядок перекрытия targets.
 /// </summary>
 /// <remarks>
 /// Порядок нормализуется в пределах родительской панели: по умолчанию у всех
@@ -129,15 +129,15 @@ public class ZOrderTests
     public void Reorder_Produces_An_Edit_Of_Kind_Reorder()
     {
         var harness = CreateWithNestedSelected();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         harness.Editor.BringToFront();
         harness.RunLayout();
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Order, edit.Kind);
-        Assert.All(edit.Changes, c => Assert.IsType<DesignOrderChange>(c));
+        Assert.Equal(SurfaceEditKind.Order, edit.Kind);
+        Assert.All(edit.Changes, c => Assert.IsType<OrderChange>(c));
     }
 
     [AvaloniaFact]
@@ -148,7 +148,7 @@ public class ZOrderTests
         harness.Editor.BringToFront();
         harness.RunLayout();
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         // Порядок уже такой — записи в стек быть не должно.
@@ -166,7 +166,7 @@ public class ZOrderTests
 
         var before = VisualOrder(nested).Select(c => c.ZIndex).ToList();
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         harness.Editor.BringToFront();
@@ -185,13 +185,13 @@ public class ZOrderTests
     {
         var harness = CreateWithNestedSelected();
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         harness.Editor.BringToFront();
         harness.RunLayout();
 
-        var later = new List<DesignEditCompletedEventArgs>();
+        var later = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => later.Add(e);
 
         foreach (var change in edit!.Changes)
@@ -205,7 +205,7 @@ public class ZOrderTests
     /// Повтор возвращает порядок, который задала команда.
     /// </summary>
     /// <remarks>
-    /// Изменение порядка едет отдельным типом (<c>DesignOrderChange</c>) и своей парой
+    /// Изменение порядка едет отдельным типом (<c>OrderChange</c>) и своей парой
     /// значений, поэтому обе половины контракта надо проверять и на нём: отмена геометрии
     /// ничего не говорит про <c>ZIndex</c>.
     /// </remarks>
@@ -215,7 +215,7 @@ public class ZOrderTests
         var harness = CreateWithNestedSelected();
         var nested = harness.Nested(0);
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         harness.Editor.BringToFront();
@@ -245,7 +245,7 @@ public class ZOrderTests
         harness.Window.MouseDown(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.Window.MouseUp(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         var nested = harness.Nested(0);
         var sibling = harness.Named(0, "Sibling");

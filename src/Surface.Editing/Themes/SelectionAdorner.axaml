@@ -10,32 +10,32 @@
         (:primary/:secondary/:group) и lightweight resources.
     -->
     <ControlTheme x:Key="{x:Type editing:SelectionAdorner}" TargetType="editing:SelectionAdorner">
-        <Setter Property="AdornerBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.Brush}" />
-        <Setter Property="Fill" Value="{DynamicResource DesignEditor.SelectionAdorner.Fill}" />
-        <Setter Property="StrokeThickness" Value="{DynamicResource DesignEditor.Selection.StrokeThickness}" />
-        <Setter Property="HandleSize" Value="{DynamicResource DesignEditor.SelectionAdorner.HandleSize}" />
+        <Setter Property="AdornerBrush" Value="{DynamicResource Surface.SelectionAdorner.Brush}" />
+        <Setter Property="Fill" Value="{DynamicResource Surface.SelectionAdorner.Fill}" />
+        <Setter Property="StrokeThickness" Value="{DynamicResource Surface.Selection.StrokeThickness}" />
+        <Setter Property="HandleSize" Value="{DynamicResource Surface.SelectionAdorner.HandleSize}" />
         <Setter Property="ShowHandles" Value="True" />
         <Setter Property="IsInteractive" Value="True" />
         <Setter Property="ClipToBounds" Value="False" />
 
         <Style Selector="^:primary">
-            <Setter Property="AdornerBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.PrimaryBrush}" />
-            <Setter Property="Fill" Value="{DynamicResource DesignEditor.SelectionAdorner.PrimaryFill}" />
+            <Setter Property="AdornerBrush" Value="{DynamicResource Surface.SelectionAdorner.PrimaryBrush}" />
+            <Setter Property="Fill" Value="{DynamicResource Surface.SelectionAdorner.PrimaryFill}" />
         </Style>
 
         <Style Selector="^:secondary">
-            <Setter Property="AdornerBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.SecondaryBrush}" />
-            <Setter Property="Fill" Value="{DynamicResource DesignEditor.SelectionAdorner.SecondaryFill}" />
+            <Setter Property="AdornerBrush" Value="{DynamicResource Surface.SelectionAdorner.SecondaryBrush}" />
+            <Setter Property="Fill" Value="{DynamicResource Surface.SelectionAdorner.SecondaryFill}" />
         </Style>
 
         <Style Selector="^:group">
-            <Setter Property="AdornerBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.GroupBrush}" />
-            <Setter Property="Fill" Value="{DynamicResource DesignEditor.SelectionAdorner.GroupFill}" />
+            <Setter Property="AdornerBrush" Value="{DynamicResource Surface.SelectionAdorner.GroupBrush}" />
+            <Setter Property="Fill" Value="{DynamicResource Surface.SelectionAdorner.GroupFill}" />
             <Setter Property="StrokeDashArray" Value="4,2" />
         </Style>
 
         <Style Selector="^:locked">
-            <Setter Property="AdornerBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.LockedBrush}" />
+            <Setter Property="AdornerBrush" Value="{DynamicResource Surface.SelectionAdorner.LockedBrush}" />
             <Setter Property="StrokeDashArray" Value="4,2" />
         </Style>
 
@@ -57,13 +57,13 @@
                             <Style Selector="Thumb">
                                 <Setter Property="Width" Value="{Binding HandleSize, RelativeSource={RelativeSource TemplatedParent}}" />
                                 <Setter Property="Height" Value="{Binding HandleSize, RelativeSource={RelativeSource TemplatedParent}}" />
-                                <Setter Property="Background" Value="{DynamicResource DesignEditor.SelectionAdorner.HandleBackground}" />
+                                <Setter Property="Background" Value="{DynamicResource Surface.SelectionAdorner.HandleBackground}" />
                                 <Setter Property="BorderBrush" Value="{Binding AdornerBrush, RelativeSource={RelativeSource TemplatedParent}}" />
                                 <Setter Property="BorderThickness" Value="1" />
                                 <Setter Property="ClipToBounds" Value="False"/>
                                 <!-- Ручка сидит на краю выделения: наружу торчит половина её
                                      размера. Литерал здесь означал бы, что настройка
-                                     DesignEditor.SelectionAdorner.HandleSize молча ломает
+                                     Surface.SelectionAdorner.HandleSize молча ломает
                                      центровку у всех, кто ею воспользуется. -->
                                 <Setter Property="Margin" Value="{Binding HandleSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource HandleMarginConverter}}" />
                                 <Setter Property="Template">
@@ -77,26 +77,26 @@
                                 </Setter>
                             </Style>
                             <Style Selector="Thumb.locked">
-                                <Setter Property="Background" Value="{DynamicResource DesignEditor.SelectionAdorner.HandleLockedBackground}" />
-                                <Setter Property="BorderBrush" Value="{DynamicResource DesignEditor.SelectionAdorner.HandleLockedBorderBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource Surface.SelectionAdorner.HandleLockedBackground}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource Surface.SelectionAdorner.HandleLockedBorderBrush}" />
                             </Style>
                             <Style Selector="Thumb:pointerover">
-                                <Setter Property="Background" Value="{DynamicResource DesignEditor.SelectionAdorner.HandlePointerOverBackground}"/>
+                                <Setter Property="Background" Value="{DynamicResource Surface.SelectionAdorner.HandlePointerOverBackground}"/>
                             </Style>
                             <Style Selector="Thumb:pressed">
-                                <Setter Property="Background" Value="{DynamicResource DesignEditor.SelectionAdorner.HandlePressedBackground}"/>
+                                <Setter Property="Background" Value="{DynamicResource Surface.SelectionAdorner.HandlePressedBackground}"/>
                             </Style>
                         </Grid.Styles>
 
-                        <Thumb Name="PART_TopLeft"     Grid.Row="0" Grid.Column="0" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorTopLeft}" />
-                        <Thumb Name="PART_TopRight"    Grid.Row="0" Grid.Column="2" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorTopRight}" />
-                        <Thumb Name="PART_BottomLeft"  Grid.Row="2" Grid.Column="0" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorBottomLeft}" />
-                        <Thumb Name="PART_BottomRight" Grid.Row="2" Grid.Column="2" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorBottomRight}" />
+                        <Thumb Name="PART_TopLeft"     Grid.Row="0" Grid.Column="0" Cursor="{DynamicResource Surface.SelectionAdorner.CursorTopLeft}" />
+                        <Thumb Name="PART_TopRight"    Grid.Row="0" Grid.Column="2" Cursor="{DynamicResource Surface.SelectionAdorner.CursorTopRight}" />
+                        <Thumb Name="PART_BottomLeft"  Grid.Row="2" Grid.Column="0" Cursor="{DynamicResource Surface.SelectionAdorner.CursorBottomLeft}" />
+                        <Thumb Name="PART_BottomRight" Grid.Row="2" Grid.Column="2" Cursor="{DynamicResource Surface.SelectionAdorner.CursorBottomRight}" />
 
-                        <Thumb Name="PART_Top"    Grid.Row="0" Grid.Column="1" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorTop}" HorizontalAlignment="Stretch" />
-                        <Thumb Name="PART_Bottom" Grid.Row="2" Grid.Column="1" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorBottom}" HorizontalAlignment="Stretch" />
-                        <Thumb Name="PART_Left"   Grid.Row="1" Grid.Column="0" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorLeft}" VerticalAlignment="Stretch" />
-                        <Thumb Name="PART_Right"  Grid.Row="1" Grid.Column="2" Cursor="{DynamicResource DesignEditor.SelectionAdorner.CursorRight}" VerticalAlignment="Stretch" />
+                        <Thumb Name="PART_Top"    Grid.Row="0" Grid.Column="1" Cursor="{DynamicResource Surface.SelectionAdorner.CursorTop}" HorizontalAlignment="Stretch" />
+                        <Thumb Name="PART_Bottom" Grid.Row="2" Grid.Column="1" Cursor="{DynamicResource Surface.SelectionAdorner.CursorBottom}" HorizontalAlignment="Stretch" />
+                        <Thumb Name="PART_Left"   Grid.Row="1" Grid.Column="0" Cursor="{DynamicResource Surface.SelectionAdorner.CursorLeft}" VerticalAlignment="Stretch" />
+                        <Thumb Name="PART_Right"  Grid.Row="1" Grid.Column="2" Cursor="{DynamicResource Surface.SelectionAdorner.CursorRight}" VerticalAlignment="Stretch" />
                     </Grid>
                 </Grid>
             </ControlTemplate>

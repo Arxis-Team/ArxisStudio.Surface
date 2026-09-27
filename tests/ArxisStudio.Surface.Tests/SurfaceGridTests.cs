@@ -9,10 +9,10 @@ namespace ArxisStudio.Tests;
 /// <summary>
 /// Фоновая сетка редактора.
 /// </summary>
-public class DesignGridTests
+public class SurfaceGridTests
 {
-    private static DesignGrid Grid(EditorHarness harness) =>
-        harness.Editor.GetVisualDescendants().OfType<DesignGrid>().Single();
+    private static SurfaceGrid Grid(EditorHarness harness) =>
+        harness.Editor.GetVisualDescendants().OfType<SurfaceGrid>().Single();
 
     [AvaloniaFact]
     public void Grid_Is_Part_Of_The_Editor_Template()
@@ -62,7 +62,7 @@ public class DesignGridTests
     public void Level_Is_Hidden_When_Denser_Than_The_Threshold(
         double cellSize, double zoom, double minCellSize, bool expected)
     {
-        Assert.Equal(expected, DesignGrid.IsLevelVisible(cellSize * zoom, minCellSize));
+        Assert.Equal(expected, SurfaceGrid.IsLevelVisible(cellSize * zoom, minCellSize));
     }
 
     [AvaloniaFact]
@@ -75,8 +75,8 @@ public class DesignGridTests
         const double zoom = 0.26;
         const double threshold = 6;
 
-        Assert.False(DesignGrid.IsLevelVisible(cell * zoom, threshold));
-        Assert.True(DesignGrid.IsLevelVisible(cell * major * zoom, threshold));
+        Assert.False(SurfaceGrid.IsLevelVisible(cell * zoom, threshold));
+        Assert.True(SurfaceGrid.IsLevelVisible(cell * major * zoom, threshold));
     }
 
     [AvaloniaTheory]
@@ -89,7 +89,7 @@ public class DesignGridTests
     {
         // Линия толщиной в один пиксель должна попадать в центр пикселя устройства,
         // иначе она размазывается на два соседних с половинной интенсивностью.
-        Assert.Equal(expected, DesignGrid.SnapToDevicePixel(value, scaling), 6);
+        Assert.Equal(expected, SurfaceGrid.SnapToDevicePixel(value, scaling), 6);
     }
 
     [AvaloniaFact]
@@ -97,7 +97,7 @@ public class DesignGridTests
     {
         foreach (var scaling in new[] { 1.0, 1.5, 2.0 })
         {
-            var snapped = DesignGrid.SnapToDevicePixel(37.42, scaling);
+            var snapped = SurfaceGrid.SnapToDevicePixel(37.42, scaling);
             var thicknessDip = 1.0 / scaling;
 
             var startDevice = (snapped - (thicknessDip / 2)) * scaling;

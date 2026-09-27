@@ -16,7 +16,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 
@@ -74,7 +74,7 @@ public partial class DesignEditor
     /// </remarks>
     private bool TryReorder(DesignOrderPlacement placement)
     {
-        var targets = SelectedDesignTargets;
+        var targets = SelectedTargets;
         if (targets.Count == 0)
             return false;
 
@@ -94,7 +94,7 @@ public partial class DesignEditor
         if (groups.Count == 0)
             return false;
 
-        BeginEdit(DesignEditKind.Order);
+        BeginEdit(SurfaceEditKind.Order);
 
         foreach (var pair in groups)
             ReorderWithinParent(pair.Key, pair.Value, placement);
@@ -133,7 +133,7 @@ public partial class DesignEditor
         };
 
         for (var i = 0; i < arranged.Count; i++)
-            SetDesignZIndex(arranged[i], i);
+            SetTargetZIndex(arranged[i], i);
     }
 
     private static List<Control> Partition(List<Control> order, HashSet<Control> moving, bool movedLast)

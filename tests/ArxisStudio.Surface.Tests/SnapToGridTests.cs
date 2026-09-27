@@ -70,7 +70,7 @@ public class SnapToGridTests
         // поэтому по умолчанию она включена.
         var harness = EditorHarness.Create(snapToGrid: true);
 
-        Assert.True(new DesignEditorInteractionOptions().IsSnapToGridEnabled);
+        Assert.True(new SurfaceInteractionOptions().IsSnapToGridEnabled);
         Assert.True(harness.Editor.ShouldSnap(KeyModifiers.None));
     }
 
@@ -78,7 +78,7 @@ public class SnapToGridTests
     public void Step_Follows_The_Grid_Cell_Size()
     {
         var harness = EditorHarness.Create(snapToGrid: true);
-        var grid = harness.Editor.GetVisualDescendants().OfType<DesignGrid>().Single();
+        var grid = harness.Editor.GetVisualDescendants().OfType<SurfaceGrid>().Single();
 
         // Не задан — берётся у сетки: рисовать одну структуру, а привязывать
         // к другой редактор не должен.
@@ -143,7 +143,7 @@ public class SnapToGridTests
 
         var after = DesignPositionOf(harness, "Nested");
 
-        Assert.Equal(KeyModifiers.Alt, new DesignEditorInputGestures().SnapBypassModifiers);
+        Assert.Equal(KeyModifiers.Alt, new SurfaceInputGestures().SnapBypassModifiers);
         Assert.Equal(before.X + DragDelta.X, after.X, 1);
         Assert.Equal(before.Y + DragDelta.Y, after.Y, 1);
     }
@@ -169,7 +169,7 @@ public class SnapToGridTests
         harness.Window.MouseDown(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.Window.MouseUp(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         var nestedBefore = DesignPositionOf(harness, "Nested");
         var siblingBefore = DesignPositionOf(harness, "Sibling");
@@ -275,8 +275,8 @@ public class SnapToGridTests
 
         // Каждый target стал 50 — не кратно 20. Привязывай операция каждого
         // по отдельности, пропорции внутри группы разъехались бы.
-        Assert.Equal(new Rect(0, 0, 50, 20), new Rect(editor.GetDesignPosition(left), editor.GetDesignSize(left)));
-        Assert.Equal(new Rect(50, 0, 50, 20), new Rect(editor.GetDesignPosition(right), editor.GetDesignSize(right)));
+        Assert.Equal(new Rect(0, 0, 50, 20), new Rect(editor.GetTargetPosition(left), editor.GetTargetSize(left)));
+        Assert.Equal(new Rect(50, 0, 50, 20), new Rect(editor.GetTargetPosition(right), editor.GetTargetSize(right)));
     }
 
     [AvaloniaFact]

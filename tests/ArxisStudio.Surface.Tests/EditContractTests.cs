@@ -27,13 +27,13 @@ public class EditContractTests
         ContainerLocation.X + EditorHarness.NestedOffset + (EditorHarness.NestedWidth / 2),
         ContainerLocation.Y + EditorHarness.NestedOffset + (EditorHarness.NestedHeight / 2));
 
-    private static (EditorHarness Harness, List<DesignEditCompletedEventArgs> Edits) Create(int nodeCount = 1)
+    private static (EditorHarness Harness, List<SurfaceEditCompletedEventArgs> Edits) Create(int nodeCount = 1)
     {
         var harness = EditorHarness.Create(nodeCount: nodeCount);
         for (var i = 0; i < nodeCount; i++)
             harness.PlaceContainer(i, ContainerLocation + new Vector(i * 320, 0), ContainerSize);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
         return (harness, edits);
     }
@@ -56,8 +56,8 @@ public class EditContractTests
 
         // Кадров перетаскивания было несколько, запись — одна.
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Move, edit.Kind);
-        var change = Assert.IsType<DesignGeometryChange>(Assert.Single(edit.Changes));
+        Assert.Equal(SurfaceEditKind.Move, edit.Kind);
+        var change = Assert.IsType<GeometryChange>(Assert.Single(edit.Changes));
         Assert.Same(harness.Nested(0), change.Target);
     }
 
@@ -68,7 +68,7 @@ public class EditContractTests
 
         Drag(harness, NestedCentre, new Vector(60, 40));
 
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
 
         Assert.Equal(change.OldBounds.X + 60, change.NewBounds.X, 1);
         Assert.Equal(change.OldBounds.Y + 40, change.NewBounds.Y, 1);
@@ -121,7 +121,7 @@ public class EditContractTests
         harness.Window.MouseDown(sibling, MouseButton.Left, RawInputModifiers.Shift);
         harness.Window.MouseUp(sibling, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         edits.Clear();
         Drag(harness, sibling, new Vector(50, 20));
@@ -141,7 +141,7 @@ public class EditContractTests
         var (harness, edits) = Create();
 
         Drag(harness, NestedCentre, new Vector(60, 40));
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
 
         harness.Editor.ApplyGeometry(change.Target, change.OldBounds);
         harness.RunLayout();
@@ -162,7 +162,7 @@ public class EditContractTests
         var (harness, edits) = Create();
 
         Drag(harness, NestedCentre, new Vector(60, 40));
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
 
         edits.Clear();
         harness.Editor.ApplyGeometry(change.Target, change.OldBounds);
@@ -206,7 +206,7 @@ public class EditContractTests
         var (harness, edits) = Create();
 
         Drag(harness, NestedCentre, new Vector(60, 40));
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
         var afterGesture = Position(harness, change.Target);
 
         harness.Editor.Revert(change);
@@ -234,7 +234,7 @@ public class EditContractTests
         var (harness, edits) = Create();
 
         Drag(harness, NestedCentre, new Vector(60, 40));
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
         var afterGesture = Position(harness, change.Target);
 
         for (var i = 0; i < 5; i++)
@@ -263,7 +263,7 @@ public class EditContractTests
         var (harness, edits) = Create();
 
         Drag(harness, NestedCentre, new Vector(60, 40));
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
 
         harness.Editor.Revert(change);
         harness.RunLayout();
@@ -295,17 +295,17 @@ public class EditContractTests
 
         ResizeRight(harness, new Vector(30, 0));
 
-        var change = Assert.IsType<DesignGeometryChange>(edits.Single().Changes.Single());
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
         Assert.NotEqual(change.OldBounds.Width, change.NewBounds.Width);
 
         harness.Editor.Revert(change);
         harness.RunLayout();
-        Assert.Equal(change.OldBounds.Width, harness.Editor.GetDesignSize(change.Target).Width, 1);
+        Assert.Equal(change.OldBounds.Width, harness.Editor.GetTargetSize(change.Target).Width, 1);
 
         harness.Editor.Reapply(change);
         harness.RunLayout();
-        Assert.Equal(change.NewBounds.Width, harness.Editor.GetDesignSize(change.Target).Width, 1);
-        Assert.Equal(change.NewBounds.Height, harness.Editor.GetDesignSize(change.Target).Height, 1);
+        Assert.Equal(change.NewBounds.Width, harness.Editor.GetTargetSize(change.Target).Width, 1);
+        Assert.Equal(change.NewBounds.Height, harness.Editor.GetTargetSize(change.Target).Height, 1);
     }
 
     /// <summary>

@@ -12,8 +12,8 @@ public partial class SurfaceView
     /// <summary>
     /// Идентификатор объекта с настройками input gestures редактора.
     /// </summary>
-    public static readonly DirectProperty<SurfaceView, DesignEditorInputGestures> InputGesturesProperty =
-        AvaloniaProperty.RegisterDirect<SurfaceView, DesignEditorInputGestures>(
+    public static readonly DirectProperty<SurfaceView, SurfaceInputGestures> InputGesturesProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, SurfaceInputGestures>(
             nameof(InputGestures),
             o => o.InputGestures,
             (o, v) => o.InputGestures = v);
@@ -21,8 +21,8 @@ public partial class SurfaceView
     /// <summary>
     /// Идентификатор объекта с runtime-настройками взаимодействия редактора.
     /// </summary>
-    public static readonly DirectProperty<SurfaceView, DesignEditorInteractionOptions> InteractionOptionsProperty =
-        AvaloniaProperty.RegisterDirect<SurfaceView, DesignEditorInteractionOptions>(
+    public static readonly DirectProperty<SurfaceView, SurfaceInteractionOptions> InteractionOptionsProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, SurfaceInteractionOptions>(
             nameof(InteractionOptions),
             o => o.InteractionOptions,
             (o, v) => o.InteractionOptions = v);
@@ -30,8 +30,8 @@ public partial class SurfaceView
     /// <summary>
     /// Идентификатор объекта с курсорами жестов редактора.
     /// </summary>
-    public static readonly DirectProperty<SurfaceView, DesignEditorCursors> CursorsProperty =
-        AvaloniaProperty.RegisterDirect<SurfaceView, DesignEditorCursors>(
+    public static readonly DirectProperty<SurfaceView, SurfaceCursors> CursorsProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, SurfaceCursors>(
             nameof(Cursors),
             o => o.Cursors,
             (o, v) => o.Cursors = v);
@@ -54,7 +54,7 @@ public partial class SurfaceView
             o => o.AdditiveSelectionModifiers,
             (o, v) => o.AdditiveSelectionModifiers = v);
 
-    private DesignEditorInputGestures _inputGestures = new DesignEditorInputGestures();
+    private SurfaceInputGestures _inputGestures = new SurfaceInputGestures();
 
     /// <summary>
     /// Получает или задает набор настраиваемых input gestures редактора.
@@ -63,12 +63,12 @@ public partial class SurfaceView
     /// Это основная точка конфигурации горячих клавиш и модификаторов взаимодействия.
     /// Свойство можно задавать из AXAML, styles, code-behind или через привязки.
     /// </remarks>
-    public DesignEditorInputGestures InputGestures
+    public SurfaceInputGestures InputGestures
     {
         get => _inputGestures;
         set
         {
-            var gestures = value ?? new DesignEditorInputGestures();
+            var gestures = value ?? new SurfaceInputGestures();
             DetachInputGestures(_inputGestures);
             SetAndRaise(InputGesturesProperty, ref _inputGestures, gestures);
             AttachInputGestures(gestures);
@@ -107,7 +107,7 @@ public partial class SurfaceView
 
     private readonly InputGestureBridge _inputGestureBridge;
 
-    private void AttachInputGestures(DesignEditorInputGestures gestures) =>
+    private void AttachInputGestures(SurfaceInputGestures gestures) =>
         WeakEvents.AvaloniaPropertyChanged.Subscribe(gestures, _inputGestureBridge);
 
     /// <summary>
@@ -119,19 +119,19 @@ public partial class SurfaceView
     /// испортить значение они и так не могут, потому что ретранслятор читает текущий
     /// набор, а не отправителя.
     /// </remarks>
-    private void DetachInputGestures(DesignEditorInputGestures gestures) =>
+    private void DetachInputGestures(SurfaceInputGestures gestures) =>
         WeakEvents.AvaloniaPropertyChanged.Unsubscribe(gestures, _inputGestureBridge);
 
     private void OnInputGesturesPropertyChanged(AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == DesignEditorInputGestures.ContainerInteractionModifiersProperty)
+        if (e.Property == SurfaceInputGestures.ContainerInteractionModifiersProperty)
         {
             SetAndRaise(
                 ContainerInteractionModifiersProperty,
                 ref _containerInteractionModifiers,
                 _inputGestures.ContainerInteractionModifiers);
         }
-        else if (e.Property == DesignEditorInputGestures.AdditiveSelectionModifiersProperty)
+        else if (e.Property == SurfaceInputGestures.AdditiveSelectionModifiersProperty)
         {
             SetAndRaise(
                 AdditiveSelectionModifiersProperty,
@@ -140,7 +140,7 @@ public partial class SurfaceView
         }
     }
 
-    private DesignEditorInteractionOptions _interactionOptions = new DesignEditorInteractionOptions();
+    private SurfaceInteractionOptions _interactionOptions = new SurfaceInteractionOptions();
 
     /// <summary>
     /// Получает или задает runtime-настройки взаимодействия редактора, не относящиеся к жестам ввода.
@@ -149,17 +149,17 @@ public partial class SurfaceView
     /// В этом объекте настраиваются числовые параметры поведения, такие как шаг zoom,
     /// порог начала drag и минимальный размер при resize.
     /// </remarks>
-    public DesignEditorInteractionOptions InteractionOptions
+    public SurfaceInteractionOptions InteractionOptions
     {
         get => _interactionOptions;
         set
         {
-            var options = value ?? new DesignEditorInteractionOptions();
+            var options = value ?? new SurfaceInteractionOptions();
             SetAndRaise(InteractionOptionsProperty, ref _interactionOptions, options);
         }
     }
 
-    private DesignEditorCursors _cursors = new DesignEditorCursors();
+    private SurfaceCursors _cursors = new SurfaceCursors();
 
     /// <summary>
     /// Получает или задает курсоры, которыми редактор показывает идущий жест.
@@ -174,12 +174,12 @@ public partial class SurfaceView
     /// смена курсора посреди протяжки описывала бы жест, который уже идёт.
     /// </para>
     /// </remarks>
-    public DesignEditorCursors Cursors
+    public SurfaceCursors Cursors
     {
         get => _cursors;
         set
         {
-            var cursors = value ?? new DesignEditorCursors();
+            var cursors = value ?? new SurfaceCursors();
             SetAndRaise(CursorsProperty, ref _cursors, cursors);
         }
     }
@@ -262,13 +262,13 @@ public partial class SurfaceView
         return required == KeyModifiers.None || actual.HasFlag(required);
     }
 
-    private static bool IsPointerButtonPressed(PointerPointProperties pointerProperties, DesignEditorPointerButton button)
+    private static bool IsPointerButtonPressed(PointerPointProperties pointerProperties, SurfacePointerButton button)
     {
         return button switch
         {
-            DesignEditorPointerButton.Left => pointerProperties.IsLeftButtonPressed,
-            DesignEditorPointerButton.Middle => pointerProperties.IsMiddleButtonPressed,
-            DesignEditorPointerButton.Right => pointerProperties.IsRightButtonPressed,
+            SurfacePointerButton.Left => pointerProperties.IsLeftButtonPressed,
+            SurfacePointerButton.Middle => pointerProperties.IsMiddleButtonPressed,
+            SurfacePointerButton.Right => pointerProperties.IsRightButtonPressed,
             _ => false
         };
     }

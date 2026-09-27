@@ -93,7 +93,7 @@ public class ResizeEventTests
         harness.Window.MouseUp(sibling, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         var secondary = harness.Editor.GetVisualDescendants()
             .OfType<SelectionAdorner>()

@@ -148,7 +148,7 @@ public class GestureLifecycleTests
         pointer.Capture(null);
         harness.RunLayout();
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         var nested = harness.Nested(0);
@@ -160,7 +160,7 @@ public class GestureLifecycleTests
         harness.RunLayout();
 
         Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Move, edits[0].Kind);
+        Assert.Equal(SurfaceEditKind.Move, edits[0].Kind);
     }
 
     [AvaloniaFact]

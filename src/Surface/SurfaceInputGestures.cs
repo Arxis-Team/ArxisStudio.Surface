@@ -24,7 +24,7 @@ public enum ContainerEmptyAreaDragGesture
     /// <remarks>
     /// Поведение, привычное по form designer'ам: пустое место внутри формы —
     /// это фон для рамки, а не ручка перемещения. Контейнер при этом остаётся
-    /// перемещаемым через <see cref="DesignEditorInputGestures.ContainerInteractionModifiers"/>
+    /// перемещаемым через <see cref="SurfaceInputGestures.ContainerInteractionModifiers"/>
     /// и обычным перетаскиванием, когда он уже выбран.
     /// </remarks>
     Marquee
@@ -34,10 +34,10 @@ public enum ContainerEmptyAreaDragGesture
 /// Определяет кнопку указателя, используемую для запуска жестов редактора.
 /// </summary>
 /// <remarks>
-/// Перечисление используется свойствами класса <see cref="DesignEditorInputGestures"/>
+/// Перечисление используется свойствами класса <see cref="SurfaceInputGestures"/>
 /// и описывает, какая кнопка мыши инициирует соответствующее действие.
 /// </remarks>
-public enum DesignEditorPointerButton
+public enum SurfacePointerButton
 {
     /// <summary>
     /// Левая кнопка мыши.
@@ -69,7 +69,7 @@ public enum DesignEditorPointerButton
 /// <example>
 /// <code language="xml"><![CDATA[
 /// <design:DesignEditor.InputGestures>
-///     <design:DesignEditorInputGestures PanButton="Middle"
+///     <design:SurfaceInputGestures PanButton="Middle"
 ///                                       PanModifiers="None"
 ///                                       MarqueeButton="Left"
 ///                                       MarqueeModifiers="None"
@@ -79,53 +79,53 @@ public enum DesignEditorPointerButton
 /// </design:DesignEditor.InputGestures>
 /// ]]></code>
 /// </example>
-public class DesignEditorInputGestures : AvaloniaObject
+public class SurfaceInputGestures : AvaloniaObject
 {
     /// <summary>
     /// Идентификатор свойства кнопки указателя для запуска панорамирования.
     /// </summary>
-    /// <remarks>Значение по умолчанию: <see cref="DesignEditorPointerButton.Middle"/>.</remarks>
-    public static readonly StyledProperty<DesignEditorPointerButton> PanButtonProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, DesignEditorPointerButton>(
+    /// <remarks>Значение по умолчанию: <see cref="SurfacePointerButton.Middle"/>.</remarks>
+    public static readonly StyledProperty<SurfacePointerButton> PanButtonProperty =
+        AvaloniaProperty.Register<SurfaceInputGestures, SurfacePointerButton>(
             nameof(PanButton),
-            DesignEditorPointerButton.Middle);
+            SurfacePointerButton.Middle);
 
     /// <summary>
     /// Идентификатор свойства сочетаний отмены.
     /// </summary>
     public static readonly StyledProperty<IReadOnlyList<KeyGesture>?> UndoGesturesProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, IReadOnlyList<KeyGesture>?>(nameof(UndoGestures));
+        AvaloniaProperty.Register<SurfaceInputGestures, IReadOnlyList<KeyGesture>?>(nameof(UndoGestures));
 
     /// <summary>
     /// Идентификатор свойства сочетаний повтора.
     /// </summary>
     public static readonly StyledProperty<IReadOnlyList<KeyGesture>?> RedoGesturesProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, IReadOnlyList<KeyGesture>?>(nameof(RedoGestures));
+        AvaloniaProperty.Register<SurfaceInputGestures, IReadOnlyList<KeyGesture>?>(nameof(RedoGestures));
 
     /// <summary>
     /// Идентификатор свойства модификаторов клавиатуры для запуска панорамирования.
     /// </summary>
     /// <remarks>Значение по умолчанию: <see cref="KeyModifiers.None"/>.</remarks>
     public static readonly StyledProperty<KeyModifiers> PanModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(PanModifiers),
             KeyModifiers.None);
 
     /// <summary>
     /// Идентификатор свойства кнопки указателя для запуска marquee-selection по пустой области редактора.
     /// </summary>
-    /// <remarks>Значение по умолчанию: <see cref="DesignEditorPointerButton.Left"/>.</remarks>
-    public static readonly StyledProperty<DesignEditorPointerButton> MarqueeButtonProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, DesignEditorPointerButton>(
+    /// <remarks>Значение по умолчанию: <see cref="SurfacePointerButton.Left"/>.</remarks>
+    public static readonly StyledProperty<SurfacePointerButton> MarqueeButtonProperty =
+        AvaloniaProperty.Register<SurfaceInputGestures, SurfacePointerButton>(
             nameof(MarqueeButton),
-            DesignEditorPointerButton.Left);
+            SurfacePointerButton.Left);
 
     /// <summary>
     /// Идентификатор свойства модификаторов клавиатуры для запуска marquee-selection.
     /// </summary>
     /// <remarks>Значение по умолчанию: <see cref="KeyModifiers.None"/>.</remarks>
     public static readonly StyledProperty<KeyModifiers> MarqueeModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(MarqueeModifiers),
             KeyModifiers.None);
 
@@ -134,7 +134,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// </summary>
     /// <remarks>Значение по умолчанию: <see cref="KeyModifiers.None"/>.</remarks>
     public static readonly StyledProperty<KeyModifiers> ZoomModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(ZoomModifiers),
             KeyModifiers.None);
 
@@ -143,7 +143,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// </summary>
     /// <remarks>Значение по умолчанию: <see cref="KeyModifiers.Control"/>.</remarks>
     public static readonly StyledProperty<KeyModifiers> ContainerInteractionModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(ContainerInteractionModifiers),
             KeyModifiers.Control);
 
@@ -152,7 +152,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// </summary>
     /// <remarks>Значение по умолчанию: <see cref="KeyModifiers.Shift"/>.</remarks>
     public static readonly StyledProperty<KeyModifiers> AdditiveSelectionModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(AdditiveSelectionModifiers),
             KeyModifiers.Shift);
 
@@ -160,7 +160,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// Получает или задает кнопку указателя, запускающую панорамирование.
     /// </summary>
     /// <remarks>По умолчанию используется средняя кнопка мыши.</remarks>
-    public DesignEditorPointerButton PanButton
+    public SurfacePointerButton PanButton
     {
         get => GetValue(PanButtonProperty);
         set => SetValue(PanButtonProperty, value);
@@ -213,7 +213,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// Получает или задает кнопку указателя, запускающую marquee-selection по пустой области редактора.
     /// </summary>
     /// <remarks>По умолчанию используется левая кнопка мыши.</remarks>
-    public DesignEditorPointerButton MarqueeButton
+    public SurfacePointerButton MarqueeButton
     {
         get => GetValue(MarqueeButtonProperty);
         set => SetValue(MarqueeButtonProperty, value);
@@ -269,7 +269,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// Идентификатор свойства модификаторов временного отключения привязки.
     /// </summary>
     public static readonly StyledProperty<KeyModifiers> SnapBypassModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(SnapBypassModifiers),
             KeyModifiers.Alt);
 
@@ -290,7 +290,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// Идентификатор свойства модификаторов увеличенного смещения стрелками.
     /// </summary>
     public static readonly StyledProperty<KeyModifiers> LargeNudgeModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(LargeNudgeModifiers),
             KeyModifiers.Shift);
 
@@ -311,7 +311,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// Идентификатор свойства модификаторов, переключающих стрелки на изменение размера.
     /// </summary>
     public static readonly StyledProperty<KeyModifiers> KeyboardResizeModifiersProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, KeyModifiers>(
+        AvaloniaProperty.Register<SurfaceInputGestures, KeyModifiers>(
             nameof(KeyboardResizeModifiers),
             KeyModifiers.Alt);
 
@@ -338,7 +338,7 @@ public class DesignEditorInputGestures : AvaloniaObject
     /// свойство на <see cref="ContainerEmptyAreaDragGesture.MoveContainer"/>.
     /// </remarks>
     public static readonly StyledProperty<ContainerEmptyAreaDragGesture> ContainerEmptyAreaDragProperty =
-        AvaloniaProperty.Register<DesignEditorInputGestures, ContainerEmptyAreaDragGesture>(
+        AvaloniaProperty.Register<SurfaceInputGestures, ContainerEmptyAreaDragGesture>(
             nameof(ContainerEmptyAreaDrag),
             ContainerEmptyAreaDragGesture.Marquee);
 

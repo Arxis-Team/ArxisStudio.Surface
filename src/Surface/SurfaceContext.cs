@@ -13,7 +13,7 @@ namespace ArxisStudio.Surface;
 /// <summary>
 /// Определяет область, для которой запрошено контекстное действие в <see cref="SurfaceView"/>.
 /// </summary>
-public enum DesignEditorContextScope
+public enum SurfaceContextScope
 {
     /// <summary>
     /// Контекст вызван над пустым пространством поверхности редактора.
@@ -39,7 +39,7 @@ public enum DesignEditorContextScope
 /// <summary>
 /// Определяет источник запроса контекста в <see cref="SurfaceView"/>.
 /// </summary>
-public enum DesignEditorContextSource
+public enum SurfaceContextSource
 {
     /// <summary>
     /// Запрос поступил от указателя (обычно RMB).
@@ -60,22 +60,22 @@ public enum DesignEditorContextSource
 /// <summary>
 /// Представляет снимок контекста, на основании которого формируется меню действий.
 /// </summary>
-public sealed class DesignEditorContextRequest
+public sealed class SurfaceContextRequest
 {
     /// <summary>
     /// Получает или задает область, в которой вызван контекст.
     /// </summary>
-    public DesignEditorContextScope Scope { get; set; }
+    public SurfaceContextScope Scope { get; set; }
 
     /// <summary>
     /// Получает или задает target под курсором в момент вызова.
     /// </summary>
-    public DesignSelectionTarget? Target { get; set; }
+    public SurfaceSelectionTarget? Target { get; set; }
 
     /// <summary>
     /// Получает или задает снимок текущего выделения.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> Selection { get; set; } = Array.Empty<DesignSelectionTarget>();
+    public IReadOnlyList<SurfaceSelectionTarget> Selection { get; set; } = Array.Empty<SurfaceSelectionTarget>();
 
     /// <summary>
     /// Получает или задает точку вызова в мировых координатах редактора.
@@ -100,13 +100,13 @@ public sealed class DesignEditorContextRequest
     /// <summary>
     /// Получает или задает источник запроса контекста.
     /// </summary>
-    public DesignEditorContextSource Source { get; set; }
+    public SurfaceContextSource Source { get; set; }
 }
 
 /// <summary>
 /// Описывает контекстное действие в UI-agnostic виде.
 /// </summary>
-public sealed class DesignEditorContextAction
+public sealed class SurfaceContextAction
 {
     /// <summary>
     /// Получает или задает стабильный идентификатор действия.
@@ -161,13 +161,13 @@ public sealed class DesignEditorContextAction
     /// <summary>
     /// Получает или задает дочерние пункты подменю.
     /// </summary>
-    public IReadOnlyList<DesignEditorContextAction> Items { get; set; } = Array.Empty<DesignEditorContextAction>();
+    public IReadOnlyList<SurfaceContextAction> Items { get; set; } = Array.Empty<SurfaceContextAction>();
 }
 
 /// <summary>
 /// Определяет контракт провайдера действий контекстного меню <see cref="SurfaceView"/>.
 /// </summary>
-public interface IDesignEditorContextActionProvider
+public interface ISurfaceContextActionProvider
 {
     /// <summary>
     /// Возвращает набор действий для указанного контекста.
@@ -176,16 +176,16 @@ public interface IDesignEditorContextActionProvider
     /// <param name="request">Снимок контекста вызова.</param>
     /// <param name="cancellationToken">Токен отмены.</param>
     /// <returns>Список действий контекстного меню.</returns>
-    ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
+    ValueTask<IReadOnlyList<SurfaceContextAction>> GetActionsAsync(
         SurfaceView editor,
-        DesignEditorContextRequest request,
+        SurfaceContextRequest request,
         CancellationToken cancellationToken = default);
 }
 
 /// <summary>
 /// Определяет контракт presenter-слоя для визуализации контекстных действий.
 /// </summary>
-public interface IDesignEditorContextPresenter
+public interface ISurfaceContextPresenter
 {
     /// <summary>
     /// Отображает контекстные действия для запроса.
@@ -194,18 +194,18 @@ public interface IDesignEditorContextPresenter
     /// <param name="request">Снимок контекста вызова.</param>
     /// <param name="actions">Действия для отображения.</param>
     /// <returns><see langword="true"/>, если отображение обработано presenter'ом.</returns>
-    bool TryShow(SurfaceView editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions);
+    bool TryShow(SurfaceView editor, SurfaceContextRequest request, IReadOnlyList<SurfaceContextAction> actions);
 }
 
 /// <summary>
 /// Presenter по умолчанию, отображающий действия через Avalonia <see cref="ContextMenu"/>.
 /// </summary>
-public sealed class ContextMenuContextPresenter : IDesignEditorContextPresenter
+public sealed class ContextMenuContextPresenter : ISurfaceContextPresenter
 {
     private ContextMenu? _activeContextMenu;
 
     /// <inheritdoc />
-    public bool TryShow(SurfaceView editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions)
+    public bool TryShow(SurfaceView editor, SurfaceContextRequest request, IReadOnlyList<SurfaceContextAction> actions)
     {
         if (actions == null || actions.Count == 0)
             return false;
@@ -228,7 +228,7 @@ public sealed class ContextMenuContextPresenter : IDesignEditorContextPresenter
         return true;
     }
 
-    private static IReadOnlyList<object> CreateContextMenuItems(IReadOnlyList<DesignEditorContextAction> actions)
+    private static IReadOnlyList<object> CreateContextMenuItems(IReadOnlyList<SurfaceContextAction> actions)
     {
         var result = new List<object>(actions.Count);
         foreach (var action in actions)
@@ -264,13 +264,13 @@ public sealed class ContextMenuContextPresenter : IDesignEditorContextPresenter
 /// <summary>
 /// Event arguments for pre-show context request.
 /// </summary>
-public sealed class DesignEditorContextRequestingEventArgs : CancelEventArgs
+public sealed class SurfaceContextRequestingEventArgs : CancelEventArgs
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditorContextRequestingEventArgs"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceContextRequestingEventArgs"/>.
     /// </summary>
     /// <param name="request">Снимок запроса контекста.</param>
-    public DesignEditorContextRequestingEventArgs(DesignEditorContextRequest request)
+    public SurfaceContextRequestingEventArgs(SurfaceContextRequest request)
     {
         Request = request ?? throw new ArgumentNullException(nameof(request));
     }
@@ -278,12 +278,12 @@ public sealed class DesignEditorContextRequestingEventArgs : CancelEventArgs
     /// <summary>
     /// Получает снимок запроса контекста.
     /// </summary>
-    public DesignEditorContextRequest Request { get; }
+    public SurfaceContextRequest Request { get; }
 
     /// <summary>
     /// Actions resolved by providers; can be modified by host.
     /// </summary>
-    public IReadOnlyList<DesignEditorContextAction> Actions { get; set; } = Array.Empty<DesignEditorContextAction>();
+    public IReadOnlyList<SurfaceContextAction> Actions { get; set; } = Array.Empty<SurfaceContextAction>();
 
     /// <summary>
     /// True when host handles context presentation itself.
@@ -294,17 +294,17 @@ public sealed class DesignEditorContextRequestingEventArgs : CancelEventArgs
 /// <summary>
 /// Event arguments for post-resolution context request.
 /// </summary>
-public sealed class DesignEditorContextRequestedEventArgs : EventArgs
+public sealed class SurfaceContextRequestedEventArgs : EventArgs
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditorContextRequestedEventArgs"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceContextRequestedEventArgs"/>.
     /// </summary>
     /// <param name="request">Снимок запроса контекста.</param>
     /// <param name="actions">Разрешенный набор действий.</param>
     /// <param name="handled">Признак, что показ контекста обработан.</param>
-    public DesignEditorContextRequestedEventArgs(
-        DesignEditorContextRequest request,
-        IReadOnlyList<DesignEditorContextAction> actions,
+    public SurfaceContextRequestedEventArgs(
+        SurfaceContextRequest request,
+        IReadOnlyList<SurfaceContextAction> actions,
         bool handled)
     {
         Request = request ?? throw new ArgumentNullException(nameof(request));
@@ -315,12 +315,12 @@ public sealed class DesignEditorContextRequestedEventArgs : EventArgs
     /// <summary>
     /// Получает снимок запроса контекста.
     /// </summary>
-    public DesignEditorContextRequest Request { get; }
+    public SurfaceContextRequest Request { get; }
 
     /// <summary>
     /// Получает финальный набор контекстных действий.
     /// </summary>
-    public IReadOnlyList<DesignEditorContextAction> Actions { get; }
+    public IReadOnlyList<SurfaceContextAction> Actions { get; }
 
     /// <summary>
     /// Получает признак, что показ контекста был обработан.

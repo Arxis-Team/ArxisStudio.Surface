@@ -52,7 +52,7 @@ public partial class SurfaceView
     internal static SurfaceItem? FindSurfaceHost(Control target)
         => target.FindAncestorOfType<SurfaceItem>();
 
-    // Выбранные design targets в порядке приоритета: первый — primary.
+    // Выбранные targets в порядке приоритета: первый — primary.
     // Контейнеры и вложенные контролы лежат вместе: контейнер, выбранный целиком,
     // это просто SurfaceItem в списке. Владелец каждого target вычисляется
     // по дереву, поэтому структура не привязана к глубине вложенности.
@@ -79,19 +79,19 @@ public partial class SurfaceView
     /// <summary>
     /// Идентификатор primary selection target.
     /// </summary>
-    public static readonly DirectProperty<SurfaceView, DesignSelectionTarget?> PrimarySelectionTargetProperty =
-        AvaloniaProperty.RegisterDirect<SurfaceView, DesignSelectionTarget?>(
+    public static readonly DirectProperty<SurfaceView, SurfaceSelectionTarget?> PrimarySelectionTargetProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, SurfaceSelectionTarget?>(
             nameof(PrimarySelectionTarget),
             o => o.PrimarySelectionTarget);
 
     /// <summary>
-    /// Идентификатор коллекции всех выбранных design targets.
+    /// Идентификатор коллекции всех выбранных targets.
     /// </summary>
-    public static readonly DirectProperty<SurfaceView, IReadOnlyList<DesignSelectionTarget>> SelectedDesignTargetsProperty =
-        AvaloniaProperty.RegisterDirect<SurfaceView, IReadOnlyList<DesignSelectionTarget>>(
-            nameof(SelectedDesignTargets),
-            o => o.SelectedDesignTargets,
-            (o, v) => o.SelectedDesignTargets = v);
+    public static readonly DirectProperty<SurfaceView, IReadOnlyList<SurfaceSelectionTarget>> SelectedTargetsProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, IReadOnlyList<SurfaceSelectionTarget>>(
+            nameof(SelectedTargets),
+            o => o.SelectedTargets,
+            (o, v) => o.SelectedTargets = v);
 
     private protected SurfaceItem? _marqueeScope;
 
@@ -113,38 +113,38 @@ public partial class SurfaceView
         private set => SetAndRaise(MarqueeScopeProperty, ref _marqueeScope, value);
     }
 
-    private protected DesignSelectionTarget? _primarySelectionTarget;
+    private protected SurfaceSelectionTarget? _primarySelectionTarget;
 
     /// <summary>
     /// Получает primary selection target редактора.
     /// </summary>
-    public DesignSelectionTarget? PrimarySelectionTarget
+    public SurfaceSelectionTarget? PrimarySelectionTarget
     {
         get => _primarySelectionTarget;
         private set => SetAndRaise(PrimarySelectionTargetProperty, ref _primarySelectionTarget, value);
     }
 
-    private protected IReadOnlyList<DesignSelectionTarget> _selectedDesignTargets = Array.Empty<DesignSelectionTarget>();
+    private protected IReadOnlyList<SurfaceSelectionTarget> _selectedTargetsSnapshot = Array.Empty<SurfaceSelectionTarget>();
 
     /// <summary>
-    /// Получает снимок всех выбранных design targets.
+    /// Получает снимок всех выбранных targets.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> SelectedDesignTargets
+    public IReadOnlyList<SurfaceSelectionTarget> SelectedTargets
     {
-        get => _selectedDesignTargets;
+        get => _selectedTargetsSnapshot;
         private set
         {
-            SetAndRaise(SelectedDesignTargetsProperty, ref _selectedDesignTargets, value);
-            SetAndRaise(SelectedDesignTargetsCountProperty, ref _selectedDesignTargetsCount, value.Count);
+            SetAndRaise(SelectedTargetsProperty, ref _selectedTargetsSnapshot, value);
+            SetAndRaise(SelectedTargetsCountProperty, ref _selectedTargetsCount, value.Count);
         }
     }
 
     /// <summary>
-    /// Возникает при изменении набора выбранных design targets.
+    /// Возникает при изменении набора выбранных targets.
     /// </summary>
     /// <remarks>
     /// Это не то же, что унаследованное <see cref="SelectingItemsControl.SelectionChanged"/>:
-    /// то работает на уровне элементов <c>ItemsSource</c>, а это — на уровне design targets,
+    /// то работает на уровне элементов <c>ItemsSource</c>, а это — на уровне targets,
     /// включая вложенные контролы и вложенные контейнеры.
     /// <para>
     /// Событие возникает только при фактической смене набора или primary target.
@@ -152,7 +152,7 @@ public partial class SurfaceView
     /// пересобирается на каждом кадре.
     /// </para>
     /// </remarks>
-    public event EventHandler<DesignSelectionChangedEventArgs>? DesignSelectionChanged;
+    public event EventHandler<SurfaceSelectionChangedEventArgs>? SurfaceSelectionChanged;
 
     internal void CommitSelection(Rect bounds, bool isCtrlPressed)
         => CommitSelection(bounds, isCtrlPressed, ShouldUseContainerInteraction(LastInputModifiers));
@@ -236,7 +236,7 @@ public partial class SurfaceView
     }
 
     /// <summary>
-    /// Выбирает design targets внутри <paramref name="scope"/>, попавшие в рамку.
+    /// Выбирает targets внутри <paramref name="scope"/>, попавшие в рамку.
     /// </summary>
     /// <param name="scope">Контейнер, в пределах которого ищутся targets. Может быть вложенным.</param>
     /// <param name="ownerItem">Item верхнего уровня, на который адресуется индексный выбор.</param>
@@ -354,7 +354,7 @@ public partial class SurfaceView
     }
 
     /// <summary>
-    /// Приводит индексную модель Avalonia в соответствие со слоем design target'ов.
+    /// Приводит индексную модель Avalonia в соответствие со слоем target'ов.
     /// </summary>
     /// <remarks>
     /// Оверлей обходит <c>SelectedItems</c> и для каждого item'а спрашивает его
@@ -413,7 +413,7 @@ public partial class SurfaceView
     /// Контейнеры могут быть вложены друг в друга, но индексная модель выбора Avalonia
     /// знает только контейнеры собственного <c>ItemsSource</c>. Поэтому выбор всегда
     /// маршрутизируется на владеющий item верхнего уровня, а сам вложенный контейнер
-    /// участвует как design target — это и даёт дерево любой глубины без отказа от
+    /// участвует как target — это и даёт дерево любой глубины без отказа от
     /// <see cref="SelectingItemsControl"/>.
     /// </remarks>
     internal SurfaceItem? ResolveOwningItem(SurfaceItem container)
@@ -457,12 +457,12 @@ public partial class SurfaceView
     internal void ClearMarqueeScope() => MarqueeScope = null;
 
     /// <summary>
-    /// Выбирает контрол как design target — то же, что клик по нему на поверхности.
+    /// Выбирает контрол как target — то же, что клик по нему на поверхности.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Существует ради хоста, у которого есть собственное дерево. Выделение с поверхности он
-    /// получал и раньше — через <see cref="DesignSelectionChanged"/>, — а вот обратной дороги не
+    /// получал и раньше — через <see cref="SurfaceSelectionChanged"/>, — а вот обратной дороги не
     /// было вовсе: клик по строке в дереве не мог выбрать контрол на канве. Приложению оставалось
     /// либо лезть во внутренности редактора, либо не иметь дерева.
     /// </para>
@@ -485,7 +485,7 @@ public partial class SurfaceView
     /// </para>
     /// <para>
     /// Набор выделяется по одному вызову на контрол, и это стоит одного
-    /// <see cref="DesignSelectionChanged"/> на каждый: три строки в дереве — три события и три
+    /// <see cref="SurfaceSelectionChanged"/> на каждый: три строки в дереве — три события и три
     /// перестроения оверлея. Пакетной формы («выделение теперь вот это») пока нет намеренно —
     /// заводить её стоит под потребителя с мультивыбором, а не заранее.
     /// </para>
@@ -494,7 +494,7 @@ public partial class SurfaceView
     /// <param name="additive">Добавить к текущему выделению, а не заменить его.</param>
     /// <returns><see langword="true"/>, если контрол редактируем и после вызова выбран.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="target"/> равен <see langword="null"/>.</exception>
-    public bool SelectDesignTarget(Control target, bool additive = false)
+    public bool SelectTarget(Control target, bool additive = false)
     {
         ArgumentNullException.ThrowIfNull(target);
 
@@ -533,13 +533,13 @@ public partial class SurfaceView
     /// <b>Ворота редактируемости, которые нельзя обойти выбором аргумента.</b> Проверка
     /// <c>TargetResolver.IsSelectable(target, FindSurfaceHost(target))</c> в режиме <c>Loaded</c> была
     /// тавтологией — её ветка это <c>ReferenceEquals(FindSurfaceHost(control), owner)</c>,
-    /// а owner вызывающий вычислял тем же <c>FindDesignHost</c>. Теперь target обязан
+    /// а owner вызывающий вычислял тем же <c>FindTargetHost</c>. Теперь target обязан
     /// оказаться среди кандидатов своего host'а: ровно тем списком пользуется указатель,
     /// и именно он не спускается внутрь шаблонов.
     /// </description></item>
     /// <item><description>
     /// <b>Оба слоя внутри одного <c>BatchUpdate</c>.</b> Без него замена публиковала
-    /// два <see cref="DesignSelectionChanged"/>, первый — с пустым выделением: <c>Clear()</c>
+    /// два <see cref="SurfaceSelectionChanged"/>, первый — с пустым выделением: <c>Clear()</c>
     /// синхронно доходит до обработчика <c>IsSelected</c>, тот пересобирает оверлей и
     /// публикует пустой снимок. Хост, зеркалящий выделение в своё дерево, гасил подсветку
     /// между двумя событиями одного вызова.
@@ -574,7 +574,7 @@ public partial class SurfaceView
         if (host != null && !IsEditableTarget(target, host))
             return false;
 
-        if (intent == SelectionIntent.Add && !SharesDesignHostWithSelection(target))
+        if (intent == SelectionIntent.Add && !SharesTargetHostWithSelection(target))
             return false;
 
         using (Selection.BatchUpdate())
@@ -600,7 +600,7 @@ public partial class SurfaceView
         if (!IsKeyboardFocusWithin)
             Focus();
 
-        return SelectedDesignTargets.Any(selected => ReferenceEquals(selected.Target, target));
+        return SelectedTargets.Any(selected => ReferenceEquals(selected.Target, target));
     }
 
     /// <summary>
@@ -860,22 +860,22 @@ public partial class SurfaceView
     /// Снимок при этом пересобирается всегда, но выделение меняется редко, поэтому
     /// без этой проверки и свойства, и событие срабатывали бы на изменение геометрии.
     /// </remarks>
-    private protected void ApplySelectionSnapshot(IReadOnlyList<DesignSelectionTarget> next)
+    private protected void ApplySelectionSnapshot(IReadOnlyList<SurfaceSelectionTarget> next)
     {
-        var previous = _selectedDesignTargets;
+        var previous = _selectedTargetsSnapshot;
         if (AreSameTargets(previous, next))
             return;
 
         var previousPrimary = _primarySelectionTarget;
 
-        SelectedDesignTargets = next;
+        SelectedTargets = next;
         PrimarySelectionTarget = next.Count > 0 ? next[0] : null;
 
-        var handler = DesignSelectionChanged;
+        var handler = SurfaceSelectionChanged;
         if (handler == null)
             return;
 
-        handler(this, new DesignSelectionChangedEventArgs(
+        handler(this, new SurfaceSelectionChangedEventArgs(
             previous,
             next,
             Difference(next, previous),
@@ -885,19 +885,19 @@ public partial class SurfaceView
     }
 
     /// <summary>
-    /// Сравнивает наборы по контролам, а не по обёрткам <see cref="DesignSelectionTarget"/>:
+    /// Сравнивает наборы по контролам, а не по обёрткам <see cref="SurfaceSelectionTarget"/>:
     /// обёртки пересоздаются на каждой пересборке.
     /// </summary>
     /// <remarks>
     /// Вместе с контролом сравнивается и его группа: правило одно — <b>публикуется всё,
     /// что сравнивается</b>. Группировка уже выбранного набора не меняет ни состав, ни
     /// порядок, поэтому сравнение по одним target'ам признало бы снимок неизменившимся,
-    /// и хост, читающий <see cref="DesignSelectionTarget.GroupId"/>, остался бы со старым
+    /// и хост, читающий <see cref="SurfaceSelectionTarget.GroupId"/>, остался бы со старым
     /// значением.
     /// </remarks>
     private protected static bool AreSameTargets(
-        IReadOnlyList<DesignSelectionTarget> left,
-        IReadOnlyList<DesignSelectionTarget> right)
+        IReadOnlyList<SurfaceSelectionTarget> left,
+        IReadOnlyList<SurfaceSelectionTarget> right)
     {
         if (left.Count != right.Count)
             return false;
@@ -915,11 +915,11 @@ public partial class SurfaceView
         return true;
     }
 
-    private protected static IReadOnlyList<DesignSelectionTarget> Difference(
-        IReadOnlyList<DesignSelectionTarget> source,
-        IReadOnlyList<DesignSelectionTarget> exclude)
+    private protected static IReadOnlyList<SurfaceSelectionTarget> Difference(
+        IReadOnlyList<SurfaceSelectionTarget> source,
+        IReadOnlyList<SurfaceSelectionTarget> exclude)
     {
-        List<DesignSelectionTarget>? result = null;
+        List<SurfaceSelectionTarget>? result = null;
 
         for (var i = 0; i < source.Count; i++)
         {
@@ -936,19 +936,19 @@ public partial class SurfaceView
             }
 
             if (!found)
-                (result ??= new List<DesignSelectionTarget>()).Add(candidate);
+                (result ??= new List<SurfaceSelectionTarget>()).Add(candidate);
         }
 
-        return result ?? (IReadOnlyList<DesignSelectionTarget>)Array.Empty<DesignSelectionTarget>();
+        return result ?? (IReadOnlyList<SurfaceSelectionTarget>)Array.Empty<SurfaceSelectionTarget>();
     }
 
-    private protected IReadOnlyList<DesignSelectionTarget> CreateSelectionTargetsSnapshot(SurfaceItem? primaryItem, Control? primaryControl)
+    private protected IReadOnlyList<SurfaceSelectionTarget> CreateSelectionTargetsSnapshot(SurfaceItem? primaryItem, Control? primaryControl)
     {
-        var result = new List<DesignSelectionTarget>();
+        var result = new List<SurfaceSelectionTarget>();
         var dedup = new HashSet<Control>();
 
         if (primaryItem != null && primaryControl != null && dedup.Add(primaryControl))
-            result.Add(new DesignSelectionTarget(primaryItem, primaryControl, GetGroupKey(primaryControl)));
+            result.Add(new SurfaceSelectionTarget(primaryItem, primaryControl, GetGroupKey(primaryControl)));
 
         var items = SelectedItems;
         if (items == null)
@@ -968,7 +968,7 @@ public partial class SurfaceView
                 if (!dedup.Add(target))
                     continue;
 
-                result.Add(new DesignSelectionTarget(container, target, GetGroupKey(target)));
+                result.Add(new SurfaceSelectionTarget(container, target, GetGroupKey(target)));
             }
         }
 
@@ -985,7 +985,7 @@ public partial class SurfaceView
     /// вложенных контейнеров принадлежат одному item'у, но разным host'ам,
     /// и группировать их вместе нельзя.
     /// </remarks>
-    private protected bool SharesDesignHostWithSelection(Control target)
+    private protected bool SharesTargetHostWithSelection(Control target)
     {
         var host = FindSurfaceHost(target);
 
@@ -1213,7 +1213,7 @@ public partial class SurfaceView
     /// контейнеров выбирать содержимое не за что — пользователь видит формы и обводит
     /// формы. Начатая внутри формы — работает в её пределах, как и раньше.
     /// <para>
-    /// <see cref="DesignEditorInputGestures.ContainerInteractionModifiers"/> остаётся
+    /// <see cref="SurfaceInputGestures.ContainerInteractionModifiers"/> остаётся
     /// способом потребовать контейнеров и изнутри формы.
     /// </para>
     /// <para>
@@ -1230,19 +1230,19 @@ public partial class SurfaceView
     }
 
     /// <summary>
-    /// Идентификатор количества выбранных design targets.
+    /// Идентификатор количества выбранных targets.
     /// </summary>
-    public static readonly DirectProperty<SurfaceView, int> SelectedDesignTargetsCountProperty =
+    public static readonly DirectProperty<SurfaceView, int> SelectedTargetsCountProperty =
         AvaloniaProperty.RegisterDirect<SurfaceView, int>(
-            nameof(SelectedDesignTargetsCount),
-            o => o.SelectedDesignTargetsCount);
+            nameof(SelectedTargetsCount),
+            o => o.SelectedTargetsCount);
 
-    private protected int _selectedDesignTargetsCount;
+    private protected int _selectedTargetsCount;
 
     /// <summary>
-    /// Получает количество выбранных design targets.
+    /// Получает количество выбранных targets.
     /// </summary>
-    public int SelectedDesignTargetsCount => _selectedDesignTargetsCount;
+    public int SelectedTargetsCount => _selectedTargetsCount;
 
     /// <summary>
     /// Определяет, должен ли контейнер уступить нажатие рамке выделения.
@@ -1256,8 +1256,8 @@ public partial class SurfaceView
     /// контейнер не захватывает указатель и не помечает событие обработанным,
     /// поэтому нажатие всплывает до редактора обычным маршрутом.
     /// <para>
-    /// Контейнер удерживает жест, если нажат <see cref="DesignEditorInputGestures.ContainerInteractionModifiers"/>,
-    /// если контейнер уже выбран целиком, либо если под точкой есть design target.
+    /// Контейнер удерживает жест, если нажат <see cref="SurfaceInputGestures.ContainerInteractionModifiers"/>,
+    /// если контейнер уже выбран целиком, либо если под точкой есть target.
     /// </para>
     /// </remarks>
     internal bool ShouldDeferPressToMarquee(SurfaceItem container, Point viewportPoint, KeyModifiers modifiers)

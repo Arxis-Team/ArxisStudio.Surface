@@ -17,7 +17,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface;
@@ -98,7 +98,7 @@ public partial class DesignEditor : SurfaceView
 
         // Действующая политика — пересечение: блокировки человека и то, что умеет
         // раскладка. Ни одна не расширяет другую.
-        AddInteractionPolicy(DesignInteractionLockPolicy.Instance);
+        AddInteractionPolicy(SurfaceInteractionLockPolicy.Instance);
         AddInteractionPolicy(PlacementMovePolicy.Instance);
 
         _groupStoreBridge = new GroupStoreBridge(this);

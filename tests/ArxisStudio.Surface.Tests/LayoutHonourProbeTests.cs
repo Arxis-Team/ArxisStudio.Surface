@@ -140,7 +140,7 @@ public class LayoutHonourProbeTests
         window.Show();
         RunLayout(window);
 
-        // Запрошенный размер: ровно то, что пишет SetDesignSize.
+        // Запрошенный размер: ровно то, что пишет SetTargetSize.
         child.Width = RequestedSize;
         child.Height = RequestedSize;
         RunLayout(window);
@@ -148,7 +148,7 @@ public class LayoutHonourProbeTests
         var widthHonoured = Near(child.Bounds.Width, RequestedSize);
         var heightHonoured = Near(child.Bounds.Height, RequestedSize);
 
-        // Локальные координаты: ровно то, во что превращается SetDesignPosition.
+        // Локальные координаты: ровно то, во что превращается SetTargetPosition.
         DesignLayout.SetX(child, RequestedOffset);
         DesignLayout.SetY(child, RequestedOffset);
         RunLayout(window);

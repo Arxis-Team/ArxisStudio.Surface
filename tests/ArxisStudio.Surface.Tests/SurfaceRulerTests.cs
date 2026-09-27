@@ -26,16 +26,16 @@ namespace ArxisStudio.Tests;
 /// на толщину линейки.
 /// </para>
 /// </remarks>
-public class DesignRulerTests
+public class SurfaceRulerTests
 {
     private const double RulerSize = 20;
 
     private sealed record Stand(
         EditorHarness Harness,
-        DesignRuler Top,
-        DesignRuler Left,
-        ObservableCollection<DesignGuide> Guides,
-        List<DesignGuideChangeRequestedEventArgs> Requests);
+        SurfaceRuler Top,
+        SurfaceRuler Left,
+        ObservableCollection<SurfaceGuide> Guides,
+        List<SurfaceGuideChangeRequestedEventArgs> Requests);
 
     /// <summary>Переводит точку редактора в координаты окна.</summary>
     private static Point InWindow(double x, double y) => new(x + RulerSize, y + RulerSize);
@@ -63,11 +63,11 @@ public class DesignRulerTests
         editor.InteractionOptions.IsSnapToGridEnabled = false;
         editor.InteractionOptions.IsSnapToGuidesEnabled = false;
 
-        var guides = new ObservableCollection<DesignGuide>();
+        var guides = new ObservableCollection<SurfaceGuide>();
         editor.Guides = guides;
 
-        var top = new DesignRuler { Orientation = Orientation.Horizontal, Editor = editor, Height = RulerSize };
-        var left = new DesignRuler { Orientation = Orientation.Vertical, Editor = editor, Width = RulerSize };
+        var top = new SurfaceRuler { Orientation = Orientation.Horizontal, Editor = editor, Height = RulerSize };
+        var left = new SurfaceRuler { Orientation = Orientation.Vertical, Editor = editor, Width = RulerSize };
 
         var grid = new Grid
         {
@@ -87,7 +87,7 @@ public class DesignRulerTests
         var window = new Window { Width = 800, Height = 600, Content = grid };
         window.Show();
 
-        var requests = new List<DesignGuideChangeRequestedEventArgs>();
+        var requests = new List<SurfaceGuideChangeRequestedEventArgs>();
         if (subscribe)
         {
             editor.GuideChangeRequested += (_, e) =>
@@ -139,9 +139,9 @@ public class DesignRulerTests
         stand.Harness.RunLayout();
 
         var request = Assert.Single(stand.Requests);
-        Assert.Equal(DesignGuideChangeKind.Add, request.Kind);
+        Assert.Equal(SurfaceGuideChangeKind.Add, request.Kind);
         Assert.Null(request.Original);
-        Assert.Equal(DesignGuide.Horizontal(180), request.Guide);
+        Assert.Equal(SurfaceGuide.Horizontal(180), request.Guide);
     }
 
     /// <summary>
@@ -157,7 +157,7 @@ public class DesignRulerTests
         stand.Harness.Window.MouseUp(InWindow(240, 300), MouseButton.Left);
         stand.Harness.RunLayout();
 
-        Assert.Equal(DesignGuide.Vertical(240), Assert.Single(stand.Requests).Guide);
+        Assert.Equal(SurfaceGuide.Vertical(240), Assert.Single(stand.Requests).Guide);
     }
 
     /// <summary>
@@ -211,7 +211,7 @@ public class DesignRulerTests
         stand.Harness.Window.MouseMove(InWindow(300, 180));
         stand.Harness.RunLayout();
 
-        Assert.Equal(DesignGuide.Horizontal(180), stand.Harness.Editor.GuidePreview);
+        Assert.Equal(SurfaceGuide.Horizontal(180), stand.Harness.Editor.GuidePreview);
 
         stand.Harness.Window.MouseUp(InWindow(300, 180), MouseButton.Left);
         stand.Harness.RunLayout();
@@ -268,7 +268,7 @@ public class DesignRulerTests
         stand.Harness.Window.MouseUp(InWindow(300, 180), MouseButton.Left);
         stand.Harness.RunLayout();
 
-        Assert.Equal(DesignGuide.Horizontal((180 / 2.0) + 40), Assert.Single(stand.Requests).Guide);
+        Assert.Equal(SurfaceGuide.Horizontal((180 / 2.0) + 40), Assert.Single(stand.Requests).Guide);
     }
 
     // ---- Выключатели ----------------------------------------------------------
@@ -339,7 +339,7 @@ public class DesignRulerTests
         stand.Harness.Window.MouseUp(InWindow(300, 180), MouseButton.Left);
         stand.Harness.RunLayout();
 
-        Assert.Equal(DesignGuide.Horizontal(180), Assert.Single(stand.Requests).Guide);
+        Assert.Equal(SurfaceGuide.Horizontal(180), Assert.Single(stand.Requests).Guide);
     }
 
     /// <summary>
@@ -372,6 +372,6 @@ public class DesignRulerTests
         stand.Harness.RunLayout();
 
         // Шаг сетки 20: 173 садится на 180.
-        Assert.Equal(DesignGuide.Horizontal(180), Assert.Single(stand.Requests).Guide);
+        Assert.Equal(SurfaceGuide.Horizontal(180), Assert.Single(stand.Requests).Guide);
     }
 }

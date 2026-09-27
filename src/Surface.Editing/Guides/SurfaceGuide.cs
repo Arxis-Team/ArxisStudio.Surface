@@ -5,7 +5,7 @@ namespace ArxisStudio.Surface.Editing;
 /// <summary>
 /// Ось, вдоль которой работает пользовательская направляющая.
 /// </summary>
-public enum DesignGuideOrientation
+public enum SurfaceGuideOrientation
 {
     /// <summary>Вертикальная линия: задаёт координату по оси X.</summary>
     Vertical,
@@ -30,39 +30,39 @@ public enum DesignGuideOrientation
 /// и <c>Layout.DesignY</c> и которую видно на фоновой сетке.
 /// </para>
 /// </remarks>
-public readonly struct DesignGuide : IEquatable<DesignGuide>
+public readonly struct SurfaceGuide : IEquatable<SurfaceGuide>
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignGuide"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceGuide"/>.
     /// </summary>
     /// <param name="orientation">Ось, вдоль которой работает направляющая.</param>
     /// <param name="position">Координата линии в мировых единицах.</param>
-    public DesignGuide(DesignGuideOrientation orientation, double position)
+    public SurfaceGuide(SurfaceGuideOrientation orientation, double position)
     {
         Orientation = orientation;
         Position = position;
     }
 
     /// <summary>Получает ось, вдоль которой работает направляющая.</summary>
-    public DesignGuideOrientation Orientation { get; }
+    public SurfaceGuideOrientation Orientation { get; }
 
     /// <summary>Получает координату линии в мировых единицах.</summary>
     public double Position { get; }
 
     /// <summary>Создаёт вертикальную направляющую.</summary>
     /// <param name="x">Координата по оси X в мировых единицах.</param>
-    public static DesignGuide Vertical(double x) => new(DesignGuideOrientation.Vertical, x);
+    public static SurfaceGuide Vertical(double x) => new(SurfaceGuideOrientation.Vertical, x);
 
     /// <summary>Создаёт горизонтальную направляющую.</summary>
     /// <param name="y">Координата по оси Y в мировых единицах.</param>
-    public static DesignGuide Horizontal(double y) => new(DesignGuideOrientation.Horizontal, y);
+    public static SurfaceGuide Horizontal(double y) => new(SurfaceGuideOrientation.Horizontal, y);
 
     /// <inheritdoc />
-    public bool Equals(DesignGuide other)
+    public bool Equals(SurfaceGuide other)
         => Orientation == other.Orientation && Position.Equals(other.Position);
 
     /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is DesignGuide other && Equals(other);
+    public override bool Equals(object? obj) => obj is SurfaceGuide other && Equals(other);
 
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(Orientation, Position);
@@ -70,16 +70,16 @@ public readonly struct DesignGuide : IEquatable<DesignGuide>
     /// <summary>Сравнивает две направляющие.</summary>
     /// <param name="left">Левый операнд.</param>
     /// <param name="right">Правый операнд.</param>
-    public static bool operator ==(DesignGuide left, DesignGuide right) => left.Equals(right);
+    public static bool operator ==(SurfaceGuide left, SurfaceGuide right) => left.Equals(right);
 
     /// <summary>Сравнивает две направляющие на неравенство.</summary>
     /// <param name="left">Левый операнд.</param>
     /// <param name="right">Правый операнд.</param>
-    public static bool operator !=(DesignGuide left, DesignGuide right) => !left.Equals(right);
+    public static bool operator !=(SurfaceGuide left, SurfaceGuide right) => !left.Equals(right);
 
     /// <inheritdoc />
     public override string ToString()
-        => Orientation == DesignGuideOrientation.Vertical
+        => Orientation == SurfaceGuideOrientation.Vertical
             ? $"X={Position}"
             : $"Y={Position}";
 }

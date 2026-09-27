@@ -43,7 +43,7 @@ public class ContainerSelectionGestureTests
 
         Click(harness, 0, RawInputModifiers.Control);
 
-        Assert.Equal(DesignSelectionScope.Container, harness.Editor.PrimarySelectionTarget!.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, harness.Editor.PrimarySelectionTarget!.Scope);
     }
 
     [AvaloniaFact]
@@ -54,10 +54,10 @@ public class ContainerSelectionGestureTests
         Click(harness, 0, RawInputModifiers.Control);
         Click(harness, 1, RawInputModifiers.Control | RawInputModifiers.Shift);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasMultipleContainerSelection);
-        Assert.All(harness.Editor.SelectedDesignTargets,
-            t => Assert.Equal(DesignSelectionScope.Container, t.Scope));
+        Assert.All(harness.Editor.SelectedTargets,
+            t => Assert.Equal(SurfaceSelectionScope.Container, t.Scope));
     }
 
     [AvaloniaFact]
@@ -71,7 +71,7 @@ public class ContainerSelectionGestureTests
 
         // Повторный additive-клик снимает контейнер, но не опустошает выделение —
         // то же правило, что и для вложенных target'ов.
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.Same(harness.Container(0), harness.Editor.PrimarySelectionTarget!.Target);
     }
 
@@ -83,7 +83,7 @@ public class ContainerSelectionGestureTests
         Click(harness, 0, RawInputModifiers.Control);
         Click(harness, 1, RawInputModifiers.Control | RawInputModifiers.Shift);
 
-        // Индексная модель Avalonia обязана согласоваться со слоем design target'ов:
+        // Индексная модель Avalonia обязана согласоваться со слоем target'ов:
         // иначе контейнер без своего target'а подменяется вложенным по умолчанию.
         Assert.Equal(2, harness.Editor.Selection.Count);
     }

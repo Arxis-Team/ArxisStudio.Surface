@@ -165,7 +165,7 @@ public partial class SurfaceView : SelectingItemsControl
     /// Её шаг — шаг привязки по умолчанию: сетка не может рисовать одну структуру,
     /// а привязка использовать другую.
     /// </remarks>
-    internal DesignGrid? Grid { get; private set; }
+    internal SurfaceGrid? Grid { get; private set; }
 
     /// <summary>
     /// Находит части шаблона ядра.
@@ -174,7 +174,7 @@ public partial class SurfaceView : SelectingItemsControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
-        Grid = e.NameScope.Find<DesignGrid>("PART_Grid");
+        Grid = e.NameScope.Find<SurfaceGrid>("PART_Grid");
     }
 
     private readonly List<object> _services = new();

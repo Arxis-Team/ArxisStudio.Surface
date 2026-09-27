@@ -17,22 +17,22 @@ namespace ArxisStudio.Tests;
 /// <remarks>
 /// 329 строк и девять из сорока публичных типов, у которых до сих пор не было
 /// ни одного теста. Правил тут два, и оба словесные: как выбирается
-/// <see cref="DesignEditorContextScope"/> и чем <c>Cancel</c> отличается от
+/// <see cref="SurfaceContextScope"/> и чем <c>Cancel</c> отличается от
 /// <c>Handled</c> — их и закрепляем.
 /// </remarks>
 public class ContextActionTests
 {
     /// <summary>Провайдер, отдающий заранее заданный набор действий.</summary>
-    private sealed class Provider : IDesignEditorContextActionProvider
+    private sealed class Provider : ISurfaceContextActionProvider
     {
-        private readonly IReadOnlyList<DesignEditorContextAction> _actions;
+        private readonly IReadOnlyList<SurfaceContextAction> _actions;
 
-        public Provider(params DesignEditorContextAction[] actions) => _actions = actions;
+        public Provider(params SurfaceContextAction[] actions) => _actions = actions;
 
-        public List<DesignEditorContextRequest> Seen { get; } = new();
+        public List<SurfaceContextRequest> Seen { get; } = new();
 
-        public ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-            SurfaceView editor, DesignEditorContextRequest request, CancellationToken cancellationToken)
+        public ValueTask<IReadOnlyList<SurfaceContextAction>> GetActionsAsync(
+            SurfaceView editor, SurfaceContextRequest request, CancellationToken cancellationToken)
         {
             Seen.Add(request);
             return ValueTask.FromResult(_actions);
@@ -40,22 +40,22 @@ public class ContextActionTests
     }
 
     /// <summary>Презентер, который только считает показы.</summary>
-    private sealed class Presenter : IDesignEditorContextPresenter
+    private sealed class Presenter : ISurfaceContextPresenter
     {
         public int Shows { get; private set; }
         public bool Result { get; set; } = true;
 
-        public bool TryShow(SurfaceView editor, DesignEditorContextRequest request, IReadOnlyList<DesignEditorContextAction> actions)
+        public bool TryShow(SurfaceView editor, SurfaceContextRequest request, IReadOnlyList<SurfaceContextAction> actions)
         {
             Shows++;
             return Result;
         }
     }
 
-    private static DesignEditorContextAction Action(string id, string group = "", int order = 0, bool visible = true) =>
+    private static SurfaceContextAction Action(string id, string group = "", int order = 0, bool visible = true) =>
         new() { Id = id, Header = id, Group = group, Order = order, IsVisible = visible };
 
-    private static EditorHarness Create(out Presenter presenter, params IDesignEditorContextActionProvider[] providers)
+    private static EditorHarness Create(out Presenter presenter, params ISurfaceContextActionProvider[] providers)
     {
         var harness = EditorHarness.Create(nodeCount: 2);
         harness.PlaceContainer(0, new Point(100, 100), new Size(200, 150));
@@ -69,16 +69,16 @@ public class ContextActionTests
         return harness;
     }
 
-    private static async Task<DesignEditorContextRequest> RequestAt(EditorHarness harness, Point viewportPoint)
+    private static async Task<SurfaceContextRequest> RequestAt(EditorHarness harness, Point viewportPoint)
     {
-        DesignEditorContextRequest? seen = null;
-        void Capture(object? sender, DesignEditorContextRequestedEventArgs e) => seen = e.Request;
+        SurfaceContextRequest? seen = null;
+        void Capture(object? sender, SurfaceContextRequestedEventArgs e) => seen = e.Request;
 
         harness.Editor.ContextMenuResolved += Capture;
         try
         {
             await harness.Editor.RequestContextAsync(
-                DesignEditorContextSource.Programmatic, viewportPoint, KeyModifiers.None);
+                SurfaceContextSource.Programmatic, viewportPoint, KeyModifiers.None);
         }
         finally
         {
@@ -98,7 +98,7 @@ public class ContextActionTests
 
         var request = await RequestAt(harness, new Point(700, 500));
 
-        Assert.Equal(DesignEditorContextScope.Surface, request.Scope);
+        Assert.Equal(SurfaceContextScope.Surface, request.Scope);
         Assert.Null(request.Target);
     }
 
@@ -109,7 +109,7 @@ public class ContextActionTests
 
         var request = await RequestAt(harness, harness.CentreOf(harness.Nested(0)));
 
-        Assert.Equal(DesignEditorContextScope.NestedTarget, request.Scope);
+        Assert.Equal(SurfaceContextScope.NestedTarget, request.Scope);
         Assert.Same(harness.Nested(0), request.Target!.Target);
     }
 
@@ -122,16 +122,16 @@ public class ContextActionTests
         // выделения» считается по самому target'у, а не по его контейнеру.
         // Ctrl+A набирает контейнеры, и клик по их ребёнку — это уже не попадание
         // в выделение, а отдельный вложенный элемент.
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
-        harness.Editor.SelectDesignTarget(harness.Named(0, "Sibling"), additive: true);
+        harness.Editor.SelectTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Named(0, "Sibling"), additive: true);
         harness.RunLayout();
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         var request = await RequestAt(harness, harness.CentreOf(harness.Nested(0)));
 
         // Правило из README: попадание внутрь текущей группы описывает группу,
         // а не отдельный элемент под курсором.
-        Assert.Equal(DesignEditorContextScope.Selection, request.Scope);
+        Assert.Equal(SurfaceContextScope.Selection, request.Scope);
         Assert.True(request.Selection.Count > 1);
     }
 
@@ -143,7 +143,7 @@ public class ContextActionTests
         var provider = new Provider(Action("visible"), Action("hidden", visible: false));
         var harness = Create(out var presenter, provider);
 
-        IReadOnlyList<DesignEditorContextAction>? resolved = null;
+        IReadOnlyList<SurfaceContextAction>? resolved = null;
         harness.Editor.ContextMenuResolved += (_, e) => resolved = e.Actions;
 
         await RequestAt(harness, new Point(700, 500));
@@ -159,7 +159,7 @@ public class ContextActionTests
             new Provider(Action("b2", group: "b", order: 2), Action("a1", group: "a", order: 1)),
             new Provider(Action("b1", group: "b", order: 1)));
 
-        IReadOnlyList<DesignEditorContextAction>? resolved = null;
+        IReadOnlyList<SurfaceContextAction>? resolved = null;
         harness.Editor.ContextMenuResolved += (_, e) => resolved = e.Actions;
 
         await RequestAt(harness, new Point(700, 500));
@@ -179,7 +179,7 @@ public class ContextActionTests
         harness.Editor.ContextMenuResolved += (_, _) => resolved++;
 
         await harness.Editor.RequestContextAsync(
-            DesignEditorContextSource.Programmatic, new Point(700, 500), KeyModifiers.None);
+            SurfaceContextSource.Programmatic, new Point(700, 500), KeyModifiers.None);
 
         // Cancel — «контекста не будет вовсе»: ни показа, ни отчёта о результате.
         Assert.Equal(0, presenter.Shows);
@@ -190,13 +190,13 @@ public class ContextActionTests
     public async Task Handled_Skips_The_Presenter_But_Still_Reports()
     {
         var harness = Create(out var presenter, new Provider(Action("a")));
-        DesignEditorContextRequestedEventArgs? reported = null;
+        SurfaceContextRequestedEventArgs? reported = null;
 
         harness.Editor.ContextMenuRequesting += (_, e) => e.Handled = true;
         harness.Editor.ContextMenuResolved += (_, e) => reported = e;
 
         await harness.Editor.RequestContextAsync(
-            DesignEditorContextSource.Programmatic, new Point(700, 500), KeyModifiers.None);
+            SurfaceContextSource.Programmatic, new Point(700, 500), KeyModifiers.None);
 
         // Handled — «покажу сам»: презентер молчит, но отчёт приходит,
         // и в нём сказано, что контекст показан. Это не то же, что Cancel.
@@ -209,7 +209,7 @@ public class ContextActionTests
     public async Task A_Host_Can_Replace_The_Action_List()
     {
         var harness = Create(out _, new Provider(Action("from-provider")));
-        IReadOnlyList<DesignEditorContextAction>? resolved = null;
+        IReadOnlyList<SurfaceContextAction>? resolved = null;
 
         harness.Editor.ContextMenuRequesting += (_, e) => e.Actions = new[] { Action("from-host") };
         harness.Editor.ContextMenuResolved += (_, e) => resolved = e.Actions;
@@ -223,11 +223,11 @@ public class ContextActionTests
     public async Task Without_Actions_The_Presenter_Is_Not_Called()
     {
         var harness = Create(out var presenter);
-        DesignEditorContextRequestedEventArgs? reported = null;
+        SurfaceContextRequestedEventArgs? reported = null;
         harness.Editor.ContextMenuResolved += (_, e) => reported = e;
 
         await harness.Editor.RequestContextAsync(
-            DesignEditorContextSource.Programmatic, new Point(700, 500), KeyModifiers.None);
+            SurfaceContextSource.Programmatic, new Point(700, 500), KeyModifiers.None);
 
         // Пустое меню не показывают, но хост об этом узнаёт.
         Assert.Equal(0, presenter.Shows);
@@ -236,7 +236,7 @@ public class ContextActionTests
     }
 
     /// <summary>Провайдер, который отвечает только когда его отпустят.</summary>
-    private sealed class SlowProvider : IDesignEditorContextActionProvider
+    private sealed class SlowProvider : ISurfaceContextActionProvider
     {
         private readonly TaskCompletionSource _gate = new();
 
@@ -245,8 +245,8 @@ public class ContextActionTests
 
         public void Release() => _gate.TrySetResult();
 
-        public async ValueTask<IReadOnlyList<DesignEditorContextAction>> GetActionsAsync(
-            SurfaceView editor, DesignEditorContextRequest request, CancellationToken cancellationToken)
+        public async ValueTask<IReadOnlyList<SurfaceContextAction>> GetActionsAsync(
+            SurfaceView editor, SurfaceContextRequest request, CancellationToken cancellationToken)
         {
             Calls++;
 
@@ -288,7 +288,7 @@ public class ContextActionTests
     public void Right_Click_Retargets_The_Selection()
     {
         var harness = Create(out _, new Provider(Action("a")));
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
         harness.RunLayout();
 
         var sibling = harness.Named(0, "Sibling");
@@ -316,16 +316,16 @@ public class ContextActionTests
         var harness = Create(out _, new Provider(Action("a")));
         var sibling = harness.Named(0, "Sibling");
 
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
-        harness.Editor.SelectDesignTarget(sibling, additive: true);
+        harness.Editor.SelectTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(sibling, additive: true);
         harness.RunLayout();
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         harness.Window.MouseDown(harness.CentreOf(sibling), MouseButton.Right);
         harness.Window.MouseUp(harness.CentreOf(sibling), MouseButton.Right);
         harness.RunLayout();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.CanGroupSelection());
     }
 }

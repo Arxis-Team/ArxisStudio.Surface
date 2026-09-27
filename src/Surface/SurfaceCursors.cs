@@ -19,7 +19,7 @@ namespace ArxisStudio.Surface;
 /// <para>
 /// Значение <see langword="null"/> у любого свойства означает «библиотечный курсор
 /// этого жеста», а не «курсор не менять»: так же устроен
-/// <see cref="DesignEditorInteractionOptions.SnapStep"/> со своим <c>NaN</c>.
+/// <see cref="SurfaceInteractionOptions.SnapStep"/> со своим <c>NaN</c>.
 /// Чтобы курсор при жесте не менялся вовсе, задается обычная стрелка.
 /// </para>
 /// <para>
@@ -30,7 +30,7 @@ namespace ArxisStudio.Surface;
 /// <example>
 /// <code language="xml"><![CDATA[
 /// <design:DesignEditor.Cursors>
-///     <design:DesignEditorCursors Move="SizeAll"
+///     <design:SurfaceCursors Move="SizeAll"
 ///                                 Blocked="No"
 ///                                 Pan="Hand"
 ///                                 Marquee="Cross"
@@ -40,7 +40,7 @@ namespace ArxisStudio.Surface;
 /// </design:DesignEditor.Cursors>
 /// ]]></code>
 /// </example>
-public class DesignEditorCursors : AvaloniaObject
+public class SurfaceCursors : AvaloniaObject
 {
     private static Cursor? _defaultMove;
     private static Cursor? _defaultBlocked;
@@ -55,49 +55,49 @@ public class DesignEditorCursors : AvaloniaObject
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.SizeAll"/>.</remarks>
     public static readonly StyledProperty<Cursor?> MoveProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(Move));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(Move));
 
     /// <summary>
     /// Идентификатор свойства курсора отклонённого жеста.
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.No"/>.</remarks>
     public static readonly StyledProperty<Cursor?> BlockedProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(Blocked));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(Blocked));
 
     /// <summary>
     /// Идентификатор свойства курсора панорамирования.
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.Hand"/>.</remarks>
     public static readonly StyledProperty<Cursor?> PanProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(Pan));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(Pan));
 
     /// <summary>
     /// Идентификатор свойства курсора рамки выделения.
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.Cross"/>.</remarks>
     public static readonly StyledProperty<Cursor?> MarqueeProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(Marquee));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(Marquee));
 
     /// <summary>
     /// Идентификатор свойства курсора перестановки среди соседей.
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.DragMove"/>.</remarks>
     public static readonly StyledProperty<Cursor?> ReorderProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(Reorder));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(Reorder));
 
     /// <summary>
     /// Идентификатор свойства курсора переноса горизонтальной направляющей.
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.SizeNorthSouth"/>.</remarks>
     public static readonly StyledProperty<Cursor?> GuideHorizontalProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(GuideHorizontal));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(GuideHorizontal));
 
     /// <summary>
     /// Идентификатор свойства курсора переноса вертикальной направляющей.
     /// </summary>
     /// <remarks>По умолчанию: <see cref="StandardCursorType.SizeWestEast"/>.</remarks>
     public static readonly StyledProperty<Cursor?> GuideVerticalProperty =
-        AvaloniaProperty.Register<DesignEditorCursors, Cursor?>(nameof(GuideVertical));
+        AvaloniaProperty.Register<SurfaceCursors, Cursor?>(nameof(GuideVertical));
 
     /// <summary>
     /// Получает или задает курсор перемещения выделения.

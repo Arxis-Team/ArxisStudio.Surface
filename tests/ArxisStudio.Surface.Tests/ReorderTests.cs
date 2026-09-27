@@ -122,7 +122,7 @@ public class ReorderTests
         var action = harness.Find<Button>(0, "Action");
         var panel = PanelOf(action);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Drag(harness, harness.CentreOf(action), new Vector(0, -60));
@@ -157,7 +157,7 @@ public class ReorderTests
     {
         var (harness, requests) = Create();
         var action = harness.Find<Button>(0, "Action");
-        DesignInteraction.SetMovePolicy(action, MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(action, MovePolicy.None);
 
         var panel = PanelOf(action);
 
@@ -338,7 +338,7 @@ public class ReorderTests
         // Рамка на контроле вне дерева рисовалась бы по его последним координатам
         // и принимала бы на него нюдж.
         Assert.DoesNotContain(
-            harness.Editor.SelectedDesignTargets,
+            harness.Editor.SelectedTargets,
             target => ReferenceEquals(target.Target, action));
     }
 
@@ -486,7 +486,7 @@ public class ReorderTests
         harness.PlaceContainer(0, CardLocation, new Size(300, 200));
         var nested = harness.Nested(0);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Drag(harness, harness.CentreOf(nested), DragDelta);
@@ -494,8 +494,8 @@ public class ReorderTests
         // Раскладка с абсолютным позиционированием не превращается в перестановку,
         // и перемещение остаётся зоной редактора.
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Move, edit.Kind);
-        Assert.IsType<DesignGeometryChange>(Assert.Single(edit.Changes));
+        Assert.Equal(SurfaceEditKind.Move, edit.Kind);
+        Assert.IsType<GeometryChange>(Assert.Single(edit.Changes));
     }
 
     // ---- Точка вставки не зависит от места захвата -------------------------------
@@ -583,8 +583,8 @@ public class ReorderTests
             };
 
             var row = harness.Find<Border>(0, "Row0");
-            var origin = harness.Editor.GetDesignPosition(row);
-            var size = harness.Editor.GetDesignSize(row);
+            var origin = harness.Editor.GetTargetPosition(row);
+            var size = harness.Editor.GetTargetSize(row);
 
             // 6 от левого края, середина, 6 от правого.
             var x = grab switch

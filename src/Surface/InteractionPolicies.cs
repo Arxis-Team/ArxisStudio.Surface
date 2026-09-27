@@ -3,7 +3,7 @@ using System;
 namespace ArxisStudio.Surface;
 
 /// <summary>
-/// Политика изменения размера design target.
+/// Политика изменения размера target.
 /// </summary>
 [Flags]
 public enum ResizePolicy
@@ -50,7 +50,7 @@ public enum ResizePolicy
 }
 
 /// <summary>
-/// Политика перемещения design target.
+/// Политика перемещения target.
 /// </summary>
 [Flags]
 public enum MovePolicy

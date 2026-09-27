@@ -83,7 +83,7 @@ public partial class SurfaceView
     /// </summary>
     /// <remarks>
     /// Оси независимы, как и везде в редакторе: в углу холст едет по диагонали. В полосе
-    /// у края скорость растёт от нуля до <see cref="DesignEditorInteractionOptions.AutoPanSpeed"/>
+    /// у края скорость растёт от нуля до <see cref="SurfaceInteractionOptions.AutoPanSpeed"/>
     /// линейно с глубиной, за краем она наибольшая — захваченный указатель уходит
     /// за пределы редактора, и там человек просит ехать быстрее, а не останавливаться.
     /// </remarks>

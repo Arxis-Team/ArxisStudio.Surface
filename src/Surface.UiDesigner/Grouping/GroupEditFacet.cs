@@ -22,6 +22,6 @@ internal sealed class GroupEditFacet : IEditFacet
     public bool AreEqual(object? before, object? after)
         => string.Equals((string?)before, (string?)after, System.StringComparison.Ordinal);
 
-    public DesignChange CreateChange(Control target, object? before, object? after)
+    public TargetChange CreateChange(Control target, object? before, object? after)
         => new DesignGroupChange(target, (string?)before, (string?)after);
 }

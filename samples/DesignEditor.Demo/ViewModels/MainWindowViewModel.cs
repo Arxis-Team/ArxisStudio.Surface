@@ -31,11 +31,11 @@ public partial class MainWindowViewModel : ObservableObject
     /// остаётся, но пустой холст встречает пользователя без лишних линий. Включается
     /// переключателем <c>guides</c> в шапке.
     /// </remarks>
-    public ObservableCollection<ArxisStudio.Surface.Editing.DesignGuide> Guides { get; } = new()
+    public ObservableCollection<ArxisStudio.Surface.Editing.SurfaceGuide> Guides { get; } = new()
     {
-        ArxisStudio.Surface.Editing.DesignGuide.Vertical(560),
-        ArxisStudio.Surface.Editing.DesignGuide.Vertical(1180),
-        ArxisStudio.Surface.Editing.DesignGuide.Horizontal(420),
+        ArxisStudio.Surface.Editing.SurfaceGuide.Vertical(560),
+        ArxisStudio.Surface.Editing.SurfaceGuide.Vertical(1180),
+        ArxisStudio.Surface.Editing.SurfaceGuide.Horizontal(420),
     };
 
     // Коллекция выделенных элементов (Avalonia биндит сюда object)
@@ -62,7 +62,7 @@ public partial class MainWindowViewModel : ObservableObject
     /// <remarks>
     /// Шаг 1 — это привязка к целым единицам, то есть практически свободное
     /// размещение. Сама сетка при этом на обычном масштабе не рисуется: у неё есть
-    /// порог детализации (<c>DesignEditor.Grid.MinCellSize</c>), и клетка мельче него
+    /// порог детализации (<c>Surface.Grid.MinCellSize</c>), и клетка мельче него
     /// превратилась бы в сплошную заливку. С приближением она возвращается крупными
     /// линиями: на 500 % видно шаг в пять единиц. Притяжение при этом работает
     /// независимо от показа — как и при выключенном <c>ShowGrid</c>.

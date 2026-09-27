@@ -17,7 +17,7 @@ namespace ArxisStudio.Tests;
 /// <remarks>
 /// <see cref="SurfaceView.ContainerInteractionModifiers"/> и
 /// <see cref="SurfaceView.AdditiveSelectionModifiers"/> оставлены ради совместимости
-/// и дублируют <see cref="DesignEditorInputGestures"/>. Значение у них одно — геттер
+/// и дублируют <see cref="SurfaceInputGestures"/>. Значение у них одно — геттер
 /// читает у набора, — а уведомления держатся на ретрансляторе, и вот он без тестов
 /// расходится.
 /// <para>
@@ -56,7 +56,7 @@ public class InputGestureBridgeTests
         ? DesignEditor.ContainerInteractionModifiersProperty
         : DesignEditor.AdditiveSelectionModifiersProperty;
 
-    private static void WriteSet(DesignEditorInputGestures set, bool container, KeyModifiers value)
+    private static void WriteSet(SurfaceInputGestures set, bool container, KeyModifiers value)
     {
         if (container)
             set.ContainerInteractionModifiers = value;
@@ -129,7 +129,7 @@ public class InputGestureBridgeTests
     {
         var harness = Create();
 
-        harness.Editor.InputGestures = new DesignEditorInputGestures
+        harness.Editor.InputGestures = new SurfaceInputGestures
         {
             AdditiveSelectionModifiers = KeyModifiers.Meta
         };
@@ -225,7 +225,7 @@ public class InputGestureBridgeTests
     public void The_Replacement_Set_Raises_The_Flat_Property(bool container)
     {
         var harness = Create();
-        harness.Editor.InputGestures = new DesignEditorInputGestures();
+        harness.Editor.InputGestures = new SurfaceInputGestures();
 
         var raised = CountRaises(
             harness.Editor,
@@ -250,7 +250,7 @@ public class InputGestureBridgeTests
         var harness = Create();
         var abandoned = harness.Editor.InputGestures;
 
-        harness.Editor.InputGestures = new DesignEditorInputGestures();
+        harness.Editor.InputGestures = new SurfaceInputGestures();
         abandoned.AdditiveSelectionModifiers = KeyModifiers.Alt;
 
         Assert.Equal(KeyModifiers.Shift, harness.Editor.AdditiveSelectionModifiers);
@@ -259,7 +259,7 @@ public class InputGestureBridgeTests
     // ---- Время жизни ------------------------------------------------------------
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference MakeEditor(DesignEditorInputGestures? shared)
+    private static WeakReference MakeEditor(SurfaceInputGestures? shared)
     {
         var editor = new DesignEditor();
         if (shared != null)
@@ -301,7 +301,7 @@ public class InputGestureBridgeTests
     [AvaloniaFact]
     public void A_Shared_Set_Does_Not_Hold_The_Editors()
     {
-        var shared = new DesignEditorInputGestures();
+        var shared = new SurfaceInputGestures();
 
         var withShared = AliveAfterCollect(() => MakeEditor(shared), 5);
         var withOwn = AliveAfterCollect(() => MakeEditor(null), 5);
@@ -325,7 +325,7 @@ public class InputGestureBridgeTests
         Click(harness, NestedCentre, RawInputModifiers.None);
         Click(harness, SiblingCentre, RawInputModifiers.Alt);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
     }
 
     /// <summary>
@@ -345,7 +345,7 @@ public class InputGestureBridgeTests
         Click(harness, NestedCentre, RawInputModifiers.None);
         Click(harness, SiblingCentre, RawInputModifiers.Shift);
 
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.Equal("Sibling", harness.Editor.PrimarySelectionTarget?.Target.Name);
     }
 

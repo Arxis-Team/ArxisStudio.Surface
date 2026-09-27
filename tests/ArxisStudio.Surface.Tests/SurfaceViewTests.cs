@@ -108,9 +108,9 @@ public class SurfaceViewTests
 
         Click(stand, stand.CentreOf(1));
 
-        var target = Assert.Single(stand.View.SelectedDesignTargets);
+        var target = Assert.Single(stand.View.SelectedTargets);
         Assert.Same(stand.Item(1), target.Target);
-        Assert.Equal(DesignSelectionScope.Container, target.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, target.Scope);
 
         // Ручек у ядра нет: выбранный элемент показывает себя рамкой своей темы.
         var border = stand.Item(1).GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_SelectionBorder");
@@ -135,12 +135,12 @@ public class SurfaceViewTests
     {
         var stand = Create();
         var events = 0;
-        stand.View.DesignSelectionChanged += (_, _) => events++;
+        stand.View.SurfaceSelectionChanged += (_, _) => events++;
 
         // Хост пишет индексный слой мимо указателя — выделение обязано опубликоваться.
         stand.View.SelectedIndex = 1;
 
-        Assert.Same(stand.Item(1), Assert.Single(stand.View.SelectedDesignTargets).Target);
+        Assert.Same(stand.Item(1), Assert.Single(stand.View.SelectedTargets).Target);
         Assert.Equal(1, events);
     }
 
@@ -148,7 +148,7 @@ public class SurfaceViewTests
     public void A_Drag_Moves_The_Item_As_One_Edit_That_Undoes()
     {
         var stand = Create();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         stand.View.EditCompleted += (_, e) => edits.Add(e);
 
         var from = stand.CentreOf(0);
@@ -162,7 +162,7 @@ public class SurfaceViewTests
         Assert.Equal(stand.Item(0).Location, stand.Item(0).Bounds.Position);
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Move, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Move, edit.Kind);
         foreach (var change in edit.Changes)
             stand.View.Revert(change);
 
@@ -180,7 +180,7 @@ public class SurfaceViewTests
         stand.Window.MouseUp(new Point(500, 250), MouseButton.Left);
         stand.RunLayout();
 
-        Assert.Equal(2, stand.View.SelectedDesignTargetsCount);
+        Assert.Equal(2, stand.View.SelectedTargetsCount);
     }
 
     [AvaloniaFact]

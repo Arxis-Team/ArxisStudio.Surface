@@ -26,8 +26,8 @@ public static class SurfaceGuides
     /// Набором владеет хост. Коллекция с <c>INotifyCollectionChanged</c> отслеживается:
     /// добавленная линия действует сразу, без переприсваивания свойства.
     /// </remarks>
-    public static readonly AttachedProperty<IEnumerable<DesignGuide>?> GuidesProperty =
-        AvaloniaProperty.RegisterAttached<AvaloniaObject, IEnumerable<DesignGuide>?>(
+    public static readonly AttachedProperty<IEnumerable<SurfaceGuide>?> GuidesProperty =
+        AvaloniaProperty.RegisterAttached<AvaloniaObject, IEnumerable<SurfaceGuide>?>(
             "Guides", typeof(SurfaceGuides));
 
     /// <summary>
@@ -51,15 +51,15 @@ public static class SurfaceGuides
     /// <summary>
     /// Идентификатор свойства снимка пользовательских направляющих.
     /// </summary>
-    public static readonly AttachedProperty<IReadOnlyList<DesignGuide>> UserGuidesProperty =
-        AvaloniaProperty.RegisterAttached<AvaloniaObject, IReadOnlyList<DesignGuide>>(
-            "UserGuides", typeof(SurfaceGuides), Array.Empty<DesignGuide>());
+    public static readonly AttachedProperty<IReadOnlyList<SurfaceGuide>> UserGuidesProperty =
+        AvaloniaProperty.RegisterAttached<AvaloniaObject, IReadOnlyList<SurfaceGuide>>(
+            "UserGuides", typeof(SurfaceGuides), Array.Empty<SurfaceGuide>());
 
     /// <summary>
     /// Идентификатор свойства превью переносимой или вытягиваемой направляющей.
     /// </summary>
-    public static readonly AttachedProperty<DesignGuide?> GuidePreviewProperty =
-        AvaloniaProperty.RegisterAttached<AvaloniaObject, DesignGuide?>("GuidePreview", typeof(SurfaceGuides));
+    public static readonly AttachedProperty<SurfaceGuide?> GuidePreviewProperty =
+        AvaloniaProperty.RegisterAttached<AvaloniaObject, SurfaceGuide?>("GuidePreview", typeof(SurfaceGuides));
 
     static SurfaceGuides()
     {
@@ -70,10 +70,10 @@ public static class SurfaceGuides
     }
 
     /// <summary>Возвращает набор пользовательских направляющих.</summary>
-    public static IEnumerable<DesignGuide>? GetGuides(AvaloniaObject target) => target.GetValue(GuidesProperty);
+    public static IEnumerable<SurfaceGuide>? GetGuides(AvaloniaObject target) => target.GetValue(GuidesProperty);
 
     /// <summary>Задаёт набор пользовательских направляющих.</summary>
-    public static void SetGuides(AvaloniaObject target, IEnumerable<DesignGuide>? value) => target.SetValue(GuidesProperty, value);
+    public static void SetGuides(AvaloniaObject target, IEnumerable<SurfaceGuide>? value) => target.SetValue(GuidesProperty, value);
 
     /// <summary>Возвращает признак видимости пользовательских направляющих.</summary>
     public static bool GetShowGuides(AvaloniaObject target) => target.GetValue(ShowGuidesProperty);
@@ -94,14 +94,14 @@ public static class SurfaceGuides
     public static void SetShowRulers(AvaloniaObject target, bool value) => target.SetValue(ShowRulersProperty, value);
 
     /// <summary>Возвращает снимок пользовательских направляющих.</summary>
-    public static IReadOnlyList<DesignGuide> GetUserGuides(AvaloniaObject target) => target.GetValue(UserGuidesProperty);
+    public static IReadOnlyList<SurfaceGuide> GetUserGuides(AvaloniaObject target) => target.GetValue(UserGuidesProperty);
 
     /// <summary>Задаёт снимок пользовательских направляющих. Вызывает служба направляющих.</summary>
-    public static void SetUserGuides(AvaloniaObject target, IReadOnlyList<DesignGuide> value) => target.SetValue(UserGuidesProperty, value);
+    public static void SetUserGuides(AvaloniaObject target, IReadOnlyList<SurfaceGuide> value) => target.SetValue(UserGuidesProperty, value);
 
     /// <summary>Возвращает превью направляющей.</summary>
-    public static DesignGuide? GetGuidePreview(AvaloniaObject target) => target.GetValue(GuidePreviewProperty);
+    public static SurfaceGuide? GetGuidePreview(AvaloniaObject target) => target.GetValue(GuidePreviewProperty);
 
     /// <summary>Задаёт превью направляющей. Вызывает служба направляющих.</summary>
-    public static void SetGuidePreview(AvaloniaObject target, DesignGuide? value) => target.SetValue(GuidePreviewProperty, value);
+    public static void SetGuidePreview(AvaloniaObject target, SurfaceGuide? value) => target.SetValue(GuidePreviewProperty, value);
 }

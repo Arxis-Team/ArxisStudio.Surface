@@ -16,7 +16,7 @@ namespace ArxisStudio.Surface;
 /// и всплывает дальше.
 /// </para>
 /// </remarks>
-public sealed class DesignEditorHistoryRequestedEventArgs : EventArgs
+public sealed class SurfaceHistoryRequestedEventArgs : EventArgs
 {
     /// <summary>
     /// Получает или задает признак того, что запрос выполнен.

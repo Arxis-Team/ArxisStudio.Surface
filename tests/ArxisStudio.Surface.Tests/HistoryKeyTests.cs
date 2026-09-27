@@ -37,7 +37,7 @@ public class HistoryKeyTests
     private static int Count(EditorHarness harness, PhysicalKey key, RawInputModifiers modifiers, bool undo)
     {
         var raised = 0;
-        void Handler(object? sender, DesignEditorHistoryRequestedEventArgs e)
+        void Handler(object? sender, SurfaceHistoryRequestedEventArgs e)
         {
             raised++;
             e.Handled = true;

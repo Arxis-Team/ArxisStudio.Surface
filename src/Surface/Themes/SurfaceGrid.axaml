@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface">
+
+    <!--
+        Тема фоновой сетки. Все параметры вынесены в lightweight-ресурсы,
+        поэтому шаг, плотность и палитру можно менять без копирования темы.
+    -->
+    <ControlTheme x:Key="{x:Type surface:SurfaceGrid}" TargetType="surface:SurfaceGrid">
+        <Setter Property="Background" Value="{DynamicResource Surface.Grid.BackgroundBrush}" />
+        <Setter Property="LineBrush" Value="{DynamicResource Surface.Grid.LineBrush}" />
+        <Setter Property="MajorLineBrush" Value="{DynamicResource Surface.Grid.MajorLineBrush}" />
+        <Setter Property="CellSize" Value="{DynamicResource Surface.Grid.CellSize}" />
+        <Setter Property="MajorInterval" Value="{DynamicResource Surface.Grid.MajorInterval}" />
+        <Setter Property="LineThickness" Value="{DynamicResource Surface.Grid.LineThickness}" />
+        <Setter Property="MinCellSize" Value="{DynamicResource Surface.Grid.MinCellSize}" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </ControlTheme>
+
+</ResourceDictionary>

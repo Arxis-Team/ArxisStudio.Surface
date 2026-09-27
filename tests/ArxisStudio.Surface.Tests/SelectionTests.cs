@@ -12,7 +12,7 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Тесты намеренно опираются только на публичное наблюдаемое состояние
-/// (<see cref="SurfaceView.SelectedDesignTargets"/>, <see cref="SurfaceView.PrimarySelectionTarget"/>,
+/// (<see cref="SurfaceView.SelectedTargets"/>, <see cref="SurfaceView.PrimarySelectionTarget"/>,
 /// счётчики), а не на внутренние структуры выбора. Внутреннее представление
 /// будет переписано при переходе к рекурсивной вложенности, ожидания — нет.
 /// </remarks>
@@ -38,7 +38,7 @@ public class SelectionTests
     {
         var harness = EditorHarness.Create();
 
-        Assert.Empty(harness.Editor.SelectedDesignTargets);
+        Assert.Empty(harness.Editor.SelectedTargets);
         Assert.Null(harness.Editor.PrimarySelectionTarget);
         Assert.False(harness.Editor.HasSingleSelection);
         Assert.False(harness.Editor.HasMultipleSelection);
@@ -55,12 +55,12 @@ public class SelectionTests
         Click(harness, NestedCentre);
 
         Assert.True(harness.Editor.HasSingleSelection);
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
 
         var primary = harness.Editor.PrimarySelectionTarget;
         Assert.NotNull(primary);
         Assert.Same(nested, primary!.Target);
-        Assert.Equal(DesignSelectionScope.NestedTarget, primary.Scope);
+        Assert.Equal(SurfaceSelectionScope.NestedTarget, primary.Scope);
         Assert.Same(harness.Container(0), primary.Container);
     }
 
@@ -134,9 +134,9 @@ public class SelectionTests
         harness.Window.MouseUp(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
 
-        var targets = harness.Editor.SelectedDesignTargets.Select(t => t.Target).ToList();
+        var targets = harness.Editor.SelectedTargets.Select(t => t.Target).ToList();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.Contains(harness.Nested(0), targets);
         Assert.Contains(harness.Named(0, "Sibling"), targets);
         Assert.True(harness.Editor.HasMultipleNestedSelection);
@@ -152,13 +152,13 @@ public class SelectionTests
         harness.Window.MouseDown(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.Window.MouseUp(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         harness.Window.MouseDown(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.Window.MouseUp(SiblingCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
 
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.Same(harness.Nested(0), harness.Editor.PrimarySelectionTarget!.Target);
     }
 
@@ -176,7 +176,7 @@ public class SelectionTests
         // Обычный клик по уже выбранному участнику группы не схлопывает её.
         Click(harness, SiblingCentre);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.Same(harness.Named(0, "Sibling"), harness.Editor.PrimarySelectionTarget!.Target);
     }
 
@@ -192,7 +192,7 @@ public class SelectionTests
         // Точка заведомо вне контейнера.
         Click(harness, new Point(600, 500));
 
-        Assert.Empty(harness.Editor.SelectedDesignTargets);
+        Assert.Empty(harness.Editor.SelectedTargets);
         Assert.Null(harness.Editor.PrimarySelectionTarget);
         Assert.False(harness.Editor.HasSingleSelection);
     }
@@ -213,6 +213,6 @@ public class SelectionTests
         var primary = harness.Editor.PrimarySelectionTarget;
         Assert.NotNull(primary);
         Assert.Same(container, primary!.Target);
-        Assert.Equal(DesignSelectionScope.Container, primary.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, primary.Scope);
     }
 }

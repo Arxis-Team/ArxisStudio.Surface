@@ -79,7 +79,7 @@ internal sealed class AutomationChannel
 
     private void Start()
     {
-        _editor.DesignSelectionChanged += (_, e) => Record("DesignSelectionChanged", new Dictionary<string, object?>
+        _editor.SurfaceSelectionChanged += (_, e) => Record("SurfaceSelectionChanged", new Dictionary<string, object?>
         {
             ["added"] = e.Added.Select(Describe).ToList(),
             ["removed"] = e.Removed.Select(Describe).ToList(),
@@ -179,14 +179,14 @@ internal sealed class AutomationChannel
             case "select":
             {
                 var control = Resolve(Text("target"));
-                var applied = _editor.SelectDesignTarget(control, Flag("additive"));
+                var applied = _editor.SelectTarget(control, Flag("additive"));
                 return Result(new Dictionary<string, object?> { ["returned"] = applied });
             }
 
             case "selectContainer":
             {
                 var container = ContainerAt(Number("index"));
-                var applied = _editor.SelectDesignTarget(container, Flag("additive"));
+                var applied = _editor.SelectTarget(container, Flag("additive"));
                 return Result(new Dictionary<string, object?> { ["returned"] = applied });
             }
 
@@ -248,7 +248,7 @@ internal sealed class AutomationChannel
             {
                 // Набор направляющих читается у самого редактора: так видно то же,
                 // что видит хост, а не то, что нарисовано.
-                var list = (_editor.Guides ?? Enumerable.Empty<ArxisStudio.Surface.Editing.DesignGuide>())
+                var list = (_editor.Guides ?? Enumerable.Empty<ArxisStudio.Surface.Editing.SurfaceGuide>())
                     .Select(g => new Dictionary<string, object?>
                     {
                         ["orientation"] = g.Orientation.ToString(),
@@ -315,8 +315,8 @@ internal sealed class AutomationChannel
         ["selectedItemsCount"] = _editor.SelectedItems?.Count ?? 0,
         ["selectedIndex"] = _editor.SelectedIndex,
         ["selectionIndexes"] = _editor.Selection.SelectedIndexes.ToList(),
-        ["designTargetsCount"] = _editor.SelectedDesignTargetsCount,
-        ["designTargets"] = _editor.SelectedDesignTargets.Select(Describe).ToList(),
+        ["designTargetsCount"] = _editor.SelectedTargetsCount,
+        ["designTargets"] = _editor.SelectedTargets.Select(Describe).ToList(),
         ["primary"] = _editor.PrimarySelectionTarget == null ? null : Describe(_editor.PrimarySelectionTarget),
         ["selectionBounds"] = Rect(_editor.SelectionBounds),
         ["hasSingleSelection"] = _editor.HasSingleSelection,
@@ -383,7 +383,7 @@ internal sealed class AutomationChannel
         _events.Add(payload);
     }
 
-    private static Dictionary<string, object?> Describe(DesignSelectionTarget target) => new()
+    private static Dictionary<string, object?> Describe(SurfaceSelectionTarget target) => new()
     {
         ["name"] = NameOf(target.Target),
         ["type"] = target.Target.GetType().Name,

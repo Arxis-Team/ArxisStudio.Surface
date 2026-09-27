@@ -48,9 +48,9 @@ public class KeyboardResizeTests
         harness.RunLayout();
     }
 
-    private static Size SizeOf(EditorHarness harness) => harness.Editor.GetDesignSize(harness.Nested(0));
+    private static Size SizeOf(EditorHarness harness) => harness.Editor.GetTargetSize(harness.Nested(0));
 
-    private static Point PositionOf(EditorHarness harness) => harness.Editor.GetDesignPosition(harness.Nested(0));
+    private static Point PositionOf(EditorHarness harness) => harness.Editor.GetTargetPosition(harness.Nested(0));
 
     [AvaloniaTheory]
     [InlineData(PhysicalKey.ArrowRight, 61, 40)]
@@ -96,13 +96,13 @@ public class KeyboardResizeTests
     public void One_Press_Is_One_Resize_Edit_And_Undoes_Whole()
     {
         var harness = CreateWithSelection();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Press(harness, PhysicalKey.ArrowRight);
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Resize, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Resize, edit.Kind);
 
         foreach (var change in edit.Changes)
             harness.Editor.Revert(change);
@@ -115,7 +115,7 @@ public class KeyboardResizeTests
     public void A_Side_The_Policy_Forbids_Does_Not_Move()
     {
         var harness = CreateWithSelection();
-        DesignInteraction.SetResizePolicy(harness.Nested(0), ResizePolicy.Bottom);
+        SurfaceInteraction.SetResizePolicy(harness.Nested(0), ResizePolicy.Bottom);
 
         Press(harness, PhysicalKey.ArrowRight);
         Press(harness, PhysicalKey.ArrowDown);
@@ -128,8 +128,8 @@ public class KeyboardResizeTests
     public void A_Locked_Target_Produces_No_Edit()
     {
         var harness = CreateWithSelection();
-        DesignInteraction.SetResizePolicy(harness.Nested(0), ResizePolicy.None);
-        var edits = new List<DesignEditCompletedEventArgs>();
+        SurfaceInteraction.SetResizePolicy(harness.Nested(0), ResizePolicy.None);
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Press(harness, PhysicalKey.ArrowRight);
@@ -213,7 +213,7 @@ public class KeyboardResizeTests
         harness.Editor.Focus();
         Press(harness, PhysicalKey.A, RawInputModifiers.Control);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
         Press(harness, PhysicalKey.ArrowRight);
 

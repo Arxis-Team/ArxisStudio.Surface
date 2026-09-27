@@ -255,7 +255,7 @@ public class EqualSpacingTests
         var state = new ItemResizingState(container, target, ResizeDirection.Right);
         container.PushState(state);
 
-        var applied = harness.Editor.GetDesignPosition(target).X + harness.Editor.GetDesignSize(target).Width;
+        var applied = harness.Editor.GetTargetPosition(target).X + harness.Editor.GetTargetSize(target).Width;
 
         state.OnResizeDelta(new ResizeDeltaEventArgs(
             new Vector(to - applied, 0),
@@ -280,10 +280,10 @@ public class EqualSpacingTests
         DragRightEdge(harness, 374);
 
         var target = harness.Named(0, "Moving");
-        Assert.Equal(380, harness.Editor.GetDesignPosition(target).X + harness.Editor.GetDesignSize(target).Width);
+        Assert.Equal(380, harness.Editor.GetTargetPosition(target).X + harness.Editor.GetTargetSize(target).Width);
 
         // Неподвижный край остался на месте: привязывается край, а не размер.
-        Assert.Equal(Moving.X, harness.Editor.GetDesignPosition(target).X);
+        Assert.Equal(Moving.X, harness.Editor.GetTargetPosition(target).X);
     }
 
     [AvaloniaFact]
@@ -294,7 +294,7 @@ public class EqualSpacingTests
         DragRightEdge(harness, 360);
 
         var target = harness.Named(0, "Moving");
-        Assert.Equal(360, harness.Editor.GetDesignPosition(target).X + harness.Editor.GetDesignSize(target).Width);
+        Assert.Equal(360, harness.Editor.GetTargetPosition(target).X + harness.Editor.GetTargetSize(target).Width);
     }
 
     [AvaloniaFact]
@@ -306,7 +306,7 @@ public class EqualSpacingTests
         DragRightEdge(harness, 374);
 
         var target = harness.Named(0, "Moving");
-        Assert.Equal(374, harness.Editor.GetDesignPosition(target).X + harness.Editor.GetDesignSize(target).Width);
+        Assert.Equal(374, harness.Editor.GetTargetPosition(target).X + harness.Editor.GetTargetSize(target).Width);
     }
 
     /// <summary>

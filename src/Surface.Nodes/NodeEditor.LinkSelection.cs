@@ -287,9 +287,9 @@ public partial class NodeEditor
         link?.SetHighlighted(true);
     }
 
-    private void OnNodeSelectionChanged(object? sender, DesignSelectionChangedEventArgs e)
+    private void OnNodeSelectionChanged(object? sender, SurfaceSelectionChangedEventArgs e)
     {
-        if (SelectedDesignTargets.Count > 0)
+        if (SelectedTargets.Count > 0)
             ClearLinkSelection();
     }
 

@@ -55,14 +55,14 @@ public class ResizeStabilityTests
             harness.RunLayout();
 
             appliedRight = Right(harness, target);
-            widths.Add(harness.Editor.GetDesignSize(target).Width);
+            widths.Add(harness.Editor.GetTargetSize(target).Width);
         }
 
         return widths;
     }
 
     private static double Right(EditorHarness harness, Control target)
-        => harness.Editor.GetDesignPosition(target).X + harness.Editor.GetDesignSize(target).Width;
+        => harness.Editor.GetTargetPosition(target).X + harness.Editor.GetTargetSize(target).Width;
 
     [AvaloniaFact]
     public void Width_Never_Goes_Backwards_While_The_Pointer_Moves_Forward()
@@ -89,7 +89,7 @@ public class ResizeStabilityTests
         var container = harness.PlaceContainer(0, ContainerLocation, ContainerSize);
         var target = harness.Nested(0);
 
-        var expected = harness.Editor.GetDesignSize(target).Width + (PointerStep * StepCount);
+        var expected = harness.Editor.GetTargetSize(target).Width + (PointerStep * StepCount);
         var widths = DragRightEdge(harness, container, target);
 
         // Указатель ушёл на 70; итог обязан отличаться не больше чем на шаг сетки.
@@ -172,7 +172,7 @@ public class ResizeStabilityTests
 
             harness.RunLayout();
             appliedRight = Right(harness, target);
-            widths.Add(harness.Editor.GetDesignSize(target).Width);
+            widths.Add(harness.Editor.GetTargetSize(target).Width);
         }
 
         var limit = ContainerLocation.X + ContainerSize.Width;
@@ -204,8 +204,8 @@ public class ResizeStabilityTests
         var target = harness.Nested(0);
 
         var start = Right(harness, target);
-        var y = harness.Editor.GetDesignPosition(target).Y + 5;
-        var width0 = harness.Editor.GetDesignSize(target).Width;
+        var y = harness.Editor.GetTargetPosition(target).Y + 5;
+        var width0 = harness.Editor.GetTargetSize(target).Width;
 
         harness.Window.MouseMove(new Point(start, y));
         var state = new ItemResizingState(container, target, ResizeDirection.Right);
@@ -224,7 +224,7 @@ public class ResizeStabilityTests
             harness.RunLayout();
         }
 
-        Assert.Equal(width0 + 30, harness.Editor.GetDesignSize(target).Width, 1);
+        Assert.Equal(width0 + 30, harness.Editor.GetTargetSize(target).Width, 1);
     }
 
     /// <summary>
@@ -243,7 +243,7 @@ public class ResizeStabilityTests
         var harness = EditorHarness.Create();
         var container = harness.PlaceContainer(0, ContainerLocation, ContainerSize);
         var target = harness.Nested(0);
-        var width0 = harness.Editor.GetDesignSize(target).Width;
+        var width0 = harness.Editor.GetTargetSize(target).Width;
 
         // Мышь побывала где-то в редакторе и больше не двигается.
         harness.Window.MouseMove(new Point(500, 400));
@@ -261,7 +261,7 @@ public class ResizeStabilityTests
             harness.RunLayout();
         }
 
-        Assert.Equal(width0 + 30, harness.Editor.GetDesignSize(target).Width, 1);
+        Assert.Equal(width0 + 30, harness.Editor.GetTargetSize(target).Width, 1);
     }
 
     /// <summary>

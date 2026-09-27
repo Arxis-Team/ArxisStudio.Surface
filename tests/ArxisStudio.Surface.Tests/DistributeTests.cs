@@ -67,14 +67,14 @@ public class DistributeTests
 
     private static void SelectAllThree(EditorHarness harness)
     {
-        harness.Editor.SelectDesignTarget(harness.Named(0, "A"));
-        harness.Editor.SelectDesignTarget(harness.Named(0, "B"), additive: true);
-        harness.Editor.SelectDesignTarget(harness.Named(0, "C"), additive: true);
+        harness.Editor.SelectTarget(harness.Named(0, "A"));
+        harness.Editor.SelectTarget(harness.Named(0, "B"), additive: true);
+        harness.Editor.SelectTarget(harness.Named(0, "C"), additive: true);
         harness.RunLayout();
     }
 
     private static double X(EditorHarness harness, string name) =>
-        harness.Editor.GetDesignPosition(harness.Named(0, name)).X;
+        harness.Editor.GetTargetPosition(harness.Named(0, name)).X;
 
     [AvaloniaFact]
     public void Gaps_Become_Equal()
@@ -108,7 +108,7 @@ public class DistributeTests
         harness.Editor.DistributeHorizontally();
         harness.RunLayout();
 
-        var b = harness.Editor.GetDesignPosition(harness.Named(0, "B"));
+        var b = harness.Editor.GetTargetPosition(harness.Named(0, "B"));
         Assert.NotEqual(260, b.X);
     }
 
@@ -137,15 +137,15 @@ public class DistributeTests
         harness.Editor.DistributeHorizontally();
         harness.RunLayout();
 
-        Assert.Equal(150, harness.Editor.GetDesignPosition(harness.Named(0, "B")).Y);
+        Assert.Equal(150, harness.Editor.GetTargetPosition(harness.Named(0, "B")).Y);
     }
 
     [AvaloniaFact]
     public void Fewer_Than_Three_Is_Refused()
     {
         var harness = Create();
-        harness.Editor.SelectDesignTarget(harness.Named(0, "A"));
-        harness.Editor.SelectDesignTarget(harness.Named(0, "C"), additive: true);
+        harness.Editor.SelectTarget(harness.Named(0, "A"));
+        harness.Editor.SelectTarget(harness.Named(0, "C"), additive: true);
         harness.RunLayout();
 
         Assert.False(harness.Editor.DistributeHorizontally());
@@ -165,7 +165,7 @@ public class DistributeTests
     public void A_Locked_Middle_Element_Cancels_Everything()
     {
         var harness = Create();
-        DesignInteraction.SetMovePolicy(harness.Named(0, "B"), MovePolicy.Y);
+        SurfaceInteraction.SetMovePolicy(harness.Named(0, "B"), MovePolicy.Y);
         SelectAllThree(harness);
 
         Assert.False(harness.Editor.DistributeHorizontally());
@@ -179,7 +179,7 @@ public class DistributeTests
     public void A_Locked_Outer_Element_Does_Not_Block_It()
     {
         var harness = Create();
-        DesignInteraction.SetMovePolicy(harness.Named(0, "A"), MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(harness.Named(0, "A"), MovePolicy.None);
         SelectAllThree(harness);
 
         Assert.True(harness.Editor.DistributeHorizontally());
@@ -201,14 +201,14 @@ public class DistributeTests
         var harness = Create();
         SelectAllThree(harness);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         harness.Editor.DistributeHorizontally();
         harness.RunLayout();
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Move, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Move, edit.Kind);
     }
 
     [AvaloniaFact]
@@ -217,7 +217,7 @@ public class DistributeTests
         var harness = Create();
         SelectAllThree(harness);
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         harness.Editor.DistributeHorizontally();
@@ -254,6 +254,6 @@ public class DistributeTests
         Assert.True(harness.Editor.DistributeVertically());
         harness.RunLayout();
 
-        Assert.Equal(240, harness.Editor.GetDesignPosition(harness.Named(0, "B")).Y);
+        Assert.Equal(240, harness.Editor.GetTargetPosition(harness.Named(0, "B")).Y);
     }
 }

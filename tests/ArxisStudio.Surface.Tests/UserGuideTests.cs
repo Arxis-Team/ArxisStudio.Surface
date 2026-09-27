@@ -98,7 +98,7 @@ public class UserGuideTests
     public void A_Vertical_Guide_Catches_The_Left_Edge()
     {
         var harness = Create();
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(218) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(218) };
 
         Drag(harness, new Vector(100, 0));
 
@@ -116,7 +116,7 @@ public class UserGuideTests
     public void A_Horizontal_Guide_Catches_The_Top_Edge()
     {
         var harness = Create();
-        harness.Editor.Guides = new[] { DesignGuide.Horizontal(156) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Horizontal(156) };
 
         Drag(harness, new Vector(0, 40));
 
@@ -136,7 +136,7 @@ public class UserGuideTests
     public void A_Guide_Beats_The_Grid_On_Its_Own_Axis()
     {
         var harness = Create(snapToGrid: true);
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(218) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(218) };
 
         Drag(harness, new Vector(100, 0));
 
@@ -151,7 +151,7 @@ public class UserGuideTests
     public void Beyond_The_Tolerance_The_Guide_Is_Ignored()
     {
         var harness = Create();
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(230) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(230) };
 
         Drag(harness, new Vector(100, 0));
 
@@ -169,7 +169,7 @@ public class UserGuideTests
     public void The_Bypass_Modifier_Ignores_User_Guides()
     {
         var harness = Create();
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(218) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(218) };
 
         Drag(harness, new Vector(100, 0), RawInputModifiers.Alt);
 
@@ -189,10 +189,10 @@ public class UserGuideTests
     public void Adding_To_A_Live_Collection_Takes_Effect()
     {
         var harness = Create();
-        var guides = new ObservableCollection<DesignGuide>();
+        var guides = new ObservableCollection<SurfaceGuide>();
         harness.Editor.Guides = guides;
 
-        guides.Add(DesignGuide.Vertical(218));
+        guides.Add(SurfaceGuide.Vertical(218));
 
         Drag(harness, new Vector(100, 0));
 
@@ -206,7 +206,7 @@ public class UserGuideTests
     public void Removing_A_Guide_Takes_Effect_Too()
     {
         var harness = Create();
-        var guides = new ObservableCollection<DesignGuide> { DesignGuide.Vertical(218) };
+        var guides = new ObservableCollection<SurfaceGuide> { SurfaceGuide.Vertical(218) };
         harness.Editor.Guides = guides;
 
         guides.Clear();
@@ -228,10 +228,10 @@ public class UserGuideTests
     public void An_Equivalent_Collection_Is_Not_Republished()
     {
         var harness = Create();
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(218), DesignGuide.Horizontal(156) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(218), SurfaceGuide.Horizontal(156) };
         var published = harness.Editor.UserGuides;
 
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(218), DesignGuide.Horizontal(156) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(218), SurfaceGuide.Horizontal(156) };
 
         Assert.Same(published, harness.Editor.UserGuides);
     }
@@ -243,7 +243,7 @@ public class UserGuideTests
     public void Clearing_The_Source_Clears_The_Snapshot()
     {
         var harness = Create();
-        harness.Editor.Guides = new[] { DesignGuide.Vertical(218) };
+        harness.Editor.Guides = new[] { SurfaceGuide.Vertical(218) };
         Assert.Single(harness.Editor.UserGuides);
 
         harness.Editor.Guides = null;
@@ -256,8 +256,8 @@ public class UserGuideTests
     [AvaloniaFact]
     public void Guides_Compare_By_Value()
     {
-        Assert.Equal(DesignGuide.Vertical(10), DesignGuide.Vertical(10));
-        Assert.NotEqual(DesignGuide.Vertical(10), DesignGuide.Horizontal(10));
-        Assert.True(DesignGuide.Horizontal(4) == new DesignGuide(DesignGuideOrientation.Horizontal, 4));
+        Assert.Equal(SurfaceGuide.Vertical(10), SurfaceGuide.Vertical(10));
+        Assert.NotEqual(SurfaceGuide.Vertical(10), SurfaceGuide.Horizontal(10));
+        Assert.True(SurfaceGuide.Horizontal(4) == new SurfaceGuide(SurfaceGuideOrientation.Horizontal, 4));
     }
 }

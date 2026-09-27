@@ -17,22 +17,22 @@ public partial class SurfaceView
     /// <summary>
     /// Получает коллекцию провайдеров действий контекстного меню.
     /// </summary>
-    public IList<IDesignEditorContextActionProvider> ContextActionProviders { get; } = new List<IDesignEditorContextActionProvider>();
+    public IList<ISurfaceContextActionProvider> ContextActionProviders { get; } = new List<ISurfaceContextActionProvider>();
 
     /// <summary>
     /// Возникает перед показом контекстного меню.
     /// </summary>
-    public event EventHandler<DesignEditorContextRequestingEventArgs>? ContextMenuRequesting;
+    public event EventHandler<SurfaceContextRequestingEventArgs>? ContextMenuRequesting;
 
     /// <summary>
     /// Возникает после разрешения контекста и списка действий.
     /// </summary>
-    public event EventHandler<DesignEditorContextRequestedEventArgs>? ContextMenuResolved;
+    public event EventHandler<SurfaceContextRequestedEventArgs>? ContextMenuResolved;
 
     /// <summary>
     /// Получает или задает presenter контекстных действий.
     /// </summary>
-    public IDesignEditorContextPresenter ContextPresenter { get; set; } = new ContextMenuContextPresenter();
+    public ISurfaceContextPresenter ContextPresenter { get; set; } = new ContextMenuContextPresenter();
 
     /// <summary>
     /// Запрашивает контекстное меню программно.
@@ -42,7 +42,7 @@ public partial class SurfaceView
     /// <param name="modifiers">Модификаторы ввода.</param>
     /// <param name="cancellationToken">Токен отмены.</param>
     public Task RequestContextAsync(
-        DesignEditorContextSource source,
+        SurfaceContextSource source,
         Point viewportPoint,
         KeyModifiers modifiers = KeyModifiers.None,
         CancellationToken cancellationToken = default)
@@ -56,14 +56,14 @@ public partial class SurfaceView
     /// </summary>
     public Task RequestContextAsync(CancellationToken cancellationToken = default)
     {
-        var request = BuildContextRequest(DesignEditorContextSource.Programmatic, _lastMousePosition, LastInputModifiers);
+        var request = BuildContextRequest(SurfaceContextSource.Programmatic, _lastMousePosition, LastInputModifiers);
         return HandleContextRequestAsync(request, cancellationToken);
     }
 
-    private async Task HandleContextRequestAsync(DesignEditorContextRequest request, CancellationToken cancellationToken)
+    private async Task HandleContextRequestAsync(SurfaceContextRequest request, CancellationToken cancellationToken)
     {
         var resolvedActions = await ResolveContextActionsAsync(request, cancellationToken);
-        var requestingArgs = new DesignEditorContextRequestingEventArgs(request)
+        var requestingArgs = new SurfaceContextRequestingEventArgs(request)
         {
             Actions = resolvedActions
         };
@@ -72,22 +72,22 @@ public partial class SurfaceView
         if (requestingArgs.Cancel)
             return;
 
-        var actions = requestingArgs.Actions ?? Array.Empty<DesignEditorContextAction>();
+        var actions = requestingArgs.Actions ?? Array.Empty<SurfaceContextAction>();
         var handled = requestingArgs.Handled;
         if (!handled && actions.Count > 0)
             handled = ContextPresenter.TryShow(this, request, actions);
 
-        ContextMenuResolved?.Invoke(this, new DesignEditorContextRequestedEventArgs(request, actions, handled));
+        ContextMenuResolved?.Invoke(this, new SurfaceContextRequestedEventArgs(request, actions, handled));
     }
 
-    private async Task<IReadOnlyList<DesignEditorContextAction>> ResolveContextActionsAsync(
-        DesignEditorContextRequest request,
+    private async Task<IReadOnlyList<SurfaceContextAction>> ResolveContextActionsAsync(
+        SurfaceContextRequest request,
         CancellationToken cancellationToken)
     {
         if (ContextActionProviders.Count == 0)
-            return Array.Empty<DesignEditorContextAction>();
+            return Array.Empty<SurfaceContextAction>();
 
-        var result = new List<DesignEditorContextAction>();
+        var result = new List<SurfaceContextAction>();
         foreach (var provider in ContextActionProviders)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -108,31 +108,31 @@ public partial class SurfaceView
             .ToArray();
     }
 
-    private DesignEditorContextRequest BuildContextRequest(
-        DesignEditorContextSource source,
+    private SurfaceContextRequest BuildContextRequest(
+        SurfaceContextSource source,
         Point viewportPoint,
         KeyModifiers modifiers)
     {
         var worldPoint = GetWorldPosition(viewportPoint);
         var hasHitTarget = TryResolveContextTarget(worldPoint, out var hitTarget);
-        var selection = SelectedDesignTargets;
-        var scope = DesignEditorContextScope.Surface;
+        var selection = SelectedTargets;
+        var scope = SurfaceContextScope.Surface;
         var topLevel = TopLevel.GetTopLevel(this);
 
         if (selection.Count > 1 &&
             hitTarget != null &&
             selection.Any(selected => ReferenceEquals(selected.Target, hitTarget.Target)))
         {
-            scope = DesignEditorContextScope.Selection;
+            scope = SurfaceContextScope.Selection;
         }
         else if (hasHitTarget && hitTarget != null)
         {
-            scope = hitTarget.Scope == DesignSelectionScope.Container
-                ? DesignEditorContextScope.Container
-                : DesignEditorContextScope.NestedTarget;
+            scope = hitTarget.Scope == SurfaceSelectionScope.Container
+                ? SurfaceContextScope.Container
+                : SurfaceContextScope.NestedTarget;
         }
 
-        return new DesignEditorContextRequest
+        return new SurfaceContextRequest
         {
             Scope = scope,
             Target = hitTarget,
@@ -145,7 +145,7 @@ public partial class SurfaceView
         };
     }
 
-    private protected bool TryResolveContextTarget(Point worldPoint, out DesignSelectionTarget? target)
+    private protected bool TryResolveContextTarget(Point worldPoint, out SurfaceSelectionTarget? target)
     {
         target = null;
         if (FindContainerAtWorldPoint(worldPoint) is not { } container)
@@ -178,7 +178,7 @@ public partial class SurfaceView
         // согласованно со snapshot'ом выделения; глубина передаётся через Depth.
         var resolvedTarget = (Control?)bestMatch ?? container;
         var ownerItem = ResolveOwningItem(container) ?? container;
-        target = new DesignSelectionTarget(ownerItem, resolvedTarget, GetGroupKey(resolvedTarget));
+        target = new SurfaceSelectionTarget(ownerItem, resolvedTarget, GetGroupKey(resolvedTarget));
         return true;
     }
 
@@ -200,7 +200,7 @@ public partial class SurfaceView
     /// сводится к «меню не открылось, и никаких следов».
     /// </para>
     /// </remarks>
-    private protected void RequestContextSafe(DesignEditorContextSource source, Point viewportPoint, KeyModifiers modifiers)
+    private protected void RequestContextSafe(SurfaceContextSource source, Point viewportPoint, KeyModifiers modifiers)
     {
         var previous = _contextRequest;
         var current = new CancellationTokenSource();

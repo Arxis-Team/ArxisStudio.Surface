@@ -34,7 +34,7 @@ public class SurfaceHistoryTests
 
     private static void Edit(EditorHarness harness, Rect bounds)
     {
-        Assert.True(harness.Editor.SetDesignGeometry(harness.Nested(0), bounds));
+        Assert.True(harness.Editor.SetTargetGeometry(harness.Nested(0), bounds));
         harness.RunLayout();
     }
 

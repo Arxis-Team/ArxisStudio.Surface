@@ -80,7 +80,7 @@ public class KeyboardTests
     public void Nudge_Produces_One_Edit_Per_Key_Press()
     {
         var harness = CreateWithSelection();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
@@ -89,14 +89,14 @@ public class KeyboardTests
 
         // Смещение стрелкой попадает в стек отмены той же записью, что и перетаскивание.
         Assert.Equal(2, edits.Count);
-        Assert.All(edits, e => Assert.Equal(DesignEditKind.Move, e.Kind));
+        Assert.All(edits, e => Assert.Equal(SurfaceEditKind.Move, e.Kind));
     }
 
     [AvaloniaFact]
     public void Nudge_Respects_Move_Policy()
     {
         var harness = CreateWithSelection();
-        DesignInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.Y);
+        SurfaceInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.Y);
         var before = DesignPositionOf(harness);
 
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
@@ -110,9 +110,9 @@ public class KeyboardTests
     public void Locked_Target_Produces_No_Edit()
     {
         var harness = CreateWithSelection();
-        DesignInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.None);
+        SurfaceInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.None);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
@@ -130,7 +130,7 @@ public class KeyboardTests
         harness.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
         harness.RunLayout();
 
-        Assert.Empty(harness.Editor.SelectedDesignTargets);
+        Assert.Empty(harness.Editor.SelectedTargets);
     }
 
     [AvaloniaFact]
@@ -144,7 +144,7 @@ public class KeyboardTests
         harness.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control);
         harness.RunLayout();
 
-        Assert.Equal(3, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(3, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasMultipleContainerSelection);
     }
 
@@ -152,7 +152,7 @@ public class KeyboardTests
     public void Delete_Raises_A_Request_Instead_Of_Deleting()
     {
         var harness = CreateWithSelection();
-        DesignEditorDeleteRequestedEventArgs? request = null;
+        SurfaceDeleteRequestedEventArgs? request = null;
 
         harness.Editor.DeleteRequested += (_, e) =>
         {

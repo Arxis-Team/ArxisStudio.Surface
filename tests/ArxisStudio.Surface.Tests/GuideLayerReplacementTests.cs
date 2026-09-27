@@ -25,13 +25,13 @@ namespace ArxisStudio.Tests;
 /// </remarks>
 public class GuideLayerReplacementTests
 {
-    private sealed record Stand(EditorHarness Harness, SnapGuideLayer Layer, ObservableCollection<DesignGuide> Guides);
+    private sealed record Stand(EditorHarness Harness, SnapGuideLayer Layer, ObservableCollection<SurfaceGuide> Guides);
 
     private static Stand Create()
     {
         var harness = EditorHarness.Create();
 
-        var guides = new ObservableCollection<DesignGuide> { DesignGuide.Vertical(150) };
+        var guides = new ObservableCollection<SurfaceGuide> { SurfaceGuide.Vertical(150) };
         harness.Editor.Guides = guides;
 
         // Ровно та композиция, которую собирает хост: редактор и его собственный слой
@@ -73,7 +73,7 @@ public class GuideLayerReplacementTests
 
         Assert.Equal(2.0, stand.Layer.ViewportZoom);
         Assert.Equal(new Point(30, 40), stand.Layer.ViewportLocation);
-        Assert.Equal(DesignGuide.Vertical(150), Assert.Single(stand.Layer.UserGuides!));
+        Assert.Equal(SurfaceGuide.Vertical(150), Assert.Single(stand.Layer.UserGuides!));
     }
 
     [AvaloniaFact]
@@ -81,7 +81,7 @@ public class GuideLayerReplacementTests
     {
         var stand = Create();
 
-        stand.Guides.Add(DesignGuide.Horizontal(220));
+        stand.Guides.Add(SurfaceGuide.Horizontal(220));
         stand.Harness.RunLayout();
 
         Assert.Equal(2, stand.Layer.UserGuides!.Count);
@@ -117,7 +117,7 @@ public class GuideLayerReplacementTests
         stand.Harness.Window.MouseMove(new Point(210, 300));
         stand.Harness.RunLayout();
 
-        Assert.Equal(DesignGuide.Vertical(210), stand.Layer.GuidePreview);
+        Assert.Equal(SurfaceGuide.Vertical(210), stand.Layer.GuidePreview);
 
         stand.Harness.Window.MouseUp(new Point(210, 300), MouseButton.Left);
     }
@@ -166,7 +166,7 @@ public class GuideLayerReplacementTests
 
         Assert.True(stand.Layer.ShowSnapGuides);
         Assert.True(stand.Layer.ShowUserGuides);
-        Assert.Equal(DesignGuide.Vertical(150), Assert.Single(stand.Layer.UserGuides!));
+        Assert.Equal(SurfaceGuide.Vertical(150), Assert.Single(stand.Layer.UserGuides!));
     }
 
     /// <summary>
@@ -196,6 +196,6 @@ public class GuideLayerReplacementTests
         stand.Harness.Window.MouseUp(from + new Vector(37, 0), MouseButton.Left);
         stand.Harness.RunLayout();
 
-        Assert.Equal(150, stand.Harness.Editor.GetDesignPosition(nested).X);
+        Assert.Equal(150, stand.Harness.Editor.GetTargetPosition(nested).X);
     }
 }

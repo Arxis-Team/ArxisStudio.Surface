@@ -34,7 +34,7 @@ public static class Layout
 
     // Отражает фактическую подписку на LayoutUpdated. Это НЕ то же самое, что
     // публичное IsTracked: последнее задаёт пользователь в XAML, а отслеживание
-    // включается также из AbsolutePanel и из редактора для любого design target.
+    // включается также из AbsolutePanel и из редактора для любого target.
     private static readonly AttachedProperty<bool> IsTrackingProperty =
         AvaloniaProperty.RegisterAttached<Control, bool>(
             "IsTracking", typeof(Layout), false, inherits: false);
@@ -203,7 +203,7 @@ public static class Layout
                  // Подписка ставится ровно одна. Иначе каждая запись DesignX/DesignY
                  // до попадания в дерево добавляла бы отдельный обработчик, и на attach
                  // пересчет выполнялся бы столько раз, сколько было записей
-                 // (SetDesignPosition пишет обе координаты подряд — уже две подписки).
+                 // (SetTargetPosition пишет обе координаты подряд — уже две подписки).
                  // Отложенный пересчет читает актуальные DesignX/DesignY в момент attach,
                  // поэтому пропущенные записи ничего не теряют.
                  if (GetIsAwaitingAttach(control))

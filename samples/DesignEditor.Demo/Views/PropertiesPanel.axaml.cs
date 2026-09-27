@@ -25,7 +25,7 @@ namespace DesignEditor.Demo.Views;
 /// за элемент и какие у него числа».
 /// <para>
 /// Разделов пять, и они делятся ровно по тому, чем распоряжается редактор.
-/// Геометрию и порядок перекрытия пишет он сам — через <see cref="Editor.SetDesignGeometry"/>
+/// Геометрию и порядок перекрытия пишет он сам — через <see cref="Editor.SetTargetGeometry"/>
 /// и <c>BringToFront</c>/<c>SendToBack</c>, — поэтому такие правки попадают в
 /// <see cref="Editor.EditCompleted"/> и отменяются. Раскладка, оформление и политики
 /// редактирования — обычные свойства Avalonia и attached-пометки: их панель пишет
@@ -163,7 +163,7 @@ public partial class PropertiesPanel : UserControl
     {
         if (_attached != null)
         {
-            _attached.DesignSelectionChanged -= OnSelectionChanged;
+            _attached.SurfaceSelectionChanged -= OnSelectionChanged;
             _attached.EditCompleted -= OnEditCompleted;
             _attached.PropertyChanged -= OnEditorPropertyChanged;
         }
@@ -176,13 +176,13 @@ public partial class PropertiesPanel : UserControl
             return;
         }
 
-        _attached.DesignSelectionChanged += OnSelectionChanged;
+        _attached.SurfaceSelectionChanged += OnSelectionChanged;
         _attached.EditCompleted += OnEditCompleted;
         _attached.PropertyChanged += OnEditorPropertyChanged;
         Fill(_attached.PrimarySelectionTarget?.Target);
     }
 
-    private void OnSelectionChanged(object? sender, DesignSelectionChangedEventArgs e) => Refresh();
+    private void OnSelectionChanged(object? sender, SurfaceSelectionChangedEventArgs e) => Refresh();
 
     /// <summary>
     /// Следит за геометрией выделения, а не только за составом.
@@ -202,7 +202,7 @@ public partial class PropertiesPanel : UserControl
             Refresh();
     }
 
-    private void OnEditCompleted(object? sender, DesignEditCompletedEventArgs e)
+    private void OnEditCompleted(object? sender, SurfaceEditCompletedEventArgs e)
     {
         // Пока фокус в поле, перечитывать нельзя: правка панели публикуется синхронно,
         // а design-координаты к этому моменту ещё прежние — набранное число затёрлось бы
@@ -263,8 +263,8 @@ public partial class PropertiesPanel : UserControl
             BackgroundBox.Text = BackgroundOf(target) is ISolidColorBrush solid ? solid.Color.ToString() : string.Empty;
             BackgroundBox.IsEnabled = HasBackground(target);
 
-            MovePolicyBox.SelectedItem = DesignInteraction.GetMovePolicy(target);
-            ResizePolicyBox.SelectedItem = DesignInteraction.GetResizePolicy(target);
+            MovePolicyBox.SelectedItem = SurfaceInteraction.GetMovePolicy(target);
+            ResizePolicyBox.SelectedItem = SurfaceInteraction.GetResizePolicy(target);
         }
         finally
         {
@@ -330,7 +330,7 @@ public partial class PropertiesPanel : UserControl
     /// Применяет содержимое полей к выбранному элементу.
     /// </summary>
     /// <remarks>
-    /// Геометрия уходит одним вызовом <see cref="Editor.SetDesignGeometry"/>: это шов
+    /// Геометрия уходит одним вызовом <see cref="Editor.SetTargetGeometry"/>: это шов
     /// редактора, поэтому правка попадает в контракт изменений и отменяется. Остальное —
     /// прямая запись свойств Avalonia, и разделы об этом предупреждают.
     /// <para>
@@ -351,7 +351,7 @@ public partial class PropertiesPanel : UserControl
 
         var next = new Rect(x, y, Math.Max(0, w), Math.Max(0, h));
         if (next != bounds)
-            editor.SetDesignGeometry(target, next);
+            editor.SetTargetGeometry(target, next);
 
         if (TryParseThickness(MarginBox.Text, out var margin))
             target.Margin = margin;
@@ -369,10 +369,10 @@ public partial class PropertiesPanel : UserControl
         ApplyBackground(target);
 
         if (MovePolicyBox.SelectedItem is MovePolicy movePolicy)
-            DesignInteraction.SetMovePolicy(target, movePolicy);
+            SurfaceInteraction.SetMovePolicy(target, movePolicy);
 
         if (ResizePolicyBox.SelectedItem is ResizePolicy resizePolicy)
-            DesignInteraction.SetResizePolicy(target, resizePolicy);
+            SurfaceInteraction.SetResizePolicy(target, resizePolicy);
 
         // Перечитывать поля здесь нельзя: design-координаты отстают на проход
         // диспетчера, и введённое число тут же затиралось бы прежним. Панель

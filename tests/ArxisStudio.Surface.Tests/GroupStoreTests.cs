@@ -205,7 +205,7 @@ public class GroupStoreTests
 
         // Клик по участнику раскрывается до всей группы.
         Click(harness, "A");
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasGroupSelection);
     }
 
@@ -213,7 +213,7 @@ public class GroupStoreTests
     /// Снимок выделения берёт идентификатор группы у хранилища.
     /// </summary>
     /// <remarks>
-    /// <see cref="DesignSelectionTarget.GroupId"/> участвует в сравнении снимков: возьми он
+    /// <see cref="SurfaceSelectionTarget.GroupId"/> участвует в сравнении снимков: возьми он
     /// пометку не оттуда — и группировка уже выбранного набора снова перестала бы публиковаться,
     /// а хост остался бы со старой группой при верном экране.
     /// </remarks>
@@ -249,7 +249,7 @@ public class GroupStoreTests
         store.Assign(Cell(harness, "A"), "before");
         store.Assign(Cell(harness, "B"), "before");
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         Select(harness, "A", "C");
@@ -285,7 +285,7 @@ public class GroupStoreTests
         var harness = Create(store);
 
         Select(harness, "A", "B");
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.False(harness.Editor.HasGroupSelection);
 
         store.Assign(Cell(harness, "A"), "outer");

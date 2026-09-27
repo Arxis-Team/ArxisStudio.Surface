@@ -107,7 +107,7 @@ public class SnapGuideTests
     {
         var moving = new Rect(302, 113, 60, 40);
 
-        var found = DesignSnapGuideResolver.TryResolveOffset(
+        var found = SurfaceSnapGuideResolver.TryResolveOffset(
             moving, new[] { Anchor }, tolerance: 6, out var offset, out var snappedX, out var snappedY);
 
         Assert.True(found);
@@ -125,11 +125,11 @@ public class SnapGuideTests
         var moving = new Rect(100, 100, 60, 40);
         var neighbour = new Rect(167, 300, 60, 40);
 
-        Assert.False(DesignSnapGuideResolver.TryResolveOffset(
+        Assert.False(SurfaceSnapGuideResolver.TryResolveOffset(
             moving, new[] { neighbour }, tolerance: 6, out _, out var missed, out _));
         Assert.False(missed);
 
-        Assert.True(DesignSnapGuideResolver.TryResolveOffset(
+        Assert.True(SurfaceSnapGuideResolver.TryResolveOffset(
             moving, new[] { neighbour }, tolerance: 7, out var offset, out var caught, out _));
         Assert.True(caught);
         Assert.Equal(7, offset.X);
@@ -141,7 +141,7 @@ public class SnapGuideTests
         // По X — в радиусе захвата, по Y — далеко.
         var moving = new Rect(302, 113, 60, 40);
 
-        DesignSnapGuideResolver.TryResolveOffset(
+        SurfaceSnapGuideResolver.TryResolveOffset(
             moving, new[] { Anchor }, tolerance: 6, out var offset, out var snappedX, out var snappedY);
 
         Assert.True(snappedX);
@@ -156,10 +156,10 @@ public class SnapGuideTests
     {
         var bounds = new Rect(305, 113, 60, 40);
 
-        var guides = DesignSnapGuideResolver.CollectGuides(bounds, new[] { Anchor });
+        var guides = SurfaceSnapGuideResolver.CollectGuides(bounds, new[] { Anchor });
 
         var guide = Assert.Single(guides);
-        Assert.Equal(DesignSnapGuideOrientation.Vertical, guide.Orientation);
+        Assert.Equal(SurfaceSnapGuideOrientation.Vertical, guide.Orientation);
         Assert.Equal(305, guide.Position);
 
         // Линия натянута между перетаскиваемым элементом и соседом.
@@ -173,7 +173,7 @@ public class SnapGuideTests
         var bounds = new Rect(305, 113, 60, 40);
         var far = new Rect(305, 400, 40, 60);
 
-        var guides = DesignSnapGuideResolver.CollectGuides(bounds, new[] { Anchor, far });
+        var guides = SurfaceSnapGuideResolver.CollectGuides(bounds, new[] { Anchor, far });
 
         var guide = Assert.Single(guides);
         Assert.Equal(113, guide.Start);
@@ -285,7 +285,7 @@ public class SnapGuideTests
         DragWithoutRelease(harness, new Vector(187, 0));
 
         var guide = Assert.Single(harness.Editor.SnapGuides);
-        Assert.Equal(DesignSnapGuideOrientation.Vertical, guide.Orientation);
+        Assert.Equal(SurfaceSnapGuideOrientation.Vertical, guide.Orientation);
         Assert.Equal(Anchor.X, guide.Position);
     }
 
@@ -327,7 +327,7 @@ public class SnapGuideTests
         harness.Window.MouseUp(anchorCentre, MouseButton.Left, RawInputModifiers.Shift);
         harness.RunLayout();
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
         // Сдвиг, который в одиночку встал бы на край Anchor. Здесь Anchor едет
         // вместе с группой, поэтому выравниваться не на что.
@@ -348,7 +348,7 @@ public class SnapGuideTests
         var state = new ItemResizingState(container, target, ResizeDirection.Right);
         container.PushState(state);
 
-        var applied = harness.Editor.GetDesignPosition(target).X + harness.Editor.GetDesignSize(target).Width;
+        var applied = harness.Editor.GetTargetPosition(target).X + harness.Editor.GetTargetSize(target).Width;
 
         state.OnResizeDelta(new ResizeDeltaEventArgs(
             new Vector(to - applied, 0),
@@ -359,7 +359,7 @@ public class SnapGuideTests
     }
 
     private static Rect BoundsOf(EditorHarness harness, Control target)
-        => new(harness.Editor.GetDesignPosition(target), harness.Editor.GetDesignSize(target));
+        => new(harness.Editor.GetTargetPosition(target), harness.Editor.GetTargetSize(target));
 
     [AvaloniaFact]
     public void Resize_Aligns_The_Moving_Edge_To_A_Neighbour()
@@ -385,7 +385,7 @@ public class SnapGuideTests
         DragRightEdge(harness, moving, Anchor.X - 3);
 
         var guide = Assert.Single(harness.Editor.SnapGuides);
-        Assert.Equal(DesignSnapGuideOrientation.Vertical, guide.Orientation);
+        Assert.Equal(SurfaceSnapGuideOrientation.Vertical, guide.Orientation);
         Assert.Equal(Anchor.X, guide.Position);
     }
 
@@ -445,7 +445,7 @@ public class SnapGuideTests
             harness.RunLayout();
 
             applied = BoundsOf(harness, moving).Right;
-            widths.Add(harness.Editor.GetDesignSize(moving).Width);
+            widths.Add(harness.Editor.GetTargetSize(moving).Width);
         }
 
         // Протяжка идёт в одну сторону через край соседа: ширина обязана расти

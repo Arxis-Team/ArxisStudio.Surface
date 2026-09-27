@@ -16,7 +16,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface;
@@ -158,7 +158,7 @@ public partial class DesignEditor
     /// </remarks>
     private bool TryDistribute(bool xAxis)
     {
-        var selection = SelectedDesignTargets;
+        var selection = SelectedTargets;
         if (selection.Count < 3)
             return false;
 
@@ -191,7 +191,7 @@ public partial class DesignEditor
 
         var gap = (Extent(last) - Position(first) - occupied) / (items.Count - 1);
 
-        BeginEdit(DesignEditKind.Move);
+        BeginEdit(SurfaceEditKind.Move);
 
         var cursor = Extent(first);
         for (var i = 1; i < items.Count - 1; i++)
@@ -199,7 +199,7 @@ public partial class DesignEditor
             cursor += gap;
 
             var (target, bounds) = items[i];
-            SetDesignPosition(target, xAxis
+            SetTargetPosition(target, xAxis
                 ? new Point(cursor, bounds.Y)
                 : new Point(bounds.X, cursor));
 
@@ -223,7 +223,7 @@ public partial class DesignEditor
 
     private SelectionInteractionCapabilities GetSelectionInteractionCapabilities()
     {
-        var selectedTargets = SelectedDesignTargets;
+        var selectedTargets = SelectedTargets;
         var selectedTargetCount = selectedTargets.Count;
         // Группа ведёт себя как множественный выбор вложенных: одна рамка, один жест.
         var isNestedGroupSelection = (HasMultipleNestedSelection || HasGroupSelection) && selectedTargetCount > 1;

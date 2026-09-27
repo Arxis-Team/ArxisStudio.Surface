@@ -30,9 +30,9 @@ public partial class SurfaceView
     /// <remarks>
     /// Редактор не владеет коллекцией элементов и удалять их не может: обработчик
     /// должен выполнить удаление сам и выставить
-    /// <see cref="DesignEditorDeleteRequestedEventArgs.Handled"/>.
+    /// <see cref="SurfaceDeleteRequestedEventArgs.Handled"/>.
     /// </remarks>
-    public event EventHandler<DesignEditorDeleteRequestedEventArgs>? DeleteRequested;
+    public event EventHandler<SurfaceDeleteRequestedEventArgs>? DeleteRequested;
 
     /// <summary>
     /// Передаёт нажатие клавиатурным командам.
@@ -156,7 +156,7 @@ public partial class SurfaceView
     /// </remarks>
     private bool TryResizeSelection(Key key, KeyModifiers modifiers)
     {
-        var targets = SelectedDesignTargets;
+        var targets = SelectedTargets;
         if (targets.Count == 0)
             return false;
 
@@ -176,7 +176,7 @@ public partial class SurfaceView
         var direction = dw != 0 ? ResizeDirection.Right : ResizeDirection.Bottom;
         var editorMin = Math.Max(0.0, InteractionOptions.ResizeMinSize);
 
-        BeginEdit(DesignEditKind.Resize);
+        BeginEdit(SurfaceEditKind.Resize);
 
         for (var i = 0; i < targets.Count; i++)
         {
@@ -184,13 +184,13 @@ public partial class SurfaceView
             if (!IsResizeAllowed(target, direction))
                 continue;
 
-            var size = GetDesignSize(target);
+            var size = GetTargetSize(target);
             var width = size.Width + dw;
             var height = size.Height + dh;
 
             if ((dw > 0 || dh > 0) && TryGetContainmentBounds(target, out var limit))
             {
-                var position = GetDesignPosition(target);
+                var position = GetTargetPosition(target);
                 if (dw > 0)
                     width = Math.Min(width, Math.Max(size.Width, limit.Right - position.X));
                 if (dh > 0)
@@ -200,7 +200,7 @@ public partial class SurfaceView
             width = Math.Max(width, Math.Max(Math.Min(editorMin, size.Width), target.MinWidth));
             height = Math.Max(height, Math.Max(Math.Min(editorMin, size.Height), target.MinHeight));
 
-            SetDesignSize(target, new Size(width, height));
+            SetTargetSize(target, new Size(width, height));
         }
 
         CommitEdit();
@@ -210,7 +210,7 @@ public partial class SurfaceView
 
     private bool TryNudgeSelection(Key key, KeyModifiers modifiers)
     {
-        var targets = SelectedDesignTargets;
+        var targets = SelectedTargets;
         if (targets.Count == 0)
             return false;
 
@@ -229,7 +229,7 @@ public partial class SurfaceView
             return false;
 
         // Одно нажатие — одна единица редактирования, как и одно перетаскивание.
-        BeginEdit(DesignEditKind.Move);
+        BeginEdit(SurfaceEditKind.Move);
 
         for (var i = 0; i < targets.Count; i++)
         {
@@ -238,7 +238,7 @@ public partial class SurfaceView
             if (filtered.X == 0 && filtered.Y == 0)
                 continue;
 
-            SetDesignPosition(target, GetDesignPosition(target) + filtered);
+            SetTargetPosition(target, GetTargetPosition(target) + filtered);
         }
 
         CommitEdit();
@@ -248,7 +248,7 @@ public partial class SurfaceView
 
     internal bool TryClearSelection()
     {
-        if (SelectedDesignTargets.Count == 0)
+        if (SelectedTargets.Count == 0)
             return false;
 
         Selection.Clear();
@@ -285,7 +285,7 @@ public partial class SurfaceView
 
     private bool TryRequestDelete()
     {
-        var targets = SelectedDesignTargets;
+        var targets = SelectedTargets;
         if (targets.Count == 0)
             return false;
 
@@ -293,7 +293,7 @@ public partial class SurfaceView
         if (handler == null)
             return false;
 
-        var args = new DesignEditorDeleteRequestedEventArgs(targets);
+        var args = new SurfaceDeleteRequestedEventArgs(targets);
 
         // Обработчики обходятся по одному, и первый же выполнивший удаление
         // останавливает обход. Список targets снят до правки, поэтому следующему
@@ -301,7 +301,7 @@ public partial class SurfaceView
         // для ReorderRequested и не было исправлено здесь.
         foreach (var invocation in handler.GetInvocationList())
         {
-            ((EventHandler<DesignEditorDeleteRequestedEventArgs>)invocation)(this, args);
+            ((EventHandler<SurfaceDeleteRequestedEventArgs>)invocation)(this, args);
 
             if (args.Handled)
                 break;

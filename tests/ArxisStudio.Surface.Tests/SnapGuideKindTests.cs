@@ -10,7 +10,7 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Нужен ровно для одного — покрасить выравнивание по центру иначе, чем по краю.
-/// До этого <c>DesignSnapGuide</c> нёс только ориентацию и координаты, и слою
+/// До этого <c>SurfaceSnapGuide</c> нёс только ориентацию и координаты, и слою
 /// нечем было их различить.
 /// <para>
 /// Центральной линия считается, только когда центры совпали <b>с обеих сторон</b>.
@@ -29,9 +29,9 @@ public class SnapGuideKindTests
         // Центр moving на 150 — там же, где центр соседа.
         var moving = new Rect(110, 100, 80, 40);
 
-        var guide = Assert.Single(DesignSnapGuideResolver.CollectGuides(moving, new[] { Anchor }));
+        var guide = Assert.Single(SurfaceSnapGuideResolver.CollectGuides(moving, new[] { Anchor }));
 
-        Assert.Equal(DesignSnapGuideKind.Centre, guide.Kind);
+        Assert.Equal(SurfaceSnapGuideKind.Centre, guide.Kind);
         Assert.Equal(150, guide.Position);
     }
 
@@ -41,9 +41,9 @@ public class SnapGuideKindTests
         // Левый край moving на 100 — там же, где левый край соседа.
         var moving = new Rect(100, 100, 80, 40);
 
-        var guides = DesignSnapGuideResolver.CollectGuides(moving, new[] { Anchor });
+        var guides = SurfaceSnapGuideResolver.CollectGuides(moving, new[] { Anchor });
 
-        Assert.All(guides, g => Assert.Equal(DesignSnapGuideKind.Edge, g.Kind));
+        Assert.All(guides, g => Assert.Equal(SurfaceSnapGuideKind.Edge, g.Kind));
         Assert.Contains(guides, g => g.Position == 100);
     }
 
@@ -53,10 +53,10 @@ public class SnapGuideKindTests
         // Центр moving на 100 — это левый край соседа, а не его центр.
         var moving = new Rect(60, 100, 80, 40);
 
-        var guide = Assert.Single(DesignSnapGuideResolver.CollectGuides(moving, new[] { Anchor }));
+        var guide = Assert.Single(SurfaceSnapGuideResolver.CollectGuides(moving, new[] { Anchor }));
 
         Assert.Equal(100, guide.Position);
-        Assert.Equal(DesignSnapGuideKind.Edge, guide.Kind);
+        Assert.Equal(SurfaceSnapGuideKind.Edge, guide.Kind);
     }
 
     /// <summary>
@@ -74,17 +74,17 @@ public class SnapGuideKindTests
         var userGuide = new Rect(150, 0, 0, 800);
         var moving = new Rect(110, 100, 80, 40);
 
-        var guide = Assert.Single(DesignSnapGuideResolver.CollectGuides(moving, new[] { userGuide }));
+        var guide = Assert.Single(SurfaceSnapGuideResolver.CollectGuides(moving, new[] { userGuide }));
 
         Assert.Equal(150, guide.Position);
-        Assert.Equal(DesignSnapGuideKind.Centre, guide.Kind);
+        Assert.Equal(SurfaceSnapGuideKind.Centre, guide.Kind);
     }
 
     [AvaloniaFact]
     public void Kind_Participates_In_Equality()
     {
-        var edge = new DesignSnapGuide(DesignSnapGuideOrientation.Vertical, 10, 0, 100);
-        var centre = new DesignSnapGuide(DesignSnapGuideOrientation.Vertical, 10, 0, 100, DesignSnapGuideKind.Centre);
+        var edge = new SurfaceSnapGuide(SurfaceSnapGuideOrientation.Vertical, 10, 0, 100);
+        var centre = new SurfaceSnapGuide(SurfaceSnapGuideOrientation.Vertical, 10, 0, 100, SurfaceSnapGuideKind.Centre);
 
         // Иначе набор линий, сменивший только вид, не переопубликовался бы:
         // сравнение снимка идёт по значению.

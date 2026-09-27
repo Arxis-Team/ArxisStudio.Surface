@@ -13,7 +13,7 @@ namespace ArxisStudio.Surface;
 /// редактор задаёт: иначе итог зависел бы от того, успел ли пройти layout к моменту
 /// фиксации. Исходное состояние снимается один раз, при первом обращении к target.
 /// </remarks>
-internal sealed class DesignEditScope
+internal sealed class SurfaceEditScope
 {
     private sealed class Entry
     {
@@ -33,9 +33,9 @@ internal sealed class DesignEditScope
     private readonly Dictionary<Control, Entry> _entries = new();
     private readonly List<Control> _order = new();
 
-    public DesignEditScope(DesignEditKind kind) => Kind = kind;
+    public SurfaceEditScope(SurfaceEditKind kind) => Kind = kind;
 
-    public DesignEditKind Kind { get; }
+    public SurfaceEditKind Kind { get; }
 
     private IReadOnlyList<IEditFacet> _facets = [];
 
@@ -66,9 +66,9 @@ internal sealed class DesignEditScope
     /// <summary>
     /// Собирает итоговый список изменений, отбрасывая те, что вернулись к исходному.
     /// </summary>
-    public IReadOnlyList<DesignChange> BuildChanges()
+    public IReadOnlyList<TargetChange> BuildChanges()
     {
-        List<DesignChange>? changes = null;
+        List<TargetChange>? changes = null;
 
         foreach (var target in _order)
         {
@@ -77,14 +77,14 @@ internal sealed class DesignEditScope
 
             if (!AreClose(entry.Before, after))
             {
-                (changes ??= new List<DesignChange>()).Add(
-                    new DesignGeometryChange(target, entry.Before, after));
+                (changes ??= new List<TargetChange>()).Add(
+                    new GeometryChange(target, entry.Before, after));
             }
 
             if (entry.ZIndex != entry.BeforeZIndex)
             {
-                (changes ??= new List<DesignChange>()).Add(
-                    new DesignOrderChange(target, entry.BeforeZIndex, entry.ZIndex));
+                (changes ??= new List<TargetChange>()).Add(
+                    new OrderChange(target, entry.BeforeZIndex, entry.ZIndex));
             }
 
             for (var i = 0; i < _facets.Count; i++)
@@ -92,13 +92,13 @@ internal sealed class DesignEditScope
                 var (was, now) = entry.Facets[i];
                 if (!_facets[i].AreEqual(was, now))
                 {
-                    (changes ??= new List<DesignChange>()).Add(
+                    (changes ??= new List<TargetChange>()).Add(
                         _facets[i].CreateChange(target, was, now));
                 }
             }
         }
 
-        return changes ?? (IReadOnlyList<DesignChange>)Array.Empty<DesignChange>();
+        return changes ?? (IReadOnlyList<TargetChange>)Array.Empty<TargetChange>();
     }
 
     private Entry Touch(SurfaceView view, Control target)
@@ -111,8 +111,8 @@ internal sealed class DesignEditScope
         if (_entries.Count == 0)
             _facets = view.EditFacets;
 
-        var position = view.GetDesignPosition(target);
-        var size = view.GetDesignSize(target);
+        var position = view.GetTargetPosition(target);
+        var size = view.GetTargetSize(target);
 
         var facets = new (object? Before, object? After)[_facets.Count];
         for (var i = 0; i < facets.Length; i++)

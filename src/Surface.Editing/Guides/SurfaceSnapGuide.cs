@@ -5,7 +5,7 @@ namespace ArxisStudio.Surface.Editing;
 /// <summary>
 /// Ось, вдоль которой работает направляющая.
 /// </summary>
-public enum DesignSnapGuideOrientation
+public enum SurfaceSnapGuideOrientation
 {
     /// <summary>Вертикальная линия: выравнивает по оси X.</summary>
     Vertical,
@@ -21,7 +21,7 @@ public enum DesignSnapGuideOrientation
 /// Нужен только для оформления: по краю и по центру принято показывать разным цветом,
 /// потому что это разные отношения — «встал вплотную» и «встал симметрично».
 /// </remarks>
-public enum DesignSnapGuideKind
+public enum SurfaceSnapGuideKind
 {
     /// <summary>Выравнивание, в котором участвует хотя бы один край.</summary>
     Edge,
@@ -43,22 +43,22 @@ public enum DesignSnapGuideKind
 /// выравнивание, — линия во весь холст этого не показывает.
 /// </para>
 /// </remarks>
-public readonly struct DesignSnapGuide : IEquatable<DesignSnapGuide>
+public readonly struct SurfaceSnapGuide : IEquatable<SurfaceSnapGuide>
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignSnapGuide"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceSnapGuide"/>.
     /// </summary>
     /// <param name="orientation">Ось, вдоль которой работает направляющая.</param>
     /// <param name="position">Координата линии по выравниваемой оси.</param>
     /// <param name="start">Начало линии по другой оси.</param>
     /// <param name="end">Конец линии по другой оси.</param>
     /// <param name="kind">Вид выравнивания, породившего линию.</param>
-    public DesignSnapGuide(
-        DesignSnapGuideOrientation orientation,
+    public SurfaceSnapGuide(
+        SurfaceSnapGuideOrientation orientation,
         double position,
         double start,
         double end,
-        DesignSnapGuideKind kind = DesignSnapGuideKind.Edge)
+        SurfaceSnapGuideKind kind = SurfaceSnapGuideKind.Edge)
     {
         Orientation = orientation;
         Position = position;
@@ -68,7 +68,7 @@ public readonly struct DesignSnapGuide : IEquatable<DesignSnapGuide>
     }
 
     /// <summary>Получает ось, вдоль которой работает направляющая.</summary>
-    public DesignSnapGuideOrientation Orientation { get; }
+    public SurfaceSnapGuideOrientation Orientation { get; }
 
     /// <summary>Получает координату линии по выравниваемой оси.</summary>
     public double Position { get; }
@@ -80,10 +80,10 @@ public readonly struct DesignSnapGuide : IEquatable<DesignSnapGuide>
     public double End { get; }
 
     /// <summary>Получает вид выравнивания, породившего линию.</summary>
-    public DesignSnapGuideKind Kind { get; }
+    public SurfaceSnapGuideKind Kind { get; }
 
     /// <inheritdoc />
-    public bool Equals(DesignSnapGuide other)
+    public bool Equals(SurfaceSnapGuide other)
         => Orientation == other.Orientation
            && Position.Equals(other.Position)
            && Start.Equals(other.Start)
@@ -91,7 +91,7 @@ public readonly struct DesignSnapGuide : IEquatable<DesignSnapGuide>
            && Kind == other.Kind;
 
     /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is DesignSnapGuide other && Equals(other);
+    public override bool Equals(object? obj) => obj is SurfaceSnapGuide other && Equals(other);
 
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(Orientation, Position, Start, End, Kind);

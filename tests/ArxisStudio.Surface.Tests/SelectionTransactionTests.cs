@@ -21,14 +21,14 @@ namespace ArxisStudio.Tests;
 /// </remarks>
 public class SelectionTransactionTests
 {
-    private static (EditorHarness Harness, List<DesignSelectionChangedEventArgs> Events) Create()
+    private static (EditorHarness Harness, List<SurfaceSelectionChangedEventArgs> Events) Create()
     {
         var harness = EditorHarness.Create(nodeCount: 2);
         harness.PlaceContainer(0, new Point(100, 100), new Size(200, 150));
         harness.PlaceContainer(1, new Point(400, 100), new Size(200, 150));
 
-        var events = new List<DesignSelectionChangedEventArgs>();
-        harness.Editor.DesignSelectionChanged += (_, e) => events.Add(e);
+        var events = new List<SurfaceSelectionChangedEventArgs>();
+        harness.Editor.SurfaceSelectionChanged += (_, e) => events.Add(e);
         return (harness, events);
     }
 
@@ -73,14 +73,14 @@ public class SelectionTransactionTests
         // которого не было: раньше здесь было три события, и одно из них
         // объявляло пустое выделение между двумя записями индексного слоя.
         Assert.All(events, e => Assert.NotEmpty(e.NewTargets));
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
     }
 
     [AvaloniaFact]
     public void Starting_A_Marquee_Raises_One_Event()
     {
         var (harness, events) = Create();
-        harness.Editor.SelectDesignTarget(harness.Nested(0));
+        harness.Editor.SelectTarget(harness.Nested(0));
         harness.RunLayout();
         events.Clear();
 

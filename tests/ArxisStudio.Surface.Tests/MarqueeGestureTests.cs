@@ -11,7 +11,7 @@ namespace ArxisStudio.Tests;
 /// Смысл перетаскивания, начатого на пустой области контейнера.
 /// </summary>
 /// <remarks>
-/// Политика задаётся через <see cref="DesignEditorInputGestures.ContainerEmptyAreaDrag"/>.
+/// Политика задаётся через <see cref="SurfaceInputGestures.ContainerEmptyAreaDrag"/>.
 /// По умолчанию пустая область — фон для рамки выделения, как в form designer'ах;
 /// перемещение контейнера остаётся доступным через модификатор и через
 /// перетаскивание уже выбранного контейнера.
@@ -73,8 +73,8 @@ public class MarqueeGestureTests
         // контейнер», и тест пройдёт, ничего не проверив.
         Drag(harness, new Point(500, 400), new Point(50, 50));
 
-        var target = Assert.Single(harness.Editor.SelectedDesignTargets);
-        Assert.Equal(DesignSelectionScope.Container, target.Scope);
+        var target = Assert.Single(harness.Editor.SelectedTargets);
+        Assert.Equal(SurfaceSelectionScope.Container, target.Scope);
         Assert.Same(harness.Container(0), target.Target);
     }
 
@@ -86,7 +86,7 @@ public class MarqueeGestureTests
 
         Drag(harness, EmptyArea, AboveBoth);
 
-        var targets = harness.Editor.SelectedDesignTargets.Select(t => t.Target).ToList();
+        var targets = harness.Editor.SelectedTargets.Select(t => t.Target).ToList();
 
         Assert.Contains(harness.Nested(0), targets);
         Assert.Contains(harness.Named(0, "Sibling"), targets);
@@ -189,7 +189,7 @@ public class MarqueeGestureTests
         harness.Window.MouseUp(new Point(600, 105), MouseButton.Left);
         harness.RunLayout();
 
-        var targets = harness.Editor.SelectedDesignTargets.Select(t => t.Target).ToList();
+        var targets = harness.Editor.SelectedTargets.Select(t => t.Target).ToList();
 
         // Выбраны дети второго контейнера — того, что накрыт рамкой,
         // а не того, где произошло нажатие.
@@ -224,7 +224,7 @@ public class MarqueeGestureTests
 
         // Пустая рамка трактуется как клик: контейнер выбран, а не «ничего».
         Assert.Same(container, harness.Editor.PrimarySelectionTarget!.Target);
-        Assert.Equal(DesignSelectionScope.Container, harness.Editor.PrimarySelectionTarget.Scope);
+        Assert.Equal(SurfaceSelectionScope.Container, harness.Editor.PrimarySelectionTarget.Scope);
         Assert.Equal(ContainerLocation, container.Location);
     }
 }

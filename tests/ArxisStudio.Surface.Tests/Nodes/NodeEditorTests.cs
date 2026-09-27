@@ -43,14 +43,14 @@ public class NodeEditorTests
     public void A_Node_Drags_As_One_Edit_That_Undoes()
     {
         var stand = NodeStand.Create([new Point(100, 100)]);
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         stand.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         stand.Drag(stand.CentreOf(0), new Vector(40, 30));
 
         Assert.Equal(new Point(140, 130), stand.Node(0).Location);
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Move, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Move, edit.Kind);
 
         foreach (var change in edit.Changes)
             stand.Editor.Revert(change);

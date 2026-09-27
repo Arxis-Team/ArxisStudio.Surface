@@ -103,7 +103,7 @@ public class GroupingTests
         // Группу поперёк форм не из чего собрать: слой выделения такой набор не строит
         // вовсе — добавление к выделению требует общего design host. Проверять надо
         // именно это, а не отказ группировки: до него дело просто не доходит.
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.False(harness.Editor.GroupSelection());
         Assert.Null(DesignGroup.GetId(harness.Nested(0)));
         Assert.Null(DesignGroup.GetId(harness.Nested(1)));
@@ -162,8 +162,8 @@ public class GroupingTests
         var harness = CreateGrouped();
 
         var bounds = harness.Editor.SelectionBounds;
-        var nested = harness.Editor.GetDesignPosition(harness.Nested(0));
-        var sibling = harness.Editor.GetDesignPosition(harness.Named(0, "Sibling"));
+        var nested = harness.Editor.GetTargetPosition(harness.Nested(0));
+        var sibling = harness.Editor.GetTargetPosition(harness.Named(0, "Sibling"));
 
         Assert.Equal(nested.X, bounds.X, 1);
         Assert.Equal(sibling.X + EditorHarness.NestedWidth, bounds.Right, 1);
@@ -197,11 +197,11 @@ public class GroupingTests
     {
         var harness = CreateGrouped();
         Click(harness, new Point(600, 500));
-        Assert.Empty(harness.Editor.SelectedDesignTargets);
+        Assert.Empty(harness.Editor.SelectedTargets);
 
         Click(harness, NestedCentre);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasGroupSelection);
     }
 
@@ -223,7 +223,7 @@ public class GroupingTests
         harness.Window.MouseUp(NestedCentre, MouseButton.Left);
         harness.RunLayout();
 
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.False(harness.Editor.HasGroupSelection);
         Assert.Same(harness.Nested(0), harness.Editor.PrimarySelectionTarget!.Target);
     }
@@ -244,12 +244,12 @@ public class GroupingTests
         harness.Window.MouseDown(NestedCentre, MouseButton.Left);
         harness.Window.MouseUp(NestedCentre, MouseButton.Left);
         harness.RunLayout();
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
 
         Click(harness, new Point(600, 500));
         Click(harness, NestedCentre);
 
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
         Assert.True(harness.Editor.HasGroupSelection);
     }
 
@@ -263,8 +263,8 @@ public class GroupingTests
     {
         var harness = CreateGrouped();
 
-        var nestedBefore = harness.Editor.GetDesignPosition(harness.Nested(0));
-        var siblingBefore = harness.Editor.GetDesignPosition(harness.Named(0, "Sibling"));
+        var nestedBefore = harness.Editor.GetTargetPosition(harness.Nested(0));
+        var siblingBefore = harness.Editor.GetTargetPosition(harness.Named(0, "Sibling"));
 
         harness.Window.MouseDown(NestedCentre, MouseButton.Left);
         harness.Window.MouseMove(NestedCentre + new Vector(10, 6));
@@ -272,8 +272,8 @@ public class GroupingTests
         harness.Window.MouseUp(NestedCentre + new Vector(40, 20), MouseButton.Left);
         harness.RunLayout();
 
-        var nestedAfter = harness.Editor.GetDesignPosition(harness.Nested(0));
-        var siblingAfter = harness.Editor.GetDesignPosition(harness.Named(0, "Sibling"));
+        var nestedAfter = harness.Editor.GetTargetPosition(harness.Nested(0));
+        var siblingAfter = harness.Editor.GetTargetPosition(harness.Named(0, "Sibling"));
 
         Assert.NotEqual(nestedBefore.X, nestedAfter.X);
         Assert.Equal(nestedAfter.X - nestedBefore.X, siblingAfter.X - siblingBefore.X, 1);
@@ -317,7 +317,7 @@ public class GroupingTests
         var nested = harness.Nested(0);
         var sibling = harness.Named(0, "Sibling");
 
-        var widthBefore = harness.Editor.GetDesignSize(nested).Width;
+        var widthBefore = harness.Editor.GetTargetSize(nested).Width;
         var frameBefore = harness.Editor.SelectionBounds;
 
         var adorner = GroupAdorner(harness);
@@ -328,8 +328,8 @@ public class GroupingTests
         harness.RunLayout();
 
         Assert.True(harness.Editor.SelectionBounds.Width > frameBefore.Width);
-        Assert.True(harness.Editor.GetDesignSize(nested).Width > widthBefore);
-        Assert.True(harness.Editor.GetDesignSize(sibling).Width > 0);
+        Assert.True(harness.Editor.GetTargetSize(nested).Width > widthBefore);
+        Assert.True(harness.Editor.GetTargetSize(sibling).Width > 0);
     }
 
     // ---- Контракт изменений -----------------------------------------------------
@@ -344,14 +344,14 @@ public class GroupingTests
         Click(harness, NestedCentre);
         Click(harness, SiblingCentre, RawInputModifiers.Shift);
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         harness.Editor.GroupSelection();
         harness.RunLayout();
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Group, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Group, edit.Kind);
         Assert.Equal(2, edit.Changes.Count);
         Assert.All(edit.Changes, c => Assert.IsType<DesignGroupChange>(c));
     }
@@ -363,7 +363,7 @@ public class GroupingTests
         Click(harness, NestedCentre);
         Click(harness, SiblingCentre, RawInputModifiers.Shift);
 
-        DesignEditCompletedEventArgs? edit = null;
+        SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
         harness.Editor.GroupSelection();
@@ -391,7 +391,7 @@ public class GroupingTests
     public void Applying_A_Group_Change_Produces_No_New_Edit()
     {
         var harness = CreateGrouped();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         harness.Editor.ApplyGroup(harness.Nested(0), null);
@@ -433,8 +433,8 @@ public class GroupingTests
 
         Click(harness, NestedCentre);
 
-        Assert.DoesNotContain(harness.Editor.SelectedDesignTargets, t => ReferenceEquals(t.Target, panel));
-        Assert.Equal(2, harness.Editor.SelectedDesignTargetsCount);
+        Assert.DoesNotContain(harness.Editor.SelectedTargets, t => ReferenceEquals(t.Target, panel));
+        Assert.Equal(2, harness.Editor.SelectedTargetsCount);
     }
 
     /// <summary>
@@ -475,7 +475,7 @@ public class GroupingTests
         Click(harness, SiblingCentre, RawInputModifiers.Shift);
 
         var events = 0;
-        harness.Editor.DesignSelectionChanged += (_, _) => events++;
+        harness.Editor.SurfaceSelectionChanged += (_, _) => events++;
 
         Assert.True(harness.Editor.GroupSelection());
         harness.RunLayout();
@@ -551,7 +551,7 @@ public class GroupingTests
         harness.RunLayout();
 
         Assert.All(
-            harness.Editor.SelectedDesignTargets,
+            harness.Editor.SelectedTargets,
             t => Assert.Equal(DesignGroup.GetId(t.Target), t.GroupId));
         Assert.NotNull(harness.Editor.PrimarySelectionTarget!.GroupId);
     }
@@ -595,14 +595,14 @@ public class GroupingTests
         var harness = CreateGrouped();
         var id = DesignGroup.GetId(harness.Nested(0))!;
 
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Assert.True(harness.Editor.RenameGroup(harness.Container(0), id, "toolbar"));
         harness.RunLayout();
 
         var edit = Assert.Single(edits);
-        Assert.Equal(DesignEditKind.Group, edit.Kind);
+        Assert.Equal(SurfaceEditKind.Group, edit.Kind);
         Assert.Equal(2, edit.Changes.Count);
 
         foreach (var change in edit.Changes)
@@ -647,7 +647,7 @@ public class GroupingTests
     public void Renaming_An_Unknown_Group_Changes_Nothing()
     {
         var harness = CreateGrouped();
-        var edits = new List<DesignEditCompletedEventArgs>();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
         Assert.False(harness.Editor.RenameGroup(harness.Container(0), "group-404", "toolbar"));
@@ -681,7 +681,7 @@ public class GroupingTests
 
         // Внутри открытой группы клик выбирает участника поодиночке.
         Click(harness, SiblingCentre);
-        Assert.Equal(1, harness.Editor.SelectedDesignTargetsCount);
+        Assert.Equal(1, harness.Editor.SelectedTargetsCount);
     }
 
     [AvaloniaFact]

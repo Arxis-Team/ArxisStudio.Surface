@@ -17,7 +17,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
-using DesignInteraction = ArxisStudio.Surface.Editing.DesignInteraction;
+using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
 using ArxisStudio.Surface;
@@ -53,7 +53,7 @@ public partial class DesignEditor
     /// </remarks>
     internal override ItemDragPlan PlanItemDrag(SurfaceItem container, Control moveTarget)
     {
-        if (DesignInteraction.GetMovePolicy(moveTarget) == ArxisStudio.Surface.MovePolicy.None)
+        if (SurfaceInteraction.GetMovePolicy(moveTarget) == ArxisStudio.Surface.MovePolicy.None)
             return ItemDragPlan.Refuse;
 
         var semantics = GetPlacementStrategy(moveTarget).MoveSemantics;
@@ -84,7 +84,7 @@ public partial class DesignEditor
             return false;
 
         RetargetSelectionForContext(position, e.KeyModifiers);
-        RequestContextSafe(DesignEditorContextSource.Pointer, position, e.KeyModifiers);
+        RequestContextSafe(SurfaceContextSource.Pointer, position, e.KeyModifiers);
         return true;
     }
 
@@ -125,7 +125,7 @@ public partial class DesignEditor
             return;
 
         // До PushState: ItemResizingState.Enter уже фиксирует текущий размер.
-        BeginEdit(DesignEditKind.Resize);
+        BeginEdit(SurfaceEditKind.Resize);
         _primarySelectionItem.PushState(new ItemResizingState(_primarySelectionItem, _primarySelectionControl, e.Direction));
         _primarySelectionItem.OnResizeStarted(e.Vector);
         e.Handled = true;
@@ -180,7 +180,7 @@ public partial class DesignEditor
         // группа и снаружи, и внутри жеста остаётся одним элементом.
         if (e.AdornerInfo.Members is { Count: > 1 } members)
         {
-            BeginEdit(DesignEditKind.Resize);
+            BeginEdit(SurfaceEditKind.Resize);
             if (!TryCreateGroupResizeOperation(members, e.AdornerInfo.Bounds, e.Direction, out var clusterOperation))
             {
                 CancelEdit();
@@ -199,7 +199,7 @@ public partial class DesignEditor
         if (!IsResizeAllowed(target, e.Direction))
             return;
 
-        BeginEdit(DesignEditKind.Resize);
+        BeginEdit(SurfaceEditKind.Resize);
         container.PushState(new ItemResizingState(container, target, e.Direction));
         container.OnResizeStarted(e.Vector);
         e.Handled = true;
@@ -288,7 +288,7 @@ public partial class DesignEditor
         // TryCreateGroupResizeOperation фиксирует текущие размеры target'ов,
         // поэтому открывать единицу редактирования нужно до него — и отменять,
         // если операция так и не создалась.
-        BeginEdit(DesignEditKind.Resize);
+        BeginEdit(SurfaceEditKind.Resize);
         if (!TryCreateGroupResizeOperation(e.Direction, out var operation))
         {
             CancelEdit();
@@ -423,7 +423,7 @@ public partial class DesignEditor
             if (!TryGetDesignBounds(target, out var bounds))
                 continue;
 
-            SetDesignSize(target, GetDesignSize(target));
+            SetTargetSize(target, GetTargetSize(target));
 
             targets.Add(new GroupResizeTarget(target, bounds));
         }

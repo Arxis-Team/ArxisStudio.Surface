@@ -8,7 +8,7 @@ namespace ArxisStudio.Surface;
 /// <summary>
 /// Определяет вид завершённого изменения в редакторе.
 /// </summary>
-public enum DesignEditKind
+public enum SurfaceEditKind
 {
     /// <summary>
     /// Перемещение одного или нескольких targets.
@@ -44,20 +44,20 @@ public enum DesignEditKind
 }
 
 /// <summary>
-/// Базовое описание изменения одного design target.
+/// Базовое описание изменения одного target.
 /// </summary>
 /// <remarks>
 /// Приложению не обязательно разбирать конкретный тип: <see cref="SurfaceView.Revert"/>
 /// и <see cref="SurfaceView.Reapply"/> принимают любое изменение, поэтому стек отмены
 /// пишется единообразно.
 /// </remarks>
-public abstract class DesignChange
+public abstract class TargetChange
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignChange"/>.
+    /// Инициализирует новый экземпляр <see cref="TargetChange"/>.
     /// </summary>
     /// <param name="target">Изменённый контрол.</param>
-    protected DesignChange(Control target)
+    protected TargetChange(Control target)
         => Target = target ?? throw new ArgumentNullException(nameof(target));
 
     /// <summary>
@@ -80,14 +80,14 @@ public abstract class DesignChange
 }
 
 /// <summary>
-/// Описывает изменение порядка перекрытия одного design target.
+/// Описывает изменение порядка перекрытия одного target.
 /// </summary>
-public sealed class DesignOrderChange : DesignChange
+public sealed class OrderChange : TargetChange
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignOrderChange"/>.
+    /// Инициализирует новый экземпляр <see cref="OrderChange"/>.
     /// </summary>
-    public DesignOrderChange(Control target, int oldZIndex, int newZIndex)
+    public OrderChange(Control target, int oldZIndex, int newZIndex)
         : base(target)
     {
         OldZIndex = oldZIndex;
@@ -117,13 +117,13 @@ public sealed class DesignOrderChange : DesignChange
 /// который выполняет приложение. Пока запрос не помечен <see cref="Handled"/>,
 /// нажатие считается необработанным и продолжает всплывать.
 /// </remarks>
-public sealed class DesignEditorDeleteRequestedEventArgs : EventArgs
+public sealed class SurfaceDeleteRequestedEventArgs : EventArgs
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditorDeleteRequestedEventArgs"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceDeleteRequestedEventArgs"/>.
     /// </summary>
     /// <param name="targets">Выделенные targets на момент запроса.</param>
-    public DesignEditorDeleteRequestedEventArgs(IReadOnlyList<DesignSelectionTarget> targets)
+    public SurfaceDeleteRequestedEventArgs(IReadOnlyList<SurfaceSelectionTarget> targets)
     {
         Targets = targets ?? throw new ArgumentNullException(nameof(targets));
     }
@@ -131,7 +131,7 @@ public sealed class DesignEditorDeleteRequestedEventArgs : EventArgs
     /// <summary>
     /// Получает выделенные targets на момент запроса.
     /// </summary>
-    public IReadOnlyList<DesignSelectionTarget> Targets { get; }
+    public IReadOnlyList<SurfaceSelectionTarget> Targets { get; }
 
     /// <summary>
     /// Получает или задает признак того, что удаление выполнено приложением.
@@ -140,7 +140,7 @@ public sealed class DesignEditorDeleteRequestedEventArgs : EventArgs
 }
 
 /// <summary>
-/// Описывает изменение геометрии одного design target.
+/// Описывает изменение геометрии одного target.
 /// </summary>
 /// <remarks>
 /// Границы заданы в design-координатах: тех же, в которых работают
@@ -148,15 +148,15 @@ public sealed class DesignEditorDeleteRequestedEventArgs : EventArgs
 /// Их достаточно, чтобы вернуть target в прежнее состояние через
 /// <see cref="SurfaceView.ApplyGeometry"/>.
 /// </remarks>
-public sealed class DesignGeometryChange : DesignChange
+public sealed class GeometryChange : TargetChange
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignGeometryChange"/>.
+    /// Инициализирует новый экземпляр <see cref="GeometryChange"/>.
     /// </summary>
     /// <param name="target">Изменённый контрол.</param>
     /// <param name="oldBounds">Геометрия до изменения.</param>
     /// <param name="newBounds">Геометрия после изменения.</param>
-    public DesignGeometryChange(Control target, Rect oldBounds, Rect newBounds)
+    public GeometryChange(Control target, Rect oldBounds, Rect newBounds)
         : base(target)
     {
         OldBounds = oldBounds;
@@ -189,14 +189,14 @@ public sealed class DesignGeometryChange : DesignChange
 /// чтобы поток изменений был полным и правильно сгруппированным.
 /// </para>
 /// </remarks>
-public sealed class DesignEditCompletedEventArgs : EventArgs
+public sealed class SurfaceEditCompletedEventArgs : EventArgs
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditCompletedEventArgs"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceEditCompletedEventArgs"/>.
     /// </summary>
     /// <param name="kind">Вид изменения.</param>
     /// <param name="changes">Изменения геометрии, вошедшие в единицу редактирования.</param>
-    public DesignEditCompletedEventArgs(DesignEditKind kind, IReadOnlyList<DesignChange> changes)
+    public SurfaceEditCompletedEventArgs(SurfaceEditKind kind, IReadOnlyList<TargetChange> changes)
     {
         Kind = kind;
         Changes = changes ?? throw new ArgumentNullException(nameof(changes));
@@ -205,7 +205,7 @@ public sealed class DesignEditCompletedEventArgs : EventArgs
     /// <summary>
     /// Получает вид изменения.
     /// </summary>
-    public DesignEditKind Kind { get; }
+    public SurfaceEditKind Kind { get; }
 
     /// <summary>
     /// Получает изменения геометрии, вошедшие в единицу редактирования.
@@ -214,5 +214,5 @@ public sealed class DesignEditCompletedEventArgs : EventArgs
     /// Содержит только те targets, геометрия которых действительно изменилась:
     /// жест, вернувший элемент на исходное место, записи не создаёт.
     /// </remarks>
-    public IReadOnlyList<DesignChange> Changes { get; }
+    public IReadOnlyList<TargetChange> Changes { get; }
 }
