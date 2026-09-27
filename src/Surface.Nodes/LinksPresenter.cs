@@ -72,6 +72,16 @@ internal sealed class LinksPresenter : ItemsControl
 /// </remarks>
 internal sealed class LinkPanel : Panel
 {
+    /// <summary>
+    /// Сколько раз панель меряла связи — для стенда стоимости.
+    /// </summary>
+    internal int MeasuredChildren { get; private set; }
+
+    /// <summary>
+    /// Сколько раз панель расставляла связи — для стенда стоимости.
+    /// </summary>
+    internal int ArrangedChildren { get; private set; }
+
     /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)
     {
@@ -80,6 +90,7 @@ internal sealed class LinkPanel : Panel
 
         foreach (var child in Children)
         {
+            MeasuredChildren++;
             child.Measure(infinite);
 
             if (child is Link { IsResolved: true } link)
@@ -97,6 +108,7 @@ internal sealed class LinkPanel : Panel
     {
         foreach (var child in Children)
         {
+            ArrangedChildren++;
             if (child is Link { IsResolved: true } link)
                 child.Arrange(link.WorldBounds);
             else

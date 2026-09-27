@@ -48,6 +48,16 @@ public class SurfacePanel : Panel
         set => SetValue(ExtentProperty, value);
     }
 
+    /// <summary>
+    /// Сколько раз панель меряла детей — для стенда стоимости.
+    /// </summary>
+    internal int MeasuredChildren { get; private set; }
+
+    /// <summary>
+    /// Сколько раз панель расставляла детей — для стенда стоимости.
+    /// </summary>
+    internal int ArrangedChildren { get; private set; }
+
     /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)
     {
@@ -56,6 +66,7 @@ public class SurfacePanel : Panel
 
         foreach (var child in Children)
         {
+            MeasuredChildren++;
             child.Measure(infinite);
 
             var size = child.DesiredSize;
@@ -80,7 +91,10 @@ public class SurfacePanel : Panel
     protected override Size ArrangeOverride(Size finalSize)
     {
         foreach (var child in Children)
+        {
+            ArrangedChildren++;
             child.Arrange(new Rect(LocationOf(child), child.DesiredSize));
+        }
 
         return finalSize;
     }

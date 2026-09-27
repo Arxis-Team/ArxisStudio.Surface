@@ -7,7 +7,9 @@ using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using Xunit;
+using ArxisStudio.Surface;
 using ArxisStudio.Surface.Nodes;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.Nodes.States;
@@ -323,6 +325,114 @@ public class NodeGraphCostProbeTests
             _output.WriteLine($"{size} узлов, {stand.Links.Count} связей: перерисовка миникарты {redraw:F3} мс");
         }
     }
+
+    [AvaloniaFact]
+    public void A_Drag_Frame_Arranges_Every_Child_Of_Both_Panels()
+    {
+        // Откуда рост кадра: сдвиг одного узла заново расставляет всех детей панели узлов, а две
+        // пересчитанные связи — все связи своей панели. Счётчики печатаются и утверждаются.
+        foreach (var size in new[] { Small, Large })
+        {
+            var stand = CreateGraph(size);
+            var nodes = NodePanel(stand);
+            var links = LinkPanelOf(stand);
+            var frame = DragFrame(stand, StartDrag(stand));
+            frame();
+
+            const int frames = 10;
+            var measuredNodes = nodes.MeasuredChildren;
+            var arrangedNodes = nodes.ArrangedChildren;
+            var measuredLinks = links.MeasuredChildren;
+            var arrangedLinks = links.ArrangedChildren;
+            for (var i = 0; i < frames; i++)
+                frame();
+
+            var nodesMeasured = (nodes.MeasuredChildren - measuredNodes) / frames;
+            var nodesArranged = (nodes.ArrangedChildren - arrangedNodes) / frames;
+            var linksMeasured = (links.MeasuredChildren - measuredLinks) / frames;
+            var linksArranged = (links.ArrangedChildren - arrangedLinks) / frames;
+            _output.WriteLine($"{size} узлов, {stand.Links.Count} связей: за кадр узлов измерено {nodesMeasured}, "
+                + $"расставлено {nodesArranged}; связей измерено {linksMeasured}, расставлено {linksArranged}");
+
+            Assert.Equal(size, nodesArranged);
+            Assert.Equal(stand.Links.Count, linksArranged);
+        }
+    }
+
+    [AvaloniaFact]
+    public void The_Load_And_The_Rendered_Frame_Grow_With_The_Graph()
+    {
+        // Печать для решений: сколько стоит построить граф, разложить сдвиг узла и отрисовать
+        // окно после него. Безголовый ввод сам прогоняет и раскладку, и отрисовку, поэтому кадр
+        // перетаскивания их не разделяет; здесь они меряются порознь. Отрисовка — снимок всего
+        // окна, а не его грязной части: это оценка сверху, но обход визуалов в ней тот же.
+        foreach (var size in new[] { Small, Large })
+        {
+            var watch = Stopwatch.StartNew();
+            var stand = CreateGraph(size);
+            watch.Stop();
+
+            var node = stand.Node(Dragged);
+            var home = node.Location;
+            var flip = false;
+            var layout = MicrosecondsPerCall(() =>
+            {
+                flip = !flip;
+                node.Location = home + (flip ? new Vector(10, 0) : default);
+                stand.RunLayout();
+            }, calls: 20) / 1000;
+
+            var render = MicrosecondsPerCall(() =>
+            {
+                flip = !flip;
+                node.Location = home + (flip ? new Vector(10, 0) : default);
+                stand.RunLayout();
+                stand.Window.CaptureRenderedFrame();
+            }, calls: 10) / 1000 - layout;
+
+            _output.WriteLine($"{size} узлов: граф построен за {watch.Elapsed.TotalMilliseconds:F0} мс; "
+                + $"сдвиг узла — раскладка {layout:F3} мс, отрисовка окна {render:F3} мс");
+        }
+    }
+
+    [AvaloniaFact]
+    public void The_Minimap_Redraws_After_Any_Layout_Of_The_Window()
+    {
+        // Миникарта слушает проход раскладки окна: перерисовывается на каждом кадре перетаскивания
+        // и от раскладки, к редактору отношения не имеющей.
+        var stand = CreateGraph(Small);
+        var map = AddMinimap(stand);
+        var label = new TextBlock { Text = "0", HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        ((Grid)stand.Window.Content!).Children.Add(label);
+        stand.RunLayout();
+        stand.Window.CaptureRenderedFrame();
+
+        var before = map.RenderCount;
+        label.Text = "10";
+        stand.RunLayout();
+        stand.Window.CaptureRenderedFrame();
+        Assert.Equal(before + 1, map.RenderCount);
+
+        var frame = DragFrame(stand, StartDrag(stand));
+        before = map.RenderCount;
+        const int frames = 10;
+        for (var i = 0; i < frames; i++)
+        {
+            frame();
+            stand.Window.CaptureRenderedFrame();
+        }
+
+        // Проходов раскладки на кадр стенда два, и перерисовок выходит больше кадров; утверждается
+        // нижняя граница — не реже раза на кадр.
+        _output.WriteLine($"перерисовок миникарты за {frames} кадров перетаскивания: {map.RenderCount - before}");
+        Assert.True(map.RenderCount - before >= frames, $"{map.RenderCount - before} перерисовок за {frames} кадров");
+    }
+
+    private static SurfacePanel NodePanel(NodeStand stand) =>
+        stand.Editor.GetVisualDescendants().OfType<SurfacePanel>().Single();
+
+    private static LinkPanel LinkPanelOf(NodeStand stand) =>
+        stand.Editor.GetVisualDescendants().OfType<LinkPanel>().Single();
 
     private static SurfaceMinimap AddMinimap(NodeStand stand)
     {
