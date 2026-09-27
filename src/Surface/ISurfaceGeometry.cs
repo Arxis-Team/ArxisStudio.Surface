@@ -57,8 +57,9 @@ internal sealed class SurfaceItemGeometry : ISurfaceGeometry
 
     public void SetPosition(Control target, Point position)
     {
+        // Не снимая источника значения: привязка хоста к положению переживает жест (ADR 0007).
         if (target is SurfaceItem item)
-            item.Location = position;
+            item.SetCurrentValue(SurfaceItem.LocationProperty, position);
     }
 
     public bool TryGetBounds(Control target, out Rect bounds)

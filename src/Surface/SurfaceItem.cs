@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Mixins;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using ArxisStudio.Surface.States;
@@ -44,13 +45,16 @@ public class SurfaceItem : ContentControl, ISelectable
     /// Идентификатор свойства позиции элемента на холсте.
     /// </summary>
     public static readonly StyledProperty<Point> LocationProperty =
-        AvaloniaProperty.Register<SurfaceItem, Point>(nameof(Location));
+        AvaloniaProperty.Register<SurfaceItem, Point>(nameof(Location), defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Получает или задает позицию элемента на холсте в локальных координатах родительской панели.
     /// </summary>
     /// <remarks>
-    /// Обычно именно его удобнее привязывать к ViewModel.
+    /// Привязывается в обе стороны по умолчанию, как <c>Layout.X</c>/<c>Y</c> дизайнера интерфейса:
+    /// это положение, которое меняет пользователь. Ядро пишет его через <c>SetCurrentValue</c>, не
+    /// снимая привязки хоста — локальной (<see cref="SurfaceView.ItemLocationBinding"/>) или из стиля:
+    /// жест уходит в модель, а правка модели после жеста по-прежнему двигает контейнер.
     /// </remarks>
     public Point Location
     {

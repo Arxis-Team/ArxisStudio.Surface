@@ -43,7 +43,7 @@ internal sealed class AbsolutePlacementStrategy : ISurfacePlacementStrategy
     {
         if (target is UiDesignerItem item)
         {
-            item.Location = surfacePosition;
+            item.SetCurrentValue(SurfaceItem.LocationProperty, surfacePosition);
             return;
         }
 

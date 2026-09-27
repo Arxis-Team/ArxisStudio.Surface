@@ -395,7 +395,7 @@ internal class ItemDraggingState : SurfaceItemState
         var totalDeltaFallback = currentPointerPositionFallback - _initialPointerPosition;
         double fallbackX = Math.Round(_elementStartLocation.X + totalDeltaFallback.X);
         double fallbackY = Math.Round(_elementStartLocation.Y + totalDeltaFallback.Y);
-        Container.Location = new Point(fallbackX, fallbackY);
+        Container.SetCurrentValue(SurfaceItem.LocationProperty, new Point(fallbackX, fallbackY));
 
         var frameDeltaFallback = currentPointerPositionFallback - _previousPointerPosition;
         Container.RaiseEvent(new DragDeltaEventArgs(frameDeltaFallback.X, frameDeltaFallback.Y) { RoutedEvent = SurfaceItem.DragDeltaEvent });

@@ -32,13 +32,8 @@
 верхнего угла) и публикует охват элементов в `SurfaceView.ItemsExtent`.
 
 ```xml
-<surface:SurfaceView ItemsSource="{Binding Shapes}" SelectionMode="Multiple">
-    <surface:SurfaceView.ItemContainerTheme>
-        <ControlTheme TargetType="surface:SurfaceItem"
-                      BasedOn="{StaticResource {x:Type surface:SurfaceItem}}">
-            <Setter Property="Location" Value="{Binding Location}" />
-        </ControlTheme>
-    </surface:SurfaceView.ItemContainerTheme>
+<surface:SurfaceView ItemsSource="{Binding Shapes}" SelectionMode="Multiple"
+                     ItemLocationBinding="{Binding Location}">
     <surface:SurfaceView.ItemTemplate>
         <DataTemplate x:DataType="vm:ShapeViewModel">
             <Border Width="{Binding Width}" Height="{Binding Height}" Background="{Binding Fill}" />
@@ -47,9 +42,14 @@
 </surface:SurfaceView>
 ```
 
-Перетаскивание пишет `Location` локальным значением, и привязка из стиля ему уступает. Итог жеста
-модель получает из `EditCompleted` (см. «Контракт изменений»), а начальное положение можно ставить и
-кодом в `ContainerPrepared` — так делает демо редактора узлов.
+`ItemLocationBinding` даёт контейнеру положение его элемента — тем же приёмом, что
+`DisplayMemberBinding`, с элементом в качестве контекста данных; тип данных компилятор берёт у
+`ItemsSource`. `Location` привязывается в обе стороны по умолчанию, а ядро пишет его через
+`SetCurrentValue`, не снимая привязки хоста — ни этой, ни привязки из стиля: перетаскивание, смещение
+клавиатурой и отмена уходят в модель, а правка модели двигает контейнер. Готовый `SurfaceItem` из
+коллекции привязки не получает. Положение можно ставить и кодом в `ContainerPrepared` — так пока
+делает демо редактора узлов; итог жеста одной единицей правки приходит в `EditCompleted` (см.
+«Контракт изменений»).
 
 `SurfaceItem.IsDraggable = false` запрещает перетаскивать контейнер. Маршрутизируемые события
 контейнера: `DragStarted` (точка нажатия в координатах редактора — несмотря на имена

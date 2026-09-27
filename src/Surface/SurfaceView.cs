@@ -7,7 +7,9 @@ using Avalonia.Controls.Selection;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Media;
+using Avalonia.Metadata;
 using Avalonia.VisualTree;
 using ArxisStudio.Surface.States;
 
@@ -194,6 +196,50 @@ public partial class SurfaceView : SelectingItemsControl
     /// <returns>Новый <see cref="SurfaceItem"/>.</returns>
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
         => new SurfaceItem();
+
+    /// <summary>
+    /// Идентификатор свойства привязки положения элемента.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> ItemLocationBindingProperty =
+        AvaloniaProperty.Register<SurfaceView, BindingBase?>(nameof(ItemLocationBinding));
+
+    /// <summary>
+    /// Получает или задает привязку, дающую контейнеру положение его элемента на холсте.
+    /// </summary>
+    /// <remarks>
+    /// Применяется к <see cref="SurfaceItem.Location"/>, когда контейнер готовится, с элементом
+    /// коллекции в качестве контекста данных — тем же приёмом, что <c>DisplayMemberBinding</c>:
+    /// <c>ItemLocationBinding="{Binding Location}"</c>. <see cref="SurfaceItem.Location"/>
+    /// привязывается в обе стороны по умолчанию, а ядро пишет его, не снимая привязки: перетаскивание,
+    /// смещение клавиатурой и отмена уходят в модель, а правка модели двигает контейнер.
+    /// <para>
+    /// Готовый <see cref="SurfaceItem"/> из коллекции не трогается: его положение задал тот, кто его
+    /// создал. Не заданная привязка тоже ничего не ставит — положение тогда вправе задать стиль или
+    /// обработчик <c>ContainerPrepared</c>. Смена привязки действует на контейнеры, подготовленные после
+    /// неё.
+    /// </para>
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(ItemsSource))]
+    public BindingBase? ItemLocationBinding
+    {
+        get => GetValue(ItemLocationBindingProperty);
+        set => SetValue(ItemLocationBindingProperty, value);
+    }
+
+    /// <summary>
+    /// Даёт контейнеру положение его элемента привязкой <see cref="ItemLocationBinding"/>.
+    /// </summary>
+    /// <param name="container">Контейнер.</param>
+    /// <param name="item">Элемент источника данных.</param>
+    /// <param name="index">Индекс элемента.</param>
+    protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
+    {
+        base.PrepareContainerForItemOverride(container, item, index);
+
+        if (container is SurfaceItem surfaceItem && !ReferenceEquals(container, item) && ItemLocationBinding is { } location)
+            surfaceItem.Bind(SurfaceItem.LocationProperty, location);
+    }
 
     /// <summary>
     /// Сетка из шаблона, если она в нём есть.

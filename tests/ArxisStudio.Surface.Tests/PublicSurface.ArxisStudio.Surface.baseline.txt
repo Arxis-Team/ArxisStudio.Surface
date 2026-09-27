@@ -231,7 +231,7 @@ class ArxisStudio.Surface.SurfaceInteractionOptions : AvaloniaObject
 class ArxisStudio.Surface.SurfaceItem : ContentControl
     avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
     avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false [TwoWay]
-    avalonia LocationProperty -> Location : Point (styled) = 0, 0
+    avalonia LocationProperty -> Location : Point (styled) = 0, 0 [TwoWay]
     ctor .ctor()
     event EventHandler<DragCompletedEventArgs> DragCompleted
     event EventHandler<DragDeltaEventArgs> DragDelta
@@ -313,6 +313,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia InputGesturesProperty -> InputGestures : SurfaceInputGestures (direct)
     avalonia InteractionOptionsProperty -> InteractionOptions : SurfaceInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
+    avalonia ItemLocationBindingProperty -> ItemLocationBinding : BindingBase (styled) = null
     avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia MarqueeScopeProperty -> MarqueeScope : SurfaceItem (direct)
     avalonia MaxZoomProperty -> MaxZoom : Double (styled) = 5
@@ -361,9 +362,11 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPointerWheelChanged(PointerWheelEventArgs)
+    method Void PrepareContainerForItemOverride(Control, Object, Int32)
     method Void Reapply(TargetChange)
     method Void Revert(TargetChange)
     method Void ZoomAt(Double, Point)
+    property BindingBase ItemLocationBinding { get; set; }
     property Boolean IsSelecting { get; set; }
     property Boolean ShowGrid { get; set; }
     property Double MaxZoom { get; set; }

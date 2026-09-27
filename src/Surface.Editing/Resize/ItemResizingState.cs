@@ -218,7 +218,7 @@ internal class ItemResizingState : SurfaceItemState
             if (editor != null)
                 editor.SetTargetPosition(_target, new Point(newX, newY));
             else
-                Container.Location = new Point(newX, newY);
+                Container.SetCurrentValue(SurfaceItem.LocationProperty, new Point(newX, newY));
         }
 
         // Запоминаем применённое, а не запрошенное: следующая дельта придёт
