@@ -4,7 +4,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{EA04
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{D2164E8D-1770-4517-A005-7AA1FDC34956}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesignEditor.Demo", "samples\DesignEditor.Demo\DesignEditor.Demo.csproj", "{1D6B7B88-DB55-465D-9641-81073A6BD0EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UiDesigner.Demo", "samples\UiDesigner.Demo\UiDesigner.Demo.csproj", "{1D6B7B88-DB55-465D-9641-81073A6BD0EA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArxisStudio.Surface.Tests", "tests\ArxisStudio.Surface.Tests\ArxisStudio.Surface.Tests.csproj", "{971D80EC-8FCC-4A9F-8BDD-B73F02337A4F}"
 EndProject

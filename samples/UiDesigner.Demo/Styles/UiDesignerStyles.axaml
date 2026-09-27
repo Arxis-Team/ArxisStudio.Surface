@@ -1,0 +1,78 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UiDesigner.Demo.ViewModels"
+        xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface">
+
+    <!--
+        ContentMode="Loaded" — экраны написаны как обычная разметка приложения,
+        без designer-метаданных. Контейнер сам открывает их на редактирование
+        и гасит ввод, поэтому кнопки не нажимаются, а поля не принимают текст.
+    -->
+    <!--
+        Фон контейнера. По умолчанию он Transparent — это не «никакой», а вполне
+        рабочая кисть: попадание указателя считается по ней, и без неё нажатие
+        на пустое место формы до контейнера не дошло бы. Любая непрозрачная
+        кисть это свойство сохраняет, поэтому фон можно задавать свободно.
+
+        Одного фона для границ мало: экраны закрашивают себя от края до края,
+        поэтому он виден только в четырёх уголках, где их скругление в 10 не
+        достаёт до прямого угла контейнера.
+
+        Границу очерчивает оверлейная рамка контейнера, включённая ресурсом
+        UiDesignerItem.OutlineOpacity. Она лежит в той же ячейке шаблона, что
+        и содержимое, а не оборачивает его, поэтому рисуется поверх края и
+        **не отнимает ни пикселя**: экран занимает ровно объявленный размер.
+        Задавать контейнеру BorderThickness для этого нельзя — Border
+        разворачивает ребёнка внутри штриха, и форма стала бы на два пикселя
+        уже, чем в разметке. Цвет рамки берётся из BorderBrush контейнера.
+    -->
+    <Style Selector="surface|UiDesignerItem" x:DataType="vm:SurfaceItemViewModel">
+        <Setter Property="ContentMode" Value="Loaded" />
+        <Setter Property="Background" Value="#4A5A73" />
+        <Setter Property="BorderBrush" Value="#5A6B85" />
+        <Setter Property="Location" Value="{Binding Location, Mode=TwoWay}" />
+        <Setter Property="Width" Value="{Binding Width, Mode=TwoWay}" />
+        <Setter Property="Height" Value="{Binding Height, Mode=TwoWay}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <Style Selector="ContextMenu">
+        <Setter Property="Background" Value="#F0171B22" />
+        <Setter Property="BorderBrush" Value="#3E4655" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="6" />
+    </Style>
+
+    <Style Selector="ContextMenu MenuItem">
+        <Setter Property="Foreground" Value="#DCE6F8" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
+    <Style Selector="ContextMenu MenuItem:pointerover">
+        <Setter Property="Background" Value="#2B3750" />
+        <Setter Property="Foreground" Value="#DCE6F8" />
+    </Style>
+
+    <Style Selector="ContextMenu MenuItem:pressed">
+        <Setter Property="Background" Value="#324564" />
+        <Setter Property="Foreground" Value="#F5F9FF" />
+    </Style>
+
+    <Style Selector="ContextMenu MenuItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Foreground" Value="#F5F9FF" />
+    </Style>
+
+    <Style Selector="ContextMenu MenuItem:pressed /template/ ContentPresenter">
+        <Setter Property="Foreground" Value="#F5F9FF" />
+    </Style>
+
+    <Style Selector="ContextMenu Separator">
+        <Setter Property="Margin" Value="4,6" />
+        <Setter Property="Background" Value="#334054" />
+    </Style>
+</Styles>

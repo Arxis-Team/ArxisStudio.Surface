@@ -1,0 +1,459 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UiDesigner.Demo.ViewModels"
+        xmlns:screens="using:UiDesigner.Demo.Views.Screens"
+        xmlns:views="using:UiDesigner.Demo.Views"
+        xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="UiDesigner.Demo.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="UiDesigner.Demo"
+        WindowState="Maximized"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="Button.toolBtn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.toolBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Styles>
+
+    <Window.Resources>
+        <Color x:Key="BackgroundColor">#141417</Color>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
+        <!--
+            Сетка больше не описывается в демо: её предоставляет сама библиотека
+            через SurfaceGrid в шаблоне UiDesignerView. Палитра и шаг настраиваются
+            ресурсами UiDesignerView.Grid.*.
+        -->
+    </Window.Resources>
+
+    <!--
+        Панель инструментов лежит в шапке, а не висит над холстом. Плавающая панель
+        закрывала верх макета и мешала работать ровно там, где чаще всего находится
+        начало формы; строка Auto отдаёт ей ровно свою высоту и ничего не отнимает
+        у редактора.
+    -->
+    <Grid Background="{StaticResource BackgroundBrush}" RowDefinitions="Auto,*">
+
+        <!--
+            Линейки стоят рядом с редактором, а не внутри его шаблона: у редактора
+            точка ввода совпадает с точкой viewport'а, и слой, занявший место сверху
+            или слева, сдвинул бы это соответствие.
+        -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,*">
+
+        <!--
+            Панель групп стоит рядом с редактором, как и линейки: она читает его
+            публичный API и ничего не знает о его внутренностях.
+        -->
+        <views:GroupsPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                           x:Name="Groups"
+                           Editor="{Binding #Editor}" />
+
+        <!--
+            Панель свойств — вторая проверка API на потребителе: геометрию она пишет
+            публичным швом редактора, а раскладку и оформление — прямо в свойства
+            Avalonia, и разделы честно помечают, что из этого отменяется.
+        -->
+        <views:PropertiesPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
+                               x:Name="Properties"
+                               Editor="{Binding #Editor}" />
+
+        <surface:SurfaceRuler Grid.Row="0" Grid.Column="2"
+                                   x:Name="TopRuler"
+                                   Orientation="Horizontal"
+                                   Editor="{Binding #Editor}" />
+        <surface:SurfaceRuler Grid.Row="1" Grid.Column="1"
+                                   Orientation="Vertical"
+                                   Editor="{Binding #Editor}"
+                                   IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />
+
+        <surface:UiDesignerView Grid.Row="1" Grid.Column="2"
+                                 x:Name="Editor"
+                                 ItemsSource="{Binding Elements}"
+                                 SelectedItems="{Binding SelectedElements}"
+                                 SelectionMode="Multiple"
+                                 Guides="{Binding Guides}"
+                                 ShowGuides="False"
+                                 ViewportZoom="{Binding Zoom, Mode=TwoWay}">
+            <surface:UiDesignerView.InputGestures>
+                <surface:SurfaceInputGestures PanButton="Middle"
+                                                       PanModifiers="None"
+                                                       MarqueeButton="Left"
+                                                       MarqueeModifiers="None"
+                                                       ZoomModifiers="None"
+                                                       ContainerInteractionModifiers="Control"
+                                                       AdditiveSelectionModifiers="Shift" />
+            </surface:UiDesignerView.InputGestures>
+            <surface:UiDesignerView.InteractionOptions>
+                <surface:SurfaceInteractionOptions ZoomStep="1.1"
+                                                           DragStartThreshold="3"
+                                                           ResizeMinSize="10" />
+            </surface:UiDesignerView.InteractionOptions>
+
+            <!--
+                Курсоры жестов. Значения здесь совпадают с библиотечными: блок стоит
+                как документация настройки, а не как её изменение. Курсоры ручек
+                изменения размера и линейки задаются иначе — ресурсами темы: у них
+                есть свой элемент под указателем.
+            -->
+            <surface:UiDesignerView.Cursors>
+                <surface:SurfaceCursors Move="SizeAll"
+                                                 Blocked="No"
+                                                 Pan="Hand"
+                                                 Marquee="Cross"
+                                                 Reorder="DragMove"
+                                                 GuideHorizontal="SizeNorthSouth"
+                                                 GuideVertical="SizeWestEast" />
+            </surface:UiDesignerView.Cursors>
+
+            <surface:UiDesignerView.DataTemplates>
+                <DataTemplate DataType="{x:Type vm:HomeScreenViewModel}">
+                    <screens:HomeScreenView />
+                </DataTemplate>
+
+                <DataTemplate DataType="{x:Type vm:ThermostatScreenViewModel}">
+                    <screens:ThermostatScreenView />
+                </DataTemplate>
+
+                <DataTemplate DataType="{x:Type vm:AddDeviceDialogViewModel}">
+                    <screens:AddDeviceDialogView />
+                </DataTemplate>
+
+                <DataTemplate DataType="{x:Type vm:AutomationScreenViewModel}">
+                    <screens:AutomationScreenView />
+                </DataTemplate>
+
+                <DataTemplate DataType="{x:Type vm:ComponentLibraryViewModel}">
+                    <screens:ComponentLibraryView />
+                </DataTemplate>
+            </surface:UiDesignerView.DataTemplates>
+
+        </surface:UiDesignerView>
+        </Grid>
+
+        <Border Grid.Row="0"
+                Background="#1E1E1E"
+                BorderBrush="#3E4451" BorderThickness="0,0,0,1"
+                Padding="10,4">
+
+            <StackPanel Spacing="6">
+            <!-- Верхний ряд: чем редактор настраивают и как на него смотрят. -->
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                            ToolTip.Tip="Шаг сетки в мировых единицах. К нему же идёт привязка при перетаскивании и изменении размера.">
+                    <PathIcon Data="M3,3V21H21V3H3M9,19H5V15H9V19M9,13H5V9H9V13M9,7H5V5H9V7M15,19H11V15H15V19M15,13H11V9H15V13M15,7H11V5H15V7M19,19H17V15H19V19M19,13H17V9H19V13M19,7H17V5H19V7Z"
+                              Width="12" Height="12" Foreground="#999"/>
+                    <TextBlock Text="Grid" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                    <ComboBox Name="GridStepBox"
+                              MinWidth="64"
+                              FontSize="11"
+                              VerticalAlignment="Center"
+                              ItemsSource="{Binding GridCellSizes}"
+                              SelectedItem="{Binding GridCellSize}"/>
+                    <CheckBox Name="SnapBox"
+                              FontSize="10"
+                              Foreground="#999"
+                              VerticalAlignment="Center"
+                              Content="snap"
+                              IsChecked="{Binding #Editor.InteractionOptions.IsSnapToGridEnabled}"/>
+                </StackPanel>
+
+                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
+
+                <!--
+                    Три выключателя показа. ShowGuides прячет направляющие, не трогая
+                    набор; ShowRulers убирает линейки целиком; IsScaleVisible оставляет
+                    полосу, с которой всё ещё вытягиваются направляющие, но без делений.
+                -->
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <CheckBox Name="SpacingBox"
+                              FontSize="10"
+                              Foreground="#999"
+                              VerticalAlignment="Center"
+                              Content="spacing"
+                              IsChecked="{Binding #Editor.InteractionOptions.IsEqualSpacingEnabled}"/>
+                    <CheckBox Name="GuidesBox"
+                              FontSize="10"
+                              Foreground="#999"
+                              VerticalAlignment="Center"
+                              Content="guides"
+                              IsChecked="{Binding #Editor.ShowGuides}"/>
+                    <CheckBox Name="RulersBox"
+                              FontSize="10"
+                              Foreground="#999"
+                              VerticalAlignment="Center"
+                              Content="rulers"
+                              IsChecked="{Binding #Editor.ShowRulers}"/>
+                    <CheckBox Name="ScaleBox"
+                              FontSize="10"
+                              Foreground="#999"
+                              VerticalAlignment="Center"
+                              Content="ticks"
+                              IsEnabled="{Binding #Editor.ShowRulers}"
+                              IsChecked="{Binding #TopRuler.IsScaleVisible}"/>
+                </StackPanel>
+
+                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <PathIcon Data="M15.5,14L14.71,14L14.43,13.73C15.41,12.59 16,11.11 16,9.5C16,5.91 13.09,3 9.5,3C5.91,3 3,5.91 3,9.5C3,13.09 5.91,16 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71L14,15.5L19,20.5L20.5,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5C5,7.01 7.01,5 9.5,5C11.99,5 14,7.01 14,9.5C14,11.99 11.99,14 9.5,14Z"
+                              Width="14" Height="14" Foreground="#999"/>
+
+                    <Slider Width="80" VerticalAlignment="Center"
+                            Minimum="{Binding #Editor.MinZoom}"
+                            Maximum="{Binding #Editor.MaxZoom}"
+                            Value="{Binding #Editor.ViewportZoom}"
+                            TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+
+                    <Button Classes="toolBtn" ToolTip.Tip="Reset Zoom (100%)"
+                            Command="{Binding ResetZoomCommand}"
+                            Padding="4,2">
+                        <TextBlock Text="{Binding #Editor.ViewportZoom, StringFormat='{}{0:P0}'}"
+                                   Foreground="White" FontSize="11" Width="35" TextAlignment="Center"/>
+                    </Button>
+                </StackPanel>
+
+                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
+
+                <Button Classes="toolBtn"
+                        ToolTip.Tip="Center active item in view"
+                        Click="CenterActiveItem_OnClick"
+                        IsVisible="{Binding ActiveItem, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="M12,2A10,10 0 0 1 22,12A10,10 0 0 1 12,22A10,10 0 0 1 2,12A10,10 0 0 1 12,2M11,7V11H7V13H11V17H13V13H17V11H13V7H11Z"
+                                  Width="14"
+                                  Height="14"
+                                  Foreground="#4C97FF"/>
+                        <TextBlock Text="Center"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Classes="toolBtn"
+                        ToolTip.Tip="Fit active item to view"
+                        Click="FitActiveItem_OnClick"
+                        IsVisible="{Binding ActiveItem, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="M3,3H9V5H5V9H3V3M21,3V9H19V5H15V3H21M3,21V15H5V19H9V21H3M21,21H15V19H19V15H21V21Z"
+                                  Width="14"
+                                  Height="14"
+                                  Foreground="#4C97FF"/>
+                        <TextBlock Text="Fit"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Classes="toolBtn"
+                        ToolTip.Tip="Center selected items in view"
+                        Click="CenterSelection_OnClick"
+                        IsVisible="{Binding HasSelection}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="M12,2L15,9H22L16.5,13.5L18.5,21L12,16.5L5.5,21L7.5,13.5L2,9H9L12,2Z"
+                                  Width="14"
+                                  Height="14"
+                                  Foreground="#4C97FF"/>
+                        <TextBlock Text="Center Sel"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Classes="toolBtn"
+                        ToolTip.Tip="Fit selected items to view"
+                        Click="FitSelection_OnClick"
+                        IsVisible="{Binding HasSelection}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="M4,4H9V6H6V9H4V4M20,4V9H18V6H15V4H20M4,20V15H6V18H9V20H4M20,20H15V18H18V15H20V20M9,9H15V15H9V9Z"
+                                  Width="14"
+                                  Height="14"
+                                  Foreground="#4C97FF"/>
+                        <TextBlock Text="Fit Sel"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
+
+                <Button Classes="toolBtn"
+                        Name="UndoButton"
+                        ToolTip.Tip="Undo"
+                        Click="Undo_OnClick">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="M12.5,8C9.85,8 7.45,8.99 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"
+                                  Width="14" Height="14" Foreground="#4C97FF"/>
+                        <TextBlock Text="Undo" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Classes="toolBtn"
+                        Name="RedoButton"
+                        ToolTip.Tip="Redo"
+                        Click="Redo_OnClick">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="M18.4,10.6C16.55,8.99 14.15,8 11.5,8C6.85,8 2.92,11.03 1.53,15.22L3.9,16C4.95,12.81 7.96,10.5 11.5,10.5C13.46,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"
+                                  Width="14" Height="14" Foreground="#4C97FF"/>
+                        <TextBlock Text="Redo" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!--
+                Нижний ряд — читалка: что выбрано и какие у него числа. Она меняется
+                на каждый клик, поэтому и отделена от кнопок, которые стоят на месте.
+            -->
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Opacity="0.85">
+                <!--
+                    Считает формы, а не контролы: SelectedElements зеркалит SelectedItems,
+                    то есть индексный слой выделения. Подпись раньше говорила «items»,
+                    и четыре выбранных контрола внутри одной формы читались как «1 items» —
+                    будто выбран один. Число самих контролов стоит рядом, в «Targets».
+                -->
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                            ToolTip.Tip="Выбрано форм (UiDesignerItem). Число выбранных контролов — правее, «Targets»">
+                    <PathIcon Data="M12.5,17.5L17.5,12.5L12.5,12.5L12.5,17.5ZM6.5,7.5L6.5,12.5L11.5,12.5L6.5,7.5ZM19,3L19,9L21,9L21,3C21,1.9 20.1,1 19,1L13,1L13,3L19,3ZM3,21C3,22.1 3.9,23 5,23L11,23L11,21L5,21L5,15L3,15L3,21ZM3,9L5,9L5,3L11,3L11,1L5,1C3.9,1 3,1.9 3,3L3,9ZM21,15L19,15L19,21L13,21L13,23L19,23C20.1,23 21,22.1 21,21L21,15Z"
+                              Width="14" Height="14" Foreground="#4C97FF"/>
+                    <TextBlock Text="{Binding SelectedElements.Count, StringFormat='{}{0} forms'}"
+                               Foreground="White" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Spacing="6"
+                            VerticalAlignment="Center"
+                            Opacity="0.9"
+                            IsVisible="{Binding #Editor.PrimarySelectionTarget, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Text="Target:"
+                               Foreground="#666"
+                               FontSize="10"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.PrimarySelectionTarget.DisplayName}"
+                               Foreground="#F6C768"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="Targets:"
+                               Foreground="#666"
+                               FontSize="10"
+                               Margin="10,0,0,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.SelectedTargetsCount, StringFormat='{}{0}'}"
+                               Foreground="#7EE787"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+
+                    <!-- Чья раскладка распоряжается положением и что из этого следует.
+                         Отвечает на «почему этот контрол не двигается» без отладчика. -->
+                    <TextBlock Text="Layout:"
+                               Foreground="#666"
+                               FontSize="10"
+                               Margin="10,0,0,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.PrimarySelectionPlacement}"
+                               Foreground="#C792EA"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.PrimarySelectionMovePolicy, StringFormat='move {0}'}"
+                               Foreground="#7F849C"
+                               FontSize="10"
+                               VerticalAlignment="Center"
+                               ToolTip.Tip="Действующая политика: политика пользователя, пересечённая с возможностями раскладки"/>
+
+                    <!-- Геометрия самого выбранного элемента в координатах поверхности.
+                         Блок ниже показывает контейнер, а этот — то, что выделено. -->
+                    <TextBlock Text="Sel:" Foreground="#666" FontSize="10"
+                               Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.SelectionBounds.X, StringFormat='{}{0:0}'}"
+                               Foreground="#CCC" FontSize="11" FontFamily="Consolas, Monospace"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.SelectionBounds.Y, StringFormat='{}{0:0}'}"
+                               Foreground="#CCC" FontSize="11" FontFamily="Consolas, Monospace"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.SelectionBounds.Width, StringFormat='{}{0:0}'}"
+                               Foreground="#7F849C" FontSize="11" FontFamily="Consolas, Monospace"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.SelectionBounds.Height, StringFormat='{}{0:0}'}"
+                               Foreground="#7F849C" FontSize="11" FontFamily="Consolas, Monospace"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Opacity="0.9"
+                            IsVisible="{Binding ActiveItem, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="M12,2L16,6H13V13H20V10L24,14L20,18V15H13V22H16L12,26L8,22H11V15H4V18L0,14L4,10V13H11V6H8L12,2Z"
+                                  Width="12" Height="12" Foreground="#999" ToolTip.Tip="Position"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="X" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ActiveItem.X, StringFormat='{}{0:0}'}"
+                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Y" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ActiveItem.Y, StringFormat='{}{0:0}'}"
+                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Rectangle Width="1" Height="10" Fill="#3E4451" Opacity="0.5"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="M2,6V8H5V6H2M2,10V12H5V10H2M2,14V16H5V14H2M2,18V20H5V18H2M6,2V22H18V2H6M16,6V8H8V6H16M16,10V12H8V10H16M16,14V16H8V14H16M16,18V20H8V18H16M20,6V8H22V6H20M20,10V12H22V10H20M20,14V16H22V14H20M20,18V20H22V18H20Z"
+                                  Width="12" Height="12" Foreground="#999" ToolTip.Tip="Size"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="W" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ActiveItem.Width, StringFormat='{}{0:F0}'}"
+                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="H" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ActiveItem.Height, StringFormat='{}{0:F0}'}"
+                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                </StackPanel>
+
+                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Opacity="0.5">
+                    <TextBlock Text="Viewport:" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding #Editor.ViewportLocation.X, StringFormat='{}{0:0}'}" Foreground="#999" FontSize="10"/>
+                    <TextBlock Text="{Binding #Editor.ViewportLocation.Y, StringFormat='{}{0:0}'}" Foreground="#999" FontSize="10"/>
+                </StackPanel>
+            </StackPanel>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</Window>

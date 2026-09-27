@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-Запускает DesignEditor.Demo и управляет им для визуальной проверки правок.
+Запускает UiDesigner.Demo и управляет им для визуальной проверки правок.
 
 .DESCRIPTION
 Обвязка над Win32 для сценария "собрал -> посмотрел -> потыкал -> закрыл".
@@ -55,7 +55,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ProcessName = 'DesignEditor.Demo'
+$ProcessName = 'UiDesigner.Demo'
 
 Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
 using System;
@@ -423,10 +423,10 @@ switch ($Action) {
         if ($null -ne $existing) { "already running pid=$($existing.Id)"; break }
 
         $root = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))
-        $exe = Join-Path $root 'samples\DesignEditor.Demo\bin\Debug\net10.0\DesignEditor.Demo.exe'
+        $exe = Join-Path $root 'samples\UiDesigner.Demo\bin\Debug\net10.0\UiDesigner.Demo.exe'
         if (-not (Test-Path $exe)) { throw "Не найден $exe - сначала соберите проект (dotnet build)." }
 
-        $logDir = Join-Path $env:TEMP 'designeditor-demo'
+        $logDir = Join-Path $env:TEMP 'uidesigner-demo'
         if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
 
         # Переменную читает сам AvaDevTools; дочерний процесс наследует её.
