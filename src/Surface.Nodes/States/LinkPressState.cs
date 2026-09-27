@@ -17,13 +17,13 @@ namespace ArxisStudio.Surface.Nodes.States;
 internal sealed class LinkPressState : EditorState
 {
     private readonly NodeEditor _editor;
-    private readonly Link _link;
+    private readonly LinkRecord _link;
     private readonly IPointer _pointer;
     private readonly Point _startScreen;
     private readonly Point _startWorld;
     private bool _handedOver;
 
-    public LinkPressState(NodeEditor editor, Link link, IPointer pointer, Point startScreen) : base(editor)
+    public LinkPressState(NodeEditor editor, LinkRecord link, IPointer pointer, Point startScreen) : base(editor)
     {
         _editor = editor;
         _link = link;
@@ -54,7 +54,7 @@ internal sealed class LinkPressState : EditorState
 
         // Связь, которую за время нажатия убрали или у которой пропал порт, отцеплять не от чего:
         // её уже не видно, а приложению ушёл бы запрос о том, чего нет.
-        if (!_link.IsOnSurface || !_link.IsResolved || fixedKey == null || detachedKey == null
+        if (!ReferenceEquals(_editor.RecordOf(_link.Item), _link) || !_link.IsResolved || fixedKey == null || detachedKey == null
             || _editor.Ports.Find(fixedKey) is not { } fixedPort)
         {
             _editor.PopState();

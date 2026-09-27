@@ -28,7 +28,7 @@ public partial class NodeEditor
         public void Build(StreamGeometryContext context)
         {
             var built = 0;
-            foreach (var link in editor._links)
+            foreach (var link in editor._recordByItem.Values)
             {
                 if (!link.IsResolved)
                     continue;

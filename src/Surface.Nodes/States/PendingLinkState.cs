@@ -70,7 +70,8 @@ internal sealed class PendingLinkState : EditorState
     public override void Enter(EditorState? from)
     {
         _pointer.Capture(_editor);
-        _detachment?.Link.SetDetaching(true);
+        if (_detachment != null)
+            _editor.SetLinkDetaching(_detachment.Link, true);
         _realizationHold = _editor.HoldRealization();
 
         _origin.TryGetAnchor(out _originAnchor);
@@ -88,7 +89,8 @@ internal sealed class PendingLinkState : EditorState
         _editor.StopAutoPan();
         SetCandidate(null, allowed: false);
         _editor.PendingPreview?.Hide();
-        _detachment?.Link.SetDetaching(false);
+        if (_detachment != null)
+            _editor.SetLinkDetaching(_detachment.Link, false);
         _realizationHold?.Dispose();
         _realizationHold = null;
 

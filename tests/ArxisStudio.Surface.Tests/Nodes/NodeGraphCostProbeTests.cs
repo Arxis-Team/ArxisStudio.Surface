@@ -194,7 +194,7 @@ public class NodeGraphCostProbeTests
             var link = LinkFrom(stand, Dragged);
             var on = link.Geometry.At(0.5);
 
-            Assert.Same(link, stand.Editor.HitTestLink(on));
+            Assert.Same(link, stand.Editor.HitTestLink(on)?.Control);
             Assert.Equal(1, DistanceChecks(stand, on));
             Assert.Equal(0, DistanceChecks(stand, Gap));
 
@@ -293,13 +293,13 @@ public class NodeGraphCostProbeTests
             var stand = CreateGraph(size);
             var link = LinkFrom(stand, Dragged);
             var middle = link.Geometry.At(0.5);
-            var crossing = new HashSet<Link>();
+            var crossing = new HashSet<LinkRecord>();
 
             var before = stand.Editor.LinkCutChecks;
             stand.Editor.CollectCrossing(middle - new Vector(0, 30), middle + new Vector(0, 30), crossing);
 
             Assert.Equal(1, stand.Editor.LinkCutChecks - before);
-            Assert.Equal(new[] { link }, crossing);
+            Assert.Equal(new[] { link }, crossing.Select(record => record.Control));
 
             var across = MicrosecondsPerCall(
                 () => stand.Editor.CollectCrossing(new Point(610, 0), new Point(610, 600), crossing), calls: 2000);

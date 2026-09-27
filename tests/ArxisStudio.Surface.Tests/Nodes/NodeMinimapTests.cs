@@ -5,6 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
 using Xunit;
 using ArxisStudio.Surface.Editing;
+using ArxisStudio.Surface.Nodes;
 
 namespace ArxisStudio.Tests;
 
@@ -72,11 +73,14 @@ public class NodeMinimapTests
     public void A_Link_Moved_To_Another_Port_Rebuilds_The_Map()
     {
         // Перецепленная связь меняет только себя — ни один узел не сдвинулся, — и сообщить карте о
-        // новой кривой обязана она сама.
+        // новой кривой обязан её пересчёт. На месте концы меняет хост у готовой связи из коллекции;
+        // у созданной редактором их даёт модель.
         var stand = NodeStand.Create(
             [new Point(100, 100), new Point(400, 200), new Point(400, 380)],
             itemTemplate: NodeStand.PortedNode);
-        var data = stand.Connect(0, 1);
+        var link = new Link { Source = NodeStand.Out(0), Target = NodeStand.In(1) };
+        stand.Links.Add(link);
+        stand.RunLayout();
 
         stand.Window.Content = null;
         var map = new SurfaceMinimap { Editor = stand.Editor, Width = 200, Height = 150 };
@@ -87,7 +91,7 @@ public class NodeMinimapTests
         var rebuilt = map.ContentRebuilds;
         clock.PassInterval();
 
-        stand.LinkOf(data).Target = NodeStand.In(2);
+        link.Target = NodeStand.In(2);
         stand.RunLayout();
         stand.Window.CaptureRenderedFrame();
 

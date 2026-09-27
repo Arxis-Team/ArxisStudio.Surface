@@ -93,8 +93,10 @@ public class NodeVirtualizationTests
 
         public LinkModel CToD { get; init; } = null!;
 
-        public Link LinkOf(LinkModel model) =>
-            Editor.GetVisualDescendants().OfType<Link>().Single(l => ReferenceEquals(l.DataContext, model));
+        /// <summary>
+        /// Запись связи: при виртуализации контрола у дальней связи нет, а запись есть всегда.
+        /// </summary>
+        public LinkRecord LinkOf(LinkModel model) => Editor.RecordOf(model)!;
 
         public void RunLayout()
         {
@@ -161,16 +163,16 @@ public class NodeVirtualizationTests
         var stand = Create();
         Assert.Null(stand.Editor.ContainerFromIndex(1));
 
-        Assert.True(stand.LinkOf(stand.AToB).IsVisible);
-        Assert.Equal(new Point(3000, 140), stand.LinkOf(stand.AToB).TargetAnchor);
-        Assert.Equal(new Point(3120, 140), stand.LinkOf(stand.BToA).SourceAnchor);
-        Assert.Equal(stand.PinOf(stand.A.Out), stand.LinkOf(stand.AToB).SourceAnchor);
+        Assert.True(stand.LinkOf(stand.AToB).IsResolved);
+        Assert.Equal(new Point(3000, 140), stand.LinkOf(stand.AToB).Geometry.Target);
+        Assert.Equal(new Point(3120, 140), stand.LinkOf(stand.BToA).Geometry.Source);
+        Assert.Equal(stand.PinOf(stand.A.Out), stand.LinkOf(stand.AToB).Geometry.Source);
 
         stand.B.Location = new Point(3000, 500);
         stand.RunLayout();
 
-        Assert.Equal(new Point(3000, 540), stand.LinkOf(stand.AToB).TargetAnchor);
-        Assert.Equal(new Point(3120, 540), stand.LinkOf(stand.BToA).SourceAnchor);
+        Assert.Equal(new Point(3000, 540), stand.LinkOf(stand.AToB).Geometry.Target);
+        Assert.Equal(new Point(3120, 540), stand.LinkOf(stand.BToA).Geometry.Source);
     }
 
     [AvaloniaFact]
@@ -180,9 +182,9 @@ public class NodeVirtualizationTests
         // её после чтения некому, кроме сигнала панели.
         var stand = Create();
 
-        Assert.True(stand.LinkOf(stand.CToD).IsVisible);
-        Assert.Equal(new Point(3120, 1040), stand.LinkOf(stand.CToD).SourceAnchor);
-        Assert.Equal(new Point(3400, 1040), stand.LinkOf(stand.CToD).TargetAnchor);
+        Assert.True(stand.LinkOf(stand.CToD).IsResolved);
+        Assert.Equal(new Point(3120, 1040), stand.LinkOf(stand.CToD).Geometry.Source);
+        Assert.Equal(new Point(3400, 1040), stand.LinkOf(stand.CToD).Geometry.Target);
     }
 
     [AvaloniaFact]
@@ -196,19 +198,19 @@ public class NodeVirtualizationTests
         Assert.NotNull(stand.Editor.ContainerFromIndex(1));
         var pinIn = stand.PinOf(stand.B.In);
         var pinOut = stand.PinOf(stand.B.Out);
-        Assert.Equal(pinIn, stand.LinkOf(stand.AToB).TargetAnchor);
-        Assert.Equal(pinOut, stand.LinkOf(stand.BToA).SourceAnchor);
+        Assert.Equal(pinIn, stand.LinkOf(stand.AToB).Geometry.Target);
+        Assert.Equal(pinOut, stand.LinkOf(stand.BToA).Geometry.Source);
 
         stand.Pan(new Point(0, 0));
         Assert.Null(stand.Editor.ContainerFromIndex(1));
-        Assert.Equal(pinIn, stand.LinkOf(stand.AToB).TargetAnchor);
-        Assert.Equal(pinOut, stand.LinkOf(stand.BToA).SourceAnchor);
+        Assert.Equal(pinIn, stand.LinkOf(stand.AToB).Geometry.Target);
+        Assert.Equal(pinOut, stand.LinkOf(stand.BToA).Geometry.Source);
 
         stand.B.Location += new Vector(50, 20);
         stand.RunLayout();
 
-        Assert.Equal(pinIn + new Vector(50, 20), stand.LinkOf(stand.AToB).TargetAnchor);
-        Assert.Equal(pinOut + new Vector(50, 20), stand.LinkOf(stand.BToA).SourceAnchor);
+        Assert.Equal(pinIn + new Vector(50, 20), stand.LinkOf(stand.AToB).Geometry.Target);
+        Assert.Equal(pinOut + new Vector(50, 20), stand.LinkOf(stand.BToA).Geometry.Source);
     }
 
     [AvaloniaFact]
@@ -216,11 +218,11 @@ public class NodeVirtualizationTests
     {
         var stand = Create(portNodeBinding: false);
 
-        Assert.False(stand.LinkOf(stand.AToB).IsVisible);
+        Assert.False(stand.LinkOf(stand.AToB).IsResolved);
 
         stand.Pan(new Point(2800, 0));
-        Assert.True(stand.LinkOf(stand.AToB).IsVisible);
-        Assert.Equal(stand.PinOf(stand.B.In), stand.LinkOf(stand.AToB).TargetAnchor);
+        Assert.True(stand.LinkOf(stand.AToB).IsResolved);
+        Assert.Equal(stand.PinOf(stand.B.In), stand.LinkOf(stand.AToB).Geometry.Target);
     }
 
     [AvaloniaFact]
@@ -245,6 +247,153 @@ public class NodeVirtualizationTests
     }
 
     [AvaloniaFact]
+    public void Only_Links_In_View_Have_Controls()
+    {
+        // A↔B тянутся через окно и развёрнуты; C→D — далеко, у неё только запись. Холст уехал к C и
+        // D — контролы ушли к ней, а связи A↔B свернулись.
+        var stand = Create();
+        Assert.NotNull(stand.LinkOf(stand.AToB).Control);
+        Assert.NotNull(stand.LinkOf(stand.BToA).Control);
+        Assert.Null(stand.LinkOf(stand.CToD).Control);
+        Assert.Equal(2, stand.Editor.RealizedLinks);
+
+        stand.Pan(new Point(2900, 800));
+
+        Assert.NotNull(stand.LinkOf(stand.CToD).Control);
+        Assert.Null(stand.LinkOf(stand.AToB).Control);
+        Assert.Null(stand.LinkOf(stand.BToA).Control);
+        Assert.Equal(new Rect(stand.LinkOf(stand.CToD).WorldBounds.Position, stand.LinkOf(stand.CToD).WorldBounds.Size),
+            stand.LinkOf(stand.CToD).Control!.Bounds);
+    }
+
+    [AvaloniaFact]
+    public void Hit_Test_Cut_And_Minimap_Reach_A_Collapsed_Link()
+    {
+        var stand = Create();
+        var far = stand.LinkOf(stand.CToD);
+        Assert.Null(far.Control);
+        var middle = far.Geometry.At(0.5);
+
+        Assert.Same(far, stand.Editor.HitTestLink(middle));
+
+        var crossing = new HashSet<LinkRecord>();
+        stand.Editor.CollectCrossing(middle - new Vector(0, 30), middle + new Vector(0, 30), crossing);
+        Assert.Equal(new[] { far }, crossing);
+
+        var layer = stand.Editor.GetService<ArxisStudio.Surface.Editing.IMinimapLayer>()!;
+        using (var context = new Avalonia.Media.StreamGeometry().Open())
+            layer.Build(context);
+
+        Assert.Equal(3, stand.Editor.LinksOnMinimap);
+    }
+
+    [AvaloniaFact]
+    public void A_Selected_Link_Stays_Selected_Through_Collapse()
+    {
+        // Выбор живёт в записи: контрол, развёрнутый заново, показывает его сам.
+        var stand = Create();
+        Assert.True(stand.Editor.SelectLink(stand.CToD));
+        Assert.Null(stand.LinkOf(stand.CToD).Control);
+
+        stand.Pan(new Point(2900, 800));
+        Assert.True(stand.LinkOf(stand.CToD).Control!.IsSelected);
+
+        stand.Pan(new Point(0, 0));
+        Assert.Null(stand.LinkOf(stand.CToD).Control);
+        Assert.Equal(new object[] { stand.CToD }, stand.Editor.SelectedLinks);
+
+        stand.Pan(new Point(2900, 800));
+        Assert.True(stand.LinkOf(stand.CToD).Control!.IsSelected);
+    }
+
+    [AvaloniaFact]
+    public void A_Ready_Link_Is_Its_Own_Control_And_Stays()
+    {
+        var stand = Create();
+        var own = new Link { Source = stand.B.Out, Target = stand.B.In };
+        ((ObservableCollection<object>)stand.Editor.Links!).Add(own);
+        stand.RunLayout();
+
+        Assert.Same(own, stand.Editor.RecordOf(own)!.Control);
+        Assert.True(own.IsVisible);
+
+        stand.Pan(new Point(-3000, -3000));
+        Assert.Same(own, stand.Editor.RecordOf(own)!.Control);
+    }
+
+    private sealed class MutableLink(PortModel from, PortModel to) : INotifyPropertyChanged
+    {
+        private PortModel _to = to;
+
+        public PortModel From { get; } = from;
+
+        public PortModel To
+        {
+            get => _to;
+            set
+            {
+                _to = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(To)));
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
+
+    [AvaloniaFact]
+    public void A_Link_Model_Changing_Its_End_Moves_The_Link()
+    {
+        // Концы созданной редактором связи даёт модель, и перецепляет её хост моделью — контрола у
+        // связи при этом может и не быть.
+        var stand = Create();
+        var d = (NodeModel)stand.Nodes[3];
+        var model = new MutableLink(stand.A.Out, stand.B.In);
+        ((ObservableCollection<object>)stand.Editor.Links!).Add(model);
+        stand.RunLayout();
+
+        model.To = d.In;
+
+        Assert.Equal(new Point(3400, 1040), stand.Editor.RecordOf(model)!.Geometry.Target);
+    }
+
+    [AvaloniaFact]
+    public void A_Pan_Across_A_Long_Link_Realizes_It_Without_Its_Nodes()
+    {
+        // Узлы E и F далеко по обе стороны, а холст смотрит на середину их связи: ни один узел не
+        // развернётся, и развернуть связь может только сама смена видимой области.
+        var stand = Create();
+        var e = new NodeModel("E", new Point(-5000, 3000));
+        var f = new NodeModel("F", new Point(5000, 3000));
+        stand.Nodes.Add(e);
+        stand.Nodes.Add(f);
+        var model = new LinkModel(e.Out, f.In);
+        ((ObservableCollection<object>)stand.Editor.Links!).Add(model);
+        stand.RunLayout();
+        Assert.Null(stand.Editor.RecordOf(model)!.Control);
+
+        stand.Pan(new Point(0, 2800));
+
+        Assert.NotNull(stand.Editor.RecordOf(model)!.Control);
+        Assert.Null(stand.Editor.ContainerFromItem(e));
+        Assert.Null(stand.Editor.ContainerFromItem(f));
+    }
+
+    [AvaloniaFact]
+    public void A_Link_Brought_Into_View_By_Its_Nodes_Gets_A_Control()
+    {
+        // Ни один жест: хост сдвинул модели C и D под окно — связь въехала и развернулась.
+        var stand = Create();
+        var c = (NodeModel)stand.Nodes[2];
+        var d = (NodeModel)stand.Nodes[3];
+
+        c.Location = new Point(200, 400);
+        d.Location = new Point(500, 400);
+        stand.RunLayout();
+
+        Assert.NotNull(stand.LinkOf(stand.CToD).Control);
+    }
+
+    [AvaloniaFact]
     public void Collection_Changes_Keep_Link_Ends_On_Their_Nodes()
     {
         // Вставка сдвигает индексы — конец ищется по узлу, а не по прежнему индексу; ушедший свёрнутым
@@ -255,11 +404,11 @@ public class NodeVirtualizationTests
         stand.RunLayout();
         stand.B.Location = new Point(3000, 300);
         stand.RunLayout();
-        Assert.Equal(new Point(3000, 340), stand.LinkOf(stand.AToB).TargetAnchor);
+        Assert.Equal(new Point(3000, 340), stand.LinkOf(stand.AToB).Geometry.Target);
 
         stand.Nodes.Remove(stand.B);
         stand.RunLayout();
-        Assert.False(stand.LinkOf(stand.AToB).IsVisible);
-        Assert.False(stand.LinkOf(stand.BToA).IsVisible);
+        Assert.False(stand.LinkOf(stand.AToB).IsResolved);
+        Assert.False(stand.LinkOf(stand.BToA).IsResolved);
     }
 }

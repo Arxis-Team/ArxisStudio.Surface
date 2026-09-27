@@ -46,14 +46,14 @@ public partial class NodeEditor
     /// <summary>
     /// Собирает связи, которые пересекает отрезок: отсев по рамке связи, затем по кривой.
     /// </summary>
-    internal void CollectCrossing(Point a, Point b, HashSet<Link> result)
+    internal void CollectCrossing(Point a, Point b, HashSet<LinkRecord> result)
     {
         result.Clear();
         var segment = new Rect(
             new Point(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y)),
             new Point(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y))).Inflate(1);
 
-        foreach (var link in _links)
+        foreach (var link in _recordByItem.Values)
         {
             if (!link.IsResolved || !link.WorldBounds.Intersects(segment))
                 continue;
@@ -67,7 +67,7 @@ public partial class NodeEditor
     /// <summary>
     /// Элементы коллекции связей для этих связей — в том порядке, в каком они лежат у хоста.
     /// </summary>
-    internal IReadOnlyList<object> ItemsInCollectionOrder(IReadOnlyCollection<Link> links)
+    internal IReadOnlyList<object> ItemsInCollectionOrder(IReadOnlyCollection<LinkRecord> links)
     {
         if (links.Count == 0)
             return Array.Empty<object>();

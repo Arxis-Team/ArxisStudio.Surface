@@ -24,14 +24,11 @@ public partial class NodeEditor
     public static readonly DirectProperty<NodeEditor, IReadOnlyList<object>> SelectedLinksProperty =
         AvaloniaProperty.RegisterDirect<NodeEditor, IReadOnlyList<object>>(nameof(SelectedLinks), o => o.SelectedLinks);
 
-    // Все живые связи поверхности: по ним ищется попадание.
-    private readonly HashSet<Link> _links = new();
-
-    // Выбранные связи в порядке выбора.
-    private readonly List<Link> _selectedLinks = new();
+    // Выбранные связи в порядке выбора — записями: выбор переживает свёрнутый контрол.
+    private readonly List<LinkRecord> _selectedLinks = new();
 
     private IReadOnlyList<object> _selectedLinkItems = Array.Empty<object>();
-    private Link? _highlightedLink;
+    private LinkRecord? _highlightedLink;
 
     /// <summary>
     /// Возникает, когда просят удалить выбранные связи: удалите их из <see cref="Links"/>.
@@ -80,11 +77,11 @@ public partial class NodeEditor
     /// <returns><see langword="false"/>, если такой связи на поверхности нет.</returns>
     public bool SelectLink(object item, bool additive = false)
     {
-        foreach (var link in _links)
+        foreach (var record in _recordByItem.Values)
         {
-            if (Equals(link.ItemOrSelf, item))
+            if (Equals(record.ItemOrSelf, item))
             {
-                SelectLinkCore(link, additive);
+                SelectLinkCore(record, additive);
                 return true;
             }
         }
@@ -100,25 +97,25 @@ public partial class NodeEditor
         if (_selectedLinks.Count == 0)
             return;
 
-        foreach (var link in _selectedLinks)
-            link.IsSelected = false;
+        foreach (var record in _selectedLinks)
+            SetLinkSelected(record, false);
 
         _selectedLinks.Clear();
         PublishLinkSelection();
     }
 
-    internal void SelectLinkCore(Link link, bool additive)
+    internal void SelectLinkCore(LinkRecord link, bool additive)
     {
         if (additive)
         {
             if (_selectedLinks.Remove(link))
             {
-                link.IsSelected = false;
+                SetLinkSelected(link, false);
             }
             else
             {
                 _selectedLinks.Add(link);
-                link.IsSelected = true;
+                SetLinkSelected(link, true);
             }
         }
         else
@@ -126,12 +123,12 @@ public partial class NodeEditor
             foreach (var other in _selectedLinks)
             {
                 if (!ReferenceEquals(other, link))
-                    other.IsSelected = false;
+                    SetLinkSelected(other, false);
             }
 
             _selectedLinks.Clear();
             _selectedLinks.Add(link);
-            link.IsSelected = true;
+            SetLinkSelected(link, true);
         }
 
         if (_selectedLinks.Count > 0)
@@ -143,13 +140,13 @@ public partial class NodeEditor
     /// <summary>
     /// Связь под точкой холста: ближайшая, до чьей линии не дальше допуска.
     /// </summary>
-    internal Link? HitTestLink(Point world)
+    internal LinkRecord? HitTestLink(Point world)
     {
         var tolerance = LinkHitTolerance / Math.Max(ViewportZoom, 0.0001);
-        Link? best = null;
+        LinkRecord? best = null;
         var bestDistance = double.MaxValue;
 
-        foreach (var link in _links)
+        foreach (var link in _recordByItem.Values)
         {
             // Отсев по рамке, посчитанной при пересчёте концов: она уже включает всю толщину
             // линии, и проход по связям не читает ни одного свойства Avalonia. Толщина нужна
@@ -158,7 +155,7 @@ public partial class NodeEditor
                 continue;
 
             LinkDistanceChecks++;
-            var reach = tolerance + (link.StrokeThickness / 2);
+            var reach = tolerance + (ThicknessOf(link) / 2);
             var distance = link.Geometry.DistanceTo(world);
             if (distance <= reach && distance < bestDistance)
             {
@@ -175,14 +172,11 @@ public partial class NodeEditor
     /// </summary>
     internal int LinkDistanceChecks { get; private set; }
 
-    // О новой связи содержимое сообщает её первый пересчёт концов; об ушедшей — только уход.
-    internal void OnLinkAttached(Link link) => _links.Add(link);
-
-    internal void OnLinkDetached(Link link)
+    /// <summary>
+    /// Убирает ушедшую из коллекции связь из подсветки и выбора.
+    /// </summary>
+    internal void OnLinkRemoved(LinkRecord link)
     {
-        _links.Remove(link);
-        OnContentChanged();
-
         if (ReferenceEquals(_highlightedLink, link))
             SetHighlightedLink(null);
 
@@ -191,6 +185,12 @@ public partial class NodeEditor
             link.IsSelected = false;
             PublishLinkSelection();
         }
+    }
+
+    private void SetLinkSelected(LinkRecord link, bool value)
+    {
+        link.IsSelected = value;
+        link.Control?.Sync();
     }
 
     /// <inheritdoc />
@@ -268,7 +268,7 @@ public partial class NodeEditor
     /// указатель над узлом принадлежит ему, даже когда узел событие не обработал — движение
     /// он не обрабатывает никогда.
     /// </remarks>
-    private Link? LinkUnderPointer(PointerEventArgs e)
+    private LinkRecord? LinkUnderPointer(PointerEventArgs e)
     {
         if (CurrentState is not EditorIdleState || IsOverNode(e.Source))
             return null;
@@ -279,14 +279,17 @@ public partial class NodeEditor
     private static bool IsOverNode(object? source) =>
         source is Visual visual && visual.FindAncestorOfType<Node>(includeSelf: true) != null;
 
-    private void SetHighlightedLink(Link? link)
+    private void SetHighlightedLink(LinkRecord? link)
     {
         if (ReferenceEquals(_highlightedLink, link))
             return;
 
-        _highlightedLink?.SetHighlighted(false);
+        if (_highlightedLink is { } previous)
+            SetLinkHighlighted(previous, false);
+
         _highlightedLink = link;
-        link?.SetHighlighted(true);
+        if (link != null)
+            SetLinkHighlighted(link, true);
     }
 
     private void OnNodeSelectionChanged(object? sender, SurfaceSelectionChangedEventArgs e)

@@ -31,7 +31,7 @@ public partial class NodeEditor
         AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkTargetBinding));
 
     // Связи по ключу любого из концов: сдвиг порта пересчитывает ровно их, а не все.
-    private readonly Dictionary<object, List<Link>> _linksByKey = new();
+    private readonly Dictionary<object, List<LinkRecord>> _linksByKey = new();
 
     // Порты по узлу: сдвиг узла пересчитывает связи его портов.
     private readonly Dictionary<Node, List<Port>> _portsByNode = new();
@@ -82,23 +82,35 @@ public partial class NodeEditor
     /// </summary>
     internal int LinkUpdates { get; private set; }
 
-    internal void CountLinkUpdate() => LinkUpdates++;
-
-    internal void RegisterLink(Link link, object? source, object? target)
+    /// <summary>
+    /// Ставит запись в смежность под её нынешними ключами.
+    /// </summary>
+    internal void RegisterLink(LinkRecord record)
     {
-        AddLink(source, link);
-        if (!Equals(source, target))
-            AddLink(target, link);
+        record.RegisteredSource = record.Source;
+        record.RegisteredTarget = record.Target;
 
-        UpdateConnected(source);
-        UpdateConnected(target);
+        AddLink(record.Source, record);
+        if (!Equals(record.Source, record.Target))
+            AddLink(record.Target, record);
+
+        UpdateConnected(record.Source);
+        UpdateConnected(record.Target);
     }
 
-    internal void UnregisterLink(Link link, object? source, object? target)
+    /// <summary>
+    /// Снимает запись со смежности — с тех ключей, под которыми её ставили.
+    /// </summary>
+    internal void UnregisterLink(LinkRecord record)
     {
-        RemoveLink(source, link);
+        var source = record.RegisteredSource;
+        var target = record.RegisteredTarget;
+        record.RegisteredSource = null;
+        record.RegisteredTarget = null;
+
+        RemoveLink(source, record);
         if (!Equals(source, target))
-            RemoveLink(target, link);
+            RemoveLink(target, record);
 
         UpdateConnected(source);
         UpdateConnected(target);
@@ -128,8 +140,8 @@ public partial class NodeEditor
             return;
 
         // Снимок: пересчёт связи вправе поменять её регистрацию.
-        foreach (var link in links.ToArray())
-            link.Refresh();
+        foreach (var record in links.ToArray())
+            RefreshLink(record);
     }
 
     /// <summary>
@@ -145,15 +157,15 @@ public partial class NodeEditor
         if (!_portsByNode.TryGetValue(node, out var ports))
             return;
 
-        HashSet<Link>? moved = null;
+        HashSet<LinkRecord>? moved = null;
         foreach (var port in ports)
             CollectMoved(port, node, ref moved);
 
         if (moved == null)
             return;
 
-        foreach (var link in moved)
-            link.Refresh();
+        foreach (var record in moved)
+            RefreshLink(record);
     }
 
     /// <summary>
@@ -165,24 +177,24 @@ public partial class NodeEditor
     /// </remarks>
     internal void OnPortMoved(Port port, Node node)
     {
-        HashSet<Link>? moved = null;
+        HashSet<LinkRecord>? moved = null;
         CollectMoved(port, node, ref moved);
 
         if (moved == null)
             return;
 
-        foreach (var link in moved)
-            link.Refresh();
+        foreach (var record in moved)
+            RefreshLink(record);
     }
 
-    private void CollectMoved(Port port, Node node, ref HashSet<Link>? moved)
+    private void CollectMoved(Port port, Node node, ref HashSet<LinkRecord>? moved)
     {
         if (!port.TryGetOffsetInNode(node, out var offset) || port.LastOffset == offset)
             return;
 
         port.LastOffset = offset;
         if (port.Key is { } key && _linksByKey.TryGetValue(key, out var links))
-            (moved ??= new HashSet<Link>()).UnionWith(links);
+            (moved ??= new HashSet<LinkRecord>()).UnionWith(links);
     }
 
     /// <summary>
@@ -193,15 +205,15 @@ public partial class NodeEditor
         if (!_portsByNode.TryGetValue(node, out var ports))
             return;
 
-        var touched = new HashSet<Link>();
+        var touched = new HashSet<LinkRecord>();
         foreach (var port in ports)
         {
             if (port.Key is { } key && _linksByKey.TryGetValue(key, out var links))
                 touched.UnionWith(links);
         }
 
-        foreach (var link in touched)
-            link.Refresh();
+        foreach (var record in touched)
+            RefreshLink(record);
     }
 
     private void OnPortsChanged(object key)
@@ -216,21 +228,21 @@ public partial class NodeEditor
             port.IsConnected = _linksByKey.TryGetValue(key, out var links) && links.Count > 0;
     }
 
-    private void AddLink(object? key, Link link)
+    private void AddLink(object? key, LinkRecord record)
     {
         if (key == null)
             return;
 
         if (!_linksByKey.TryGetValue(key, out var list))
-            _linksByKey[key] = list = new List<Link>();
+            _linksByKey[key] = list = new List<LinkRecord>();
 
-        if (!list.Contains(link))
-            list.Add(link);
+        if (!list.Contains(record))
+            list.Add(record);
     }
 
-    private void RemoveLink(object? key, Link link)
+    private void RemoveLink(object? key, LinkRecord record)
     {
-        if (key != null && _linksByKey.TryGetValue(key, out var list) && list.Remove(link) && list.Count == 0)
+        if (key != null && _linksByKey.TryGetValue(key, out var list) && list.Remove(record) && list.Count == 0)
             _linksByKey.Remove(key);
     }
 

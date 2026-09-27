@@ -19,8 +19,6 @@ class ArxisStudio.Surface.Nodes.Link : Control
     avalonia TargetProperty -> Target : Object (styled) = null
     ctor .ctor()
     method Size MeasureOverride(Size)
-    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
-    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void Render(DrawingContext)
     property Boolean IsSelected { get; }

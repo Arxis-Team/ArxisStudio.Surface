@@ -20,7 +20,7 @@ public partial class NodeEditor
     /// <summary>
     /// Просит разрезать связь в точке кривой, ближайшей к <paramref name="world"/>.
     /// </summary>
-    internal bool RequestLinkSplit(Link link, Point world)
+    internal bool RequestLinkSplit(LinkRecord link, Point world)
     {
         var handler = LinkSplitRequested;
         if (handler == null)

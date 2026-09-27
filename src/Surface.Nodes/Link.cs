@@ -15,10 +15,15 @@ namespace ArxisStudio.Surface.Nodes;
 /// и <see cref="NodeEditor.LinkTargetBinding"/>; готовые <see cref="Link"/> в той же коллекции
 /// тоже годятся.
 /// <para>
+/// Связь редактор держит записью, а контрол — только у развёрнутой (ADR 0007): при виртуализации
+/// связь вне окна контрола не имеет, а контрол, созданный редактором, переходит от связи к связи и
+/// показывает то, что в записи. Готовая связь из коллекции сама себе контрол и развёрнута всегда.
+/// </para>
+/// <para>
 /// Конец без живого порта берётся у свёрнутого узла — смещением порта с его последнего показа — и у
-/// ни разу не показанного — оценкой по краю через <see cref="NodeEditor.PortNodeBinding"/>
-/// (ADR 0007). Если взять его неоткуда — узел ещё не пришёл или уже ушёл, — связь не рисуется и
-/// появится сама, когда конец найдётся.
+/// ни разу не показанного — оценкой по краю через <see cref="NodeEditor.PortNodeBinding"/>. Если
+/// взять его неоткуда — узел ещё не пришёл или уже ушёл, — связь не рисуется и появится сама, когда
+/// конец найдётся.
 /// </para>
 /// </remarks>
 public class Link : Control
@@ -69,8 +74,6 @@ public class Link : Control
     private Point _targetAnchor;
     private bool _isSelected;
     private NodeEditor? _editor;
-    private object? _registeredSource;
-    private object? _registeredTarget;
 
     static Link()
     {
@@ -143,7 +146,7 @@ public class Link : Control
     public bool IsSelected
     {
         get => _isSelected;
-        internal set
+        private set
         {
             if (SetAndRaise(IsSelectedProperty, ref _isSelected, value))
                 PseudoClasses.Set(":selected", value);
@@ -151,85 +154,99 @@ public class Link : Control
     }
 
     /// <summary>
-    /// Элемент <see cref="NodeEditor.Links"/>, ради которого создана связь; готовая связь из
-    /// коллекции — сама себе элемент.
+    /// Запись, которую контрол сейчас показывает.
     /// </summary>
-    internal object? Item { get; set; }
+    internal LinkRecord? Record { get; private set; }
 
     /// <summary>
     /// Элемент коллекции, которым связь называют приложению.
     /// </summary>
-    internal object ItemOrSelf => Item ?? this;
+    internal object ItemOrSelf => Record?.Item ?? this;
 
     /// <summary>
-    /// Показывает, что связь под указателем (<c>:highlighted</c>): сама она попадания не
-    /// принимает, и <c>:pointerover</c> у неё не бывает.
+    /// Найдены ли оба конца: только такая связь рисуется.
     /// </summary>
-    internal void SetHighlighted(bool value) => PseudoClasses.Set(":highlighted", value);
-
-    /// <summary>
-    /// Показывает, что конец связи отцеплён и тянется (<c>:detaching</c>): новую форму рисует
-    /// превью протяжки, а сама связь остаётся на месте, пока приложение её не поменяет.
-    /// </summary>
-    internal void SetDetaching(bool value) => PseudoClasses.Set(":detaching", value);
-
-    /// <summary>
-    /// Показывает, что связь перечёркнута протягиваемым разрезом (<c>:cutting</c>): отпустят — её
-    /// попросят удалить.
-    /// </summary>
-    internal void SetCutting(bool value) => PseudoClasses.Set(":cutting", value);
-
-    /// <summary>
-    /// Стоит ли связь на поверхности редактора.
-    /// </summary>
-    internal bool IsOnSurface => _editor != null;
-
-    /// <summary>
-    /// Найдены ли оба порта: только такая связь рисуется.
-    /// </summary>
-    internal bool IsResolved { get; private set; }
+    internal bool IsResolved => Record?.IsResolved == true;
 
     /// <summary>
     /// Кривая связи в мировых координатах.
     /// </summary>
-    internal LinkGeometry Geometry { get; private set; }
+    internal LinkGeometry Geometry => Record?.Geometry ?? default;
 
     /// <summary>
     /// Прямоугольник, который связь занимает на холсте, с запасом на толщину линии.
     /// </summary>
-    internal Rect WorldBounds { get; private set; }
+    internal Rect WorldBounds => Record?.WorldBounds ?? default;
 
     /// <summary>
-    /// Пересчитывает концы по живым портам.
+    /// Начинает показывать запись: контрол развёрнут для этой связи.
     /// </summary>
-    internal void Refresh()
+    /// <remarks>
+    /// Контролу, созданному редактором, концы и контекст данных ставит запись — стилю хоста и тому,
+    /// кто читает <see cref="Source"/> с контрола, они видны так же, как прежде; у готовой связи их
+    /// задал хост.
+    /// </remarks>
+    internal void Show(NodeEditor editor, LinkRecord record)
     {
-        if (_editor == null)
-            return;
+        _editor = editor;
+        Record = record;
 
-        _editor.CountLinkUpdate();
+        if (record.Own == null)
+            DataContext = record.Item;
 
-        Point source = default, target = default;
-        var resolved = Source != null && Target != null
-            && _editor.TryGetLinkEnd(Source, LinkEnd.Source, out source)
-            && _editor.TryGetLinkEnd(Target, LinkEnd.Target, out target);
+        Sync();
+    }
 
-        if (resolved)
+    /// <summary>
+    /// Перестаёт показывать запись: контрол свёрнут и уходит в пул или остаётся хозяину.
+    /// </summary>
+    internal void Hide()
+    {
+        if (Record is { Own: null })
         {
-            SourceAnchor = source;
-            TargetAnchor = target;
-            Geometry = new LinkGeometry(source, target);
-            WorldBounds = Geometry.Bounds.Inflate(StrokeThickness);
+            ClearValue(DataContextProperty);
+            ClearValue(SourceProperty);
+            ClearValue(TargetProperty);
         }
 
-        IsResolved = resolved;
-        IsVisible = resolved;
+        Record = null;
+        _editor = null;
+        IsSelected = false;
+        PseudoClasses.Set(":highlighted", false);
+        PseudoClasses.Set(":cutting", false);
+        PseudoClasses.Set(":detaching", false);
+    }
+
+    /// <summary>
+    /// Переносит на контрол то, что сейчас в записи: концы, видимость, состояния.
+    /// </summary>
+    internal void Sync()
+    {
+        if (Record is not { } record)
+            return;
+
+        if (record.IsResolved)
+        {
+            SourceAnchor = record.Geometry.Source;
+            TargetAnchor = record.Geometry.Target;
+        }
+
+        if (record.Own == null)
+        {
+            Source = record.Source;
+            Target = record.Target;
+        }
+
+        IsVisible = record.IsResolved;
+        IsSelected = record.IsSelected;
+        PseudoClasses.Set(":highlighted", record.IsHighlighted);
+        PseudoClasses.Set(":cutting", record.IsCutting);
+        PseudoClasses.Set(":detaching", record.IsDetaching);
 
         // Мера от кривой не зависит: связь только просит панель переставить её — одну её, а не
         // все связи холста (ADR 0007).
         (this.GetVisualParent() as LinkPanel)?.OnLinkMoved(this);
         InvalidateVisual();
-        _editor.OnContentChanged();
     }
 
     /// <summary>
@@ -248,13 +265,13 @@ public class Link : Control
     /// <inheritdoc />
     public override void Render(DrawingContext context)
     {
-        if (!IsResolved || Stroke is not { } stroke)
+        if (Record is not { IsResolved: true } record || Stroke is not { } stroke)
             return;
 
         // Связь стоит в своём прямоугольнике, а кривая посчитана в мировых координатах, поэтому
         // рисуется со сдвигом на угол прямоугольника.
-        var offset = WorldBounds.Position;
-        var g = Geometry;
+        var offset = record.WorldBounds.Position;
+        var g = record.Geometry;
         var figure = new StreamGeometry();
         using (var ctx = figure.Open())
         {
@@ -267,45 +284,18 @@ public class Link : Control
     }
 
     /// <inheritdoc />
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnAttachedToVisualTree(e);
-        _editor = this.FindAncestorOfType<NodeEditor>();
-        _editor?.OnLinkAttached(this);
-        Reregister();
-    }
-
-    /// <inheritdoc />
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
-    {
-        base.OnDetachedFromVisualTree(e);
-        _editor?.UnregisterLink(this, _registeredSource, _registeredTarget);
-        _editor?.OnLinkDetached(this);
-        _registeredSource = null;
-        _registeredTarget = null;
-        _editor = null;
-    }
-
-    /// <inheritdoc />
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == SourceProperty || change.Property == TargetProperty)
-            Reregister();
-        else if (change.Property == StrokeThicknessProperty && IsResolved)
-            WorldBounds = Geometry.Bounds.Inflate(StrokeThickness);
-    }
-
-    private void Reregister()
-    {
-        if (_editor == null)
+        if (_editor == null || Record is not { } record)
             return;
 
-        _editor.UnregisterLink(this, _registeredSource, _registeredTarget);
-        _registeredSource = Source;
-        _registeredTarget = Target;
-        _editor.RegisterLink(this, _registeredSource, _registeredTarget);
-        Refresh();
+        // Концы готовой связи задаёт хост на самом контроле, и о смене говорит редактору она сама;
+        // контролу, созданному редактором, их ставит запись.
+        if ((change.Property == SourceProperty || change.Property == TargetProperty) && ReferenceEquals(record.Own, this))
+            _editor.OnOwnLinkEndsChanged(record);
+        else if (change.Property == StrokeThicknessProperty)
+            _editor.OnLinkThicknessChanged(this);
     }
 }

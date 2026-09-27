@@ -35,8 +35,7 @@
                                 IsHitTestVisible="False"
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
-                            <nodes:LinksPresenter Name="PART_LinksPresenter"
-                                                  ItemsSource="{TemplateBinding Links}" />
+                            <nodes:LinkPanel Name="PART_LinkPanel" />
                         </Canvas>
 
                         <Canvas Name="PART_ItemsLayer"

@@ -20,8 +20,8 @@ internal sealed class LinkCutState : EditorState
     private readonly NodeEditor _editor;
     private readonly IPointer _pointer;
     private readonly Point _start;
-    private readonly HashSet<Link> _crossing = new();
-    private readonly HashSet<Link> _next = new();
+    private readonly HashSet<LinkRecord> _crossing = new();
+    private readonly HashSet<LinkRecord> _next = new();
     private Point _end;
 
     public LinkCutState(NodeEditor editor, IPointer pointer, Point startScreen) : base(editor)
@@ -35,7 +35,7 @@ internal sealed class LinkCutState : EditorState
     /// <summary>
     /// Связи, которые отрезок перечёркивает сейчас.
     /// </summary>
-    public IReadOnlyCollection<Link> Crossing => _crossing;
+    public IReadOnlyCollection<LinkRecord> Crossing => _crossing;
 
     public override void Enter(EditorState? from)
     {
@@ -48,7 +48,7 @@ internal sealed class LinkCutState : EditorState
         _editor.StopAutoPan();
 
         foreach (var link in _crossing)
-            link.SetCutting(false);
+            _editor.SetLinkCutting(link, false);
 
         _crossing.Clear();
         _editor.CutPreview?.Hide();
@@ -82,13 +82,13 @@ internal sealed class LinkCutState : EditorState
         foreach (var link in _crossing)
         {
             if (!_next.Contains(link))
-                link.SetCutting(false);
+                _editor.SetLinkCutting(link, false);
         }
 
         foreach (var link in _next)
         {
             if (!_crossing.Contains(link))
-                link.SetCutting(true);
+                _editor.SetLinkCutting(link, true);
         }
 
         _crossing.Clear();

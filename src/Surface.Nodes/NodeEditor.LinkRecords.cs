@@ -1,0 +1,448 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Linq;
+using Avalonia;
+using Avalonia.Data;
+using Avalonia.Utilities;
+
+namespace ArxisStudio.Surface.Nodes;
+
+// Записи связей: коллекция хоста, концы из привязок без контролов, контролы только у развёрнутых
+// (ADR 0007). Часть NodeEditor; общее описание типа — в NodeEditor.cs.
+public partial class NodeEditor
+{
+    // Запись на каждый элемент коллекции связей, по самому элементу.
+    private readonly Dictionary<object, LinkRecord> _recordByItem = new(ReferenceEqualityComparer.Instance);
+
+    // Сколько раз элемент стоит в коллекции: одна запись на все его вхождения.
+    private readonly Dictionary<LinkRecord, int> _recordReferences = new();
+
+    // Контролы свёрнутых связей, готовые показать другую.
+    private readonly Stack<Link> _linkPool = new();
+
+    private LinkWatcher? _linkWatcher;
+    private INotifyCollectionChanged? _watchedLinks;
+    private ObjectBindingReader? _sourceReader;
+    private ObjectBindingReader? _targetReader;
+    private LinkPanel? _linkPanel;
+
+    // Толщина линии связи без контрола — последняя, что показал контрол: запас рамки на неё.
+    private double _linkThickness = 2;
+
+    /// <summary>
+    /// Записи всех связей.
+    /// </summary>
+    internal IEnumerable<LinkRecord> LinkRecords => _recordByItem.Values;
+
+    /// <summary>
+    /// Сколько связей развёрнуто — для тестов виртуализации.
+    /// </summary>
+    internal int RealizedLinks => _recordByItem.Values.Count(record => record.Control != null);
+
+    /// <summary>
+    /// Запись элемента коллекции связей, если он в ней есть.
+    /// </summary>
+    internal LinkRecord? RecordOf(object? item) =>
+        item != null && _recordByItem.TryGetValue(item, out var record) ? record : null;
+
+    /// <summary>
+    /// Виртуализирует ли редактор связи: вместе с узлами, когда задана привязка положения.
+    /// </summary>
+    internal bool IsLinkVirtualizing => ItemsPanelRoot is VirtualizingSurfacePanel { IsVirtualizing: true };
+
+    /// <summary>
+    /// Пересчитывает концы связи — по живым портам, смещениям с последнего показа или оценке.
+    /// </summary>
+    internal void RefreshLink(LinkRecord record)
+    {
+        LinkUpdates++;
+
+        Point source = default, target = default;
+        var resolved = record.Source != null && record.Target != null
+            && TryGetLinkEnd(record.Source, LinkEnd.Source, out source)
+            && TryGetLinkEnd(record.Target, LinkEnd.Target, out target);
+
+        if (resolved)
+        {
+            record.Geometry = new LinkGeometry(source, target);
+            record.WorldBounds = record.Geometry.Bounds.Inflate(ThicknessOf(record));
+        }
+
+        record.IsResolved = resolved;
+
+        if (record.Control is { } control)
+            control.Sync();
+        else if (resolved && IsLinkVirtualizing && _linkPanel != null && LinkWindows().Realize.Intersects(record.WorldBounds))
+            _linkPanel.InvalidateMeasure();
+
+        OnContentChanged();
+    }
+
+    /// <summary>
+    /// Ставит на панель контролы связей, которым они положены, и снимает остальные.
+    /// </summary>
+    /// <remarks>
+    /// Без виртуализации развёрнуты все. С ней — видимые с запасом, как узлы, и сворачиваются за
+    /// двойным запасом; под курсором, под разрезом и отцепляемая — всегда, их вид — часть жеста. Под
+    /// удержанием жеста не сворачивается ничего, а готовая связь из коллекции развёрнута всегда.
+    /// </remarks>
+    internal void RealizeLinks(LinkPanel panel)
+    {
+        var virtualizing = IsLinkVirtualizing;
+        var (realize, keep) = virtualizing ? LinkWindows() : default;
+
+        foreach (var record in _recordByItem.Values.ToArray())
+        {
+            if (!virtualizing || record.Own != null)
+            {
+                if (record.Control == null)
+                    Realize(record, panel);
+
+                continue;
+            }
+
+            var pinned = record.IsHighlighted || record.IsCutting || record.IsDetaching;
+            if (record.Control == null)
+            {
+                if (pinned || (record.IsResolved && realize.Intersects(record.WorldBounds)))
+                    Realize(record, panel);
+            }
+            else if (!pinned && !IsRealizationHeld && !(record.IsResolved && keep.Intersects(record.WorldBounds)))
+            {
+                Unrealize(record, panel);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Готовая связь из коллекции сменила концы: переставить её в смежности и пересчитать.
+    /// </summary>
+    internal void OnOwnLinkEndsChanged(LinkRecord record)
+    {
+        ReadEnds(record);
+        Rekey(record);
+    }
+
+    /// <summary>
+    /// Контрол связи сменил толщину: у рамки его записи — новый запас, и она же — толщина записей без
+    /// контрола.
+    /// </summary>
+    internal void OnLinkThicknessChanged(Link link)
+    {
+        _linkThickness = link.StrokeThickness;
+        if (link.Record is not { IsResolved: true } record)
+            return;
+
+        record.WorldBounds = record.Geometry.Bounds.Inflate(link.StrokeThickness);
+        link.Sync();
+    }
+
+    /// <summary>
+    /// Показывает, что связь перечёркнута разрезом, — с контролом или без.
+    /// </summary>
+    internal void SetLinkCutting(LinkRecord record, bool value) => SetState(record, value, static (r, v) => r.IsCutting = v);
+
+    /// <summary>
+    /// Показывает, что конец связи отцеплён и тянется, — с контролом или без.
+    /// </summary>
+    internal void SetLinkDetaching(LinkRecord record, bool value) => SetState(record, value, static (r, v) => r.IsDetaching = v);
+
+    /// <summary>
+    /// Показывает, что связь под указателем, — с контролом или без.
+    /// </summary>
+    internal void SetLinkHighlighted(LinkRecord record, bool value) => SetState(record, value, static (r, v) => r.IsHighlighted = v);
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == LinksProperty)
+        {
+            WatchLinks(change.GetNewValue<IEnumerable?>());
+        }
+        else if (change.Property == LinkSourceBindingProperty || change.Property == LinkTargetBindingProperty)
+        {
+            _sourceReader = null;
+            _targetReader = null;
+            foreach (var record in _recordByItem.Values.ToArray())
+            {
+                ReadEnds(record);
+                Rekey(record);
+            }
+        }
+        else if (change.Property == PortNodeBindingProperty)
+        {
+            _portNodeReader = null;
+            RefreshAllLinks();
+        }
+        else if (change.Property == ItemLocationBindingProperty)
+        {
+            // Виртуализация связей идёт вместе с узлами: включилась или выключилась — пересобрать.
+            _linkPanel?.InvalidateMeasure();
+        }
+        else if (IsLinkVirtualizing
+                 && (change.Property == ViewportLocationProperty || change.Property == ViewportZoomProperty || change.Property == BoundsProperty))
+        {
+            _linkPanel?.InvalidateMeasure();
+        }
+    }
+
+    /// <summary>
+    /// Берёт панель связей из шаблона: развёрнутые на прежней уходят вместе с ней.
+    /// </summary>
+    private void AttachLinkPanel(LinkPanel? panel)
+    {
+        if (ReferenceEquals(_linkPanel, panel))
+            return;
+
+        if (_linkPanel is { } previous)
+        {
+            foreach (var record in _recordByItem.Values.ToArray())
+                Unrealize(record, previous);
+
+            previous.Owner = null;
+        }
+
+        _linkPanel = panel;
+        if (panel != null)
+        {
+            panel.Owner = this;
+            panel.InvalidateMeasure();
+        }
+    }
+
+    private void SetState(LinkRecord record, bool value, Action<LinkRecord, bool> set)
+    {
+        set(record, value);
+        if (record.Control is { } control)
+            control.Sync();
+        else if (value && IsLinkVirtualizing)
+            _linkPanel?.InvalidateMeasure();
+    }
+
+    private double ThicknessOf(LinkRecord record) => record.Control?.StrokeThickness ?? _linkThickness;
+
+    private (Rect Realize, Rect Keep) LinkWindows()
+    {
+        var zoom = Math.Max(ViewportZoom, 0.0001);
+        var visible = new Rect(ViewportLocation, Bounds.Size / zoom);
+        var margin = Math.Max(0, (ItemsPanelRoot as VirtualizingSurfacePanel)?.RealizationMargin ?? 0) / zoom;
+        return (visible.Inflate(margin), visible.Inflate(margin * 2));
+    }
+
+    private void Realize(LinkRecord record, LinkPanel panel)
+    {
+        var link = record.Own ?? (_linkPool.Count > 0 ? _linkPool.Pop() : new Link());
+        record.Control = link;
+        link.Show(this, record);
+        panel.Children.Add(link);
+    }
+
+    private void Unrealize(LinkRecord record, LinkPanel panel)
+    {
+        if (record.Control is not { } link)
+            return;
+
+        record.Control = null;
+        panel.Remove(link);
+        link.Hide();
+        if (record.Own == null)
+            _linkPool.Push(link);
+    }
+
+    private void WatchLinks(IEnumerable? links)
+    {
+        _linkWatcher ??= new LinkWatcher(this);
+
+        if (_watchedLinks != null)
+            WeakEvents.CollectionChanged.Unsubscribe(_watchedLinks, _linkWatcher);
+
+        _watchedLinks = links as INotifyCollectionChanged;
+        if (_watchedLinks != null)
+            WeakEvents.CollectionChanged.Subscribe(_watchedLinks, _linkWatcher);
+
+        ResetRecords();
+    }
+
+    private void ResetRecords()
+    {
+        foreach (var record in _recordByItem.Values.ToArray())
+        {
+            _recordReferences[record] = 1;
+            RemoveRecord(record);
+        }
+
+        if (Links is { } links)
+        {
+            foreach (var item in links)
+            {
+                if (item != null)
+                    InsertRecord(item);
+            }
+        }
+
+        ReleaseReaders();
+    }
+
+    private void OnLinksCollectionChanged(NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (var item in e.NewItems!)
+                {
+                    if (item != null)
+                        InsertRecord(item);
+                }
+
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (var item in e.OldItems!)
+                {
+                    if (RecordOf(item) is { } record)
+                        RemoveRecord(record);
+                }
+
+                break;
+            case NotifyCollectionChangedAction.Replace:
+                foreach (var item in e.OldItems!)
+                {
+                    if (RecordOf(item) is { } record)
+                        RemoveRecord(record);
+                }
+
+                foreach (var item in e.NewItems!)
+                {
+                    if (item != null)
+                        InsertRecord(item);
+                }
+
+                break;
+            case NotifyCollectionChangedAction.Move:
+                // Порядок связей в коллекции ничего на холсте не меняет.
+                break;
+            default:
+                ResetRecords();
+                break;
+        }
+
+        ReleaseReaders();
+    }
+
+    private void InsertRecord(object item)
+    {
+        if (_recordByItem.TryGetValue(item, out var existing))
+        {
+            _recordReferences[existing]++;
+            return;
+        }
+
+        var record = new LinkRecord(item);
+        _recordByItem[item] = record;
+        _recordReferences[record] = 1;
+
+        ReadEnds(record);
+        RegisterLink(record);
+        if (record.Own == null && item is INotifyPropertyChanged model)
+            WeakEvents.ThreadSafePropertyChanged.Subscribe(model, _linkWatcher ??= new LinkWatcher(this));
+
+        RefreshLink(record);
+        _linkPanel?.InvalidateMeasure();
+    }
+
+    private void RemoveRecord(LinkRecord record)
+    {
+        var references = _recordReferences[record] - 1;
+        if (references > 0)
+        {
+            _recordReferences[record] = references;
+            return;
+        }
+
+        _recordReferences.Remove(record);
+        _recordByItem.Remove(record.Item);
+        UnregisterLink(record);
+        if (record.Own == null && record.Item is INotifyPropertyChanged model && _linkWatcher != null)
+            WeakEvents.ThreadSafePropertyChanged.Unsubscribe(model, _linkWatcher);
+
+        if (_linkPanel != null)
+            Unrealize(record, _linkPanel);
+
+        OnLinkRemoved(record);
+        OnContentChanged();
+    }
+
+    private void OnLinkModelChanged(object? model)
+    {
+        if (RecordOf(model) is not { } record)
+            return;
+
+        ReadEnds(record);
+        ReleaseReaders();
+        Rekey(record);
+    }
+
+    /// <summary>
+    /// Читает ключи концов: у готовой связи — с неё самой, у остальных — привязками редактора.
+    /// </summary>
+    private void ReadEnds(LinkRecord record)
+    {
+        if (record.Own is { } own)
+        {
+            record.Source = own.Source;
+            record.Target = own.Target;
+            return;
+        }
+
+        record.Source = Read(ref _sourceReader, LinkSourceBinding, record.Item);
+        record.Target = Read(ref _targetReader, LinkTargetBinding, record.Item);
+    }
+
+    private static object? Read(ref ObjectBindingReader? reader, BindingBase? binding, object item)
+    {
+        if (binding == null)
+            return null;
+
+        if (reader == null || !ReferenceEquals(reader.Binding, binding))
+            reader = new ObjectBindingReader(binding);
+
+        return reader.Read(item);
+    }
+
+    private void ReleaseReaders()
+    {
+        _sourceReader?.Release();
+        _targetReader?.Release();
+    }
+
+    /// <summary>
+    /// Переставляет запись в смежности под нынешними ключами и пересчитывает её.
+    /// </summary>
+    private void Rekey(LinkRecord record)
+    {
+        if (!Equals(record.Source, record.RegisteredSource) || !Equals(record.Target, record.RegisteredTarget))
+        {
+            UnregisterLink(record);
+            RegisterLink(record);
+        }
+
+        RefreshLink(record);
+    }
+
+    /// <summary>
+    /// Слушает коллекцию связей и модели связей слабо: они принадлежат хосту и живут дольше.
+    /// </summary>
+    private sealed class LinkWatcher(NodeEditor editor)
+        : IWeakEventSubscriber<NotifyCollectionChangedEventArgs>, IWeakEventSubscriber<PropertyChangedEventArgs>
+    {
+        public void OnEvent(object? sender, WeakEvent ev, NotifyCollectionChangedEventArgs e) =>
+            editor.OnLinksCollectionChanged(e);
+
+        public void OnEvent(object? sender, WeakEvent ev, PropertyChangedEventArgs e) =>
+            editor.OnLinkModelChanged(sender);
+    }
+}

@@ -78,18 +78,6 @@ public partial class NodeEditor
         return false;
     }
 
-    /// <inheritdoc />
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-
-        if (change.Property == PortNodeBindingProperty)
-        {
-            _portNodeReader = null;
-            RefreshAllLinks();
-        }
-    }
-
     /// <summary>
     /// Запоминает смещение живого порта в его узле — на время, когда узел свернут.
     /// </summary>
@@ -144,20 +132,20 @@ public partial class NodeEditor
         if (!_portKeysByNode.TryGetValue(item, out var keys))
             return;
 
-        var touched = new HashSet<Link>();
+        var touched = new HashSet<LinkRecord>();
         foreach (var key in keys)
         {
             if (_linksByKey.TryGetValue(key, out var links))
                 touched.UnionWith(links);
         }
 
-        foreach (var link in touched)
-            link.Refresh();
+        foreach (var record in touched)
+            RefreshLink(record);
     }
 
     private void RefreshAllLinks()
     {
-        foreach (var link in _links.ToArray())
-            link.Refresh();
+        foreach (var record in _recordByItem.Values.ToArray())
+            RefreshLink(record);
     }
 }

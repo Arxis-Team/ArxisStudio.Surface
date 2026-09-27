@@ -102,8 +102,8 @@ public class LinkSelectionTests
         var stand = Create();
         var link = stand.Nodes.LinkOf(stand.First);
 
-        Assert.Same(link, stand.Editor.HitTestLink(link.SourceAnchor - new Vector(5, 0)));
-        Assert.Same(link, stand.Editor.HitTestLink(link.TargetAnchor + new Vector(5, 0)));
+        Assert.Same(link, stand.Editor.HitTestLink(link.SourceAnchor - new Vector(5, 0))?.Control);
+        Assert.Same(link, stand.Editor.HitTestLink(link.TargetAnchor + new Vector(5, 0))?.Control);
         Assert.Null(stand.Editor.HitTestLink(link.TargetAnchor + new Vector(12, 0)));
     }
 

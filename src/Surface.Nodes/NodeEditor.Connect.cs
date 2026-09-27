@@ -69,6 +69,7 @@ public partial class NodeEditor
         base.OnApplyTemplate(e);
         PendingPreview = e.NameScope.Find<PendingLinkPreview>("PART_PendingLink");
         CutPreview = e.NameScope.Find<LinkCutPreview>("PART_CutLine");
+        AttachLinkPanel(e.NameScope.Find<LinkPanel>("PART_LinkPanel"));
     }
 
     /// <summary>

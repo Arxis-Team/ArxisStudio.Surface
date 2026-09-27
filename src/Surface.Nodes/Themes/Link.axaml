@@ -25,22 +25,4 @@
             <Setter Property="Opacity" Value="{DynamicResource NodeEditor.Link.DetachingOpacity}" />
         </Style>
     </ControlTheme>
-
-    <!--
-        Слой связей — ItemsControl со своей панелью. Шаблон у него свой, а не базовой темы
-        приложения: без шаблона ItemsControl не рисует ничего.
-    -->
-    <ControlTheme x:Key="{x:Type nodes:LinksPresenter}" TargetType="nodes:LinksPresenter">
-        <Setter Property="ItemsPanel">
-            <ItemsPanelTemplate>
-                <nodes:LinkPanel />
-            </ItemsPanelTemplate>
-        </Setter>
-        <Setter Property="Template">
-            <ControlTemplate>
-                <ItemsPresenter Name="PART_ItemsPresenter"
-                                ItemsPanel="{TemplateBinding ItemsPanel}" />
-            </ControlTemplate>
-        </Setter>
-    </ControlTheme>
 </ResourceDictionary>
