@@ -103,7 +103,7 @@ public class SelectionTests
     }
 
     [AvaloniaFact]
-    public void Selection_Bounds_Follow_Design_Position_Changes_Of_The_Target()
+    public void Selection_Bounds_Follow_Surface_Position_Changes_Of_The_Target()
     {
         var harness = EditorHarness.Create();
         harness.PlaceContainer(0, ContainerLocation, ContainerSize);

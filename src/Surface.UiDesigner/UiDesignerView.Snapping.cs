@@ -7,21 +7,21 @@ using ArxisStudio.Surface.Editing;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Привязка к сетке и направляющие выравнивания: служба слоя редактирования
-// (SnapService) и то, как дизайнер форм её подключает.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// (SnapService) и то, как дизайнер интерфейса её подключает.
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Идентификатор свойства линий выравнивания, найденных во время жеста.
     /// </summary>
     public static readonly AttachedProperty<IReadOnlyList<SurfaceSnapGuide>> SnapGuidesProperty =
-        SurfaceSnapping.SnapGuidesProperty.AddOwner<DesignEditor>();
+        SurfaceSnapping.SnapGuidesProperty.AddOwner<UiDesignerView>();
 
     /// <summary>
     /// Идентификатор свойства подсказок о равных интервалах.
     /// </summary>
     public static readonly AttachedProperty<IReadOnlyList<SurfaceSpacingHint>> SpacingHintsProperty =
-        SurfaceSnapping.SpacingHintsProperty.AddOwner<DesignEditor>();
+        SurfaceSnapping.SpacingHintsProperty.AddOwner<UiDesignerView>();
 
     private readonly SnapService _snap;
 

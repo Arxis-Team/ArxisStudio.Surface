@@ -18,16 +18,16 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// там живёт геометрия и порядок перекрытия — то, чем редактор распоряжается сам.
 /// </para>
 /// </remarks>
-public sealed class DesignEditorReorderRequestedEventArgs : EventArgs
+public sealed class UiDesignerReorderRequestedEventArgs : EventArgs
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditorReorderRequestedEventArgs"/>.
+    /// Инициализирует новый экземпляр <see cref="UiDesignerReorderRequestedEventArgs"/>.
     /// </summary>
     /// <param name="target">Контрол, который требуется переставить.</param>
     /// <param name="oldIndex">Текущая позиция среди соседей.</param>
     /// <param name="newIndex">Запрошенная позиция среди соседей.</param>
     /// <param name="anchor">Сосед, перед которым встаёт контрол, либо <see langword="null"/>.</param>
-    public DesignEditorReorderRequestedEventArgs(Control target, int oldIndex, int newIndex, Control? anchor)
+    public UiDesignerReorderRequestedEventArgs(Control target, int oldIndex, int newIndex, Control? anchor)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
         OldIndex = oldIndex;

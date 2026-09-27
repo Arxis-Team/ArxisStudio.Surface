@@ -18,7 +18,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// </remarks>
 internal sealed class SelectionCluster
 {
-    private SelectionCluster(DesignEditorItem host, string? groupPath, IReadOnlyList<Control> members)
+    private SelectionCluster(UiDesignerItem host, string? groupPath, IReadOnlyList<Control> members)
     {
         Host = host;
         GroupPath = groupPath;
@@ -26,7 +26,7 @@ internal sealed class SelectionCluster
     }
 
     /// <summary>Форма, которой принадлежит кластер: путь группы осмыслен только внутри неё.</summary>
-    public DesignEditorItem Host { get; }
+    public UiDesignerItem Host { get; }
 
     /// <summary>Путь группы или <see langword="null"/> у одиночного контрола.</summary>
     public string? GroupPath { get; }
@@ -41,10 +41,10 @@ internal sealed class SelectionCluster
     public Control Primary => Members[0];
 
     /// <summary>Создаёт кластер из одиночного контрола.</summary>
-    public static SelectionCluster Single(DesignEditorItem host, Control target) => new(host, null, new[] { target });
+    public static SelectionCluster Single(UiDesignerItem host, Control target) => new(host, null, new[] { target });
 
     /// <summary>Создаёт кластер из группы.</summary>
-    public static SelectionCluster Group(DesignEditorItem host, string path, IReadOnlyList<Control> members)
+    public static SelectionCluster Group(UiDesignerItem host, string path, IReadOnlyList<Control> members)
     {
         if (path == null)
             throw new ArgumentNullException(nameof(path));

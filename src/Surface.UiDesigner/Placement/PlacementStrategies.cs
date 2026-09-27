@@ -1,18 +1,18 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Surface.UiDesigner.Placement;
 
 /// <summary>
-/// Позиционирование в <see cref="AbsolutePanel"/> и в <see cref="DesignSurface"/>.
+/// Позиционирование в <see cref="AbsolutePanel"/> и в <see cref="UiDesignerPanel"/>.
 /// </summary>
 /// <remarks>
-/// Обслуживает и контрол без родителя: для него design-координаты — единственное,
+/// Обслуживает и контрол без родителя: для него координаты поверхности — единственное,
 /// что вообще определяет положение, поэтому семантика та же.
 /// </remarks>
-internal sealed class AbsolutePlacementStrategy : IDesignPlacementStrategy
+internal sealed class AbsolutePlacementStrategy : ISurfacePlacementStrategy
 {
     public static readonly AbsolutePlacementStrategy Instance = new();
 
@@ -24,32 +24,32 @@ internal sealed class AbsolutePlacementStrategy : IDesignPlacementStrategy
     public string Name => "Absolute";
 
     /// <inheritdoc />
-    public DesignMoveSemantics MoveSemantics => DesignMoveSemantics.Reposition;
+    public SurfaceMoveSemantics MoveSemantics => SurfaceMoveSemantics.Reposition;
 
     /// <inheritdoc />
-    public Point GetPosition(Control target, DesignEditor editor)
+    public Point GetPosition(Control target, UiDesignerView editor)
     {
-        if (target is DesignEditorItem item)
+        if (target is UiDesignerItem item)
             return item.Location;
 
-        if (editor.TryGetDesignBounds(target, out var bounds))
+        if (editor.TryGetTargetBounds(target, out var bounds))
             return bounds.Position;
 
-        return new Point(DesignLayout.GetDesignX(target), DesignLayout.GetDesignY(target));
+        return new Point(SurfaceLayout.GetSurfaceX(target), SurfaceLayout.GetSurfaceY(target));
     }
 
     /// <inheritdoc />
-    public void SetPosition(Control target, Point designPosition, DesignEditor editor)
+    public void SetPosition(Control target, Point surfacePosition, UiDesignerView editor)
     {
-        if (target is DesignEditorItem item)
+        if (target is UiDesignerItem item)
         {
-            item.Location = designPosition;
+            item.Location = surfacePosition;
             return;
         }
 
-        DesignEditor.EnsureTracked(target);
-        DesignLayout.SetDesignX(target, designPosition.X);
-        DesignLayout.SetDesignY(target, designPosition.Y);
+        UiDesignerView.EnsureTracked(target);
+        SurfaceLayout.SetSurfaceX(target, surfacePosition.X);
+        SurfaceLayout.SetSurfaceY(target, surfacePosition.Y);
     }
 }
 
@@ -61,7 +61,7 @@ internal sealed class AbsolutePlacementStrategy : IDesignPlacementStrategy
 /// <c>Canvas.Left</c>/<c>Canvas.Top</c>. Раньше он проходил гейт перетаскивания
 /// наравне с <see cref="AbsolutePanel"/> и после этого молча ничего не делал.
 /// </remarks>
-internal sealed class CanvasPlacementStrategy : IDesignPlacementStrategy
+internal sealed class CanvasPlacementStrategy : ISurfacePlacementStrategy
 {
     public static readonly CanvasPlacementStrategy Instance = new();
 
@@ -73,24 +73,24 @@ internal sealed class CanvasPlacementStrategy : IDesignPlacementStrategy
     public string Name => "Canvas";
 
     /// <inheritdoc />
-    public DesignMoveSemantics MoveSemantics => DesignMoveSemantics.Reposition;
+    public SurfaceMoveSemantics MoveSemantics => SurfaceMoveSemantics.Reposition;
 
     /// <inheritdoc />
-    public Point GetPosition(Control target, DesignEditor editor)
+    public Point GetPosition(Control target, UiDesignerView editor)
     {
-        if (editor.TryGetDesignBounds(target, out var bounds))
+        if (editor.TryGetTargetBounds(target, out var bounds))
             return bounds.Position;
 
-        return new Point(DesignLayout.GetDesignX(target), DesignLayout.GetDesignY(target));
+        return new Point(SurfaceLayout.GetSurfaceX(target), SurfaceLayout.GetSurfaceY(target));
     }
 
     /// <inheritdoc />
-    public void SetPosition(Control target, Point designPosition, DesignEditor editor)
+    public void SetPosition(Control target, Point surfacePosition, UiDesignerView editor)
     {
-        // Design-координаты считаются от поверхности дизайна, а Canvas.Left/Top —
+        // Координаты поверхности считаются от поверхности дизайна, а Canvas.Left/Top —
         // от самого Canvas, поэтому позицию нужно перевести в его пространство.
         var current = GetPosition(target, editor);
-        var delta = designPosition - current;
+        var delta = surfacePosition - current;
 
         var left = Canvas.GetLeft(target);
         var top = Canvas.GetTop(target);
@@ -98,14 +98,14 @@ internal sealed class CanvasPlacementStrategy : IDesignPlacementStrategy
         Canvas.SetLeft(target, (double.IsNaN(left) ? 0d : left) + delta.X);
         Canvas.SetTop(target, (double.IsNaN(top) ? 0d : top) + delta.Y);
 
-        DesignEditor.EnsureTracked(target);
+        UiDesignerView.EnsureTracked(target);
     }
 }
 
 /// <summary>
 /// Раскладка, которая сама расставляет детей потоком: перестановка осмыслена, позиция — нет.
 /// </summary>
-internal sealed class StackPlacementStrategy : IDesignPlacementStrategy
+internal sealed class StackPlacementStrategy : ISurfacePlacementStrategy
 {
     public static readonly StackPlacementStrategy Instance = new();
 
@@ -117,14 +117,14 @@ internal sealed class StackPlacementStrategy : IDesignPlacementStrategy
     public string Name => "Stack";
 
     /// <inheritdoc />
-    public DesignMoveSemantics MoveSemantics => DesignMoveSemantics.Reorder;
+    public SurfaceMoveSemantics MoveSemantics => SurfaceMoveSemantics.Reorder;
 
     /// <inheritdoc />
-    public Point GetPosition(Control target, DesignEditor editor)
-        => editor.TryGetDesignBounds(target, out var bounds) ? bounds.Position : default;
+    public Point GetPosition(Control target, UiDesignerView editor)
+        => editor.TryGetTargetBounds(target, out var bounds) ? bounds.Position : default;
 
     /// <inheritdoc />
-    public void SetPosition(Control target, Point designPosition, DesignEditor editor)
+    public void SetPosition(Control target, Point surfacePosition, UiDesignerView editor)
     {
         // Осознанно ничего: позицией распоряжается панель. Запись сюда и была
         // тем молчаливым no-op, ради устранения которого появились стратегии.
@@ -139,7 +139,7 @@ internal sealed class StackPlacementStrategy : IDesignPlacementStrategy
 /// <see cref="Border"/>. Позиция в них задаётся не координатами, а собственными
 /// присоединёнными свойствами раскладки, и правка их — отдельная задача.
 /// </remarks>
-internal sealed class FixedPlacementStrategy : IDesignPlacementStrategy
+internal sealed class FixedPlacementStrategy : ISurfacePlacementStrategy
 {
     public static readonly FixedPlacementStrategy Grid = new("Grid");
     public static readonly FixedPlacementStrategy Dock = new("Dock");
@@ -151,14 +151,14 @@ internal sealed class FixedPlacementStrategy : IDesignPlacementStrategy
     public string Name { get; }
 
     /// <inheritdoc />
-    public DesignMoveSemantics MoveSemantics => DesignMoveSemantics.None;
+    public SurfaceMoveSemantics MoveSemantics => SurfaceMoveSemantics.None;
 
     /// <inheritdoc />
-    public Point GetPosition(Control target, DesignEditor editor)
-        => editor.TryGetDesignBounds(target, out var bounds) ? bounds.Position : default;
+    public Point GetPosition(Control target, UiDesignerView editor)
+        => editor.TryGetTargetBounds(target, out var bounds) ? bounds.Position : default;
 
     /// <inheritdoc />
-    public void SetPosition(Control target, Point designPosition, DesignEditor editor)
+    public void SetPosition(Control target, Point surfacePosition, UiDesignerView editor)
     {
     }
 }

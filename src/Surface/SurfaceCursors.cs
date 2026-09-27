@@ -13,8 +13,8 @@ namespace ArxisStudio.Surface;
 /// <para>
 /// Курсоры частей, которые видно и на которые наводят, — ручки изменения размера
 /// и линейка — задаются самой частью, как принято в Avalonia, а настраиваются
-/// ресурсами темы (<c>DesignEditor.SelectionAdorner.Cursor*</c>,
-/// <c>DesignEditor.Ruler.Cursor*</c>).
+/// ресурсами темы (<c>UiDesignerView.SelectionAdorner.Cursor*</c>,
+/// <c>UiDesignerView.Ruler.Cursor*</c>).
 /// </para>
 /// <para>
 /// Значение <see langword="null"/> у любого свойства означает «библиотечный курсор
@@ -29,7 +29,7 @@ namespace ArxisStudio.Surface;
 /// </remarks>
 /// <example>
 /// <code language="xml"><![CDATA[
-/// <design:DesignEditor.Cursors>
+/// <design:UiDesignerView.Cursors>
 ///     <design:SurfaceCursors Move="SizeAll"
 ///                                 Blocked="No"
 ///                                 Pan="Hand"
@@ -37,7 +37,7 @@ namespace ArxisStudio.Surface;
 ///                                 Reorder="DragMove"
 ///                                 GuideHorizontal="SizeNorthSouth"
 ///                                 GuideVertical="SizeWestEast" />
-/// </design:DesignEditor.Cursors>
+/// </design:UiDesignerView.Cursors>
 /// ]]></code>
 /// </example>
 public class SurfaceCursors : AvaloniaObject

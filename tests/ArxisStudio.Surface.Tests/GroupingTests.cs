@@ -16,7 +16,7 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Группа не создаёт узла в дереве — редактор его не правит (ADR 0001), — а помечает
-/// участников attached-свойством <see cref="DesignGroup"/>. Отсюда всё остальное: пометка
+/// участников attached-свойством <see cref="SurfaceGroup"/>. Отсюда всё остальное: пометка
 /// живёт там же, где <c>Layout.X</c>/<c>Y</c>, и сохраняется хостом тем же способом;
 /// у группировки есть шов записи, поэтому она попадает в контракт изменений и отменяется.
 /// </remarks>
@@ -68,9 +68,9 @@ public class GroupingTests
     {
         var harness = CreateGrouped();
 
-        var id = DesignGroup.GetId(harness.Nested(0));
+        var id = SurfaceGroup.GetId(harness.Nested(0));
         Assert.NotNull(id);
-        Assert.Equal(id, DesignGroup.GetId(harness.Named(0, "Sibling")));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Named(0, "Sibling")));
     }
 
     [AvaloniaFact]
@@ -81,7 +81,7 @@ public class GroupingTests
 
         Assert.False(harness.Editor.CanGroupSelection());
         Assert.False(harness.Editor.GroupSelection());
-        Assert.Null(DesignGroup.GetId(harness.Nested(0)));
+        Assert.Null(SurfaceGroup.GetId(harness.Nested(0)));
     }
 
     /// <summary>
@@ -105,8 +105,8 @@ public class GroupingTests
         // именно это, а не отказ группировки: до него дело просто не доходит.
         Assert.Equal(1, harness.Editor.SelectedTargetsCount);
         Assert.False(harness.Editor.GroupSelection());
-        Assert.Null(DesignGroup.GetId(harness.Nested(0)));
-        Assert.Null(DesignGroup.GetId(harness.Nested(1)));
+        Assert.Null(SurfaceGroup.GetId(harness.Nested(0)));
+        Assert.Null(SurfaceGroup.GetId(harness.Nested(1)));
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public class GroupingTests
     public void A_Whole_Group_Alone_Is_Not_Regrouped()
     {
         var harness = CreateGrouped();
-        var id = DesignGroup.GetId(harness.Nested(0));
+        var id = SurfaceGroup.GetId(harness.Nested(0));
 
         Click(harness, NestedCentre);
         Assert.True(harness.Editor.HasGroupSelection);
@@ -130,8 +130,8 @@ public class GroupingTests
         Assert.False(harness.Editor.GroupSelection());
         harness.RunLayout();
 
-        Assert.Equal(id, DesignGroup.GetId(harness.Nested(0)));
-        Assert.Equal(id, DesignGroup.GetId(harness.Named(0, "Sibling")));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Nested(0)));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Named(0, "Sibling")));
     }
 
     // ---- Одна рамка -------------------------------------------------------------
@@ -183,8 +183,8 @@ public class GroupingTests
         Assert.False(harness.Editor.HasGroupSelection);
         Assert.True(harness.Editor.HasMultipleNestedSelection);
         Assert.Equal(2, harness.Editor.SecondarySelectionAdorners.Count);
-        Assert.Null(DesignGroup.GetId(harness.Nested(0)));
-        Assert.Null(DesignGroup.GetId(harness.Named(0, "Sibling")));
+        Assert.Null(SurfaceGroup.GetId(harness.Nested(0)));
+        Assert.Null(SurfaceGroup.GetId(harness.Named(0, "Sibling")));
     }
 
     // ---- Выделение --------------------------------------------------------------
@@ -353,7 +353,7 @@ public class GroupingTests
         var edit = Assert.Single(edits);
         Assert.Equal(SurfaceEditKind.Group, edit.Kind);
         Assert.Equal(2, edit.Changes.Count);
-        Assert.All(edit.Changes, c => Assert.IsType<DesignGroupChange>(c));
+        Assert.All(edit.Changes, c => Assert.IsType<GroupChange>(c));
     }
 
     [AvaloniaFact]
@@ -368,20 +368,20 @@ public class GroupingTests
 
         harness.Editor.GroupSelection();
         harness.RunLayout();
-        var id = DesignGroup.GetId(harness.Nested(0));
+        var id = SurfaceGroup.GetId(harness.Nested(0));
         Assert.NotNull(id);
 
         foreach (var change in edit!.Changes)
             harness.Editor.Revert(change);
 
         harness.RunLayout();
-        Assert.Null(DesignGroup.GetId(harness.Nested(0)));
+        Assert.Null(SurfaceGroup.GetId(harness.Nested(0)));
 
         foreach (var change in edit.Changes)
             harness.Editor.Reapply(change);
 
         harness.RunLayout();
-        Assert.Equal(id, DesignGroup.GetId(harness.Nested(0)));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Nested(0)));
     }
 
     /// <summary>
@@ -418,7 +418,7 @@ public class GroupingTests
     /// Участником считается только то, что редактор даёт выбрать.
     /// </summary>
     /// <remarks>
-    /// В режиме <see cref="DesignContentMode.Annotated"/> target'ом становится контрол
+    /// В режиме <see cref="SurfaceContentMode.Annotated"/> target'ом становится контрол
     /// с designer-метаданными, и корневая панель формы им не является. Пометку на ней
     /// хост поставить может — руками или из разметки, — но раскрытие по клику обязано
     /// остаться в пределах того, что вообще выбирается: иначе в выделении оказывается
@@ -429,7 +429,7 @@ public class GroupingTests
     {
         var harness = CreateGrouped();
         var panel = HostPanel(harness);
-        DesignGroup.SetId(panel, DesignGroup.GetId(harness.Nested(0)));
+        SurfaceGroup.SetId(panel, SurfaceGroup.GetId(harness.Nested(0)));
 
         Click(harness, NestedCentre);
 
@@ -449,14 +449,14 @@ public class GroupingTests
     public void A_Hidden_Mark_Still_Reserves_Its_Identifier()
     {
         var harness = Create();
-        DesignGroup.SetId(HostPanel(harness), "group-1");
+        SurfaceGroup.SetId(HostPanel(harness), "group-1");
 
         Click(harness, NestedCentre);
         Click(harness, SiblingCentre, RawInputModifiers.Shift);
         Assert.True(harness.Editor.GroupSelection());
         harness.RunLayout();
 
-        Assert.NotEqual("group-1", DesignGroup.GetId(harness.Nested(0)));
+        Assert.NotEqual("group-1", SurfaceGroup.GetId(harness.Nested(0)));
     }
 
     /// <summary>
@@ -495,7 +495,7 @@ public class GroupingTests
 
         var group = Assert.Single(groups);
         Assert.Same(container, group.Container);
-        Assert.Equal(DesignGroup.GetId(harness.Nested(0)), group.Id);
+        Assert.Equal(SurfaceGroup.GetId(harness.Nested(0)), group.Id);
         Assert.Equal(
             new Control[] { harness.Nested(0), harness.Named(0, "Sibling") },
             group.Members);
@@ -532,7 +532,7 @@ public class GroupingTests
         Assert.True(harness.Editor.GroupSelection());
         harness.RunLayout();
 
-        var id = DesignGroup.GetId(harness.Nested(0))!;
+        var id = SurfaceGroup.GetId(harness.Nested(0))!;
 
         Assert.Equal(
             new Control[] { harness.Nested(0), harness.Named(0, "Sibling") },
@@ -552,7 +552,7 @@ public class GroupingTests
 
         Assert.All(
             harness.Editor.SelectedTargets,
-            t => Assert.Equal(DesignGroup.GetId(t.Target), t.GroupId));
+            t => Assert.Equal(SurfaceGroup.GetId(t.Target), t.GroupId));
         Assert.NotNull(harness.Editor.PrimarySelectionTarget!.GroupId);
     }
 
@@ -572,13 +572,13 @@ public class GroupingTests
     public void Renaming_Moves_Every_Member()
     {
         var harness = CreateGrouped();
-        var id = DesignGroup.GetId(harness.Nested(0))!;
+        var id = SurfaceGroup.GetId(harness.Nested(0))!;
 
         Assert.True(harness.Editor.RenameGroup(harness.Container(0), id, "toolbar"));
         harness.RunLayout();
 
-        Assert.Equal("toolbar", DesignGroup.GetId(harness.Nested(0)));
-        Assert.Equal("toolbar", DesignGroup.GetId(harness.Named(0, "Sibling")));
+        Assert.Equal("toolbar", SurfaceGroup.GetId(harness.Nested(0)));
+        Assert.Equal("toolbar", SurfaceGroup.GetId(harness.Named(0, "Sibling")));
         Assert.Equal("toolbar", Assert.Single(harness.Editor.GetGroups(harness.Container(0))).Id);
     }
 
@@ -593,7 +593,7 @@ public class GroupingTests
     public void Renaming_Is_One_Edit_And_Undoes()
     {
         var harness = CreateGrouped();
-        var id = DesignGroup.GetId(harness.Nested(0))!;
+        var id = SurfaceGroup.GetId(harness.Nested(0))!;
 
         var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
@@ -609,7 +609,7 @@ public class GroupingTests
             harness.Editor.Revert(change);
 
         harness.RunLayout();
-        Assert.Equal(id, DesignGroup.GetId(harness.Nested(0)));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Nested(0)));
     }
 
     /// <summary>
@@ -624,11 +624,11 @@ public class GroupingTests
     public void Renaming_Onto_A_Taken_Identifier_Is_Refused()
     {
         var harness = CreateGrouped();
-        var id = DesignGroup.GetId(harness.Nested(0))!;
-        DesignGroup.SetId(HostPanel(harness), "toolbar");
+        var id = SurfaceGroup.GetId(harness.Nested(0))!;
+        SurfaceGroup.SetId(HostPanel(harness), "toolbar");
 
         Assert.False(harness.Editor.RenameGroup(harness.Container(0), id, "toolbar"));
-        Assert.Equal(id, DesignGroup.GetId(harness.Nested(0)));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Nested(0)));
     }
 
     [AvaloniaTheory]
@@ -637,10 +637,10 @@ public class GroupingTests
     public void An_Empty_Identifier_Is_Refused(string candidate)
     {
         var harness = CreateGrouped();
-        var id = DesignGroup.GetId(harness.Nested(0))!;
+        var id = SurfaceGroup.GetId(harness.Nested(0))!;
 
         Assert.False(harness.Editor.RenameGroup(harness.Container(0), id, candidate));
-        Assert.Equal(id, DesignGroup.GetId(harness.Nested(0)));
+        Assert.Equal(id, SurfaceGroup.GetId(harness.Nested(0)));
     }
 
     [AvaloniaFact]
@@ -667,7 +667,7 @@ public class GroupingTests
     public void The_Entered_Group_Follows_The_Rename()
     {
         var harness = CreateGrouped();
-        var id = DesignGroup.GetId(harness.Nested(0))!;
+        var id = SurfaceGroup.GetId(harness.Nested(0))!;
 
         // Вход в группу: двойной клик по участнику.
         harness.Window.MouseDown(NestedCentre, MouseButton.Left);

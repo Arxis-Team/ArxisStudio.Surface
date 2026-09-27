@@ -16,21 +16,21 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// <para>
 /// Это <b>умолчание</b>, а не единственное место: у группы нет читателя в рантайме, поэтому
 /// записанная в разметку она делает документ зависимым от сборки редактора. Хост, которому
-/// эта цена не подходит, задаёт своё <see cref="IDesignGroupStore"/> через
-/// <c>DesignEditor.GroupStore</c>, и тогда редактор сюда не пишет вовсе — см. ADR 0002.
+/// эта цена не подходит, задаёт своё <see cref="ISurfaceGroupStore"/> через
+/// <c>UiDesignerView.GroupStore</c>, и тогда редактор сюда не пишет вовсе — см. ADR 0002.
 /// </para>
 /// <para>
 /// Отсюда и тип: строка пишется в разметке и читается человеком.
 /// </para>
 /// <code language="xml"><![CDATA[
-/// <Border attached:DesignGroup.Id="toolbar" />
+/// <Border attached:SurfaceGroup.Id="toolbar" />
 /// ]]></code>
 /// <para>
 /// Значение сравнивается по <see cref="System.StringComparison.Ordinal"/>: это идентификатор, а не текст
 /// на языке пользователя, и совпадение по регистру здесь означает совпадение группы.
 /// </para>
 /// </remarks>
-public static class DesignGroup
+public static class SurfaceGroup
 {
     /// <summary>
     /// Идентификатор attached-свойства группы.
@@ -43,7 +43,7 @@ public static class DesignGroup
     public static readonly AttachedProperty<string?> IdProperty =
         AvaloniaProperty.RegisterAttached<Control, string?>(
             "Id",
-            typeof(DesignGroup),
+            typeof(SurfaceGroup),
             null,
             inherits: false);
 
@@ -63,9 +63,9 @@ public static class DesignGroup
     /// Прямая запись группу меняет, но мимо контракта изменений: в
     /// <see cref="SurfaceView.EditCompleted"/> она не попадёт и отменить её будет нечем.
     /// Редактор увидит её, только если пользуется библиотечным хранилищем
-    /// <see cref="DesignGroupAttachedStore"/>; со своим хранилищем это свойство ему не видно.
-    /// Из редактора пользоваться надо <see cref="DesignEditor.GroupSelection"/> и
-    /// <see cref="DesignEditor.UngroupSelection"/>; это свойство — для разметки и для хоста,
+    /// <see cref="SurfaceGroupAttachedStore"/>; со своим хранилищем это свойство ему не видно.
+    /// Из редактора пользоваться надо <see cref="UiDesignerView.GroupSelection"/> и
+    /// <see cref="UiDesignerView.UngroupSelection"/>; это свойство — для разметки и для хоста,
     /// который восстанавливает сохранённый макет.
     /// </remarks>
     public static void SetId(AvaloniaObject target, string? value) => target.SetValue(IdProperty, value);

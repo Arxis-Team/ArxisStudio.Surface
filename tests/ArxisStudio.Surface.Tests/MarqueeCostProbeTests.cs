@@ -65,7 +65,7 @@ public class MarqueeCostProbeTests
     {
         var nodes = Enumerable.Range(0, Containers).Select(i => new TestNode("n" + i)).ToList();
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,

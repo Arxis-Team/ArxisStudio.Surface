@@ -6,13 +6,13 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Согласование design-координат с фактической раскладкой и единицы слоя адорнеров.
+/// Согласование координат поверхности с фактической раскладкой и единицы слоя адорнеров.
 /// </summary>
 /// <remarks>
 /// Оба утверждения выглядели дефектами в аудите и после разбора оказались верным
@@ -27,29 +27,29 @@ public class ReconciliationCharacterizationTests
     private static readonly Size ContainerSize = new(300, 200);
 
     [AvaloniaFact]
-    public void Design_Position_Is_Overwritten_When_The_Parent_Owns_It()
+    public void Surface_Position_Is_Overwritten_When_The_Parent_Owns_It()
     {
         var harness = EditorHarness.CreateStackHosted();
         harness.PlaceContainer(0, CardLocation, CardSize);
         var action = harness.Find<Button>(0, "Action");
 
-        // Даём DesignY устояться: пересчёт всегда идёт через dispatcher,
+        // Даём SurfaceY устояться: пересчёт всегда идёт через dispatcher,
         // поэтому сразу после layout там ещё значение по умолчанию.
         Dispatcher.UIThread.RunJobs();
         harness.RunLayout();
-        var arranged = DesignLayout.GetDesignY(action);
+        var arranged = SurfaceLayout.GetSurfaceY(action);
         Assert.True(arranged > 0, "координата не успела посчитаться");
 
-        DesignLayout.SetDesignY(action, arranged + 120);
+        SurfaceLayout.SetSurfaceY(action, arranged + 120);
         harness.RunLayout();
         Dispatcher.UIThread.RunJobs();
         harness.RunLayout();
 
-        // Так и должно быть: раз позицией распоряжается панель, design-координата
+        // Так и должно быть: раз позицией распоряжается панель, координата поверхности
         // обязана показывать её настоящее положение, а не то, что кто-то попросил.
         // Редактор сюда больше не пишет — стратегия размещения отсекает попытку
         // на шве, поэтому «драки» за координату не возникает.
-        Assert.Equal(arranged, DesignLayout.GetDesignY(action), 1);
+        Assert.Equal(arranged, SurfaceLayout.GetSurfaceY(action), 1);
     }
 
     [AvaloniaFact]

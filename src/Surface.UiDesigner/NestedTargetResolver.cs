@@ -5,11 +5,11 @@ using Avalonia.Controls;
 namespace ArxisStudio.Surface.UiDesigner;
 
 /// <summary>
-/// Резолвер дизайнера форм: target'ами становятся контролы внутри формы.
+/// Резолвер дизайнера интерфейса: target'ами становятся контролы внутри формы.
 /// </summary>
 /// <remarks>
-/// В режиме <see cref="DesignContentMode.Annotated"/> — те, что размечены designer-метаданными,
-/// в режиме <see cref="DesignContentMode.Loaded"/> — вся авторская разметка, без
+/// В режиме <see cref="SurfaceContentMode.Annotated"/> — те, что размечены designer-метаданными,
+/// в режиме <see cref="SurfaceContentMode.Loaded"/> — вся авторская разметка, без
 /// внутренностей шаблонов.
 /// </remarks>
 internal sealed class NestedTargetResolver : ISurfaceTargetResolver
@@ -21,10 +21,10 @@ internal sealed class NestedTargetResolver : ISurfaceTargetResolver
     }
 
     public IEnumerable<Control> EnumerateCandidates(SurfaceItem host)
-        => host is DesignEditorItem item
-            ? DesignEditor.EnumerateSelectionCandidates(item)
+        => host is UiDesignerItem item
+            ? UiDesignerView.EnumerateSelectionCandidates(item)
             : Array.Empty<Control>();
 
     public bool IsSelectable(Control target, SurfaceItem host)
-        => host is DesignEditorItem item && DesignEditor.IsSelectableTarget(target, item);
+        => host is UiDesignerItem item && UiDesignerView.IsSelectableTarget(target, item);
 }

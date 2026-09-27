@@ -3,7 +3,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// <summary>
 /// Определяет, как редактор находит редактируемые элементы внутри контейнера.
 /// </summary>
-public enum DesignContentMode
+public enum SurfaceContentMode
 {
     /// <summary>
     /// Содержимое размечено вручную: target'ом становится только контрол

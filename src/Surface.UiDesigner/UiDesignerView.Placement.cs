@@ -15,7 +15,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -24,8 +24,8 @@ using ArxisStudio.Surface;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Геометрия: шов записи, политики, стратегии размещения и перестановка.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Определяет, есть ли кому выполнить перестановку.
@@ -92,7 +92,7 @@ public partial class DesignEditor
             ? panel.Children[insertBefore]
             : null;
 
-        var args = new DesignEditorReorderRequestedEventArgs(
+        var args = new UiDesignerReorderRequestedEventArgs(
             control,
             current,
             requested,
@@ -104,7 +104,7 @@ public partial class DesignEditor
         // одинаковой формы перестановка молча отменяла сама себя.
         foreach (var invocation in handler.GetInvocationList())
         {
-            ((EventHandler<DesignEditorReorderRequestedEventArgs>)invocation)(this, args);
+            ((EventHandler<UiDesignerReorderRequestedEventArgs>)invocation)(this, args);
 
             if (args.Handled)
                 break;
@@ -166,7 +166,7 @@ public partial class DesignEditor
         for (var i = 0; i < selection.Count; i++)
         {
             var target = selection[i].Target;
-            if (!TryGetDesignBounds(target, out var bounds))
+            if (!TryGetTargetBounds(target, out var bounds))
                 return false;
 
             items.Add((target, bounds));
@@ -218,8 +218,8 @@ public partial class DesignEditor
     /// <summary>
     /// Возвращает стратегию размещения контрола.
     /// </summary>
-    internal static IDesignPlacementStrategy GetPlacementStrategy(Control control)
-        => DesignPlacementResolver.Resolve(control);
+    internal static ISurfacePlacementStrategy GetPlacementStrategy(Control control)
+        => SurfacePlacementResolver.Resolve(control);
 
     private SelectionInteractionCapabilities GetSelectionInteractionCapabilities()
     {
@@ -262,9 +262,9 @@ public partial class DesignEditor
         return ShouldBlockNestedGroupDrag(GetSelectionInteractionCapabilities());
     }
 
-    internal bool TryGetDesignBounds(Control control, out Rect bounds)
+    internal bool TryGetTargetBounds(Control control, out Rect bounds)
     {
-        if (!ReferenceEquals(control.FindAncestorOfType<DesignEditor>(), this))
+        if (!ReferenceEquals(control.FindAncestorOfType<UiDesignerView>(), this))
         {
             bounds = default;
             return false;
@@ -278,8 +278,8 @@ public partial class DesignEditor
 
         EnsureTracked(control);
 
-        Visual? reference = control.FindAncestorOfType<DesignSurface>()
-                            ?? control.FindAncestorOfType<DesignEditor>() as Visual;
+        Visual? reference = control.FindAncestorOfType<UiDesignerPanel>()
+                            ?? control.FindAncestorOfType<UiDesignerView>() as Visual;
 
         var position = reference != null
             ? control.TranslatePoint(new Point(0, 0), reference)
@@ -295,8 +295,8 @@ public partial class DesignEditor
         }
         else
         {
-            x = DesignLayout.GetDesignX(control);
-            y = DesignLayout.GetDesignY(control);
+            x = SurfaceLayout.GetSurfaceX(control);
+            y = SurfaceLayout.GetSurfaceY(control);
 
             if (double.IsNaN(x) || double.IsNaN(y))
             {
@@ -312,9 +312,9 @@ public partial class DesignEditor
     /// <summary>
     /// Обновляет индикатор точки вставки.
     /// </summary>
-    internal void UpdateReorderIndicator(Rect designBounds)
+    internal void UpdateReorderIndicator(Rect surfaceBounds)
     {
-        ReorderIndicator = designBounds;
+        ReorderIndicator = surfaceBounds;
         IsReordering = true;
     }
 

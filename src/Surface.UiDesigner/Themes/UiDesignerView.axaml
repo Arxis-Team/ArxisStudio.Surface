@@ -15,7 +15,7 @@
         <Setter Property="IsHitTestVisible" Value="False"/>
     </ControlTheme>
 
-    <ControlTheme x:Key="{x:Type uidesigner:DesignEditor}" TargetType="uidesigner:DesignEditor">
+    <ControlTheme x:Key="{x:Type uidesigner:UiDesignerView}" TargetType="uidesigner:UiDesignerView">
         <Setter Property="Background" Value="{DynamicResource Surface.BackgroundBrush}" />
         <Setter Property="ClipToBounds" Value="True" />
         <Setter Property="SelectionRectangleStyle" Value="{StaticResource SelectionRectangleStyle}" />
@@ -44,7 +44,7 @@
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <uidesigner:DesignSurface Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=uidesigner:DesignEditor}}" />
+                                        <uidesigner:UiDesignerPanel Extent="{Binding ItemsExtent, Mode=OneWayToSource, RelativeSource={RelativeSource AncestorType=uidesigner:UiDesignerView}}" />
                                     </ItemsPanelTemplate>
                                 </ItemsPresenter.ItemsPanel>
                             </ItemsPresenter>
@@ -140,7 +140,7 @@
                                  Толщина задаётся здесь, а не в мировых координатах,
                                  поэтому линия одинаково тонкая на любом масштабе. -->
                             <Rectangle Name="PART_ReorderIndicator"
-                                       Fill="{DynamicResource DesignEditor.ReorderIndicatorBrush}"
+                                       Fill="{DynamicResource UiDesigner.ReorderIndicatorBrush}"
                                        MinWidth="2"
                                        MinHeight="2"
                                        RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseScaleConverter}}"

@@ -13,7 +13,7 @@ public class ViewportTests
     [AvaloniaFact]
     public void GetWorldPosition_Accounts_For_Zoom_And_Pan()
     {
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ViewportZoom = 2.0,
             ViewportLocation = new Point(100, 50)
@@ -26,7 +26,7 @@ public class ViewportTests
     [AvaloniaFact]
     public void GetWorldPosition_Is_Identity_At_Default_Viewport()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
 
         Assert.Equal(new Point(42, 17), editor.GetWorldPosition(new Point(42, 17)));
     }
@@ -84,7 +84,7 @@ public class ViewportTests
     public void FitToView_Is_Ignored_When_Editor_Has_No_Size()
     {
         // Редактор вне дерева: Bounds пустые, деление на ноль недопустимо.
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var before = editor.ViewportZoom;
 
         editor.FitToView(new Rect(0, 0, 100, 100));
@@ -98,7 +98,7 @@ public class ViewportTests
     /// Наведение на контейнер меряет контейнер, а не то, что внутри него выбрано.
     /// </summary>
     /// <remarks>
-    /// Перегрузка для <see cref="DesignEditorItem"/> считала границы через
+    /// Перегрузка для <see cref="UiDesignerItem"/> считала границы через
     /// <c>ResolveSelectionTarget</c>, то есть по вложенному контролу, который был бы
     /// выбран внутри формы. Кнопки «Center» и «Fit» в демо наводились из-за этого
     /// на карточку внутри экрана вместо самого экрана и совпадали с «Center Sel»

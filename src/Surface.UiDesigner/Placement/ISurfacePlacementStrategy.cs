@@ -7,7 +7,7 @@ namespace ArxisStudio.Surface.UiDesigner.Placement;
 /// <summary>
 /// Определяет, что редактор может сделать с позицией контрола в его родительской раскладке.
 /// </summary>
-internal enum DesignMoveSemantics
+internal enum SurfaceMoveSemantics
 {
     /// <summary>
     /// Позицией распоряжается раскладка, и порядок среди соседей смысла не имеет.
@@ -40,7 +40,7 @@ internal enum DesignMoveSemantics
 /// это <c>MinWidth</c>/<c>MaxWidth</c> и границы контейнера, а не раскладка.
 /// </para>
 /// </remarks>
-internal interface IDesignPlacementStrategy
+internal interface ISurfacePlacementStrategy
 {
     /// <summary>
     /// Получает диагностическое имя стратегии.
@@ -50,15 +50,15 @@ internal interface IDesignPlacementStrategy
     /// <summary>
     /// Получает способ работы с позицией.
     /// </summary>
-    DesignMoveSemantics MoveSemantics { get; }
+    SurfaceMoveSemantics MoveSemantics { get; }
 
     /// <summary>
-    /// Возвращает позицию контрола в design-координатах.
+    /// Возвращает позицию контрола в координатах поверхности.
     /// </summary>
-    Point GetPosition(Control target, DesignEditor editor);
+    Point GetPosition(Control target, UiDesignerView editor);
 
     /// <summary>
-    /// Задаёт позицию контрола в design-координатах.
+    /// Задаёт позицию контрола в координатах поверхности.
     /// </summary>
-    void SetPosition(Control target, Point designPosition, DesignEditor editor);
+    void SetPosition(Control target, Point surfacePosition, UiDesignerView editor);
 }

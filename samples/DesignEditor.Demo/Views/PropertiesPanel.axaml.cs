@@ -10,7 +10,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using ArxisStudio;
 using DesignEditor.Demo.ViewModels;
-using Editor = ArxisStudio.Surface.UiDesigner.DesignEditor;
+using Editor = ArxisStudio.Surface.UiDesigner.UiDesignerView;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
 
@@ -114,8 +114,8 @@ public partial class PropertiesPanel : UserControl
         new("Alt + Drag", "Вести без привязки к сетке и направляющим"),
         new("Middle Drag", "Панорамирование viewport"),
         new("Wheel", "Масштабирование viewport"),
-        new("Ctrl + Click", "Выбрать DesignEditorItem"),
-        new("Ctrl + Drag", "Переместить выбранный DesignEditorItem"),
+        new("Ctrl + Click", "Выбрать UiDesignerItem"),
+        new("Ctrl + Drag", "Переместить выбранный UiDesignerItem"),
         new("Ctrl + Shift", "Добавить item или рамочное выделение контейнеров"),
         new("Drag с линейки", "Вытянуть направляющую"),
         new("Drag линии", "Переместить направляющую; увести за край — убрать"),
@@ -205,7 +205,7 @@ public partial class PropertiesPanel : UserControl
     private void OnEditCompleted(object? sender, SurfaceEditCompletedEventArgs e)
     {
         // Пока фокус в поле, перечитывать нельзя: правка панели публикуется синхронно,
-        // а design-координаты к этому моменту ещё прежние — набранное число затёрлось бы
+        // а координаты поверхности к этому моменту ещё прежние — набранное число затёрлось бы
         // старым, и следующий уход фокуса записал бы старое обратно.
         if (!_typing)
             Refresh();
@@ -374,7 +374,7 @@ public partial class PropertiesPanel : UserControl
         if (ResizePolicyBox.SelectedItem is ResizePolicy resizePolicy)
             SurfaceInteraction.SetResizePolicy(target, resizePolicy);
 
-        // Перечитывать поля здесь нельзя: design-координаты отстают на проход
+        // Перечитывать поля здесь нельзя: координаты поверхности отстают на проход
         // диспетчера, и введённое число тут же затиралось бы прежним. Панель
         // обновится сама, когда редактор опубликует новый SelectionBounds.
     }

@@ -3,17 +3,17 @@
                     xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner">
 
     <!--
-        DesignEditorItem больше не рисует selection frame.
+        UiDesignerItem больше не рисует selection frame.
         Его тема отвечает только за content host, hover feedback и toolbar host.
     -->
-    <ControlTheme x:Key="{x:Type uidesigner:DesignEditorItem}" TargetType="uidesigner:DesignEditorItem">
+    <ControlTheme x:Key="{x:Type uidesigner:UiDesignerItem}" TargetType="uidesigner:UiDesignerItem">
         <Setter Property="Background" Value="Transparent" />
 
-        <Setter Property="BorderBrush" Value="{DynamicResource DesignEditorItem.BorderBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDesignerItem.BorderBrush}" />
 
-        <Setter Property="BorderThickness" Value="{DynamicResource DesignEditorItem.BorderThickness}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource UiDesignerItem.BorderThickness}" />
 
-        <Setter Property="CornerRadius" Value="{DynamicResource DesignEditorItem.CornerRadius}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource UiDesignerItem.CornerRadius}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="ClipToBounds" Value="False" />
 
@@ -39,7 +39,7 @@
                             BorderThickness="1"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             IsHitTestVisible="False"
-                            Opacity="{DynamicResource DesignEditorItem.OutlineOpacity}" />
+                            Opacity="{DynamicResource UiDesignerItem.OutlineOpacity}" />
 
                     <StackPanel Name="PART_Toolbar"
                                 Orientation="Horizontal"

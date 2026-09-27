@@ -28,7 +28,7 @@ public class ThemeTests
         "Surface.BackgroundBrush",
         "Surface.MarqueeStrokeBrush",
         "Surface.MarqueeFillBrush",
-        "DesignEditor.ReorderIndicatorBrush",
+        "UiDesigner.ReorderIndicatorBrush",
         "Surface.SnapGuideBrush",
         "Surface.SnapGuide.Thickness",
         "Surface.SnapGuide.CentreBrush",
@@ -57,9 +57,9 @@ public class ThemeTests
         "Surface.Grid.MajorLineBrush",
         "Surface.Selection.StrokeThickness",
         "Surface.SelectionAdorner.HandleSize",
-        "DesignEditorItem.BorderThickness",
-        "DesignEditorItem.CornerRadius",
-        "DesignEditorItem.OutlineOpacity"
+        "UiDesignerItem.BorderThickness",
+        "UiDesignerItem.CornerRadius",
+        "UiDesignerItem.OutlineOpacity"
     };
 
     private static Window Show(Control content, ThemeVariant? variant = null)
@@ -81,7 +81,7 @@ public class ThemeTests
     public void Documented_Resource_Keys_Resolve_In_Both_Variants(string variantName)
     {
         var variant = variantName == "Light" ? ThemeVariant.Light : ThemeVariant.Dark;
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var window = Show(editor, variant);
 
         foreach (var key in DocumentedKeys)
@@ -95,7 +95,7 @@ public class ThemeTests
     [AvaloniaFact]
     public void Light_And_Dark_Give_Different_Brushes()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var window = Show(editor);
 
         window.TryFindResource("Surface.BackgroundBrush", ThemeVariant.Light, out var light);

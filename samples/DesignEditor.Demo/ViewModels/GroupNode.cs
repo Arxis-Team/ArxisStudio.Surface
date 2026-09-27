@@ -12,7 +12,7 @@ namespace DesignEditor.Demo.ViewModels;
 /// </summary>
 public enum GroupNodeKind
 {
-    /// <summary>Форма — контейнер <see cref="DesignEditorItem"/>.</summary>
+    /// <summary>Форма — контейнер <see cref="UiDesignerItem"/>.</summary>
     Form,
 
     /// <summary>Группа внутри формы.</summary>
@@ -65,7 +65,7 @@ public sealed partial class GroupNode : ObservableObject
     public Thickness Indent { get; }
 
     /// <summary>Форма, к которой относится строка.</summary>
-    public DesignEditorItem? Container { get; init; }
+    public UiDesignerItem? Container { get; init; }
 
     /// <summary>Контрол строки — только у участника группы.</summary>
     public Control? Target { get; init; }

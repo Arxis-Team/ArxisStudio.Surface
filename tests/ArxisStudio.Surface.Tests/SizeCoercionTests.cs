@@ -125,7 +125,7 @@ public class SizeCoercionTests
         var state = new ItemResizingState(container, nested, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(0, -500), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(0, -500), ResizeDirection.Bottom, UiDesignerItem.ResizeDeltaEvent));
 
         harness.RunLayout();
 
@@ -146,7 +146,7 @@ public class SizeCoercionTests
         var state = new ItemResizingState(container, nested, ResizeDirection.Right);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(-500, 0), ResizeDirection.Right, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(-500, 0), ResizeDirection.Right, UiDesignerItem.ResizeDeltaEvent));
 
         harness.RunLayout();
 
@@ -172,7 +172,7 @@ public class SizeCoercionTests
         var state = new ItemResizingState(container, action, ResizeDirection.Left);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(-300, 0), ResizeDirection.Left, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(-300, 0), ResizeDirection.Left, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         // Ширина упёрлась в предел, но правый край обязан остаться на месте:
@@ -184,7 +184,7 @@ public class SizeCoercionTests
     [AvaloniaFact]
     public void Group_Scale_Is_Limited_By_The_Most_Capped_Target()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var capped = new Border { Width = 100, Height = 20, MaxWidth = 150 };
         var free = new Border { Width = 100, Height = 20 };
 

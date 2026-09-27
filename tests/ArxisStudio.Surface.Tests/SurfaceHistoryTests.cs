@@ -28,7 +28,7 @@ public class SurfaceHistoryTests
 
     private static Rect Bounds(EditorHarness harness)
     {
-        Assert.True(harness.Editor.TryGetDesignBounds(harness.Nested(0), out var bounds));
+        Assert.True(harness.Editor.TryGetTargetBounds(harness.Nested(0), out var bounds));
         return bounds;
     }
 

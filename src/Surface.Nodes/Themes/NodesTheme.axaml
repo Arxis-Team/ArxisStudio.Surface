@@ -4,7 +4,7 @@
     <!--
         Тема редактора узлов — только его собственные словари. Ядро и инструменты она не
         подключает: их подключает точка входа ArxisStudioNodeEditorTheme, а приложение, у
-        которого они уже есть (например, от дизайнера форм), берёт одну эту.
+        которого они уже есть (например, от дизайнера интерфейса), берёт одну эту.
     -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://ArxisStudio.Surface.Nodes/Themes/NodesResources.axaml" />

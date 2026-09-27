@@ -8,7 +8,7 @@ namespace ArxisStudio.Surface.Editing;
 /// </summary>
 /// <remarks>
 /// Шов, а не событие: миникарта находит слой службой своего редактора
-/// (<see cref="SurfaceView.GetService{T}"/>), как дизайнер форм находит <c>SnapService</c>. Так
+/// (<see cref="SurfaceView.GetService{T}"/>), как дизайнер интерфейса находит <c>SnapService</c>. Так
 /// редактор узлов дорисовывает связи, а миникарта о связях не знает ничего.
 /// </remarks>
 internal interface IMinimapLayer

@@ -15,7 +15,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -23,8 +23,8 @@ using ArxisStudio.Surface.UiDesigner.Placement;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Контекстные действия.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     private void RetargetSelectionForContext(Point viewportPoint, KeyModifiers modifiers)
     {
@@ -33,8 +33,8 @@ public partial class DesignEditor
             return;
 
         var target = hitTarget.Target;
-        // У дизайнера форм каждый контейнер — DesignEditorItem.
-        var container = (DesignEditorItem)hitTarget.Container;
+        // У дизайнера интерфейса каждый контейнер — UiDesignerItem.
+        var container = (UiDesignerItem)hitTarget.Container;
         if (target == null)
             return;
 

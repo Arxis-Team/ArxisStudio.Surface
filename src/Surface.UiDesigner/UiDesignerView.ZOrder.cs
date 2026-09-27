@@ -15,7 +15,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -23,34 +23,34 @@ using ArxisStudio.Surface.UiDesigner.Placement;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Порядок перекрытия: ZIndex и порядок среди детей панели.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Перемещает выделение на передний план.
     /// </summary>
     /// <returns><see langword="true"/>, если порядок был изменён.</returns>
-    public bool BringToFront() => TryReorder(DesignOrderPlacement.Front);
+    public bool BringToFront() => TryReorder(SurfaceOrderPlacement.Front);
 
     /// <summary>
     /// Перемещает выделение на задний план.
     /// </summary>
     /// <returns><see langword="true"/>, если порядок был изменён.</returns>
-    public bool SendToBack() => TryReorder(DesignOrderPlacement.Back);
+    public bool SendToBack() => TryReorder(SurfaceOrderPlacement.Back);
 
     /// <summary>
     /// Поднимает выделение на одну позицию.
     /// </summary>
     /// <returns><see langword="true"/>, если порядок был изменён.</returns>
-    public bool BringForward() => TryReorder(DesignOrderPlacement.Forward);
+    public bool BringForward() => TryReorder(SurfaceOrderPlacement.Forward);
 
     /// <summary>
     /// Опускает выделение на одну позицию.
     /// </summary>
     /// <returns><see langword="true"/>, если порядок был изменён.</returns>
-    public bool SendBackward() => TryReorder(DesignOrderPlacement.Backward);
+    public bool SendBackward() => TryReorder(SurfaceOrderPlacement.Backward);
 
-    private enum DesignOrderPlacement
+    private enum SurfaceOrderPlacement
     {
         Front,
         Back,
@@ -72,7 +72,7 @@ public partial class DesignEditor
     /// потому что фильтр no-op отбрасывает совпавшие.
     /// </para>
     /// </remarks>
-    private bool TryReorder(DesignOrderPlacement placement)
+    private bool TryReorder(SurfaceOrderPlacement placement)
     {
         var targets = SelectedTargets;
         if (targets.Count == 0)
@@ -103,7 +103,7 @@ public partial class DesignEditor
         return true;
     }
 
-    private void ReorderWithinParent(Visual parent, List<Control> moving, DesignOrderPlacement placement)
+    private void ReorderWithinParent(Visual parent, List<Control> moving, SurfaceOrderPlacement placement)
     {
         var siblings = new List<Control>();
         foreach (var child in parent.GetVisualChildren())
@@ -126,9 +126,9 @@ public partial class DesignEditor
         var isMoving = new HashSet<Control>(moving);
         var arranged = placement switch
         {
-            DesignOrderPlacement.Front => Partition(order, isMoving, movedLast: true),
-            DesignOrderPlacement.Back => Partition(order, isMoving, movedLast: false),
-            DesignOrderPlacement.Forward => Shift(order, isMoving, forward: true),
+            SurfaceOrderPlacement.Front => Partition(order, isMoving, movedLast: true),
+            SurfaceOrderPlacement.Back => Partition(order, isMoving, movedLast: false),
+            SurfaceOrderPlacement.Forward => Shift(order, isMoving, forward: true),
             _ => Shift(order, isMoving, forward: false)
         };
 

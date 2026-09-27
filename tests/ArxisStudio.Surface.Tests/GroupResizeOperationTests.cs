@@ -13,7 +13,7 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Контролы намеренно не помещаются в дерево: <c>SetTargetPosition</c> тогда пишет
-/// прямо в <c>Layout.DesignX/DesignY</c>, а <c>GetTargetPosition</c> читает их обратно.
+/// прямо в <c>Layout.SurfaceX/SurfaceY</c>, а <c>GetTargetPosition</c> читает их обратно.
 /// Это делает тест проверкой чистой арифметики операции.
 /// </remarks>
 public class GroupResizeOperationTests
@@ -23,13 +23,13 @@ public class GroupResizeOperationTests
     private static Control Target(double width, double height)
         => new Border { Width = width, Height = height };
 
-    private static Rect BoundsOf(DesignEditor editor, Control control)
+    private static Rect BoundsOf(UiDesignerView editor, Control control)
         => new(editor.GetTargetPosition(control), editor.GetTargetSize(control));
 
     [AvaloniaFact]
     public void Targets_Scale_Proportionally()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var left = Target(100, 20);
         var right = Target(100, 20);
 
@@ -53,7 +53,7 @@ public class GroupResizeOperationTests
     [AvaloniaFact]
     public void Group_Scale_Is_Limited_By_The_Most_Constrained_Target()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var small = Target(20, 20);
         var large = Target(100, 20);
 
@@ -87,7 +87,7 @@ public class GroupResizeOperationTests
     [AvaloniaFact]
     public void Vertical_Constraint_Does_Not_Affect_Horizontal_Scale()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         // Высота уже на минимуме, ширина — нет.
         var target = Target(100, MinSize);
 

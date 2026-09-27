@@ -19,7 +19,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        if (this.FindControl<ArxisStudio.Surface.UiDesigner.DesignEditor>("Editor") is { } editor)
+        if (this.FindControl<ArxisStudio.Surface.UiDesigner.UiDesignerView>("Editor") is { } editor)
         {
             editor.ContextActionProviders.Add(new DesignEditorDemoContextActionsProvider());
 
@@ -96,7 +96,7 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel viewModel)
             return;
 
-        if (this.FindControl<ArxisStudio.Surface.UiDesigner.DesignEditor>("Editor") is not { } editor)
+        if (this.FindControl<ArxisStudio.Surface.UiDesigner.UiDesignerView>("Editor") is not { } editor)
             return;
 
         // Удаляем от больших индексов к меньшим, иначе последующие съезжают.
@@ -157,7 +157,7 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private void Editor_OnReorderRequested(object? sender, DesignEditorReorderRequestedEventArgs e)
+    private void Editor_OnReorderRequested(object? sender, UiDesignerReorderRequestedEventArgs e)
     {
         if (e.Handled)
             return;
@@ -209,10 +209,10 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel viewModel || viewModel.ActiveItem == null)
             return;
 
-        if (this.FindControl<ArxisStudio.Surface.UiDesigner.DesignEditor>("Editor") is not { } editor)
+        if (this.FindControl<ArxisStudio.Surface.UiDesigner.UiDesignerView>("Editor") is not { } editor)
             return;
 
-        if (editor.ContainerFromItem(viewModel.ActiveItem) is DesignEditorItem container)
+        if (editor.ContainerFromItem(viewModel.ActiveItem) is UiDesignerItem container)
             editor.CenterOnItem(container);
     }
 
@@ -221,22 +221,22 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel viewModel || viewModel.ActiveItem == null)
             return;
 
-        if (this.FindControl<ArxisStudio.Surface.UiDesigner.DesignEditor>("Editor") is not { } editor)
+        if (this.FindControl<ArxisStudio.Surface.UiDesigner.UiDesignerView>("Editor") is not { } editor)
             return;
 
-        if (editor.ContainerFromItem(viewModel.ActiveItem) is DesignEditorItem container)
+        if (editor.ContainerFromItem(viewModel.ActiveItem) is UiDesignerItem container)
             editor.FitToView(container);
     }
 
     private void CenterSelection_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (this.FindControl<ArxisStudio.Surface.UiDesigner.DesignEditor>("Editor") is { } editor)
+        if (this.FindControl<ArxisStudio.Surface.UiDesigner.UiDesignerView>("Editor") is { } editor)
             editor.CenterOnSelection();
     }
 
     private void FitSelection_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (this.FindControl<ArxisStudio.Surface.UiDesigner.DesignEditor>("Editor") is { } editor)
+        if (this.FindControl<ArxisStudio.Surface.UiDesigner.UiDesignerView>("Editor") is { } editor)
             editor.FitSelectionToView();
     }
 }

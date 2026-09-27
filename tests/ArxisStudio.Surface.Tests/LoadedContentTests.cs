@@ -37,11 +37,11 @@ public class LoadedContentTests
     private static readonly Point CardLocation = new(100, 100);
     private static readonly Size CardSize = new(300, 240);
 
-    private static (EditorHarness Harness, DesignEditorItem Container) Create(DesignContentMode mode)
+    private static (EditorHarness Harness, UiDesignerItem Container) Create(SurfaceContentMode mode)
     {
         var nodes = new[] { new TestNode("loaded") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -71,7 +71,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void Live_Content_Swallows_The_Press_Without_The_Loaded_Mode()
     {
-        var (harness, _) = Create(DesignContentMode.Annotated);
+        var (harness, _) = Create(SurfaceContentMode.Annotated);
         var action = Find<Button>(harness, "Action");
 
         var clicked = false;
@@ -92,7 +92,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void Loaded_Mode_Selects_The_Element_Under_The_Pointer()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
         var centre = harness.CentreOf(action);
@@ -115,7 +115,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void SelectTarget_Selects_A_Control_The_Host_Names()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
         Assert.True(harness.Editor.SelectTarget(action));
@@ -128,7 +128,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void SelectTarget_Replaces_The_Selection_Unless_Asked_To_Add()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
         var field = Find<TextBox>(harness, "Field");
 
@@ -155,7 +155,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void SelectTarget_Additive_Is_Idempotent()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
         var field = Find<TextBox>(harness, "Field");
 
@@ -178,7 +178,7 @@ public class LoadedContentTests
     {
         // Annotated, и ничего не размечено: редактировать нечего, и метод об этом говорит,
         // а не делает вид, что выбрал.
-        var (harness, _) = Create(DesignContentMode.Annotated);
+        var (harness, _) = Create(SurfaceContentMode.Annotated);
         var action = Find<Button>(harness, "Action");
 
         Assert.False(harness.Editor.SelectTarget(action));
@@ -188,7 +188,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void Loaded_Mode_Does_Not_Expose_Control_Internals()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
         var centre = harness.CentreOf(action);
@@ -206,7 +206,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void Loaded_Content_Does_Not_React_To_Input()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
         var clicked = false;
@@ -226,7 +226,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void Loaded_Mode_Reports_The_Layout_Of_The_Selected_Element()
     {
-        var (harness, _) = Create(DesignContentMode.Loaded);
+        var (harness, _) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
         var centre = harness.CentreOf(action);
@@ -243,7 +243,7 @@ public class LoadedContentTests
     [AvaloniaFact]
     public void Loaded_Element_Can_Be_Resized()
     {
-        var (harness, container) = Create(DesignContentMode.Loaded);
+        var (harness, container) = Create(SurfaceContentMode.Loaded);
         var action = Find<Button>(harness, "Action");
 
         var centre = harness.CentreOf(action);
@@ -256,7 +256,7 @@ public class LoadedContentTests
         var state = new ArxisStudio.Surface.Editing.ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(0, 40), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(0, 40), ResizeDirection.Bottom, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         // Размер honours любая панель, поэтому загруженная форма редактируется

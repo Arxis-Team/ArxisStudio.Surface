@@ -8,27 +8,27 @@ using Avalonia.Utilities;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Design-time группы: пометка на контролах, а не узел дерева.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Идентификатор свойства хранилища групп.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, IDesignGroupStore> GroupStoreProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, IDesignGroupStore>(
+    public static readonly DirectProperty<UiDesignerView, ISurfaceGroupStore> GroupStoreProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, ISurfaceGroupStore>(
             nameof(GroupStore),
             o => o.GroupStore,
             (o, v) => o.GroupStore = v);
 
-    private IDesignGroupStore _groupStore = DesignGroupAttachedStore.Default;
+    private ISurfaceGroupStore _groupStore = SurfaceGroupAttachedStore.Default;
 
     /// <summary>
     /// Получает или задает хранилище принадлежности контролов группам.
     /// </summary>
     /// <remarks>
     /// Редактор владеет смыслом группы, а местом хранения — тот, кто владеет документом
-    /// (см. <see cref="IDesignGroupStore"/> и ADR 0002). Умолчание —
-    /// <see cref="DesignGroupAttachedStore.Default"/>, то есть пометка на самом контроле.
+    /// (см. <see cref="ISurfaceGroupStore"/> и ADR 0002). Умолчание —
+    /// <see cref="SurfaceGroupAttachedStore.Default"/>, то есть пометка на самом контроле.
     /// <para>
     /// Замена хранилища меняет состав групп, поэтому оверлей пересобирается сразу: кластеры
     /// считаются по пометке, и рамка обязана описывать то, что говорит новое хранилище.
@@ -38,12 +38,12 @@ public partial class DesignEditor
     /// приём, что у <c>SnapStep = NaN</c> и у курсоров жестов.
     /// </para>
     /// </remarks>
-    public IDesignGroupStore GroupStore
+    public ISurfaceGroupStore GroupStore
     {
         get => _groupStore;
         set
         {
-            var store = value ?? DesignGroupAttachedStore.Default;
+            var store = value ?? SurfaceGroupAttachedStore.Default;
             if (ReferenceEquals(store, _groupStore))
                 return;
 
@@ -58,7 +58,7 @@ public partial class DesignEditor
     /// Возвращает путь группы контрола по действующему хранилищу.
     /// </summary>
     /// <remarks>
-    /// Единственная точка чтения пометки — пара к шву записи <see cref="SetDesignGroup"/>.
+    /// Единственная точка чтения пометки — пара к шву записи <see cref="SetSurfaceGroup"/>.
     /// Прежде на её месте стояло два десятка обращений к attached-свойству, и разойтись чтению
     /// с записью было нечем ровно потому, что место хранения было одно на всех; со сменным
     /// хранилищем это перестало быть правдой.
@@ -75,8 +75,8 @@ public partial class DesignEditor
     /// <c>InputGestureBridge</c>: событие держит подписчика слабо, мост держит редактор сильно,
     /// а редактор владеет мостом.
     /// </remarks>
-    private static readonly WeakEvent<IDesignGroupStore, EventArgs> GroupsChangedWeakEvent =
-        WeakEvent.Register<IDesignGroupStore>(
+    private static readonly WeakEvent<ISurfaceGroupStore, EventArgs> GroupsChangedWeakEvent =
+        WeakEvent.Register<ISurfaceGroupStore>(
             static (store, handler) => store.GroupsChanged += handler,
             static (store, handler) => store.GroupsChanged -= handler);
 
@@ -85,17 +85,17 @@ public partial class DesignEditor
     /// </summary>
     private sealed class GroupStoreBridge : IWeakEventSubscriber<EventArgs>
     {
-        private readonly DesignEditor _editor;
+        private readonly UiDesignerView _editor;
 
-        public GroupStoreBridge(DesignEditor editor) => _editor = editor;
+        public GroupStoreBridge(UiDesignerView editor) => _editor = editor;
 
         public void OnEvent(object? sender, WeakEvent ev, EventArgs e) => _editor.OnGroupsChanged();
     }
 
-    private void AttachGroupStore(IDesignGroupStore store) =>
+    private void AttachGroupStore(ISurfaceGroupStore store) =>
         GroupsChangedWeakEvent.Subscribe(store, _groupStoreBridge);
 
-    private void DetachGroupStore(IDesignGroupStore store) =>
+    private void DetachGroupStore(ISurfaceGroupStore store) =>
         GroupsChangedWeakEvent.Unsubscribe(store, _groupStoreBridge);
 
     /// <summary>
@@ -129,7 +129,7 @@ public partial class DesignEditor
     /// <c>SetTargetZIndex</c>, и заведён по той же причине: единственная точка записи —
     /// единственное место, где изменение попадает в контракт.
     /// </remarks>
-    private void SetDesignGroup(Control target, string? id)
+    private void SetSurfaceGroup(Control target, string? id)
     {
         RecordEdit(_groupFacet, target, id);
 
@@ -144,7 +144,7 @@ public partial class DesignEditor
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="target"/> равен <see langword="null"/>.</exception>
     /// <remarks>
     /// Пара к <see cref="SurfaceView.ApplyGeometry"/> и <see cref="SurfaceView.ApplyOrder"/>: этим методом отмена
-    /// и повтор применяют <see cref="DesignGroupChange"/>, не дописывая стек.
+    /// и повтор применяют <see cref="GroupChange"/>, не дописывая стек.
     /// </remarks>
     public void ApplyGroup(Control target, string? id)
     {
@@ -155,7 +155,7 @@ public partial class DesignEditor
         _suppressEditRecording = true;
         try
         {
-            SetDesignGroup(target, id);
+            SetSurfaceGroup(target, id);
         }
         finally
         {
@@ -193,11 +193,11 @@ public partial class DesignEditor
         foreach (var cluster in clusters)
         {
             var clusterParent = ParentOf(cluster);
-            parent = first ? clusterParent : DesignGroupPath.CommonPrefix(parent, clusterParent);
+            parent = first ? clusterParent : SurfaceGroupPath.CommonPrefix(parent, clusterParent);
             first = false;
         }
 
-        var path = DesignGroupPath.Append(parent, NextGroupId(host!, parent));
+        var path = SurfaceGroupPath.Append(parent, NextGroupId(host!, parent));
         var members = new List<Control>();
 
         BeginEdit(SurfaceEditKind.Group);
@@ -210,10 +210,10 @@ public partial class DesignEditor
                 // напрямую, иначе уровень, из которого его вытащили, уезжал бы с ним и
                 // превращался в фантомную группу с тем же именем, что и настоящая.
                 var next = cluster.IsGroup
-                    ? DesignGroupPath.Rebase(GetGroupOf(member), parent, path)
+                    ? SurfaceGroupPath.Rebase(GetGroupOf(member), parent, path)
                     : path;
 
-                SetDesignGroup(member, next);
+                SetSurfaceGroup(member, next);
                 AddDistinct(members, member);
             }
         }
@@ -247,9 +247,9 @@ public partial class DesignEditor
         BeginEdit(SurfaceEditKind.Group);
         foreach (var cluster in groups)
         {
-            var parent = DesignGroupPath.Parent(cluster.GroupPath);
+            var parent = SurfaceGroupPath.Parent(cluster.GroupPath);
             foreach (var member in EnumerateGroupMembers(host!, cluster.GroupPath!))
-                SetDesignGroup(member, DesignGroupPath.Rebase(GetGroupOf(member), cluster.GroupPath, parent));
+                SetSurfaceGroup(member, SurfaceGroupPath.Rebase(GetGroupOf(member), cluster.GroupPath, parent));
         }
 
         CommitEdit();
@@ -278,7 +278,7 @@ public partial class DesignEditor
     /// означало бы слияние двух групп, а слияние обязано быть отдельным действием.
     /// </para>
     /// </remarks>
-    public bool RenameGroup(DesignEditorItem container, string path, string newId)
+    public bool RenameGroup(UiDesignerItem container, string path, string newId)
     {
         if (container == null)
             throw new ArgumentNullException(nameof(container));
@@ -292,27 +292,27 @@ public partial class DesignEditor
         // Обрезка стоит на шве, а не в панели: правила имени должны жить в одном месте,
         // иначе « toolbar » и «toolbar» станут двумя внешне неотличимыми группами.
         newId = newId.Trim();
-        if (!DesignGroupPath.IsValidSegment(newId))
+        if (!SurfaceGroupPath.IsValidSegment(newId))
             return false;
 
         var members = EnumerateGroupMembers(container, path).ToList();
         if (members.Count == 0)
             return false;
 
-        var renamed = DesignGroupPath.Append(DesignGroupPath.Parent(path), newId);
+        var renamed = SurfaceGroupPath.Append(SurfaceGroupPath.Parent(path), newId);
         if (string.Equals(renamed, path, StringComparison.Ordinal) || IsGroupPathTaken(container, renamed!))
             return false;
 
         BeginEdit(SurfaceEditKind.Group);
         foreach (var member in members)
-            SetDesignGroup(member, DesignGroupPath.Rebase(GetGroupOf(member), path, renamed));
+            SetSurfaceGroup(member, SurfaceGroupPath.Rebase(GetGroupOf(member), path, renamed));
 
         CommitEdit();
 
         // Вход в группу держится путём и переезжает вместе с ним: иначе группа осталась бы
         // открытой по имени, которого больше нет.
-        if (DesignGroupPath.IsInside(_enteredGroupPath, path))
-            _enteredGroupPath = DesignGroupPath.Rebase(_enteredGroupPath, path, renamed);
+        if (SurfaceGroupPath.IsInside(_enteredGroupPath, path))
+            _enteredGroupPath = SurfaceGroupPath.Rebase(_enteredGroupPath, path, renamed);
 
         UpdateSelectionOverlayState();
         return true;
@@ -322,12 +322,12 @@ public partial class DesignEditor
     /// Возвращает группы формы вместе с их составом.
     /// </summary>
     /// <param name="container">Форма, группы которой перечисляются.</param>
-    /// <returns>Группы верхнего уровня; вложенные лежат в <see cref="DesignGroupInfo.Groups"/>.</returns>
+    /// <returns>Группы верхнего уровня; вложенные лежат в <see cref="SurfaceGroupInfo.Groups"/>.</returns>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="container"/> равен <see langword="null"/>.</exception>
     /// <remarks>
     /// Состав считается по дереву в момент вызова. Кэшировать его редактору нечем:
     /// деревом владеет хост, пометку он вправе поставить в разметке или через
-    /// <see cref="DesignGroup.SetId"/>, и узнать об этом редактору неоткуда —
+    /// <see cref="SurfaceGroup.SetId"/>, и узнать об этом редактору неоткуда —
     /// сохранённый снимок молча устарел бы. По той же причине нет и события об изменении
     /// групп: о своих правках редактор сообщает через <see cref="SurfaceView.EditCompleted"/>, а о
     /// чужих сообщить не может.
@@ -336,7 +336,7 @@ public partial class DesignEditor
     /// в разные моменты.
     /// </para>
     /// </remarks>
-    public IReadOnlyList<DesignGroupInfo> GetGroups(DesignEditorItem container)
+    public IReadOnlyList<SurfaceGroupInfo> GetGroups(UiDesignerItem container)
     {
         if (container == null)
             throw new ArgumentNullException(nameof(container));
@@ -352,7 +352,7 @@ public partial class DesignEditor
             EnsureNode(path, nodes, roots).Members.Add(candidate);
         }
 
-        var result = new List<DesignGroupInfo>(roots.Count);
+        var result = new List<SurfaceGroupInfo>(roots.Count);
         foreach (var root in roots)
             result.Add(root.Build(container));
 
@@ -370,7 +370,7 @@ public partial class DesignEditor
     /// Неизвестный путь — это ответ, а не ошибка: состав меняется под хостом, и группа
     /// могла быть распущена между двумя его запросами.
     /// </remarks>
-    public IReadOnlyList<Control> GetGroupMembers(DesignEditorItem container, string path)
+    public IReadOnlyList<Control> GetGroupMembers(UiDesignerItem container, string path)
     {
         if (container == null)
             throw new ArgumentNullException(nameof(container));
@@ -399,7 +399,7 @@ public partial class DesignEditor
     /// Точка одна на всех потребителей — оверлей, группировку, роспуск: разойдясь, они
     /// снова показали бы одно, а применили другое.
     /// </remarks>
-    private bool TryCollectClusters(out DesignEditorItem? host, out IReadOnlyList<SelectionCluster> clusters)
+    private bool TryCollectClusters(out UiDesignerItem? host, out IReadOnlyList<SelectionCluster> clusters)
     {
         host = null;
         clusters = Array.Empty<SelectionCluster>();
@@ -415,7 +415,7 @@ public partial class DesignEditor
 
             // Контейнер формы группировать нечем: он и так рисуется одной рамкой,
             // а его принадлежность к форме задаёт ItemsSource, а не пометка.
-            if (target is DesignEditorItem)
+            if (target is UiDesignerItem)
                 return false;
 
             var owner = FindTargetHost(target);
@@ -440,7 +440,7 @@ public partial class DesignEditor
     /// <summary>
     /// Собирает кластеры по видимому сейчас уровню вложенности.
     /// </summary>
-    internal IReadOnlyList<SelectionCluster> BuildClusters(DesignEditorItem host, IReadOnlyList<Control> targets)
+    internal IReadOnlyList<SelectionCluster> BuildClusters(UiDesignerItem host, IReadOnlyList<Control> targets)
     {
         var selectedByPath = new Dictionary<string, List<Control>>(StringComparer.Ordinal);
 
@@ -489,12 +489,12 @@ public partial class DesignEditor
 
     /// <summary>Путь кластера, в который попадает контрол при текущем входе в группу.</summary>
     private string? ClusterPathOf(Control target) =>
-        DesignGroupPath.ClusterOf(GetGroupOf(target), _enteredGroupPath);
+        SurfaceGroupPath.ClusterOf(GetGroupOf(target), _enteredGroupPath);
 
     /// <summary>Путь группы, внутри которой лежит кластер.</summary>
     private string? ParentOf(SelectionCluster cluster) =>
         cluster.IsGroup
-            ? DesignGroupPath.Parent(cluster.GroupPath)
+            ? SurfaceGroupPath.Parent(cluster.GroupPath)
             : GetGroupOf(cluster.Primary);
 
     private static void AddDistinct(List<Control> members, Control target)
@@ -517,7 +517,7 @@ public partial class DesignEditor
     /// префиксы его пути.
     /// </para>
     /// </remarks>
-    private Dictionary<string, int> CountGroupMembers(DesignEditorItem host)
+    private Dictionary<string, int> CountGroupMembers(UiDesignerItem host)
     {
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -526,10 +526,10 @@ public partial class DesignEditor
             if (GetGroupOf(candidate) is not { } path)
                 continue;
 
-            var segments = DesignGroupPath.Split(path);
+            var segments = SurfaceGroupPath.Split(path);
             for (var depth = 1; depth <= segments.Length; depth++)
             {
-                if (DesignGroupPath.Combine(segments.Take(depth)) is not { } key)
+                if (SurfaceGroupPath.Combine(segments.Take(depth)) is not { } key)
                     continue;
 
                 counts[key] = counts.TryGetValue(key, out var count) ? count + 1 : 1;
@@ -546,11 +546,11 @@ public partial class DesignEditor
     /// Кандидатов даёт тот же обход, что и выделение: группа не может состоять
     /// из того, что редактор не считает отдельным элементом.
     /// </remarks>
-    internal IEnumerable<Control> EnumerateGroupMembers(DesignEditorItem host, string path)
+    internal IEnumerable<Control> EnumerateGroupMembers(UiDesignerItem host, string path)
     {
         foreach (var candidate in EnumerateGroupCandidates(host))
         {
-            if (DesignGroupPath.IsInside(GetGroupOf(candidate), path))
+            if (SurfaceGroupPath.IsInside(GetGroupOf(candidate), path))
                 yield return candidate;
         }
     }
@@ -564,7 +564,7 @@ public partial class DesignEditor
     /// участником становился бы контрол, помеченный хостом, но не имеющий designer-метаданных:
     /// клик по соседу раскрывал бы выделение на то, что указатель выбрать не может.
     /// </remarks>
-    private static IEnumerable<Control> EnumerateGroupCandidates(DesignEditorItem host)
+    private static IEnumerable<Control> EnumerateGroupCandidates(UiDesignerItem host)
     {
         foreach (var candidate in EnumerateSelectionCandidates(host))
         {
@@ -581,11 +581,11 @@ public partial class DesignEditor
     /// не считает элементом, занимает путь наравне с видимой, и переезд на него слил бы
     /// группы при первом же сохранении.
     /// </remarks>
-    private bool IsGroupPathTaken(DesignEditorItem host, string path)
+    private bool IsGroupPathTaken(UiDesignerItem host, string path)
     {
         foreach (var candidate in EnumerateSelectionCandidates(host))
         {
-            if (DesignGroupPath.IsInside(GetGroupOf(candidate), path))
+            if (SurfaceGroupPath.IsInside(GetGroupOf(candidate), path))
                 return true;
         }
 
@@ -600,18 +600,18 @@ public partial class DesignEditor
     /// Свобода проверяется <b>внутри родителя</b>: одинаковые имена на разных ветках
     /// не сталкиваются, потому что личность группы — это её путь целиком.
     /// </remarks>
-    private string NextGroupId(DesignEditorItem host, string? parent)
+    private string NextGroupId(UiDesignerItem host, string? parent)
     {
-        var depth = DesignGroupPath.Depth(parent);
+        var depth = SurfaceGroupPath.Depth(parent);
         var used = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var candidate in EnumerateSelectionCandidates(host))
         {
             var path = GetGroupOf(candidate);
-            if (!DesignGroupPath.IsInside(path, parent))
+            if (!SurfaceGroupPath.IsInside(path, parent))
                 continue;
 
-            var segments = DesignGroupPath.Split(path);
+            var segments = SurfaceGroupPath.Split(path);
             if (segments.Length > depth)
                 used.Add(segments[depth]);
         }
@@ -632,7 +632,7 @@ public partial class DesignEditor
     /// Точка одна: раскрытие обязано совпадать у указателя и у оверлея, иначе рамка
     /// снова обещала бы не то, что применится.
     /// </remarks>
-    private IReadOnlyList<Control> ExpandToGroup(DesignEditorItem host, Control target)
+    private IReadOnlyList<Control> ExpandToGroup(UiDesignerItem host, Control target)
     {
         if (ClusterPathOf(target) is not { } path)
             return new[] { target };
@@ -655,13 +655,13 @@ public partial class DesignEditor
 
         if (clickCount >= 2)
         {
-            if (DesignGroupPath.ClusterOf(path, _enteredGroupPath) is { } next)
+            if (SurfaceGroupPath.ClusterOf(path, _enteredGroupPath) is { } next)
                 _enteredGroupPath = next;
 
             return;
         }
 
-        if (!DesignGroupPath.IsInside(path, _enteredGroupPath))
+        if (!SurfaceGroupPath.IsInside(path, _enteredGroupPath))
             _enteredGroupPath = null;
     }
 
@@ -687,7 +687,7 @@ public partial class DesignEditor
     {
         if (TryResolveSelectedGroup(out var selectedGroup))
         {
-            _enteredGroupPath = DesignGroupPath.Parent(selectedGroup);
+            _enteredGroupPath = SurfaceGroupPath.Parent(selectedGroup);
             return;
         }
 
@@ -696,7 +696,7 @@ public partial class DesignEditor
 
         foreach (var target in _selectedTargets)
         {
-            if (DesignGroupPath.IsInside(GetGroupOf(target), _enteredGroupPath))
+            if (SurfaceGroupPath.IsInside(GetGroupOf(target), _enteredGroupPath))
                 return;
         }
 
@@ -717,7 +717,7 @@ public partial class DesignEditor
         if (_selectedTargets.Count == 0)
             return false;
 
-        DesignEditorItem? host = null;
+        UiDesignerItem? host = null;
         string? prefix = null;
         var first = true;
 
@@ -734,7 +734,7 @@ public partial class DesignEditor
             else if (!ReferenceEquals(host, owner))
                 return false;
 
-            prefix = first ? current : DesignGroupPath.CommonPrefix(prefix, current);
+            prefix = first ? current : SurfaceGroupPath.CommonPrefix(prefix, current);
             first = false;
         }
 
@@ -742,11 +742,11 @@ public partial class DesignEditor
             return false;
 
         var counts = CountGroupMembers(host);
-        var segments = DesignGroupPath.Split(prefix);
+        var segments = SurfaceGroupPath.Split(prefix);
 
         for (var depth = 1; depth <= segments.Length; depth++)
         {
-            var candidate = DesignGroupPath.Combine(segments.Take(depth));
+            var candidate = SurfaceGroupPath.Combine(segments.Take(depth));
             if (candidate == null)
                 continue;
 
@@ -767,7 +767,7 @@ public partial class DesignEditor
     /// </summary>
     private bool IsInsideEnteredGroup(Control target) =>
         _enteredGroupPath != null
-        && DesignGroupPath.IsInside(GetGroupOf(target), _enteredGroupPath);
+        && SurfaceGroupPath.IsInside(GetGroupOf(target), _enteredGroupPath);
 
     private void SelectGroupMembers(IReadOnlyList<Control> members)
     {
@@ -790,7 +790,7 @@ public partial class DesignEditor
 
         // Промежуточный уровень заводится вместе с потомком: группа без собственных
         // контролов — обычное дело, она держит только вложенные.
-        if (DesignGroupPath.Parent(path) is { } parent)
+        if (SurfaceGroupPath.Parent(path) is { } parent)
             EnsureNode(parent, nodes, roots).Children.Add(node);
         else
             roots.Add(node);
@@ -809,13 +809,13 @@ public partial class DesignEditor
 
         public List<GroupNodeBuilder> Children { get; } = new();
 
-        public DesignGroupInfo Build(DesignEditorItem container)
+        public SurfaceGroupInfo Build(UiDesignerItem container)
         {
-            var groups = new List<DesignGroupInfo>(Children.Count);
+            var groups = new List<SurfaceGroupInfo>(Children.Count);
             foreach (var child in Children)
                 groups.Add(child.Build(container));
 
-            return new DesignGroupInfo(container, Path, Members, groups);
+            return new SurfaceGroupInfo(container, Path, Members, groups);
         }
     }
 }

@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Единая точка входа темы дизайнера форм.
+        Единая точка входа темы дизайнера интерфейса.
         Подключайте этот словарь в приложении вместо ручного merge отдельных файлов:
         он собирает темы ядра, инструментов и самого дизайнера в нужном порядке.
     -->
@@ -10,8 +10,8 @@
         <ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceTheme.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerResources.axaml" />
-        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/DesignEditorItem.axaml" />
-        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/DesignEditor.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerItem.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerView.axaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

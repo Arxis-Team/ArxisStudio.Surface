@@ -5,7 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
@@ -149,8 +149,8 @@ public class LayoutHonourProbeTests
         var heightHonoured = Near(child.Bounds.Height, RequestedSize);
 
         // Локальные координаты: ровно то, во что превращается SetTargetPosition.
-        DesignLayout.SetX(child, RequestedOffset);
-        DesignLayout.SetY(child, RequestedOffset);
+        SurfaceLayout.SetX(child, RequestedOffset);
+        SurfaceLayout.SetY(child, RequestedOffset);
         RunLayout(window);
 
         var offset = child.TranslatePoint(new Point(0, 0), parent) ?? default;

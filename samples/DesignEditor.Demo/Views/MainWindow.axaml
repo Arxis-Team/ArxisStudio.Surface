@@ -38,8 +38,8 @@
         <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
         <!--
             Сетка больше не описывается в демо: её предоставляет сама библиотека
-            через SurfaceGrid в шаблоне DesignEditor. Палитра и шаг настраиваются
-            ресурсами DesignEditor.Grid.*.
+            через SurfaceGrid в шаблоне UiDesignerView. Палитра и шаг настраиваются
+            ресурсами UiDesignerView.Grid.*.
         -->
     </Window.Resources>
 
@@ -84,7 +84,7 @@
                                    Editor="{Binding #Editor}"
                                    IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />
 
-        <surface:DesignEditor Grid.Row="1" Grid.Column="2"
+        <surface:UiDesignerView Grid.Row="1" Grid.Column="2"
                                  x:Name="Editor"
                                  ItemsSource="{Binding Elements}"
                                  SelectedItems="{Binding SelectedElements}"
@@ -92,7 +92,7 @@
                                  Guides="{Binding Guides}"
                                  ShowGuides="False"
                                  ViewportZoom="{Binding Zoom, Mode=TwoWay}">
-            <surface:DesignEditor.InputGestures>
+            <surface:UiDesignerView.InputGestures>
                 <surface:SurfaceInputGestures PanButton="Middle"
                                                        PanModifiers="None"
                                                        MarqueeButton="Left"
@@ -100,12 +100,12 @@
                                                        ZoomModifiers="None"
                                                        ContainerInteractionModifiers="Control"
                                                        AdditiveSelectionModifiers="Shift" />
-            </surface:DesignEditor.InputGestures>
-            <surface:DesignEditor.InteractionOptions>
+            </surface:UiDesignerView.InputGestures>
+            <surface:UiDesignerView.InteractionOptions>
                 <surface:SurfaceInteractionOptions ZoomStep="1.1"
                                                            DragStartThreshold="3"
                                                            ResizeMinSize="10" />
-            </surface:DesignEditor.InteractionOptions>
+            </surface:UiDesignerView.InteractionOptions>
 
             <!--
                 Курсоры жестов. Значения здесь совпадают с библиотечными: блок стоит
@@ -113,7 +113,7 @@
                 изменения размера и линейки задаются иначе — ресурсами темы: у них
                 есть свой элемент под указателем.
             -->
-            <surface:DesignEditor.Cursors>
+            <surface:UiDesignerView.Cursors>
                 <surface:SurfaceCursors Move="SizeAll"
                                                  Blocked="No"
                                                  Pan="Hand"
@@ -121,9 +121,9 @@
                                                  Reorder="DragMove"
                                                  GuideHorizontal="SizeNorthSouth"
                                                  GuideVertical="SizeWestEast" />
-            </surface:DesignEditor.Cursors>
+            </surface:UiDesignerView.Cursors>
 
-            <surface:DesignEditor.DataTemplates>
+            <surface:UiDesignerView.DataTemplates>
                 <DataTemplate DataType="{x:Type vm:HomeScreenViewModel}">
                     <screens:HomeScreenView />
                 </DataTemplate>
@@ -143,9 +143,9 @@
                 <DataTemplate DataType="{x:Type vm:ComponentLibraryViewModel}">
                     <screens:ComponentLibraryView />
                 </DataTemplate>
-            </surface:DesignEditor.DataTemplates>
+            </surface:UiDesignerView.DataTemplates>
 
-        </surface:DesignEditor>
+        </surface:UiDesignerView>
         </Grid>
 
         <Border Grid.Row="0"
@@ -333,7 +333,7 @@
                     будто выбран один. Число самих контролов стоит рядом, в «Targets».
                 -->
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                            ToolTip.Tip="Выбрано форм (DesignEditorItem). Число выбранных контролов — правее, «Targets»">
+                            ToolTip.Tip="Выбрано форм (UiDesignerItem). Число выбранных контролов — правее, «Targets»">
                     <PathIcon Data="M12.5,17.5L17.5,12.5L12.5,12.5L12.5,17.5ZM6.5,7.5L6.5,12.5L11.5,12.5L6.5,7.5ZM19,3L19,9L21,9L21,3C21,1.9 20.1,1 19,1L13,1L13,3L19,3ZM3,21C3,22.1 3.9,23 5,23L11,23L11,21L5,21L5,15L3,15L3,21ZM3,9L5,9L5,3L11,3L11,1L5,1C3.9,1 3,1.9 3,3L3,9ZM21,15L19,15L19,21L13,21L13,23L19,23C20.1,23 21,22.1 21,21L21,15Z"
                               Width="14" Height="14" Foreground="#4C97FF"/>
                     <TextBlock Text="{Binding SelectedElements.Count, StringFormat='{}{0} forms'}"
@@ -383,7 +383,7 @@
                                VerticalAlignment="Center"
                                ToolTip.Tip="Действующая политика: политика пользователя, пересечённая с возможностями раскладки"/>
 
-                    <!-- Геометрия самого выбранного элемента в design-координатах.
+                    <!-- Геометрия самого выбранного элемента в координатах поверхности.
                          Блок ниже показывает контейнер, а этот — то, что выделено. -->
                     <TextBlock Text="Sel:" Foreground="#666" FontSize="10"
                                Margin="10,0,0,0" VerticalAlignment="Center"/>

@@ -38,7 +38,7 @@ public class KeyCommandTests
         return harness;
     }
 
-    private static double DesignXOf(EditorHarness harness) => Layout.GetDesignX(harness.Nested(0));
+    private static double SurfaceXOf(EditorHarness harness) => Layout.GetSurfaceX(harness.Nested(0));
 
     /// <summary>
     /// Нажимает клавишу и отвечает, дошло ли нажатие до окна необработанным.
@@ -100,12 +100,12 @@ public class KeyCommandTests
     public void Removing_A_Built_In_Command_Gives_The_Key_Back()
     {
         var harness = CreateWithSelection();
-        var before = DesignXOf(harness);
+        var before = SurfaceXOf(harness);
 
         Assert.True(harness.Editor.KeyCommands.Remove(SurfaceKeyCommands.Nudge));
         var unhandled = PressReachesWindowUnhandled(harness, PhysicalKey.ArrowRight);
 
-        Assert.Equal(before, DesignXOf(harness), 1);
+        Assert.Equal(before, SurfaceXOf(harness), 1);
         Assert.True(unhandled, "Снятая команда не должна съедать клавишу.");
     }
 
@@ -133,7 +133,7 @@ public class KeyCommandTests
     public void A_Refusing_Command_Yields_The_Key_To_The_Next()
     {
         var harness = CreateWithSelection();
-        var before = DesignXOf(harness);
+        var before = SurfaceXOf(harness);
         var asked = 0;
 
         // Команда приложения на стрелке, которой сейчас делать нечего, не должна
@@ -146,14 +146,14 @@ public class KeyCommandTests
         PressReachesWindowUnhandled(harness, PhysicalKey.ArrowRight);
 
         Assert.Equal(1, asked);
-        Assert.Equal(before + 1, DesignXOf(harness), 1);
+        Assert.Equal(before + 1, SurfaceXOf(harness), 1);
     }
 
     [AvaloniaFact]
     public void An_Inserted_Command_Hears_The_Key_First()
     {
         var harness = CreateWithSelection();
-        var before = DesignXOf(harness);
+        var before = SurfaceXOf(harness);
 
         harness.Editor.KeyCommands.Insert(0, new SurfaceKeyCommand(
             "host.arrow",
@@ -162,7 +162,7 @@ public class KeyCommandTests
 
         PressReachesWindowUnhandled(harness, PhysicalKey.ArrowRight);
 
-        Assert.Equal(before, DesignXOf(harness), 1);
+        Assert.Equal(before, SurfaceXOf(harness), 1);
     }
 
     [AvaloniaFact]

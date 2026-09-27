@@ -3,7 +3,7 @@
 
     <!--
         Ресурсы инструментов редактирования: рамки и ручки выделения, направляющие,
-        интервалы и линейки. Ключи сохранили прежние имена (DesignEditor.*): их
+        интервалы и линейки. Ключи сохранили прежние имена (UiDesignerView.*): их
         переопределяют приложения, и имя ключа — часть контракта темы.
     -->
     <ResourceDictionary.ThemeDictionaries>
@@ -91,11 +91,11 @@
         Курсоры частей, которые видно под указателем: ручки изменения размера и линейка.
         Курсор здесь принадлежит самой части, как принято в Avalonia, а ресурсом он задан
         потому, что перекрыть значение, заданное атрибутом внутри ControlTemplate, стиль
-        снаружи не может — это уже замерено (см. DesignEditorItem.OutlineOpacity).
+        снаружи не может — это уже замерено (см. UiDesignerItem.OutlineOpacity).
 
         Курсоры жестов, у которых своего элемента нет — перемещения, панорамирования,
         рамки, перестановки, переноса направляющей, — задаются иначе: через
-        DesignEditor.Cursors.
+        UiDesignerView.Cursors.
     -->
     <Cursor x:Key="Surface.SelectionAdorner.CursorTopLeft">TopLeftCorner</Cursor>
     <Cursor x:Key="Surface.SelectionAdorner.CursorTop">TopSide</Cursor>

@@ -4,11 +4,65 @@ class ArxisStudio.Surface.UiDesigner.AbsolutePanel : Panel
     method Size ArrangeOverride(Size)
     method Size MeasureOverride(Size)
     property Rect Extent { get; set; }
-enum ArxisStudio.Surface.UiDesigner.DesignContentMode
+sealed class ArxisStudio.Surface.UiDesigner.GroupChange : TargetChange
+    ctor .ctor(Control, String, String)
+    property String NewId { get; }
+    property String OldId { get; }
+interface ArxisStudio.Surface.UiDesigner.ISurfaceGroupStore
+    event EventHandler GroupsChanged
+    method String GetGroup(Control)
+    method Void SetGroup(Control, String)
+static class ArxisStudio.Surface.UiDesigner.Layout
+    avalonia IsTrackedProperty -> IsTracked : Boolean (attached) = false
+    avalonia SurfaceXProperty -> SurfaceX : Double (attached) = 0
+    avalonia SurfaceYProperty -> SurfaceY : Double (attached) = 0
+    avalonia XProperty -> X : Double (attached) = NaN
+    avalonia YProperty -> Y : Double (attached) = NaN
+    method Boolean GetIsTracked(AvaloniaObject)
+    method Double GetSurfaceX(AvaloniaObject)
+    method Double GetSurfaceY(AvaloniaObject)
+    method Double GetX(AvaloniaObject)
+    method Double GetY(AvaloniaObject)
+    method Void SetIsTracked(AvaloniaObject, Boolean)
+    method Void SetSurfaceX(AvaloniaObject, Double)
+    method Void SetSurfaceY(AvaloniaObject, Double)
+    method Void SetX(AvaloniaObject, Double)
+    method Void SetY(AvaloniaObject, Double)
+    method Void Track(Control)
+    method Void Untrack(Control)
+enum ArxisStudio.Surface.UiDesigner.SurfaceContentMode
     value Annotated = 0
     value Loaded = 1
-class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
-    avalonia GroupStoreProperty -> GroupStore : IDesignGroupStore (direct)
+static class ArxisStudio.Surface.UiDesigner.SurfaceGroup
+    avalonia IdProperty -> Id : String (attached) = null
+    method String GetId(AvaloniaObject)
+    method Void SetId(AvaloniaObject, String)
+sealed class ArxisStudio.Surface.UiDesigner.SurfaceGroupAttachedStore
+    event EventHandler GroupsChanged
+    method String GetGroup(Control)
+    method Void SetGroup(Control, String)
+    property SurfaceGroupAttachedStore Default { get; }
+sealed class ArxisStudio.Surface.UiDesigner.SurfaceGroupInfo
+    ctor .ctor(UiDesignerItem, String, IReadOnlyList<Control>, IReadOnlyList<SurfaceGroupInfo>)
+    property IReadOnlyList<Control> Members { get; }
+    property IReadOnlyList<SurfaceGroupInfo> Groups { get; }
+    property String Id { get; }
+    property String Path { get; }
+    property UiDesignerItem Container { get; }
+class ArxisStudio.Surface.UiDesigner.UiDesignerItem : SurfaceItem
+    avalonia ContentModeProperty -> ContentMode : SurfaceContentMode (styled) = Annotated
+    ctor .ctor()
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    property SurfaceContentMode ContentMode { get; set; }
+sealed class ArxisStudio.Surface.UiDesigner.UiDesignerReorderRequestedEventArgs : EventArgs
+    ctor .ctor(Control, Int32, Int32, Control)
+    property Boolean Handled { get; set; }
+    property Control Anchor { get; }
+    property Control Target { get; }
+    property Int32 NewIndex { get; }
+    property Int32 OldIndex { get; }
+class ArxisStudio.Surface.UiDesigner.UiDesignerView : SurfaceView
+    avalonia GroupStoreProperty -> GroupStore : ISurfaceGroupStore (direct)
     avalonia GuidePreviewProperty -> GuidePreview : Nullable<SurfaceGuide> (attached) = null
     avalonia GuidesProperty -> Guides : IEnumerable<SurfaceGuide> (attached) = null
     avalonia HasGroupSelectionProperty -> HasGroupSelection : Boolean (direct)
@@ -30,8 +84,8 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     avalonia SpacingHintsProperty -> SpacingHints : IReadOnlyList<SurfaceSpacingHint> (attached) = <SurfaceSpacingHint[]>
     avalonia UserGuidesProperty -> UserGuides : IReadOnlyList<SurfaceGuide> (attached) = <SurfaceGuide[]>
     ctor .ctor()
-    event EventHandler<DesignEditorReorderRequestedEventArgs> ReorderRequested
     event EventHandler<SurfaceGuideChangeRequestedEventArgs> GuideChangeRequested
+    event EventHandler<UiDesignerReorderRequestedEventArgs> ReorderRequested
     method Boolean BringForward()
     method Boolean BringToFront()
     method Boolean CanGroupSelection()
@@ -40,13 +94,13 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     method Boolean DistributeVertically()
     method Boolean GroupSelection()
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
-    method Boolean RenameGroup(DesignEditorItem, String, String)
+    method Boolean RenameGroup(UiDesignerItem, String, String)
     method Boolean SendBackward()
     method Boolean SendToBack()
     method Boolean UngroupSelection()
     method Control CreateContainerForItemOverride(Object, Int32, Object)
-    method IReadOnlyList<Control> GetGroupMembers(DesignEditorItem, String)
-    method IReadOnlyList<DesignGroupInfo> GetGroups(DesignEditorItem)
+    method IReadOnlyList<Control> GetGroupMembers(UiDesignerItem, String)
+    method IReadOnlyList<SurfaceGroupInfo> GetGroups(UiDesignerItem)
     method Void ApplyGroup(Control, String)
     method Void CenterOnSelection()
     method Void FitSelectionToView()
@@ -61,68 +115,14 @@ class ArxisStudio.Surface.UiDesigner.DesignEditor : SurfaceView
     property Boolean ShowRulers { get; set; }
     property Boolean ShowSnapGuides { get; set; }
     property ControlTheme SelectionRectangleStyle { get; set; }
-    property IDesignGroupStore GroupStore { get; set; }
     property IEnumerable<SurfaceGuide> Guides { get; set; }
     property IReadOnlyList<SurfaceGuide> UserGuides { get; }
     property IReadOnlyList<SurfaceSnapGuide> SnapGuides { get; }
     property IReadOnlyList<SurfaceSpacingHint> SpacingHints { get; }
+    property ISurfaceGroupStore GroupStore { get; set; }
     property MovePolicy PrimarySelectionMovePolicy { get; }
     property Nullable<SurfaceGuide> GuidePreview { get; }
     property Rect ReorderIndicator { get; }
     property Rect SelectionBounds { get; }
     property ResizePolicy PrimarySelectionResizePolicy { get; }
     property String PrimarySelectionPlacement { get; }
-class ArxisStudio.Surface.UiDesigner.DesignEditorItem : SurfaceItem
-    avalonia ContentModeProperty -> ContentMode : DesignContentMode (styled) = Annotated
-    ctor .ctor()
-    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
-    property DesignContentMode ContentMode { get; set; }
-sealed class ArxisStudio.Surface.UiDesigner.DesignEditorReorderRequestedEventArgs : EventArgs
-    ctor .ctor(Control, Int32, Int32, Control)
-    property Boolean Handled { get; set; }
-    property Control Anchor { get; }
-    property Control Target { get; }
-    property Int32 NewIndex { get; }
-    property Int32 OldIndex { get; }
-static class ArxisStudio.Surface.UiDesigner.DesignGroup
-    avalonia IdProperty -> Id : String (attached) = null
-    method String GetId(AvaloniaObject)
-    method Void SetId(AvaloniaObject, String)
-sealed class ArxisStudio.Surface.UiDesigner.DesignGroupAttachedStore
-    event EventHandler GroupsChanged
-    method String GetGroup(Control)
-    method Void SetGroup(Control, String)
-    property DesignGroupAttachedStore Default { get; }
-sealed class ArxisStudio.Surface.UiDesigner.DesignGroupChange : TargetChange
-    ctor .ctor(Control, String, String)
-    property String NewId { get; }
-    property String OldId { get; }
-sealed class ArxisStudio.Surface.UiDesigner.DesignGroupInfo
-    ctor .ctor(DesignEditorItem, String, IReadOnlyList<Control>, IReadOnlyList<DesignGroupInfo>)
-    property DesignEditorItem Container { get; }
-    property IReadOnlyList<Control> Members { get; }
-    property IReadOnlyList<DesignGroupInfo> Groups { get; }
-    property String Id { get; }
-    property String Path { get; }
-interface ArxisStudio.Surface.UiDesigner.IDesignGroupStore
-    event EventHandler GroupsChanged
-    method String GetGroup(Control)
-    method Void SetGroup(Control, String)
-static class ArxisStudio.Surface.UiDesigner.Layout
-    avalonia DesignXProperty -> DesignX : Double (attached) = 0
-    avalonia DesignYProperty -> DesignY : Double (attached) = 0
-    avalonia IsTrackedProperty -> IsTracked : Boolean (attached) = false
-    avalonia XProperty -> X : Double (attached) = NaN
-    avalonia YProperty -> Y : Double (attached) = NaN
-    method Boolean GetIsTracked(AvaloniaObject)
-    method Double GetDesignX(AvaloniaObject)
-    method Double GetDesignY(AvaloniaObject)
-    method Double GetX(AvaloniaObject)
-    method Double GetY(AvaloniaObject)
-    method Void SetDesignX(AvaloniaObject, Double)
-    method Void SetDesignY(AvaloniaObject, Double)
-    method Void SetIsTracked(AvaloniaObject, Boolean)
-    method Void SetX(AvaloniaObject, Double)
-    method Void SetY(AvaloniaObject, Double)
-    method Void Track(Control)
-    method Void Untrack(Control)

@@ -7,7 +7,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface;
 
@@ -18,7 +18,7 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Фиксируют фактическое поведение модели выделения, когда внутри
-/// <see cref="DesignEditorItem"/> находится другой <see cref="DesignEditorItem"/>.
+/// <see cref="UiDesignerItem"/> находится другой <see cref="UiDesignerItem"/>.
 /// Задача — не защитить текущее поведение, а зафиксировать точку отсчёта
 /// перед переходом на дерево любой глубины.
 /// </remarks>
@@ -43,24 +43,24 @@ public class NestedContainerTests
 
     private sealed record Node(string Name);
 
-    private static (Window Window, DesignEditor Editor, Node Item) Create()
+    private static (Window Window, UiDesignerView Editor, Node Item) Create()
     {
         var item = new Node("outer");
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = new[] { item },
             SelectionMode = SelectionMode.Multiple,
             ItemTemplate = new FuncDataTemplate<Node>((_, _) =>
             {
                 var innerChild = new Border { Name = "InnerChild", Width = 40, Height = 40 };
-                DesignLayout.SetX(innerChild, 10);
-                DesignLayout.SetY(innerChild, 10);
+                SurfaceLayout.SetX(innerChild, 10);
+                SurfaceLayout.SetY(innerChild, 10);
 
                 var innerPanel = new AbsolutePanel();
                 innerPanel.Children.Add(innerChild);
 
-                var inner = new DesignEditorItem
+                var inner = new UiDesignerItem
                 {
                     Name = "Inner",
                     Width = InnerSize,
@@ -69,13 +69,13 @@ public class NestedContainerTests
                     VerticalAlignment = VerticalAlignment.Top,
                     Content = innerPanel
                 };
-                DesignLayout.SetX(inner, InnerOffset);
-                DesignLayout.SetY(inner, InnerOffset);
+                SurfaceLayout.SetX(inner, InnerOffset);
+                SurfaceLayout.SetY(inner, InnerOffset);
 
                 // Сосед вложенного контейнера, лежащий прямо во внешнем.
                 var outerChild = new Border { Name = "OuterChild", Width = 40, Height = 40 };
-                DesignLayout.SetX(outerChild, 120);
-                DesignLayout.SetY(outerChild, 20);
+                SurfaceLayout.SetX(outerChild, 120);
+                SurfaceLayout.SetY(outerChild, 20);
 
                 var panel = new AbsolutePanel();
                 panel.Children.Add(inner);
@@ -91,7 +91,7 @@ public class NestedContainerTests
         window.Show();
         RunLayout(window);
 
-        var outer = (DesignEditorItem)editor.ContainerFromItem(item)!;
+        var outer = (UiDesignerItem)editor.ContainerFromItem(item)!;
         outer.Width = OuterSize;
         outer.Height = OuterSize;
         outer.HorizontalAlignment = HorizontalAlignment.Left;
@@ -109,10 +109,10 @@ public class NestedContainerTests
         manager?.ExecuteLayoutPass();
     }
 
-    private static DesignEditorItem Inner(DesignEditor editor) =>
-        editor.GetVisualDescendants().OfType<DesignEditorItem>().Single(i => i.Name == "Inner");
+    private static UiDesignerItem Inner(UiDesignerView editor) =>
+        editor.GetVisualDescendants().OfType<UiDesignerItem>().Single(i => i.Name == "Inner");
 
-    private static Border Named(DesignEditor editor, string name) =>
+    private static Border Named(UiDesignerView editor, string name) =>
         editor.GetVisualDescendants().OfType<Border>().Single(b => b.Name == name);
 
     [AvaloniaFact]
@@ -120,7 +120,7 @@ public class NestedContainerTests
     {
         var (_, editor, item) = Create();
 
-        var outer = (DesignEditorItem)editor.ContainerFromItem(item)!;
+        var outer = (UiDesignerItem)editor.ContainerFromItem(item)!;
         var inner = Inner(editor);
 
         Assert.NotSame(outer, inner);
@@ -132,7 +132,7 @@ public class NestedContainerTests
     {
         var (_, editor, item) = Create();
 
-        var outer = (DesignEditorItem)editor.ContainerFromItem(item)!;
+        var outer = (UiDesignerItem)editor.ContainerFromItem(item)!;
         var inner = Inner(editor);
 
         // Корень проблемы: индексная модель выбора Avalonia знает только
@@ -154,7 +154,7 @@ public class NestedContainerTests
     public void Click_On_Nested_Container_Selects_It_As_Nested_Target()
     {
         var (window, editor, _) = Create();
-        var outer = (DesignEditorItem)editor.ContainerFromItem(editor.ItemsSource!.Cast<object>().First())!;
+        var outer = (UiDesignerItem)editor.ContainerFromItem(editor.ItemsSource!.Cast<object>().First())!;
         var inner = Inner(editor);
 
         window.MouseDown(InnerCentre, MouseButton.Left);
@@ -163,7 +163,7 @@ public class NestedContainerTests
 
         // Вложенный контейнер выбирается как target внутри владеющего item'а:
         // индексная модель Avalonia продолжает оперировать верхним уровнем,
-        // а сам вложенный DesignEditorItem становится target.
+        // а сам вложенный UiDesignerItem становится target.
         var primary = editor.PrimarySelectionTarget;
         Assert.NotNull(primary);
         Assert.Same(inner, primary!.Target);
@@ -175,7 +175,7 @@ public class NestedContainerTests
     public void Selecting_Nested_Container_Marks_The_Owning_Item_Selected()
     {
         var (window, editor, item) = Create();
-        var outer = (DesignEditorItem)editor.ContainerFromItem(item)!;
+        var outer = (UiDesignerItem)editor.ContainerFromItem(item)!;
 
         window.MouseDown(InnerCentre, MouseButton.Left);
         window.MouseUp(InnerCentre, MouseButton.Left);
@@ -197,7 +197,7 @@ public class NestedContainerTests
 
         var primary = editor.PrimarySelectionTarget!;
 
-        // Scope определяется типом target: вложенный DesignEditorItem — контейнер,
+        // Scope определяется типом target: вложенный UiDesignerItem — контейнер,
         // хотя владеющий item верхнего уровня другой.
         Assert.Equal(SurfaceSelectionScope.Container, primary.Scope);
         Assert.NotSame(primary.Container, primary.Target);
@@ -207,7 +207,7 @@ public class NestedContainerTests
     public void Depth_Reflects_Position_In_The_Container_Tree()
     {
         var (_, editor, item) = Create();
-        var outer = (DesignEditorItem)editor.ContainerFromItem(item)!;
+        var outer = (UiDesignerItem)editor.ContainerFromItem(item)!;
         var inner = Inner(editor);
 
         Assert.Equal(0, new SurfaceSelectionTarget(outer, outer).Depth);
@@ -323,7 +323,7 @@ public class NestedContainerTests
     {
         var (window, editor, _) = Create();
 
-        var container = (DesignEditorItem)editor.ContainerFromIndex(0)!;
+        var container = (UiDesignerItem)editor.ContainerFromIndex(0)!;
 
         Assert.True(editor.SelectTarget(container));
 

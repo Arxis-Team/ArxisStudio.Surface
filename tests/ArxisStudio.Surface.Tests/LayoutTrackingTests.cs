@@ -6,7 +6,7 @@ using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Avalonia.Threading;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
@@ -25,7 +25,7 @@ public class LayoutTrackingTests
     [AvaloniaFact]
     public void Control_Is_Not_Tracked_By_Default()
     {
-        Assert.False(DesignLayout.IsTracking(new Border()));
+        Assert.False(SurfaceLayout.IsTracking(new Border()));
     }
 
     [AvaloniaFact]
@@ -33,9 +33,9 @@ public class LayoutTrackingTests
     {
         var control = new Border();
 
-        DesignLayout.Track(control);
+        SurfaceLayout.Track(control);
 
-        Assert.True(DesignLayout.IsTracking(control));
+        Assert.True(SurfaceLayout.IsTracking(control));
     }
 
     [AvaloniaFact]
@@ -43,18 +43,18 @@ public class LayoutTrackingTests
     {
         var control = new Border();
 
-        DesignLayout.Track(control);
-        DesignLayout.Track(control);
-        DesignLayout.Track(control);
+        SurfaceLayout.Track(control);
+        SurfaceLayout.Track(control);
+        SurfaceLayout.Track(control);
 
-        Assert.True(DesignLayout.IsTracking(control));
+        Assert.True(SurfaceLayout.IsTracking(control));
 
         // Здесь проверяется только флаг: он снимается одним Untrack. Что за флагом
         // стоит настоящая отписка, показывает An_Untracked_Control_Stops_Following_Its_Position —
         // прежняя редакция этого комментария утверждала «одна подписка — одна отписка»,
         // а проверяла лишь то, что флаг снялся, и молчала о снятой строке отписки.
-        DesignLayout.Untrack(control);
-        Assert.False(DesignLayout.IsTracking(control));
+        SurfaceLayout.Untrack(control);
+        Assert.False(SurfaceLayout.IsTracking(control));
     }
 
     [AvaloniaFact]
@@ -62,9 +62,9 @@ public class LayoutTrackingTests
     {
         var control = new Border();
 
-        DesignLayout.Untrack(control);
+        SurfaceLayout.Untrack(control);
 
-        Assert.False(DesignLayout.IsTracking(control));
+        Assert.False(SurfaceLayout.IsTracking(control));
     }
 
     [AvaloniaFact]
@@ -72,9 +72,9 @@ public class LayoutTrackingTests
     {
         var control = new Border();
 
-        DesignLayout.SetX(control, 42);
+        SurfaceLayout.SetX(control, 42);
 
-        Assert.True(DesignLayout.IsTracking(control));
+        Assert.True(SurfaceLayout.IsTracking(control));
     }
 
     [AvaloniaFact]
@@ -82,11 +82,11 @@ public class LayoutTrackingTests
     {
         var control = new Border();
 
-        DesignLayout.SetIsTracked(control, true);
-        Assert.True(DesignLayout.IsTracking(control));
+        SurfaceLayout.SetIsTracked(control, true);
+        Assert.True(SurfaceLayout.IsTracking(control));
 
-        DesignLayout.SetIsTracked(control, false);
-        Assert.False(DesignLayout.IsTracking(control));
+        SurfaceLayout.SetIsTracked(control, false);
+        Assert.False(SurfaceLayout.IsTracking(control));
     }
 
     // ---- Подписка, а не флаг ----------------------------------------------------
@@ -95,8 +95,8 @@ public class LayoutTrackingTests
     /// Стенд: <see cref="Canvas"/> внутри редактора.
     /// </summary>
     /// <remarks>
-    /// Редактор нужен, потому что <c>UpdateDesignPosition</c> считает координаты
-    /// относительно <c>DesignSurface</c> и без него не делает ничего. А панель —
+    /// Редактор нужен, потому что <c>UpdateSurfacePosition</c> считает координаты
+    /// относительно <c>UiDesignerPanel</c> и без него не делает ничего. А панель —
     /// именно <see cref="Canvas"/>, а не <c>AbsolutePanel</c>: та зовёт <c>Track</c>
     /// для каждого ребёнка на каждом arrange и отменила бы отписку следующим проходом.
     /// </remarks>
@@ -105,7 +105,7 @@ public class LayoutTrackingTests
         var nodes = new List<TestNode> { new("track0") };
         Border? child = null;
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             ItemTemplate = new FuncDataTemplate<TestNode>((_, _) =>
@@ -137,31 +137,31 @@ public class LayoutTrackingTests
         manager?.ExecuteInitialLayoutPass();
         manager?.ExecuteLayoutPass();
 
-        // DesignX/DesignY всегда идут через Dispatcher.Post на Render.
+        // SurfaceX/SurfaceY всегда идут через Dispatcher.Post на Render.
         Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
     }
 
     /// <summary>
-    /// Отслеживаемый контрол обновляет design-координаты при движении.
+    /// Отслеживаемый контрол обновляет координаты поверхности при движении.
     /// </summary>
     /// <remarks>
     /// Контрольная половина: без неё соседний тест проходил бы и в случае, когда
     /// координаты не обновляются вовсе, — а именно это он и должен отличать. Первая
     /// версия стенда стояла вне редактора, и половина честно упала: без
-    /// <c>DesignSurface</c> над контролом пересчёт не делает ничего.
+    /// <c>UiDesignerPanel</c> над контролом пересчёт не делает ничего.
     /// </remarks>
     [AvaloniaFact]
     public void A_Tracked_Control_Follows_Its_Position()
     {
         var (window, child) = CreateStand();
-        DesignLayout.Track(child);
+        SurfaceLayout.Track(child);
         Settle(window);
-        var before = DesignLayout.GetDesignX(child);
+        var before = SurfaceLayout.GetSurfaceX(child);
 
         Canvas.SetLeft(child, 90);
         Settle(window);
 
-        Assert.NotEqual(before, DesignLayout.GetDesignX(child));
+        Assert.NotEqual(before, SurfaceLayout.GetSurfaceX(child));
     }
 
     /// <summary>
@@ -178,14 +178,14 @@ public class LayoutTrackingTests
     public void An_Untracked_Control_Stops_Following_Its_Position()
     {
         var (window, child) = CreateStand();
-        DesignLayout.Track(child);
+        SurfaceLayout.Track(child);
         Settle(window);
-        var before = DesignLayout.GetDesignX(child);
+        var before = SurfaceLayout.GetSurfaceX(child);
 
-        DesignLayout.Untrack(child);
+        SurfaceLayout.Untrack(child);
         Canvas.SetLeft(child, 90);
         Settle(window);
 
-        Assert.Equal(before, DesignLayout.GetDesignX(child));
+        Assert.Equal(before, SurfaceLayout.GetSurfaceX(child));
     }
 }

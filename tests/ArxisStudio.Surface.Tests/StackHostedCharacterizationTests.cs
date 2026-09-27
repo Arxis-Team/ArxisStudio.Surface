@@ -113,7 +113,7 @@ public class StackHostedCharacterizationTests
         harness.RunLayout();
 
         // Путь, который работает сегодня и должен продолжать работать:
-        // карточка лежит на DesignSurface, то есть на AbsolutePanel.
+        // карточка лежит на UiDesignerPanel, то есть на AbsolutePanel.
         Assert.Equal(CardLocation.X + DragDelta.X, container.Location.X, 1);
         Assert.Equal(CardLocation.Y + DragDelta.Y, container.Location.Y, 1);
     }

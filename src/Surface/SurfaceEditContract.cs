@@ -26,7 +26,7 @@ public enum SurfaceEditKind
     /// <remarks>
     /// Именно перекрытия, то есть <c>ZIndex</c>. Перестановка среди детей панели
     /// сюда не попадает вовсе — это структурная правка, и редактор о ней только
-    /// просит через <c>DesignEditor.ReorderRequested</c>. Одно слово на два
+    /// просит через <c>UiDesignerView.ReorderRequested</c>. Одно слово на два
     /// разных действия уже путало: обработчик, написанный на «изменился порядок»,
     /// молча ловил половину случаев.
     /// </remarks>
@@ -36,7 +36,7 @@ public enum SurfaceEditKind
     /// Изменение принадлежности к design-time группе.
     /// </summary>
     /// <remarks>
-    /// Группа — пометка на контролах (<c>DesignGroup</c>), а не узел дерева:
+    /// Группа — пометка на контролах (<c>SurfaceGroup</c>), а не узел дерева:
     /// редактор его не правит. Поэтому у группировки есть шов записи и единица редактирования,
     /// в отличие от перестановки среди соседей, которая структурна и уходит запросом.
     /// </remarks>
@@ -143,8 +143,8 @@ public sealed class SurfaceDeleteRequestedEventArgs : EventArgs
 /// Описывает изменение геометрии одного target.
 /// </summary>
 /// <remarks>
-/// Границы заданы в design-координатах: тех же, в которых работают
-/// <c>Layout.DesignX</c>/<c>DesignY</c> и <c>DesignEditor.SelectionBounds</c>.
+/// Границы заданы в координатах поверхности: тех же, в которых работают
+/// <c>Layout.SurfaceX</c>/<c>SurfaceY</c> и <c>UiDesignerView.SelectionBounds</c>.
 /// Их достаточно, чтобы вернуть target в прежнее состояние через
 /// <see cref="SurfaceView.ApplyGeometry"/>.
 /// </remarks>

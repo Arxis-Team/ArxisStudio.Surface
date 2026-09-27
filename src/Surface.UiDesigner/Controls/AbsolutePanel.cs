@@ -107,7 +107,7 @@ public class AbsolutePanel : Panel
         foreach (var child in Children)
         {
             // ВАЖНО: Принудительно включаем слежение за глобальными координатами для каждого ребенка.
-            // Это гарантирует обновление DesignX/DesignY даже для элементов без явных Layout.X/Y.
+            // Это гарантирует обновление SurfaceX/SurfaceY даже для элементов без явных Layout.X/Y.
             Layout.Track(child);
 
             double x = Layout.GetX(child);

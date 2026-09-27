@@ -58,16 +58,16 @@ public static class Layout
     /// <summary>
     /// Идентификатор присоединенного свойства глобальной координаты X.
     /// </summary>
-    public static readonly AttachedProperty<double> DesignXProperty =
+    public static readonly AttachedProperty<double> SurfaceXProperty =
         AvaloniaProperty.RegisterAttached<Control, double>(
-            "DesignX", typeof(Layout), 0d, inherits: false, defaultBindingMode: BindingMode.TwoWay);
+            "SurfaceX", typeof(Layout), 0d, inherits: false, defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Идентификатор присоединенного свойства глобальной координаты Y.
     /// </summary>
-    public static readonly AttachedProperty<double> DesignYProperty =
+    public static readonly AttachedProperty<double> SurfaceYProperty =
         AvaloniaProperty.RegisterAttached<Control, double>(
-            "DesignY", typeof(Layout), 0d, inherits: false, defaultBindingMode: BindingMode.TwoWay);
+            "SurfaceY", typeof(Layout), 0d, inherits: false, defaultBindingMode: BindingMode.TwoWay);
 
     /// <summary>
     /// Идентификатор присоединенного свойства, принудительно включающего отслеживание позиции.
@@ -92,8 +92,8 @@ public static class Layout
         });
 
         // Обратная связь: при изменении глобальных координат пересчитываем локальные.
-        DesignXProperty.Changed.AddClassHandler<Control>((s, e) => OnDesignPositionChanged(s));
-        DesignYProperty.Changed.AddClassHandler<Control>((s, e) => OnDesignPositionChanged(s));
+        SurfaceXProperty.Changed.AddClassHandler<Control>((s, e) => OnSurfacePositionChanged(s));
+        SurfaceYProperty.Changed.AddClassHandler<Control>((s, e) => OnSurfacePositionChanged(s));
     }
 
     /// <summary>
@@ -107,16 +107,16 @@ public static class Layout
         // Идемпотентно. AbsolutePanel вызывает Track для каждого ребёнка на каждом
         // arrange, а редактор — для каждого selection target при пересборке overlay.
         // Повторная подписка не нужна: пересчёт и так придёт из LayoutUpdated,
-        // а лишний UpdateDesignPosition ставит ещё один dispatcher-пост.
+        // а лишний UpdateSurfacePosition ставит ещё один dispatcher-пост.
         if (GetIsTracking(control))
             return;
 
         SetIsTracking(control, true);
         control.LayoutUpdated += OnLayoutUpdated;
 
-        // Первичное заполнение DesignX/DesignY: layout-прохода может и не быть,
+        // Первичное заполнение SurfaceX/SurfaceY: layout-прохода может и не быть,
         // если координаты уже актуальны.
-        UpdateDesignPosition(control);
+        UpdateSurfacePosition(control);
     }
 
     /// <summary>
@@ -146,27 +146,27 @@ public static class Layout
     {
         if (sender is Control control)
         {
-            UpdateDesignPosition(control);
+            UpdateSurfacePosition(control);
         }
     }
 
     /// <summary>
-    /// Вычисляет глобальное положение элемента и обновляет DesignX/DesignY.
+    /// Вычисляет глобальное положение элемента и обновляет SurfaceX/SurfaceY.
     /// </summary>
-    private static void UpdateDesignPosition(Control control)
+    private static void UpdateSurfacePosition(Control control)
     {
         Dispatcher.UIThread.Post(() =>
         {
             // Флаг ставится здесь, а не проверяется: проверять его в отложенном
-            // замыкании бессмысленно — OnDesignPositionChanged снимает его
+            // замыкании бессмысленно — OnSurfacePositionChanged снимает его
             // синхронно, и к моменту запуска он всегда false. Работает он ниже
-            // по стеку: SetDesignX/SetDesignY внутри этого блока разбудили бы
+            // по стеку: SetSurfaceX/SetSurfaceY внутри этого блока разбудили бы
             // обратный пересчёт, и флаг его останавливает.
             SetIsUpdatingPosition(control, true);
             try
             {
-                Visual? reference = control.FindAncestorOfType<DesignSurface>()
-                                    ?? control.FindAncestorOfType<DesignEditor>() as Visual;
+                Visual? reference = control.FindAncestorOfType<UiDesignerPanel>()
+                                    ?? control.FindAncestorOfType<UiDesignerView>() as Visual;
 
                 if (reference != null)
                 {
@@ -174,11 +174,11 @@ public static class Layout
 
                     if (position.HasValue)
                     {
-                        if (Math.Abs(GetDesignX(control) - position.Value.X) > 0.01)
-                            SetDesignX(control, position.Value.X);
+                        if (Math.Abs(GetSurfaceX(control) - position.Value.X) > 0.01)
+                            SetSurfaceX(control, position.Value.X);
 
-                        if (Math.Abs(GetDesignY(control) - position.Value.Y) > 0.01)
-                            SetDesignY(control, position.Value.Y);
+                        if (Math.Abs(GetSurfaceY(control) - position.Value.Y) > 0.01)
+                            SetSurfaceY(control, position.Value.Y);
                     }
                 }
             }
@@ -187,9 +187,9 @@ public static class Layout
     }
 
     /// <summary>
-    /// Обрабатывает изменение глобальных координат (DesignX/DesignY) и обновляет локальные (X/Y).
+    /// Обрабатывает изменение глобальных координат (SurfaceX/SurfaceY) и обновляет локальные (X/Y).
     /// </summary>
-    private static void OnDesignPositionChanged(Control? control)
+    private static void OnSurfacePositionChanged(Control? control)
     {
         if (control == null || GetIsUpdatingPosition(control)) return;
         SetIsUpdatingPosition(control, true);
@@ -200,11 +200,11 @@ public static class Layout
              // Подписываемся на AttachedToVisualTree и ждем.
              if (!control.IsAttachedToVisualTree() || control.GetVisualParent() is null)
              {
-                 // Подписка ставится ровно одна. Иначе каждая запись DesignX/DesignY
+                 // Подписка ставится ровно одна. Иначе каждая запись SurfaceX/SurfaceY
                  // до попадания в дерево добавляла бы отдельный обработчик, и на attach
                  // пересчет выполнялся бы столько раз, сколько было записей
                  // (SetTargetPosition пишет обе координаты подряд — уже две подписки).
-                 // Отложенный пересчет читает актуальные DesignX/DesignY в момент attach,
+                 // Отложенный пересчет читает актуальные SurfaceX/SurfaceY в момент attach,
                  // поэтому пропущенные записи ничего не теряют.
                  if (GetIsAwaitingAttach(control))
                      return;
@@ -216,7 +216,7 @@ public static class Layout
                      control.AttachedToVisualTree -= OnAttached;
                      SetIsAwaitingAttach(control, false);
                      // Повторный вызов уже с готовым деревом
-                     OnDesignPositionChanged(control);
+                     OnSurfacePositionChanged(control);
                  }
 
                  control.AttachedToVisualTree += OnAttached;
@@ -224,15 +224,15 @@ public static class Layout
              }
 
              // Стандартная логика: пересчет из глобальных в локальные
-             Visual? root = control.FindAncestorOfType<DesignSurface>()
-                            ?? control.FindAncestorOfType<DesignEditor>() as Visual;
+             Visual? root = control.FindAncestorOfType<UiDesignerPanel>()
+                            ?? control.FindAncestorOfType<UiDesignerView>() as Visual;
 
              var parent = control.GetVisualParent();
 
              if (root != null && parent != null)
              {
-                 var dx = GetDesignX(control);
-                 var dy = GetDesignY(control);
+                 var dx = GetSurfaceX(control);
+                 var dy = GetSurfaceY(control);
 
                  var local = root.TranslatePoint(new Point(dx, dy), parent);
 
@@ -290,14 +290,14 @@ public static class Layout
     /// Это свойство особенно удобно для инспектора свойств, направляющих и оверлеев,
     /// которым нужна координата относительно корневого холста, а не локального контейнера.
     /// </remarks>
-    public static double GetDesignX(AvaloniaObject o) => o.GetValue(DesignXProperty);
+    public static double GetSurfaceX(AvaloniaObject o) => o.GetValue(SurfaceXProperty);
 
     /// <summary>
     /// Задает глобальную координату X элемента относительно поверхности дизайна.
     /// </summary>
     /// <param name="o">Объект, для которого задается значение.</param>
     /// <param name="v">Новое значение координаты.</param>
-    public static void SetDesignX(AvaloniaObject o, double v) => o.SetValue(DesignXProperty, v);
+    public static void SetSurfaceX(AvaloniaObject o, double v) => o.SetValue(SurfaceXProperty, v);
 
     /// <summary>
     /// Возвращает глобальную координату Y элемента относительно поверхности дизайна.
@@ -307,14 +307,14 @@ public static class Layout
     /// <remarks>
     /// Значение автоматически поддерживается системой позиционирования редактора.
     /// </remarks>
-    public static double GetDesignY(AvaloniaObject o) => o.GetValue(DesignYProperty);
+    public static double GetSurfaceY(AvaloniaObject o) => o.GetValue(SurfaceYProperty);
 
     /// <summary>
     /// Задает глобальную координату Y элемента относительно поверхности дизайна.
     /// </summary>
     /// <param name="o">Объект, для которого задается значение.</param>
     /// <param name="v">Новое значение координаты.</param>
-    public static void SetDesignY(AvaloniaObject o, double v) => o.SetValue(DesignYProperty, v);
+    public static void SetSurfaceY(AvaloniaObject o, double v) => o.SetValue(SurfaceYProperty, v);
 
     /// <summary>
     /// Возвращает значение, указывающее, включено ли принудительное отслеживание позиции.

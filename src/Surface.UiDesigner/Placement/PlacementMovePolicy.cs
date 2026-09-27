@@ -20,7 +20,7 @@ internal sealed class PlacementMovePolicy : ISurfaceInteractionPolicy
     }
 
     public MovePolicy GetMovePolicy(Control target)
-        => DesignPlacementResolver.Resolve(target).MoveSemantics == DesignMoveSemantics.Reposition
+        => SurfacePlacementResolver.Resolve(target).MoveSemantics == SurfaceMoveSemantics.Reposition
             ? MovePolicy.Both
             : MovePolicy.None;
 

@@ -10,7 +10,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Media;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface;
 
@@ -38,7 +38,7 @@ public class GroupStoreTests
     /// Изображает хранилище хоста, которое держит принадлежность рядом с документом. Ключ здесь
     /// всё ещё контрол — переживать перезагрузку формы этому стенду не нужно.
     /// </remarks>
-    private sealed class SideStore : IDesignGroupStore
+    private sealed class SideStore : ISurfaceGroupStore
     {
         private readonly Dictionary<Control, string> _paths = new();
 
@@ -66,11 +66,11 @@ public class GroupStoreTests
         public event EventHandler? GroupsChanged;
     }
 
-    private static EditorHarness Create(IDesignGroupStore? store = null)
+    private static EditorHarness Create(ISurfaceGroupStore? store = null)
     {
         var nodes = new List<TestNode> { new("form0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -88,8 +88,8 @@ public class GroupStoreTests
                         Background = Brushes.Transparent
                     };
 
-                    DesignLayout.SetX(cell, 10 + (i * 90));
-                    DesignLayout.SetY(cell, 10);
+                    SurfaceLayout.SetX(cell, 10 + (i * 90));
+                    SurfaceLayout.SetY(cell, 10);
                     panel.Children.Add(cell);
                 }
 
@@ -133,7 +133,7 @@ public class GroupStoreTests
     /// Без хранилища пометка по-прежнему живёт в attached-свойстве.
     /// </summary>
     /// <remarks>
-    /// Это обещание совместимости: разметка с <c>DesignGroup.Id</c>, чужие макеты и демо
+    /// Это обещание совместимости: разметка с <c>SurfaceGroup.Id</c>, чужие макеты и демо
     /// продолжают работать, а шов меняет только то, у кого можно спросить.
     /// </remarks>
     [AvaloniaFact]
@@ -141,14 +141,14 @@ public class GroupStoreTests
     {
         var harness = Create();
 
-        Assert.Same(DesignGroupAttachedStore.Default, harness.Editor.GroupStore);
+        Assert.Same(SurfaceGroupAttachedStore.Default, harness.Editor.GroupStore);
 
         Select(harness, "A", "B");
         Assert.True(harness.Editor.GroupSelection());
         harness.RunLayout();
 
-        Assert.NotNull(DesignGroup.GetId(Cell(harness, "A")));
-        Assert.Equal(DesignGroup.GetId(Cell(harness, "A")), DesignGroup.GetId(Cell(harness, "B")));
+        Assert.NotNull(SurfaceGroup.GetId(Cell(harness, "A")));
+        Assert.Equal(SurfaceGroup.GetId(Cell(harness, "A")), SurfaceGroup.GetId(Cell(harness, "B")));
     }
 
     // ---- Запись -----------------------------------------------------------------
@@ -176,8 +176,8 @@ public class GroupStoreTests
         Assert.Equal(path, store.GetGroup(Cell(harness, "B")));
         Assert.Equal(2, store.Writes);
 
-        Assert.Null(DesignGroup.GetId(Cell(harness, "A")));
-        Assert.Null(DesignGroup.GetId(Cell(harness, "B")));
+        Assert.Null(SurfaceGroup.GetId(Cell(harness, "A")));
+        Assert.Null(SurfaceGroup.GetId(Cell(harness, "B")));
     }
 
     // ---- Чтение -----------------------------------------------------------------
@@ -227,7 +227,7 @@ public class GroupStoreTests
         Click(harness, "C");
 
         Assert.Equal("solo", harness.Editor.PrimarySelectionTarget?.GroupId);
-        Assert.Null(DesignGroup.GetId(Cell(harness, "C")));
+        Assert.Null(SurfaceGroup.GetId(Cell(harness, "C")));
     }
 
     // ---- Отмена -----------------------------------------------------------------
@@ -257,7 +257,7 @@ public class GroupStoreTests
         harness.RunLayout();
 
         Assert.NotNull(edit);
-        Assert.All(edit!.Changes, c => Assert.IsType<DesignGroupChange>(c));
+        Assert.All(edit!.Changes, c => Assert.IsType<GroupChange>(c));
 
         foreach (var change in edit.Changes)
             harness.Editor.Revert(change);
@@ -301,9 +301,9 @@ public class GroupStoreTests
     // ---- Время жизни ------------------------------------------------------------
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference MakeEditor(IDesignGroupStore? shared)
+    private static WeakReference MakeEditor(ISurfaceGroupStore? shared)
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         editor.GroupStore = shared ?? new SideStore();
 
         return new WeakReference(editor);
@@ -329,7 +329,7 @@ public class GroupStoreTests
     /// </summary>
     /// <remarks>
     /// Хранилище хост заводит одно на документ, а редакторов над одним документом бывает
-    /// несколько. Обычная подписка на <see cref="IDesignGroupStore.GroupsChanged"/> уложила бы
+    /// несколько. Обычная подписка на <see cref="ISurfaceGroupStore.GroupsChanged"/> уложила бы
     /// делегат в само хранилище, и оно не отпустило бы ни одного редактора — та же ошибка, что
     /// уже была с общим набором жестов, и то же лечение слабым событием.
     /// <para>

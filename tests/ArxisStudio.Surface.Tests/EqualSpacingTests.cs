@@ -28,7 +28,7 @@ public class EqualSpacingTests
     private static readonly Point ContainerLocation = new(100, 100);
     private static readonly Size ContainerSize = new(500, 300);
 
-    /// <summary>Геометрия перетаскиваемого элемента в design-координатах.</summary>
+    /// <summary>Геометрия перетаскиваемого элемента в координатах поверхности.</summary>
     private static readonly Rect Moving = new(200, 150, 40, 40);
 
     /// <summary>Положение, при котором зазоры до соседей равны.</summary>
@@ -38,7 +38,7 @@ public class EqualSpacingTests
     {
         var nodes = new List<TestNode> { new("spacing0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -95,7 +95,7 @@ public class EqualSpacingTests
         Moving.Y + (Moving.Height / 2));
 
     private static double PositionOf(EditorHarness harness) =>
-        Layout.GetDesignX(harness.Named(0, "Moving"));
+        Layout.GetSurfaceX(harness.Named(0, "Moving"));
 
     private static void Drag(EditorHarness harness, double dx, RawInputModifiers modifiers = RawInputModifiers.None)
     {
@@ -194,7 +194,7 @@ public class EqualSpacingTests
     {
         var nodes = new List<TestNode> { new("run0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -240,7 +240,7 @@ public class EqualSpacingTests
         harness.RunLayout();
 
         // Шаг между First и Second — 40, значит Moving встаёт на 270 + 40 = 310.
-        Assert.Equal(310, Layout.GetDesignX(moving));
+        Assert.Equal(310, Layout.GetSurfaceX(moving));
     }
 
     // ---- Изменение размера ----------------------------------------------------
@@ -260,7 +260,7 @@ public class EqualSpacingTests
         state.OnResizeDelta(new ResizeDeltaEventArgs(
             new Vector(to - applied, 0),
             ResizeDirection.Right,
-            DesignEditorItem.ResizeDeltaEvent));
+            UiDesignerItem.ResizeDeltaEvent));
 
         harness.RunLayout();
     }

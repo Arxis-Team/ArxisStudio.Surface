@@ -39,7 +39,7 @@ public partial class SurfaceView
     /// </summary>
     /// <remarks>
     /// Шов между ядром и тем, что лежит на холсте (ADR 0003). Ядро знает только
-    /// контейнеры и их <see cref="SurfaceItem.Location"/>; дизайнер форм подставляет
+    /// контейнеры и их <see cref="SurfaceItem.Location"/>; дизайнер интерфейса подставляет
     /// геометрию, которая спрашивает стратегию размещения у родительской панели.
     /// </remarks>
     internal ISurfaceGeometry Geometry
@@ -81,7 +81,7 @@ public partial class SurfaceView
     /// что перетащить ничего было нельзя. Рамки и ручки ядро не рисует: выбранный
     /// контейнер показывает себя своей темой.
     /// <para>
-    /// Дизайнер форм переопределяет метод целиком: у него та же публикация плюс оверлей
+    /// Дизайнер интерфейса переопределяет метод целиком: у него та же публикация плюс оверлей
     /// с рамками, кластеры групп и вход в группу.
     /// </para>
     /// </remarks>
@@ -98,7 +98,7 @@ public partial class SurfaceView
         => Geometry.GetPosition(control);
 
     /// <summary>
-    /// Задаёт позицию target'а в design-координатах.
+    /// Задаёт позицию target'а в координатах поверхности.
     /// </summary>
     /// <remarks>
     /// Раскладка, которая владеет позицией ребёнка, отсекается здесь, а не выше:
@@ -120,7 +120,7 @@ public partial class SurfaceView
     /// Задает геометрию контрола одной единицей редактирования.
     /// </summary>
     /// <param name="target">Контрол.</param>
-    /// <param name="bounds">Желаемая рамка в design-координатах.</param>
+    /// <param name="bounds">Желаемая рамка в координатах поверхности.</param>
     /// <returns><see langword="true"/>, если изменение принято и опубликовано.</returns>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="target"/> равен <see langword="null"/>.</exception>
     /// <remarks>
@@ -135,7 +135,7 @@ public partial class SurfaceView
     /// <para>
     /// Приняли не всё: положением может распоряжаться раскладка, а размер ограничивают
     /// <c>Min</c>/<c>Max</c> контрола и границы формы. Отсекается это на швах, поэтому
-    /// ответ берётся у контракта изменений, а не перечитыванием design-координат —
+    /// ответ берётся у контракта изменений, а не перечитыванием координат поверхности —
     /// те отстают на проход диспетчера и сразу после записи ещё старые.
     /// </para>
     /// </remarks>
@@ -268,7 +268,7 @@ public partial class SurfaceView
     /// Применяет геометрию к target, не создавая новой единицы редактирования.
     /// </summary>
     /// <param name="target">Контрол, геометрию которого нужно задать.</param>
-    /// <param name="bounds">Целевая геометрия в design-координатах.</param>
+    /// <param name="bounds">Целевая геометрия в координатах поверхности.</param>
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="target"/> равен <see langword="null"/>.</exception>
     /// <remarks>
     /// Предназначен для отмены и повтора: принимает <see cref="GeometryChange.OldBounds"/>
@@ -337,7 +337,7 @@ public partial class SurfaceView
     /// <remarks>
     /// Ответ нужен точке записи снаружи жеста: <see cref="SetTargetGeometry"/> обязан
     /// сказать хосту, приняли его правку или раскладка её отсекла, а перечитать
-    /// design-координаты сразу нельзя — они отстают на проход диспетчера.
+    /// координаты поверхности сразу нельзя — они отстают на проход диспетчера.
     /// </remarks>
     private protected bool CommitEdit()
     {

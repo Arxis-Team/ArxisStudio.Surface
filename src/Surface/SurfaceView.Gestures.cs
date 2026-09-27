@@ -101,7 +101,7 @@ public partial class SurfaceView
     /// что контейнер об отказе не узнаёт и продолжает писать геометрию каждый кадр
     /// с закрытой единицей редактирования. Правка уходила мимо undo.
     /// <para>
-    /// Тот же приём, что у контейнера (<c>DesignEditorItem.OnPointerCaptureLost</c>):
+    /// Тот же приём, что у контейнера (<c>UiDesignerItem.OnPointerCaptureLost</c>):
     /// разобрать стек до базового состояния, дав каждому выйти своим <c>Exit</c>.
     /// </para>
     /// </remarks>

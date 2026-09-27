@@ -15,7 +15,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -23,13 +23,13 @@ using ArxisStudio.Surface.UiDesigner.Placement;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Пересборка состояния оверлея выделения.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
-    private bool TryGetSelectedDesignBounds(
+    private bool TryGetSelectedTargetBounds(
         out Rect bounds,
         out int selectedCount,
-        out DesignEditorItem? primaryItem,
+        out UiDesignerItem? primaryItem,
         out Control? primaryControl,
         out IReadOnlyList<SelectionAdornerInfo> secondaryAdorners,
         out bool hasMultipleNestedSelection,
@@ -60,8 +60,8 @@ public partial class DesignEditor
 
         foreach (var item in items)
         {
-            var container = ContainerFromItem(item) as DesignEditorItem;
-            if (container == null && item is DesignEditorItem directItem)
+            var container = ContainerFromItem(item) as UiDesignerItem;
+            if (container == null && item is UiDesignerItem directItem)
                 container = directItem;
 
             if (container == null)
@@ -69,17 +69,17 @@ public partial class DesignEditor
 
             foreach (var selectionTarget in ResolveSelectionTargets(container))
             {
-                if (!TryGetDesignBounds(selectionTarget, out var itemBounds))
+                if (!TryGetTargetBounds(selectionTarget, out var itemBounds))
                     continue;
 
                 selectedCount++;
                 primaryItem ??= container;
                 primaryControl ??= selectionTarget;
 
-                // Контейнером считается любой DesignEditorItem, а не только владелец:
+                // Контейнером считается любой UiDesignerItem, а не только владелец:
                 // вложенные контейнеры должны попадать в группу контейнеров,
                 // иначе их множественный выбор рисуется как nested-группа.
-                if (selectionTarget is DesignEditorItem)
+                if (selectionTarget is UiDesignerItem)
                     containerTargetCount++;
                 else
                     nestedTargetCount++;
@@ -159,8 +159,8 @@ public partial class DesignEditor
     private List<SelectionAdornerInfo> BuildClusterAdorners(IReadOnlyList<SelectionAdornerInfo> perTarget)
     {
         var infoByTarget = new Dictionary<Control, SelectionAdornerInfo>();
-        var byHost = new Dictionary<DesignEditorItem, List<Control>>();
-        var hostOrder = new List<DesignEditorItem>();
+        var byHost = new Dictionary<UiDesignerItem, List<Control>>();
+        var hostOrder = new List<UiDesignerItem>();
 
         foreach (var info in perTarget)
         {
@@ -250,7 +250,7 @@ public partial class DesignEditor
     {
         SyncEnteredGroup();
 
-        if (TryGetSelectedDesignBounds(
+        if (TryGetSelectedTargetBounds(
                 out var bounds,
                 out var selectedCount,
                 out var primaryItem,

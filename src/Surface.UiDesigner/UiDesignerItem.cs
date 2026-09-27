@@ -15,12 +15,12 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// перетаскивания и изменения размеров.
 /// </summary>
 /// <remarks>
-/// Обычно экземпляры создаются автоматически <see cref="DesignEditor"/>
+/// Обычно экземпляры создаются автоматически <see cref="UiDesignerView"/>
 /// как контейнеры для элементов <see cref="ItemsControl.ItemsSource"/>.
 /// </remarks>
 /// <example>
 /// <code language="xml"><![CDATA[
-/// <Style Selector="design|DesignEditorItem">
+/// <Style Selector="design|UiDesignerItem">
 ///     <Setter Property="Location" Value="{Binding Location, Mode=TwoWay}" />
 ///     <Setter Property="Width" Value="{Binding Width, Mode=TwoWay}" />
 ///     <Setter Property="Height" Value="{Binding Height, Mode=TwoWay}" />
@@ -28,7 +28,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// ]]></code>
 /// </example>
 [TemplatePart("PART_Border", typeof(Border))]
-public class DesignEditorItem : SurfaceItem
+public class UiDesignerItem : SurfaceItem
 {
     #region Fields
     private bool _isUpdatingLocation;
@@ -39,20 +39,20 @@ public class DesignEditorItem : SurfaceItem
     /// <summary>
     /// Идентификатор свойства режима содержимого.
     /// </summary>
-    public static readonly StyledProperty<DesignContentMode> ContentModeProperty =
-        AvaloniaProperty.Register<DesignEditorItem, DesignContentMode>(
-            nameof(ContentMode), DesignContentMode.Annotated);
+    public static readonly StyledProperty<SurfaceContentMode> ContentModeProperty =
+        AvaloniaProperty.Register<UiDesignerItem, SurfaceContentMode>(
+            nameof(ContentMode), SurfaceContentMode.Annotated);
 
     /// <summary>
     /// Получает или задает способ поиска редактируемых элементов внутри контейнера.
     /// </summary>
     /// <remarks>
-    /// По умолчанию <see cref="DesignContentMode.Annotated"/> — совместимо с шаблонами,
+    /// По умолчанию <see cref="SurfaceContentMode.Annotated"/> — совместимо с шаблонами,
     /// размеченными вручную. Для формы, загруженной из <c>.axaml</c>, задайте
-    /// <see cref="DesignContentMode.Loaded"/>: контейнер сам погасит ввод и откроет
+    /// <see cref="SurfaceContentMode.Loaded"/>: контейнер сам погасит ввод и откроет
     /// на редактирование всё дерево разметки.
     /// </remarks>
-    public DesignContentMode ContentMode
+    public SurfaceContentMode ContentMode
     {
         get => GetValue(ContentModeProperty);
         set => SetValue(ContentModeProperty, value);
@@ -60,16 +60,16 @@ public class DesignEditorItem : SurfaceItem
 
     #endregion
 
-    static DesignEditorItem()
+    static UiDesignerItem()
     {
-        Layout.XProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) => item.SyncLocationFromLayout());
-        Layout.YProperty.Changed.AddClassHandler<DesignEditorItem>((item, _) => item.SyncLocationFromLayout());
+        Layout.XProperty.Changed.AddClassHandler<UiDesignerItem>((item, _) => item.SyncLocationFromLayout());
+        Layout.YProperty.Changed.AddClassHandler<UiDesignerItem>((item, _) => item.SyncLocationFromLayout());
     }
 
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditorItem"/>.
+    /// Инициализирует новый экземпляр <see cref="UiDesignerItem"/>.
     /// </summary>
-    public DesignEditorItem()
+    public UiDesignerItem()
     {
     }
 

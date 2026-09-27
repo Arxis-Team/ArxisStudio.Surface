@@ -84,7 +84,7 @@ public class LayerDependencyTests
     public void Every_Type_Lives_In_The_Assembly_Of_Its_Layer()
     {
         // Слой задаёт пространство имён, пакет — сборка. Разойдись они, и тип ядра,
-        // оставленный в сборке дизайнера форм, был бы недоступен Nodes, хотя по
+        // оставленный в сборке дизайнера интерфейса, был бы недоступен Nodes, хотя по
         // имени принадлежит ядру.
         var misplaced = TopLevelTypes()
             .Where(type => LayerOf(type) is not Layer.Outside)
@@ -174,8 +174,8 @@ public class LayerDependencyTests
         Layer.Core => to == Layer.Core,
         Layer.Editing => to is Layer.Core or Layer.Editing,
 
-        // Дизайнер форм и редактор узлов — сёстры над ядром и инструментами (ADR 0004).
-        // Прежде здесь стояло «всё остальное — можно», и дизайнер форм вправе был назвать
+        // Дизайнер интерфейса и редактор узлов — сёстры над ядром и инструментами (ADR 0004).
+        // Прежде здесь стояло «всё остальное — можно», и дизайнер интерфейса вправе был назвать
         // кого угодно; с четвёртым слоем это стало бы ссылкой между сёстрами.
         Layer.UiDesigner => to is Layer.Core or Layer.Editing or Layer.UiDesigner,
         Layer.Nodes => to is Layer.Core or Layer.Editing or Layer.Nodes,

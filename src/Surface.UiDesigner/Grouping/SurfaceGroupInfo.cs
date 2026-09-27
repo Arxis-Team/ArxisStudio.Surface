@@ -9,9 +9,9 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// </summary>
 /// <remarks>
 /// Снимок, снятый в момент запроса: группа — это пометка на контролах
-/// (<see cref="DesignGroup"/>), а деревом владеет хост, поэтому редактор
+/// (<see cref="SurfaceGroup"/>), а деревом владеет хост, поэтому редактор
 /// не может ни закэшировать состав, ни узнать о правке, которой не делал.
-/// Отсюда и способ получения — запрос <see cref="DesignEditor.GetGroups"/>, а не
+/// Отсюда и способ получения — запрос <see cref="UiDesignerView.GetGroups"/>, а не
 /// свойство со снимком, как у выделения.
 /// <para>
 /// Личность группы — это её <see cref="Path"/> целиком, а не <see cref="Id"/>: одинаковые
@@ -19,33 +19,33 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// контейнера: <c>group-1</c> в двух формах — это две разные группы.
 /// </para>
 /// </remarks>
-public sealed class DesignGroupInfo
+public sealed class SurfaceGroupInfo
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignGroupInfo"/>.
+    /// Инициализирует новый экземпляр <see cref="SurfaceGroupInfo"/>.
     /// </summary>
     /// <param name="container">Форма, которой принадлежит группа.</param>
     /// <param name="path">Путь группы от внешнего уровня к внутреннему.</param>
     /// <param name="members">Контролы, лежащие в группе непосредственно.</param>
     /// <param name="groups">Вложенные группы.</param>
     /// <exception cref="ArgumentNullException">Выбрасывается, если любой из аргументов равен <see langword="null"/>.</exception>
-    public DesignGroupInfo(
-        DesignEditorItem container,
+    public SurfaceGroupInfo(
+        UiDesignerItem container,
         string path,
         IReadOnlyList<Control> members,
-        IReadOnlyList<DesignGroupInfo> groups)
+        IReadOnlyList<SurfaceGroupInfo> groups)
     {
         Container = container ?? throw new ArgumentNullException(nameof(container));
         Path = path ?? throw new ArgumentNullException(nameof(path));
         Members = members ?? throw new ArgumentNullException(nameof(members));
         Groups = groups ?? throw new ArgumentNullException(nameof(groups));
-        Id = DesignGroupPath.Leaf(path) ?? path;
+        Id = SurfaceGroupPath.Leaf(path) ?? path;
     }
 
     /// <summary>
     /// Получает форму, которой принадлежит группа.
     /// </summary>
-    public DesignEditorItem Container { get; }
+    public UiDesignerItem Container { get; }
 
     /// <summary>
     /// Получает полный путь группы — её личность внутри формы.
@@ -66,7 +66,7 @@ public sealed class DesignGroupInfo
     /// </summary>
     /// <remarks>
     /// Контролы вложенных групп сюда не входят — они лежат в <see cref="Groups"/>.
-    /// Весь состав целиком отдаёт <see cref="DesignEditor.GetGroupMembers"/>.
+    /// Весь состав целиком отдаёт <see cref="UiDesignerView.GetGroupMembers"/>.
     /// <para>
     /// Порядок — тот же, которым редактор перечисляет кандидатов на выбор, то есть
     /// порядок разметки, а не порядок, в котором участников выделили. Панель групп
@@ -78,5 +78,5 @@ public sealed class DesignGroupInfo
     /// <summary>
     /// Получает вложенные группы.
     /// </summary>
-    public IReadOnlyList<DesignGroupInfo> Groups { get; }
+    public IReadOnlyList<SurfaceGroupInfo> Groups { get; }
 }

@@ -17,14 +17,14 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// других повторят его по-своему.
 /// </para>
 /// </remarks>
-internal static class DesignGroupPath
+internal static class SurfaceGroupPath
 {
     /// <summary>
     /// Разделитель сегментов.
     /// </summary>
     /// <remarks>
     /// Часть контракта пометки: в сегменте его быть не может, иначе один идентификатор
-    /// читался бы как два уровня. Проверяют это точки записи, а не <c>DesignGroup.SetId</c>:
+    /// читался бы как два уровня. Проверяют это точки записи, а не <c>SurfaceGroup.SetId</c>:
     /// сырое присваивание остаётся сырым, как и раньше.
     /// </remarks>
     public const char Separator = '/';

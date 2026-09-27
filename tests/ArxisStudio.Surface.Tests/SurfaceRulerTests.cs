@@ -44,7 +44,7 @@ public class SurfaceRulerTests
     {
         var nodes = new List<TestNode> { new("ruler0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,

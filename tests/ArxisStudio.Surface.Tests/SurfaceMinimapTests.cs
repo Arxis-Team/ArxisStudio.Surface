@@ -188,7 +188,7 @@ public class SurfaceMinimapTests
     }
 
     [AvaloniaFact]
-    public void The_Map_Works_On_A_Form_Designer()
+    public void The_Map_Works_On_The_Ui_Designer()
     {
         var harness = EditorHarness.Create(nodeCount: 2);
         var editor = harness.Editor;

@@ -6,46 +6,46 @@ using ArxisStudio.Surface.Editing;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Пользовательские направляющие и выключатели показа инструментов: свойства слоя
-// редактирования (SurfaceGuides), которые дизайнер форм берёт себе, и служба,
+// редактирования (SurfaceGuides), которые дизайнер интерфейса берёт себе, и служба,
 // которая за ними стоит (UserGuideService).
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Идентификатор свойства видимости пользовательских направляющих.
     /// </summary>
     public static readonly AttachedProperty<bool> ShowGuidesProperty =
-        SurfaceGuides.ShowGuidesProperty.AddOwner<DesignEditor>();
+        SurfaceGuides.ShowGuidesProperty.AddOwner<UiDesignerView>();
 
     /// <summary>
     /// Идентификатор свойства видимости линий выравнивания.
     /// </summary>
     public static readonly AttachedProperty<bool> ShowSnapGuidesProperty =
-        SurfaceGuides.ShowSnapGuidesProperty.AddOwner<DesignEditor>();
+        SurfaceGuides.ShowSnapGuidesProperty.AddOwner<UiDesignerView>();
 
     /// <summary>
     /// Идентификатор свойства видимости линеек.
     /// </summary>
     public static readonly AttachedProperty<bool> ShowRulersProperty =
-        SurfaceGuides.ShowRulersProperty.AddOwner<DesignEditor>();
+        SurfaceGuides.ShowRulersProperty.AddOwner<UiDesignerView>();
 
     /// <summary>
     /// Идентификатор свойства пользовательских направляющих.
     /// </summary>
     public static readonly AttachedProperty<IEnumerable<SurfaceGuide>?> GuidesProperty =
-        SurfaceGuides.GuidesProperty.AddOwner<DesignEditor>();
+        SurfaceGuides.GuidesProperty.AddOwner<UiDesignerView>();
 
     /// <summary>
     /// Идентификатор свойства направляющей, показываемой во время её перемещения.
     /// </summary>
     public static readonly AttachedProperty<SurfaceGuide?> GuidePreviewProperty =
-        SurfaceGuides.GuidePreviewProperty.AddOwner<DesignEditor>();
+        SurfaceGuides.GuidePreviewProperty.AddOwner<UiDesignerView>();
 
     /// <summary>
     /// Идентификатор свойства снимка пользовательских направляющих.
     /// </summary>
     public static readonly AttachedProperty<IReadOnlyList<SurfaceGuide>> UserGuidesProperty =
-        SurfaceGuides.UserGuidesProperty.AddOwner<DesignEditor>();
+        SurfaceGuides.UserGuidesProperty.AddOwner<UiDesignerView>();
 
     private UserGuideService UserGuides_ => GetService<UserGuideService>()!;
 

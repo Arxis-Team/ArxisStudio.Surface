@@ -34,7 +34,7 @@ public class ResizeStabilityTests
     /// Прогоняет протяжку так, как её видит редактор: ручка стоит на применённом
     /// крае, поэтому дельта считается от него, а не от точки нажатия.
     /// </summary>
-    private static List<double> DragRightEdge(EditorHarness harness, DesignEditorItem container, Control target)
+    private static List<double> DragRightEdge(EditorHarness harness, UiDesignerItem container, Control target)
     {
         var state = new ItemResizingState(container, target, ResizeDirection.Right);
         container.PushState(state);
@@ -50,7 +50,7 @@ public class ResizeStabilityTests
             state.OnResizeDelta(new ResizeDeltaEventArgs(
                 new Vector(pointerRight - appliedRight, 0),
                 ResizeDirection.Right,
-                DesignEditorItem.ResizeDeltaEvent));
+                UiDesignerItem.ResizeDeltaEvent));
 
             harness.RunLayout();
 
@@ -168,7 +168,7 @@ public class ResizeStabilityTests
             state.OnResizeDelta(new ResizeDeltaEventArgs(
                 new Vector(pointerRight - appliedRight, 0),
                 ResizeDirection.Right,
-                DesignEditorItem.ResizeDeltaEvent));
+                UiDesignerItem.ResizeDeltaEvent));
 
             harness.RunLayout();
             appliedRight = Right(harness, target);
@@ -219,7 +219,7 @@ public class ResizeStabilityTests
             state.OnResizeDelta(new ResizeDeltaEventArgs(
                 new Vector(i * 10, 0),
                 ResizeDirection.Right,
-                DesignEditorItem.ResizeDeltaEvent));
+                UiDesignerItem.ResizeDeltaEvent));
 
             harness.RunLayout();
         }
@@ -256,7 +256,7 @@ public class ResizeStabilityTests
             state.OnResizeDelta(new ResizeDeltaEventArgs(
                 new Vector(10, 0),
                 ResizeDirection.Right,
-                DesignEditorItem.ResizeDeltaEvent));
+                UiDesignerItem.ResizeDeltaEvent));
 
             harness.RunLayout();
         }
@@ -285,7 +285,7 @@ public class ResizeStabilityTests
         var current = new PointerSample(currentId, new Point(100, 50), currentCount);
         var grab = new PointerSample(grabId, new Point(10, 10), grabCount);
 
-        Assert.Equal(expected, DesignEditor.TryGetGesturePointer(current, grab, out var world));
+        Assert.Equal(expected, UiDesignerView.TryGetGesturePointer(current, grab, out var world));
         if (expected)
             Assert.Equal(new Point(100, 50), world);
     }
@@ -295,7 +295,7 @@ public class ResizeStabilityTests
     {
         var current = new PointerSample(1, new Point(100, 50), 7);
 
-        Assert.False(DesignEditor.TryGetGesturePointer(current, null, out _));
-        Assert.False(DesignEditor.TryGetGesturePointer(null, current, out _));
+        Assert.False(UiDesignerView.TryGetGesturePointer(current, null, out _));
+        Assert.False(UiDesignerView.TryGetGesturePointer(null, current, out _));
     }
 }

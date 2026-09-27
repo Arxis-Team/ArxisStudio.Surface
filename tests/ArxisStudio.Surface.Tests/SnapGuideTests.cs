@@ -30,7 +30,7 @@ public class SnapGuideTests
     private static readonly Point ContainerLocation = new(105, 103);
     private static readonly Size ContainerSize = new(320, 260);
 
-    /// <summary>Геометрия перетаскиваемого контрола в design-координатах.</summary>
+    /// <summary>Геометрия перетаскиваемого контрола в координатах поверхности.</summary>
     private static readonly Rect Moving = new(115, 113, 60, 40);
 
     /// <summary>Геометрия соседа, по которому идёт выравнивание.</summary>
@@ -43,7 +43,7 @@ public class SnapGuideTests
     {
         var nodes = new List<TestNode> { new("guides0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -79,8 +79,8 @@ public class SnapGuideTests
         Moving.Y + (Moving.Height / 2));
 
     private static Point PositionOf(EditorHarness harness) => new(
-        Layout.GetDesignX(harness.Named(0, "Moving")),
-        Layout.GetDesignY(harness.Named(0, "Moving")));
+        Layout.GetSurfaceX(harness.Named(0, "Moving")),
+        Layout.GetSurfaceY(harness.Named(0, "Moving")));
 
     private static void Drag(EditorHarness harness, Vector delta, RawInputModifiers modifiers = RawInputModifiers.None)
     {
@@ -189,7 +189,7 @@ public class SnapGuideTests
     {
         // Направляющая без включённости по умолчанию — такая же декорация,
         // какой была бы сетка без привязки.
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
 
         Assert.True(editor.InteractionOptions.IsSnapToGuidesEnabled);
         Assert.Equal(6.0, editor.InteractionOptions.SnapGuideTolerance);
@@ -353,7 +353,7 @@ public class SnapGuideTests
         state.OnResizeDelta(new ResizeDeltaEventArgs(
             new Vector(to - applied, 0),
             ResizeDirection.Right,
-            DesignEditorItem.ResizeDeltaEvent));
+            UiDesignerItem.ResizeDeltaEvent));
 
         harness.RunLayout();
     }
@@ -440,7 +440,7 @@ public class SnapGuideTests
             state.OnResizeDelta(new ResizeDeltaEventArgs(
                 new Vector(pointer - applied, 0),
                 ResizeDirection.Right,
-                DesignEditorItem.ResizeDeltaEvent));
+                UiDesignerItem.ResizeDeltaEvent));
 
             harness.RunLayout();
 
@@ -481,7 +481,7 @@ public class SnapGuideTests
 
         harness.Editor.PropertyChanged += (_, e) =>
         {
-            if (e.Property == DesignEditor.SnapGuidesProperty)
+            if (e.Property == UiDesignerView.SnapGuidesProperty)
                 publications++;
         };
 

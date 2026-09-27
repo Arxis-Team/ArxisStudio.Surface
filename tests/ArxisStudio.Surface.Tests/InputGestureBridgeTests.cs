@@ -53,8 +53,8 @@ public class InputGestureBridgeTests
 
     // Оба свойства проходят одни и те же случаи; признак выбирает, какое проверяется.
     private static AvaloniaProperty Flat(bool container) => container
-        ? DesignEditor.ContainerInteractionModifiersProperty
-        : DesignEditor.AdditiveSelectionModifiersProperty;
+        ? UiDesignerView.ContainerInteractionModifiersProperty
+        : UiDesignerView.AdditiveSelectionModifiersProperty;
 
     private static void WriteSet(SurfaceInputGestures set, bool container, KeyModifiers value)
     {
@@ -64,7 +64,7 @@ public class InputGestureBridgeTests
             set.AdditiveSelectionModifiers = value;
     }
 
-    private static void WriteFlat(DesignEditor editor, bool container, KeyModifiers value)
+    private static void WriteFlat(UiDesignerView editor, bool container, KeyModifiers value)
     {
         if (container)
             editor.ContainerInteractionModifiers = value;
@@ -72,11 +72,11 @@ public class InputGestureBridgeTests
             editor.AdditiveSelectionModifiers = value;
     }
 
-    private static KeyModifiers Read(DesignEditor editor, bool container) => container
+    private static KeyModifiers Read(UiDesignerView editor, bool container) => container
         ? editor.ContainerInteractionModifiers
         : editor.AdditiveSelectionModifiers;
 
-    private static int CountRaises(DesignEditor editor, AvaloniaProperty property, Action change)
+    private static int CountRaises(UiDesignerView editor, AvaloniaProperty property, Action change)
     {
         var raised = 0;
         void Handler(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -261,7 +261,7 @@ public class InputGestureBridgeTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference MakeEditor(SurfaceInputGestures? shared)
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         if (shared != null)
             editor.InputGestures = shared;
 

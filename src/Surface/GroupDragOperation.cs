@@ -29,7 +29,7 @@ internal sealed class GroupDragOperation
     public Control SourceTarget { get; }
 
     /// <summary>
-    /// Рамка группы на момент начала жеста, в design-координатах.
+    /// Рамка группы на момент начала жеста, в координатах поверхности.
     /// </summary>
     /// <remarks>
     /// Снимается один раз: внутри жеста группа двигается целиком, и её размер

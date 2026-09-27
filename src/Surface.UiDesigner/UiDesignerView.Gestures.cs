@@ -16,7 +16,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -27,8 +27,8 @@ using ArxisStudio.Surface.UiDesigner.States;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Ввод: машина состояний редактора, указатель, клавиатура, drag и resize.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <inheritdoc />
     /// <remarks>
@@ -57,13 +57,13 @@ public partial class DesignEditor
             return ItemDragPlan.Refuse;
 
         var semantics = GetPlacementStrategy(moveTarget).MoveSemantics;
-        if (semantics == DesignMoveSemantics.None)
+        if (semantics == SurfaceMoveSemantics.None)
             return ItemDragPlan.Refuse;
 
-        if (semantics == DesignMoveSemantics.Reorder)
+        if (semantics == SurfaceMoveSemantics.Reorder)
         {
             return CanRequestReorder
-                ? new ItemDragPlan(ItemDragKind.Custom, static (item, start) => new ItemReorderingState((DesignEditorItem)item, start))
+                ? new ItemDragPlan(ItemDragKind.Custom, static (item, start) => new ItemReorderingState((UiDesignerItem)item, start))
                 : ItemDragPlan.Refuse;
         }
 
@@ -170,7 +170,7 @@ public partial class DesignEditor
 
     private void OnSecondarySelectionResizeStarted(object? sender, SelectionAdornerResizeStartedEventArgs e)
     {
-        var container = e.AdornerInfo.Container as DesignEditorItem;
+        var container = e.AdornerInfo.Container as UiDesignerItem;
         var target = e.AdornerInfo.Target;
 
         if (container == null || target == null || !HasMultipleNestedSelection)
@@ -223,7 +223,7 @@ public partial class DesignEditor
             return;
         }
 
-        var container = e.AdornerInfo.Container as DesignEditorItem;
+        var container = e.AdornerInfo.Container as UiDesignerItem;
         var target = e.AdornerInfo.Target;
 
         if (container == null || target == null || container.CurrentState is not ItemResizingState)
@@ -263,7 +263,7 @@ public partial class DesignEditor
             return;
         }
 
-        var container = e.AdornerInfo.Container as DesignEditorItem;
+        var container = e.AdornerInfo.Container as UiDesignerItem;
         var target = e.AdornerInfo.Target;
 
         if (container == null || target == null || container.CurrentState is not ItemResizingState)
@@ -371,7 +371,7 @@ public partial class DesignEditor
     {
         operation = null;
 
-        if (!TryGetSelectedDesignBounds(out var selectionBounds, out var selectedCount, out _, out _, out _, out _, out _, out _)
+        if (!TryGetSelectedTargetBounds(out var selectionBounds, out var selectedCount, out _, out _, out _, out _, out _, out _)
             || selectedCount <= 1)
         {
             return false;
@@ -384,8 +384,8 @@ public partial class DesignEditor
 
         foreach (var item in items)
         {
-            var container = ContainerFromItem(item) as DesignEditorItem;
-            if (container == null && item is DesignEditorItem directItem)
+            var container = ContainerFromItem(item) as UiDesignerItem;
+            if (container == null && item is UiDesignerItem directItem)
                 container = directItem;
 
             if (container == null)
@@ -420,7 +420,7 @@ public partial class DesignEditor
             if (!IsResizeAllowed(target, direction))
                 return false;
 
-            if (!TryGetDesignBounds(target, out var bounds))
+            if (!TryGetTargetBounds(target, out var bounds))
                 continue;
 
             SetTargetSize(target, GetTargetSize(target));

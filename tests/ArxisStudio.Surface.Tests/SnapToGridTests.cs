@@ -49,9 +49,9 @@ public class SnapToGridTests
         return harness;
     }
 
-    private static Point DesignPositionOf(EditorHarness harness, string name) => new(
-        Layout.GetDesignX(harness.Named(0, name)),
-        Layout.GetDesignY(harness.Named(0, name)));
+    private static Point SurfacePositionOf(EditorHarness harness, string name) => new(
+        Layout.GetSurfaceX(harness.Named(0, name)),
+        Layout.GetSurfaceY(harness.Named(0, name)));
 
     private static void Drag(EditorHarness harness, Vector delta, RawInputModifiers modifiers = RawInputModifiers.None)
     {
@@ -118,11 +118,11 @@ public class SnapToGridTests
     public void Drag_Puts_The_Result_On_A_Grid_Node()
     {
         var harness = CreateWithNestedSelected();
-        var before = DesignPositionOf(harness, "Nested");
+        var before = SurfacePositionOf(harness, "Nested");
 
         Drag(harness, DragDelta);
 
-        var after = DesignPositionOf(harness, "Nested");
+        var after = SurfacePositionOf(harness, "Nested");
 
         // 113+34 = 147 -> 140, 117+18 = 135 -> 140.
         Assert.Equal(140, after.X, 1);
@@ -137,11 +137,11 @@ public class SnapToGridTests
     public void Bypass_Modifier_Restores_Exact_Movement()
     {
         var harness = CreateWithNestedSelected();
-        var before = DesignPositionOf(harness, "Nested");
+        var before = SurfacePositionOf(harness, "Nested");
 
         Drag(harness, DragDelta, RawInputModifiers.Alt);
 
-        var after = DesignPositionOf(harness, "Nested");
+        var after = SurfacePositionOf(harness, "Nested");
 
         Assert.Equal(KeyModifiers.Alt, new SurfaceInputGestures().SnapBypassModifiers);
         Assert.Equal(before.X + DragDelta.X, after.X, 1);
@@ -152,11 +152,11 @@ public class SnapToGridTests
     public void Disabled_Snapping_Restores_Exact_Movement()
     {
         var harness = CreateWithNestedSelected(snapToGrid: false);
-        var before = DesignPositionOf(harness, "Nested");
+        var before = SurfacePositionOf(harness, "Nested");
 
         Drag(harness, DragDelta);
 
-        var after = DesignPositionOf(harness, "Nested");
+        var after = SurfacePositionOf(harness, "Nested");
 
         Assert.Equal(before.X + DragDelta.X, after.X, 1);
         Assert.Equal(before.Y + DragDelta.Y, after.Y, 1);
@@ -171,13 +171,13 @@ public class SnapToGridTests
         harness.RunLayout();
         Assert.Equal(2, harness.Editor.SelectedTargetsCount);
 
-        var nestedBefore = DesignPositionOf(harness, "Nested");
-        var siblingBefore = DesignPositionOf(harness, "Sibling");
+        var nestedBefore = SurfacePositionOf(harness, "Nested");
+        var siblingBefore = SurfacePositionOf(harness, "Sibling");
 
         Drag(harness, DragDelta);
 
-        var nestedAfter = DesignPositionOf(harness, "Nested");
-        var siblingAfter = DesignPositionOf(harness, "Sibling");
+        var nestedAfter = SurfacePositionOf(harness, "Nested");
+        var siblingAfter = SurfacePositionOf(harness, "Sibling");
 
         // По группе идёт уже привязанное смещение рамки, поэтому взаимное
         // расположение сохраняется. Привязывай редактор каждого по отдельности —
@@ -197,12 +197,12 @@ public class SnapToGridTests
         // точно, и подтягивать её к узлу — значит отнять единственный способ
         // поставить элемент мимо сетки.
         var harness = CreateWithNestedSelected();
-        var before = DesignPositionOf(harness, "Nested");
+        var before = SurfacePositionOf(harness, "Nested");
 
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
         harness.RunLayout();
 
-        var after = DesignPositionOf(harness, "Nested");
+        var after = SurfacePositionOf(harness, "Nested");
 
         Assert.Equal(before.X + 1, after.X, 1);
     }
@@ -225,7 +225,7 @@ public class SnapToGridTests
         var container = harness.Container(0);
 
         // Правый край 303 + 4 = 307 -> 300.
-        state.OnResizeDelta(new ResizeDeltaEventArgs(new Vector(4, 0), ResizeDirection.Right, DesignEditorItem.ResizeDeltaEvent));
+        state.OnResizeDelta(new ResizeDeltaEventArgs(new Vector(4, 0), ResizeDirection.Right, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         Assert.Equal(300, container.Location.X + container.Width, 1);
@@ -243,7 +243,7 @@ public class SnapToGridTests
         var initialRight = OffGridLocation.X + ContainerSize.Width;
 
         // Левый край 103 - 7 = 96 -> 100.
-        state.OnResizeDelta(new ResizeDeltaEventArgs(new Vector(-7, 0), ResizeDirection.Left, DesignEditorItem.ResizeDeltaEvent));
+        state.OnResizeDelta(new ResizeDeltaEventArgs(new Vector(-7, 0), ResizeDirection.Left, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         Assert.Equal(100, container.Location.X, 1);
@@ -254,7 +254,7 @@ public class SnapToGridTests
     public void Group_Resize_Snaps_The_Frame_Not_Each_Target()
     {
         // Здесь редактор без шаблона, поэтому шаг задаётся явно.
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         editor.InteractionOptions.SnapStep = Cell;
 
         var left = new Avalonia.Controls.Border { Width = 100, Height = 20 };
@@ -284,7 +284,7 @@ public class SnapToGridTests
     {
         // Редактор без шаблона: привязываться не к чему, и включённый флаг
         // не должен молча округлять до целых.
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
 
         Assert.True(editor.InteractionOptions.IsSnapToGridEnabled);
         Assert.Equal(0, editor.ResolveSnapStep(), 6);

@@ -44,7 +44,7 @@ public class UserGuideGestureTests
     {
         var nodes = new List<TestNode> { new("guide0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,

@@ -4,7 +4,7 @@
 
     <PropertyGroup>
         <RootNamespace>ArxisStudio.Surface.UiDesigner</RootNamespace>
-        <Description>Дизайнер форм Avalonia на ArxisStudio.Surface: редактирование загруженной или размеченной разметки, вложенные контролы, стратегии размещения по типу панели, перестановка среди соседей, design-time группы.</Description>
+        <Description>Дизайнер интерфейса Avalonia на ArxisStudio.Surface: редактирование загруженной или размеченной разметки, вложенные контролы, стратегии размещения по типу панели, перестановка среди соседей, design-time группы.</Description>
         <PackageTags>avalonia;designer;form-designer;gui-builder;layout-editor;ui</PackageTags>
     </PropertyGroup>
 

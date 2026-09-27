@@ -18,7 +18,7 @@ namespace ArxisStudio.Surface;
 internal interface ISurfaceGeometry
 {
     /// <summary>
-    /// Возвращает позицию target'а в design-координатах.
+    /// Возвращает позицию target'а в координатах поверхности.
     /// </summary>
     Point GetPosition(Control target);
 
@@ -32,12 +32,12 @@ internal interface ISurfaceGeometry
     bool CanSetPosition(Control target);
 
     /// <summary>
-    /// Задаёт позицию target'а в design-координатах.
+    /// Задаёт позицию target'а в координатах поверхности.
     /// </summary>
     void SetPosition(Control target, Point position);
 
     /// <summary>
-    /// Возвращает рамку target'а в design-координатах, если она определена.
+    /// Возвращает рамку target'а в координатах поверхности, если она определена.
     /// </summary>
     bool TryGetBounds(Control target, out Rect bounds);
 }

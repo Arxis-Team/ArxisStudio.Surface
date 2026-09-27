@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -146,15 +146,15 @@ public class SelectionCoherenceTests
     }
 
     /// <summary>Вкладывает контейнер в форму 0, с одним размеченным ребёнком.</summary>
-    private static DesignEditorItem AddNested(EditorHarness harness)
+    private static UiDesignerItem AddNested(EditorHarness harness)
     {
         var child = new Border { Name = "InnerChild", Width = 40, Height = 30 };
-        DesignLayout.SetX(child, 10);
-        DesignLayout.SetY(child, 10);
+        SurfaceLayout.SetX(child, 10);
+        SurfaceLayout.SetY(child, 10);
         var content = new AbsolutePanel();
         content.Children.Add(child);
 
-        var inner = new DesignEditorItem
+        var inner = new UiDesignerItem
         {
             Name = "Inner",
             Width = 120,
@@ -163,8 +163,8 @@ public class SelectionCoherenceTests
             VerticalAlignment = VerticalAlignment.Top,
             Content = content,
         };
-        DesignLayout.SetX(inner, 40);
-        DesignLayout.SetY(inner, 40);
+        SurfaceLayout.SetX(inner, 40);
+        SurfaceLayout.SetY(inner, 40);
 
         ((Panel)harness.Nested(0).GetVisualParent()!).Children.Add(inner);
         harness.RunLayout();

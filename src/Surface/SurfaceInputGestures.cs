@@ -68,7 +68,7 @@ public enum SurfacePointerButton
 /// </remarks>
 /// <example>
 /// <code language="xml"><![CDATA[
-/// <design:DesignEditor.InputGestures>
+/// <design:UiDesignerView.InputGestures>
 ///     <design:SurfaceInputGestures PanButton="Middle"
 ///                                       PanModifiers="None"
 ///                                       MarqueeButton="Left"
@@ -76,7 +76,7 @@ public enum SurfacePointerButton
 ///                                       ZoomModifiers="None"
 ///                                       ContainerInteractionModifiers="Control"
 ///                                       AdditiveSelectionModifiers="Shift" />
-/// </design:DesignEditor.InputGestures>
+/// </design:UiDesignerView.InputGestures>
 /// ]]></code>
 /// </example>
 public class SurfaceInputGestures : AvaloniaObject

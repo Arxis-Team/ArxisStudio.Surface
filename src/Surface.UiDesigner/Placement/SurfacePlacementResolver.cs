@@ -11,14 +11,14 @@ namespace ArxisStudio.Surface.UiDesigner.Placement;
 /// Кеша нет намеренно: это один <c>GetVisualParent()</c> и switch по типу.
 /// Жесты и так снимают свой target один раз на жест.
 /// </remarks>
-internal static class DesignPlacementResolver
+internal static class SurfacePlacementResolver
 {
     /// <summary>
     /// Возвращает стратегию размещения для контрола.
     /// </summary>
-    public static IDesignPlacementStrategy Resolve(Control target)
+    public static ISurfacePlacementStrategy Resolve(Control target)
     {
-        // Контрол вне дерева: положение определяют только design-координаты.
+        // Контрол вне дерева: положение определяют только координаты поверхности.
         return target.GetVisualParent() switch
         {
             null => AbsolutePlacementStrategy.Instance,

@@ -31,7 +31,7 @@ public class UserGuideTests
     private static readonly Point ContainerLocation = new(105, 103);
     private static readonly Size ContainerSize = new(320, 260);
 
-    /// <summary>Геометрия перетаскиваемого контрола в design-координатах.</summary>
+    /// <summary>Геометрия перетаскиваемого контрола в координатах поверхности.</summary>
     private static readonly Rect Moving = new(115, 113, 60, 40);
 
     /// <summary>Сосед: нужен только как источник конкурирующих кандидатов.</summary>
@@ -41,7 +41,7 @@ public class UserGuideTests
     {
         var nodes = new List<TestNode> { new("user0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -77,8 +77,8 @@ public class UserGuideTests
         Moving.Y + (Moving.Height / 2));
 
     private static Point PositionOf(EditorHarness harness) => new(
-        Layout.GetDesignX(harness.Named(0, "Moving")),
-        Layout.GetDesignY(harness.Named(0, "Moving")));
+        Layout.GetSurfaceX(harness.Named(0, "Moving")),
+        Layout.GetSurfaceY(harness.Named(0, "Moving")));
 
     private static void Drag(EditorHarness harness, Vector delta, RawInputModifiers modifiers = RawInputModifiers.None)
     {

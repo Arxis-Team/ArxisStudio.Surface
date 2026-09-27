@@ -45,7 +45,7 @@ public class ContainmentCharacterizationTests
         var state = new ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(0, Overshoot), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(0, Overshoot), ResizeDirection.Bottom, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         return (harness, action);
@@ -66,7 +66,7 @@ public class ContainmentCharacterizationTests
         var state = new ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(0, Overshoot), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(0, Overshoot), ResizeDirection.Bottom, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         // Запрошенный и фактический размеры совпадают...
@@ -107,7 +107,7 @@ public class ContainmentCharacterizationTests
         var state = new ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(0, Overshoot), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(0, Overshoot), ResizeDirection.Bottom, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         // Намеренный overflow остаётся возможен — но по явному решению, а не по умолчанию.
@@ -174,7 +174,7 @@ public class ContainmentCharacterizationTests
         var state = new ItemResizingState(container, action, ResizeDirection.Bottom);
         container.PushState(state);
         state.OnResizeDelta(new ResizeDeltaEventArgs(
-            new Vector(0, Overshoot), ResizeDirection.Bottom, DesignEditorItem.ResizeDeltaEvent));
+            new Vector(0, Overshoot), ResizeDirection.Bottom, UiDesignerItem.ResizeDeltaEvent));
         harness.RunLayout();
 
         // Редактор читает MaxHeight сам, поэтому запрошенное и фактическое совпадают.

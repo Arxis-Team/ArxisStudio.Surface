@@ -38,12 +38,12 @@ internal sealed class AutomationChannel
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     private readonly string _directory;
-    private readonly ArxisStudio.Surface.UiDesigner.DesignEditor _editor;
+    private readonly ArxisStudio.Surface.UiDesigner.UiDesignerView _editor;
     private readonly Window _window;
     private readonly List<Dictionary<string, object?>> _events = new();
     private DispatcherTimer? _timer;
 
-    private AutomationChannel(string directory, ArxisStudio.Surface.UiDesigner.DesignEditor editor, Window window)
+    private AutomationChannel(string directory, ArxisStudio.Surface.UiDesigner.UiDesignerView editor, Window window)
     {
         _directory = directory;
         _editor = editor;
@@ -67,7 +67,7 @@ internal sealed class AutomationChannel
     /// <summary>
     /// Поднимает канал, если демо запущено с <c>--automation</c>.
     /// </summary>
-    public static void TryStart(string? directory, ArxisStudio.Surface.UiDesigner.DesignEditor editor, Window window)
+    public static void TryStart(string? directory, ArxisStudio.Surface.UiDesigner.UiDesignerView editor, Window window)
     {
         if (string.IsNullOrWhiteSpace(directory))
             return;
@@ -339,7 +339,7 @@ internal sealed class AutomationChannel
 
         for (var i = 0; i < _editor.ItemCount; i++)
         {
-            if (_editor.ContainerFromIndex(i) is not DesignEditorItem container)
+            if (_editor.ContainerFromIndex(i) is not UiDesignerItem container)
                 continue;
 
             containers.Add(new Dictionary<string, object?>
@@ -373,8 +373,8 @@ internal sealed class AutomationChannel
         return found ?? throw new ArgumentException($"контрол «{name}» не найден");
     }
 
-    private DesignEditorItem ContainerAt(int index) =>
-        _editor.ContainerFromIndex(index) as DesignEditorItem
+    private UiDesignerItem ContainerAt(int index) =>
+        _editor.ContainerFromIndex(index) as UiDesignerItem
         ?? throw new ArgumentException($"контейнер {index} не реализован");
 
     private void Record(string name, Dictionary<string, object?> payload)

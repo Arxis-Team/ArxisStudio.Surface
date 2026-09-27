@@ -8,7 +8,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.UiDesigner;
@@ -360,7 +360,7 @@ public class ReorderTests
         var action = harness.Find<Button>(0, "Action");
         Drag(harness, harness.CentreOf(action), new Vector(0, -60));
 
-        var before = new Point(Layout.GetDesignX(action), Layout.GetDesignY(action));
+        var before = new Point(Layout.GetSurfaceX(action), Layout.GetSurfaceY(action));
 
         harness.Editor.Focus();
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
@@ -369,7 +369,7 @@ public class ReorderTests
         // Публикуемый снимок выделения — не единственный слой: нюдж идёт по
         // внутреннему списку targets. Контрол, покинувший дерево, обязан выпасть
         // из обоих, иначе редактор продолжает писать геометрию в никуда.
-        Assert.Equal(before, new Point(Layout.GetDesignX(action), Layout.GetDesignY(action)));
+        Assert.Equal(before, new Point(Layout.GetSurfaceX(action), Layout.GetSurfaceY(action)));
     }
 
     /// <summary>
@@ -379,7 +379,7 @@ public class ReorderTests
     {
         var nodes = new List<TestNode> { new("wrap0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -512,7 +512,7 @@ public class ReorderTests
     {
         var nodes = new List<TestNode> { new("rows0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             ItemTemplate = new FuncDataTemplate<TestNode>((_, _) =>
@@ -522,7 +522,7 @@ public class ReorderTests
                 for (var i = 0; i < 3; i++)
                 {
                     var row = new Border { Name = "Row" + i, Height = 40, IsHitTestVisible = false };
-                    DesignLayout.SetIsTracked(row, true);
+                    SurfaceLayout.SetIsTracked(row, true);
                     panel.Children.Add(row);
                 }
 
@@ -536,9 +536,9 @@ public class ReorderTests
                     IsHitTestVisible = false
                 };
 
-                DesignLayout.SetIsTracked(add, true);
+                SurfaceLayout.SetIsTracked(add, true);
                 panel.Children.Add(add);
-                DesignLayout.SetIsTracked(panel, true);
+                SurfaceLayout.SetIsTracked(panel, true);
                 return panel;
             }, supportsRecycling: false)
         };

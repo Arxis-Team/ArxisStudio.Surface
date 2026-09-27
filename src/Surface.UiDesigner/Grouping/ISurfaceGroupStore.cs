@@ -15,8 +15,8 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// означала бы, что выпущенное приложение тащит сборку редактора, чтобы разобрать собственное
 /// окно, а грамматика пути становится частью формата документа. См. ADR 0002.
 /// <para>
-/// Умолчание — <see cref="DesignGroupAttachedStore"/>: пометка живёт в attached-свойстве
-/// <see cref="DesignGroup"/> на самом контроле и сохраняется тем же способом, что и
+/// Умолчание — <see cref="SurfaceGroupAttachedStore"/>: пометка живёт в attached-свойстве
+/// <see cref="SurfaceGroup"/> на самом контроле и сохраняется тем же способом, что и
 /// <c>Layout.X</c>/<c>Y</c>. Своё хранилище задаёт тот, кому эта цена не подходит.
 /// </para>
 /// <para>
@@ -26,7 +26,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// редактор о документе не знает ничего и знать не должен.
 /// </para>
 /// </remarks>
-public interface IDesignGroupStore
+public interface ISurfaceGroupStore
 {
     /// <summary>
     /// Возвращает путь группы контрола.

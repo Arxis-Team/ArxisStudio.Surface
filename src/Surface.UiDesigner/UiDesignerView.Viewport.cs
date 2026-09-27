@@ -15,7 +15,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -23,8 +23,8 @@ using ArxisStudio.Surface.UiDesigner.Placement;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Панорамирование, зум и трансформации viewport'а.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Смещает viewport так, чтобы центр области, охватывающей все выбранные элементы, оказался в центре видимой области редактора.
@@ -34,7 +34,7 @@ public partial class DesignEditor
     /// </remarks>
     public void CenterOnSelection()
     {
-        if (TryGetSelectedDesignBounds(out var bounds, out _, out _, out _, out _, out _, out _, out _))
+        if (TryGetSelectedTargetBounds(out var bounds, out _, out _, out _, out _, out _, out _, out _))
             CenterOn(bounds);
     }
 
@@ -46,7 +46,7 @@ public partial class DesignEditor
     /// </remarks>
     public void FitSelectionToView()
     {
-        if (TryGetSelectedDesignBounds(out var bounds, out _, out _, out _, out _, out _, out _, out _))
+        if (TryGetSelectedTargetBounds(out var bounds, out _, out _, out _, out _, out _, out _, out _))
             FitToView(bounds);
     }
 }

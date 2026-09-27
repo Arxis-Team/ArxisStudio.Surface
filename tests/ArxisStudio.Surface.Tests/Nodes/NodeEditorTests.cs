@@ -61,7 +61,7 @@ public class NodeEditorTests
     [AvaloniaFact]
     public void A_Dragged_Node_Snaps_To_The_Grid()
     {
-        // Привязку редактор узлов берёт у инструментов той же службой, что и дизайнер форм.
+        // Привязку редактор узлов берёт у инструментов той же службой, что и дизайнер интерфейса.
         var stand = NodeStand.Create([new Point(100, 100)], snap: true);
 
         stand.Drag(stand.CentreOf(0), new Vector(37, 23));
@@ -73,7 +73,7 @@ public class NodeEditorTests
     public void The_Nodes_Theme_Names_Only_Its_Own_Or_Lower_Keys()
     {
         // Тема слоя вправе называть ключи своего слоя и тех, что ниже, — ядра и инструментов, —
-        // но не сестры: без дизайнера форм они молча остались бы пустыми кистями.
+        // но не сестры: без дизайнера интерфейса они молча остались бы пустыми кистями.
         var src = Path.Combine(ThisDirectory(), "..", "..", "..", "src");
         var defined = new HashSet<string>(StringComparer.Ordinal);
         foreach (var layer in new[] { "Surface", "Surface.Editing", "Surface.Nodes" })

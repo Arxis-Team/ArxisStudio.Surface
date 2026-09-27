@@ -7,7 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using ArxisStudio;
 using DesignEditor.Demo.ViewModels;
-using Editor = ArxisStudio.Surface.UiDesigner.DesignEditor;
+using Editor = ArxisStudio.Surface.UiDesigner.UiDesignerView;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface;
 
@@ -241,7 +241,7 @@ public partial class GroupsPanel : UserControl
 
         for (var index = 0; index < editor.ItemCount; index++)
         {
-            if (editor.ContainerFromIndex(index) is not DesignEditorItem container)
+            if (editor.ContainerFromIndex(index) is not UiDesignerItem container)
                 continue;
 
             var groups = editor.GetGroups(container);
@@ -276,15 +276,15 @@ public partial class GroupsPanel : UserControl
     /// Выкладывает группу и всё, что в ней лежит.
     /// </summary>
     /// <remarks>
-    /// Рекурсия по <see cref="DesignGroupInfo.Groups"/>: группа внутри группы — обычный
+    /// Рекурсия по <see cref="SurfaceGroupInfo.Groups"/>: группа внутри группы — обычный
     /// узел, и панель показывает её тем же отступом, что и любую вложенность.
     /// Ключ строки — полный путь: одинаковые имена уровней на разных ветках не должны
     /// схлопываться при сверке.
     /// </remarks>
     private void AddGroup(
         List<GroupNode> rows,
-        DesignEditorItem container,
-        DesignGroupInfo group,
+        UiDesignerItem container,
+        SurfaceGroupInfo group,
         string formKey,
         HashSet<Control> selected,
         int depth)
@@ -351,7 +351,7 @@ public partial class GroupsPanel : UserControl
     }
 
     /// <summary>Собирает весь состав группы по дереву, включая вложенные уровни.</summary>
-    private static void CollectMembers(DesignGroupInfo group, List<Control> into)
+    private static void CollectMembers(SurfaceGroupInfo group, List<Control> into)
     {
         into.AddRange(group.Members);
 
@@ -359,10 +359,10 @@ public partial class GroupsPanel : UserControl
             CollectMembers(nested, into);
     }
 
-    private static string TitleOf(DesignEditorItem container, Control member) =>
+    private static string TitleOf(UiDesignerItem container, Control member) =>
         new SurfaceSelectionTarget(container, member).DisplayName;
 
-    private static string TitleOf(Editor editor, int index, DesignEditorItem container)
+    private static string TitleOf(Editor editor, int index, UiDesignerItem container)
     {
         if (editor.Items[index] is DesignItemViewModel item)
             return item.Title;

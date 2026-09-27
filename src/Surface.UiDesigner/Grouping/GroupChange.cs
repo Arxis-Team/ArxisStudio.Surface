@@ -8,15 +8,15 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// <summary>
 /// Описывает изменение принадлежности одного target к группе.
 /// </summary>
-public sealed class DesignGroupChange : TargetChange
+public sealed class GroupChange : TargetChange
 {
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignGroupChange"/>.
+    /// Инициализирует новый экземпляр <see cref="GroupChange"/>.
     /// </summary>
     /// <param name="target">Изменённый контрол.</param>
     /// <param name="oldId">Группа до изменения.</param>
     /// <param name="newId">Группа после изменения.</param>
-    public DesignGroupChange(Control target, string? oldId, string? newId)
+    public GroupChange(Control target, string? oldId, string? newId)
         : base(target)
     {
         OldId = oldId;
@@ -35,7 +35,7 @@ public sealed class DesignGroupChange : TargetChange
 
     internal override void ApplyTo(SurfaceView view, bool revert)
     {
-        if (view is DesignEditor editor)
+        if (view is UiDesignerView editor)
             editor.ApplyGroup(Target, revert ? OldId : NewId);
     }
 }

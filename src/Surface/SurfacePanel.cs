@@ -8,7 +8,7 @@ namespace ArxisStudio.Surface;
 /// Панель холста ядра: ставит каждый <see cref="SurfaceItem"/> в его <see cref="SurfaceItem.Location"/>.
 /// </summary>
 /// <remarks>
-/// Панель верхнего уровня у <see cref="SurfaceView"/> без дизайнера форм. Координаты
+/// Панель верхнего уровня у <see cref="SurfaceView"/> без дизайнера интерфейса. Координаты
 /// панели — мировые: она лежит в слое, к которому уже применена трансформация viewport.
 /// <para>
 /// Ребёнок меряется бесконечностью и получает свой желаемый размер — холст не
@@ -16,7 +16,7 @@ namespace ArxisStudio.Surface;
 /// являющийся <see cref="SurfaceItem"/>, стоит в начале координат.
 /// </para>
 /// <para>
-/// Дизайнер форм пользуется своей панелью: его формы стоят в координатах
+/// Дизайнер интерфейса пользуется своей панелью: его формы стоят в координатах
 /// <c>Layout.X/Y</c>, которые он синхронизирует с <see cref="SurfaceItem.Location"/>.
 /// </para>
 /// </remarks>
@@ -69,7 +69,7 @@ public class SurfacePanel : Panel
         var occupied = extent ?? default;
         SetCurrentValue(ExtentProperty, occupied);
 
-        // Как и панель дизайнера форм: в холсте панель меряют бесконечностью, и тогда
+        // Как и панель дизайнера интерфейса: в холсте панель меряют бесконечностью, и тогда
         // её размер — дальний угол содержимого; данное конечное место она занимает целиком.
         return new Size(
             double.IsPositiveInfinity(availableSize.Width) ? Math.Max(0, occupied.Right) : availableSize.Width,

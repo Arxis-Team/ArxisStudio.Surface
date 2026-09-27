@@ -8,8 +8,8 @@ namespace ArxisStudio.Tests;
 /// </summary>
 /// <remarks>
 /// Тело метода читается обязательно. Самые важные ссылки между слоями не видны ни в одной
-/// сигнатуре: <c>AvaloniaProperty.Register&lt;DesignEditor, …&gt;</c> в инициализаторе поля,
-/// <c>FindAncestorOfType&lt;DesignEditor&gt;()</c> в середине метода. Поэтому IL разбирается
+/// сигнатуре: <c>AvaloniaProperty.Register&lt;UiDesignerView, …&gt;</c> в инициализаторе поля,
+/// <c>FindAncestorOfType&lt;UiDesignerView&gt;()</c> в середине метода. Поэтому IL разбирается
 /// по опкодам, а токены операндов переводятся в члены через <see cref="Module.ResolveMember(int, Type[], Type[])"/>.
 /// <para>
 /// Новых пакетов для этого не нужно: таблица опкодов берётся из <see cref="OpCodes"/> рефлексией.

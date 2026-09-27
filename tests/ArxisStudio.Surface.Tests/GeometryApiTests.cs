@@ -33,11 +33,11 @@ public class GeometryApiTests
         var edits = new List<SurfaceEditCompletedEventArgs>();
         harness.Editor.EditCompleted += (_, e) => edits.Add(e);
 
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var before));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var before));
         Assert.True(harness.Editor.SetTargetGeometry(nested, new Rect(140, 160, 80, 50)));
         harness.RunLayout();
 
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var after));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var after));
         Assert.Equal(new Rect(140, 160, 80, 50), after);
 
         var edit = Assert.Single(edits);
@@ -45,7 +45,7 @@ public class GeometryApiTests
             harness.Editor.Revert(change);
 
         harness.RunLayout();
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var reverted));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var reverted));
         Assert.Equal(before, reverted);
     }
 
@@ -64,7 +64,7 @@ public class GeometryApiTests
         var kinds = new List<SurfaceEditKind>();
         harness.Editor.EditCompleted += (_, e) => kinds.Add(e.Kind);
 
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var start));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var start));
         harness.Editor.SetTargetGeometry(nested, new Rect(start.X + 20, start.Y, start.Width, start.Height));
         harness.RunLayout();
         harness.Editor.SetTargetGeometry(nested, new Rect(start.X + 20, start.Y, start.Width + 20, start.Height));
@@ -90,11 +90,11 @@ public class GeometryApiTests
         SurfaceEditCompletedEventArgs? edit = null;
         harness.Editor.EditCompleted += (_, e) => edit = e;
 
-        Assert.True(harness.Editor.TryGetDesignBounds(field, out var before));
+        Assert.True(harness.Editor.TryGetTargetBounds(field, out var before));
         Assert.True(harness.Editor.SetTargetGeometry(field, new Rect(before.X + 40, before.Y + 40, 120, 44)));
         harness.RunLayout();
 
-        Assert.True(harness.Editor.TryGetDesignBounds(field, out var after));
+        Assert.True(harness.Editor.TryGetTargetBounds(field, out var after));
         // Высота выше MinHeight контрола: иначе проверялась бы не раскладка, а кламп.
         Assert.Equal(new Size(120, 44), after.Size);
         Assert.Equal(before.Position.Y, after.Position.Y);
@@ -115,7 +115,7 @@ public class GeometryApiTests
         var edits = 0;
         harness.Editor.EditCompleted += (_, _) => edits++;
 
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var bounds));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var bounds));
 
         Assert.False(harness.Editor.SetTargetGeometry(nested, bounds));
         Assert.Equal(0, edits);
@@ -149,11 +149,11 @@ public class GeometryApiTests
         SurfaceInteraction.SetMovePolicy(nested, MovePolicy.None);
         SurfaceInteraction.SetResizePolicy(nested, ResizePolicy.None);
 
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var before));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var before));
         Assert.True(harness.Editor.SetTargetGeometry(nested, new Rect(before.X + 40, before.Y + 40, 90, 70)));
         harness.RunLayout();
 
-        Assert.True(harness.Editor.TryGetDesignBounds(nested, out var after));
+        Assert.True(harness.Editor.TryGetTargetBounds(nested, out var after));
         Assert.Equal(new Rect(before.X + 40, before.Y + 40, 90, 70), after);
 
         // Читалка при этом честно говорит, что элемент заблокирован: по ней хост и

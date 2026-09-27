@@ -132,7 +132,7 @@ public partial class SurfaceView
     /// </summary>
     /// <remarks>
     /// Сетка входит в шаблон редактора и настраивается через тему
-    /// <see cref="SurfaceGrid"/> и ресурсы <c>DesignEditor.Grid.*</c>.
+    /// <see cref="SurfaceGrid"/> и ресурсы <c>UiDesignerView.Grid.*</c>.
     /// Для собственного фона достаточно выключить её и задать <see cref="TemplatedControl.Background"/>.
     /// </remarks>
     public bool ShowGrid

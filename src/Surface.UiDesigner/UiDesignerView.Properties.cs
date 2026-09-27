@@ -16,7 +16,7 @@ using Avalonia.Utilities;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -25,59 +25,59 @@ using ArxisStudio.Surface;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Свойства зависимостей, их обёртки и публичные события.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Идентификатор темы для прямоугольника выделения.
     /// </summary>
     public static readonly StyledProperty<ControlTheme> SelectionRectangleStyleProperty =
-        AvaloniaProperty.Register<DesignEditor, ControlTheme>(nameof(SelectionRectangleStyle));
+        AvaloniaProperty.Register<UiDesignerView, ControlTheme>(nameof(SelectionRectangleStyle));
 
     /// <summary>
     /// Идентификатор свойства имени раскладки primary target.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, string?> PrimarySelectionPlacementProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, string?>(
+    public static readonly DirectProperty<UiDesignerView, string?> PrimarySelectionPlacementProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, string?>(
             nameof(PrimarySelectionPlacement), o => o.PrimarySelectionPlacement);
 
     /// <summary>
     /// Идентификатор свойства действующей политики перемещения primary target.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, ArxisStudio.Surface.MovePolicy> PrimarySelectionMovePolicyProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, ArxisStudio.Surface.MovePolicy>(
+    public static readonly DirectProperty<UiDesignerView, ArxisStudio.Surface.MovePolicy> PrimarySelectionMovePolicyProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, ArxisStudio.Surface.MovePolicy>(
             nameof(PrimarySelectionMovePolicy), o => o.PrimarySelectionMovePolicy);
 
     /// <summary>
     /// Идентификатор свойства действующей политики изменения размера primary target.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, ArxisStudio.Surface.ResizePolicy> PrimarySelectionResizePolicyProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, ArxisStudio.Surface.ResizePolicy>(
+    public static readonly DirectProperty<UiDesignerView, ArxisStudio.Surface.ResizePolicy> PrimarySelectionResizePolicyProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, ArxisStudio.Surface.ResizePolicy>(
             nameof(PrimarySelectionResizePolicy), o => o.PrimarySelectionResizePolicy);
 
     /// <summary>
     /// Идентификатор свойства, показывающего активна ли перестановка среди соседей.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> IsReorderingProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(IsReordering), o => o.IsReordering);
+    public static readonly DirectProperty<UiDesignerView, bool> IsReorderingProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(IsReordering), o => o.IsReordering);
 
     /// <summary>
     /// Идентификатор свойства индикатора вставки.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, Rect> ReorderIndicatorProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, Rect>(nameof(ReorderIndicator), o => o.ReorderIndicator);
+    public static readonly DirectProperty<UiDesignerView, Rect> ReorderIndicatorProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, Rect>(nameof(ReorderIndicator), o => o.ReorderIndicator);
 
     /// <summary>
     /// Идентификатор свойства прямоугольника, охватывающего текущее выделение.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, Rect> SelectionBoundsProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, Rect>(nameof(SelectionBounds), o => o.SelectionBounds, (o, v) => o.SelectionBounds = v);
+    public static readonly DirectProperty<UiDesignerView, Rect> SelectionBoundsProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, Rect>(nameof(SelectionBounds), o => o.SelectionBounds, (o, v) => o.SelectionBounds = v);
 
     /// <summary>
     /// Идентификатор коллекции per-target secondary outlines для multi-selection.
     /// </summary>
-    internal static readonly DirectProperty<DesignEditor, IReadOnlyList<SelectionAdornerInfo>> SecondarySelectionAdornersProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, IReadOnlyList<SelectionAdornerInfo>>(
+    internal static readonly DirectProperty<UiDesignerView, IReadOnlyList<SelectionAdornerInfo>> SecondarySelectionAdornersProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, IReadOnlyList<SelectionAdornerInfo>>(
             nameof(SecondarySelectionAdorners),
             o => o.SecondarySelectionAdorners,
             (o, v) => o.SecondarySelectionAdorners = v);
@@ -85,28 +85,28 @@ public partial class DesignEditor
     /// <summary>
     /// Идентификатор количества secondary selection adorner'ов.
     /// </summary>
-    private static readonly DirectProperty<DesignEditor, int> SecondarySelectionAdornersCountProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, int>(
+    private static readonly DirectProperty<UiDesignerView, int> SecondarySelectionAdornersCountProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, int>(
             nameof(SecondarySelectionAdornersCount),
             o => o.SecondarySelectionAdornersCount);
 
     /// <summary>
     /// Идентификатор свойства, указывающего наличие ровно одного выбранного элемента.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> HasSingleSelectionProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasSingleSelection), o => o.HasSingleSelection, (o, v) => o.HasSingleSelection = v);
+    public static readonly DirectProperty<UiDesignerView, bool> HasSingleSelectionProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(HasSingleSelection), o => o.HasSingleSelection, (o, v) => o.HasSingleSelection = v);
 
     /// <summary>
     /// Идентификатор свойства, указывающего наличие множественного выделения.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> HasMultipleSelectionProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasMultipleSelection), o => o.HasMultipleSelection, (o, v) => o.HasMultipleSelection = v);
+    public static readonly DirectProperty<UiDesignerView, bool> HasMultipleSelectionProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(HasMultipleSelection), o => o.HasMultipleSelection, (o, v) => o.HasMultipleSelection = v);
 
     /// <summary>
     /// Идентификатор свойства, указывающего, что выбрана design-time группа целиком.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> HasGroupSelectionProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasGroupSelection), o => o.HasGroupSelection, (o, v) => o.HasGroupSelection = v);
+    public static readonly DirectProperty<UiDesignerView, bool> HasGroupSelectionProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(HasGroupSelection), o => o.HasGroupSelection, (o, v) => o.HasGroupSelection = v);
 
     /// <summary>
     /// Идентификатор свойства, по которому шаблон показывает единую рамку выделения.
@@ -116,20 +116,20 @@ public partial class DesignEditor
     /// <see cref="HasMultipleContainerSelection"/> и <see cref="HasGroupSelection"/>,
     /// а какой рамкой редактор их показывает — его дело.
     /// </remarks>
-    internal static readonly DirectProperty<DesignEditor, bool> ShowsGroupFrameProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(ShowsGroupFrame), o => o.ShowsGroupFrame, (o, v) => o.ShowsGroupFrame = v);
+    internal static readonly DirectProperty<UiDesignerView, bool> ShowsGroupFrameProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(ShowsGroupFrame), o => o.ShowsGroupFrame, (o, v) => o.ShowsGroupFrame = v);
 
     /// <summary>
     /// Идентификатор свойства, указывающего на множественное выделение nested targets.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> HasMultipleNestedSelectionProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasMultipleNestedSelection), o => o.HasMultipleNestedSelection, (o, v) => o.HasMultipleNestedSelection = v);
+    public static readonly DirectProperty<UiDesignerView, bool> HasMultipleNestedSelectionProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(HasMultipleNestedSelection), o => o.HasMultipleNestedSelection, (o, v) => o.HasMultipleNestedSelection = v);
 
     /// <summary>
     /// Идентификатор свойства, указывающего на множественное выделение контейнеров.
     /// </summary>
-    public static readonly DirectProperty<DesignEditor, bool> HasMultipleContainerSelectionProperty =
-        AvaloniaProperty.RegisterDirect<DesignEditor, bool>(nameof(HasMultipleContainerSelection), o => o.HasMultipleContainerSelection, (o, v) => o.HasMultipleContainerSelection = v);
+    public static readonly DirectProperty<UiDesignerView, bool> HasMultipleContainerSelectionProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerView, bool>(nameof(HasMultipleContainerSelection), o => o.HasMultipleContainerSelection, (o, v) => o.HasMultipleContainerSelection = v);
 
     /// <summary>
     /// Получает или задает тему визуализации рамки выделения.
@@ -314,7 +314,7 @@ public partial class DesignEditor
     private bool _hasMultipleContainerSelection;
 
     /// <summary>
-    /// Получает значение, указывающее, что выбрано несколько контейнеров <see cref="DesignEditorItem"/>.
+    /// Получает значение, указывающее, что выбрано несколько контейнеров <see cref="UiDesignerItem"/>.
     /// </summary>
     public bool HasMultipleContainerSelection
     {
@@ -328,7 +328,7 @@ public partial class DesignEditor
     /// <remarks>
     /// Деревом контролов редактор не владеет: структурную правку выполняет
     /// библиотека разметки. Обработчик должен переставить контрол сам и выставить
-    /// <see cref="DesignEditorReorderRequestedEventArgs.Handled"/>.
+    /// <see cref="UiDesignerReorderRequestedEventArgs.Handled"/>.
     /// </remarks>
-    public event EventHandler<DesignEditorReorderRequestedEventArgs>? ReorderRequested;
+    public event EventHandler<UiDesignerReorderRequestedEventArgs>? ReorderRequested;
 }

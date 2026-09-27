@@ -22,13 +22,13 @@ namespace ArxisStudio.Tests;
 /// </remarks>
 public class DpiScalingTests
 {
-    private static TranslateTransform DpiTranslate(DesignEditor editor)
+    private static TranslateTransform DpiTranslate(UiDesignerView editor)
     {
         var group = Assert.IsType<TransformGroup>(editor.DpiScaledViewportTransform);
         return Assert.IsType<TranslateTransform>(group.Children[^1]);
     }
 
-    private static TranslateTransform ExactTranslate(DesignEditor editor)
+    private static TranslateTransform ExactTranslate(UiDesignerView editor)
     {
         var group = Assert.IsType<TransformGroup>(editor.ViewportTransform);
         return Assert.IsType<TranslateTransform>(group.Children[^1]);

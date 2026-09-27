@@ -17,13 +17,13 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/ArxisStudioDesignEditorTheme.axaml" />
+                <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerTheme.axaml" />
                 <ResourceInclude Source="avares://DesignEditor.Demo/Views/Screens/ScreenPalette.axaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Контейнеры очерчены постоянно: на тёмном холсте иначе не видно,
                  где кончается одна форма и начинается другая. -->
-            <x:Double x:Key="DesignEditorItem.OutlineOpacity">0.75</x:Double>
+            <x:Double x:Key="UiDesignerItem.OutlineOpacity">0.75</x:Double>
         </ResourceDictionary>
 
     </Application.Resources>

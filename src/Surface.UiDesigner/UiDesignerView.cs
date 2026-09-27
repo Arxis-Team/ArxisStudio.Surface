@@ -16,7 +16,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -30,7 +30,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// </summary>
 /// <remarks>
 /// Контрол наследуется от <see cref="SelectingItemsControl"/> и использует
-/// <see cref="DesignEditorItem"/> в качестве контейнера для элементов коллекции.
+/// <see cref="UiDesignerItem"/> в качестве контейнера для элементов коллекции.
 /// <para>
 /// Для корректной работы визуальных стилей необходимо подключить словари ресурсов
 /// из каталога <c>Themes/Styles</c> библиотеки.
@@ -38,13 +38,13 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// </remarks>
 /// <example>
 /// <code language="xml"><![CDATA[
-/// <design:DesignEditor ItemsSource="{Binding Nodes}"
+/// <design:UiDesignerView ItemsSource="{Binding Nodes}"
 ///                      SelectedItems="{Binding SelectedNodes}"
 ///                      SelectionMode="Multiple"
 ///                      ViewportZoom="{Binding Zoom, Mode=TwoWay}" />
 /// ]]></code>
 /// </example>
-public partial class DesignEditor : SurfaceView
+public partial class UiDesignerView : SurfaceView
 {
     private SelectionAdorner? _selectionAdorner;
 
@@ -54,7 +54,7 @@ public partial class DesignEditor : SurfaceView
 
     private readonly GroupEditFacet _groupFacet;
 
-    private DesignEditorItem? _primarySelectionItem;
+    private UiDesignerItem? _primarySelectionItem;
 
     private Control? _primarySelectionControl;
 
@@ -66,20 +66,20 @@ public partial class DesignEditor : SurfaceView
     private GroupResizeOperation? _groupResizeOperation;
 
 
-    static DesignEditor()
+    static UiDesignerView()
     {
-        DesignEditorItem.ResizeDeltaEvent.AddClassHandler<DesignEditor>((x, e) => x.OnItemsResizeDelta(e));
+        UiDesignerItem.ResizeDeltaEvent.AddClassHandler<UiDesignerView>((x, e) => x.OnItemsResizeDelta(e));
         // Геометрия и политики выбранных targets отслеживаются точечно —
         // подпиской на сами targets, см. SyncSelectedTargetSubscriptions.
-        // Раньше здесь висели AddClassHandler<Control> на Bounds, DesignX/DesignY
+        // Раньше здесь висели AddClassHandler<Control> на Bounds, SurfaceX/SurfaceY
         // и политики: они срабатывали на любой Control во всём приложении
         // и на каждое срабатывание поднимались по дереву в поисках редактора.
     }
 
     /// <summary>
-    /// Инициализирует новый экземпляр <see cref="DesignEditor"/>.
+    /// Инициализирует новый экземпляр <see cref="UiDesignerView"/>.
     /// </summary>
-    public DesignEditor()
+    public UiDesignerView()
     {
         // Инструменты редактирования подключаются службами (ADR 0003). Служба
         // направляющих ставит свой туннельный обработчик нажатия первой — так же,
@@ -91,7 +91,7 @@ public partial class DesignEditor : SurfaceView
         // Позицию target'а знает его панель, а не ядро: стратегия размещения решает,
         // примет ли содержимое запись. Пометка группы — участник единицы редактирования
         // сверх геометрии, и в контракт изменений она попадает через него.
-        Geometry = new DesignPlacementGeometry(this);
+        Geometry = new SurfacePlacementGeometry(this);
         TargetResolver = NestedTargetResolver.Instance;
         _groupFacet = new GroupEditFacet(this);
         AddEditFacet(_groupFacet);
@@ -108,7 +108,7 @@ public partial class DesignEditor : SurfaceView
     }
 
     /// <summary>
-    /// Определяет необходимость создания контейнера <see cref="DesignEditorItem"/> для элемента коллекции.
+    /// Определяет необходимость создания контейнера <see cref="UiDesignerItem"/> для элемента коллекции.
     /// </summary>
     /// <param name="item">Элемент источника данных.</param>
     /// <param name="index">Индекс элемента.</param>
@@ -116,7 +116,7 @@ public partial class DesignEditor : SurfaceView
     /// <returns><see langword="true"/>, если для элемента требуется контейнер.</returns>
     protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey)
     {
-        return NeedsContainer<DesignEditorItem>(item, out recycleKey);
+        return NeedsContainer<UiDesignerItem>(item, out recycleKey);
     }
 
     /// <summary>
@@ -125,10 +125,10 @@ public partial class DesignEditor : SurfaceView
     /// <param name="item">Элемент источника данных.</param>
     /// <param name="index">Индекс элемента.</param>
     /// <param name="recycleKey">Ключ повторного использования контейнера.</param>
-    /// <returns>Новый экземпляр <see cref="DesignEditorItem"/>.</returns>
+    /// <returns>Новый экземпляр <see cref="UiDesignerItem"/>.</returns>
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
     {
-        return new DesignEditorItem();
+        return new UiDesignerItem();
     }
 
     /// <summary>

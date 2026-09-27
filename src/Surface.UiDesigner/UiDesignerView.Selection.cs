@@ -15,7 +15,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using SurfaceInteraction = ArxisStudio.Surface.Editing.SurfaceInteraction;
 using ArxisStudio.Surface.Editing;
 using ArxisStudio.Surface.UiDesigner.Placement;
@@ -24,8 +24,8 @@ using ArxisStudio.Surface.States;
 namespace ArxisStudio.Surface.UiDesigner;
 
 // Двухуровневое выделение: запись, чтение и публикация.
-// Часть DesignEditor; общее описание типа — в DesignEditor.cs.
-public partial class DesignEditor
+// Часть UiDesignerView; общее описание типа — в UiDesignerView.cs.
+public partial class UiDesignerView
 {
     /// <summary>
     /// Держит подписки на свойства текущих selection targets в актуальном состоянии.
@@ -74,8 +74,8 @@ public partial class DesignEditor
     private void OnSelectedTargetPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property == BoundsProperty ||
-            e.Property == DesignLayout.DesignXProperty ||
-            e.Property == DesignLayout.DesignYProperty ||
+            e.Property == SurfaceLayout.SurfaceXProperty ||
+            e.Property == SurfaceLayout.SurfaceYProperty ||
             e.Property == SurfaceInteraction.ResizePolicyProperty ||
             e.Property == SurfaceInteraction.MovePolicyProperty)
         {
@@ -133,8 +133,8 @@ public partial class DesignEditor
     /// </remarks>
     private protected override void ApplyTargetFromPoint(SurfaceItem surfaceItem, Point screenPoint, KeyModifiers modifiers, int clickCount)
     {
-        // У дизайнера форм каждый контейнер — DesignEditorItem.
-        var container = (DesignEditorItem)surfaceItem;
+        // У дизайнера интерфейса каждый контейнер — UiDesignerItem.
+        var container = (UiDesignerItem)surfaceItem;
 
         if (ShouldUseContainerInteraction(modifiers))
         {
@@ -229,27 +229,27 @@ public partial class DesignEditor
     /// Определяет, может ли контрол быть target внутри указанного контейнера.
     /// </summary>
     /// <remarks>
-    /// В режиме <see cref="DesignContentMode.Loaded"/> размечать содержимое некому,
+    /// В режиме <see cref="SurfaceContentMode.Loaded"/> размечать содержимое некому,
     /// поэтому редактируется всё, что автор написал в разметке. Внутренности
     /// контролов при этом отсекает <c>TemplatedParent</c>: у частей шаблона он задан,
     /// у элементов из <c>.axaml</c> — нет. Иначе клик по кнопке выбирал бы её
     /// внутренний <c>TextBlock</c>.
     /// </remarks>
-    internal static bool IsSelectableTarget(Control control, DesignEditorItem owner)
+    internal static bool IsSelectableTarget(Control control, UiDesignerItem owner)
     {
-        if (owner.ContentMode != DesignContentMode.Loaded)
-            return HasDesignerLayoutMetadata(control);
+        if (owner.ContentMode != SurfaceContentMode.Loaded)
+            return HasLayoutMetadata(control);
 
         // Внутренности контролов отсекает уже сам обход авторской разметки,
         // здесь остаётся только не залезть в чужой контейнер.
         return ReferenceEquals(FindTargetHost(control), owner);
     }
 
-    private static bool HasDesignerLayoutMetadata(Control control)
+    private static bool HasLayoutMetadata(Control control)
     {
-        return DesignLayout.GetIsTracked(control)
-            || !double.IsNaN(DesignLayout.GetX(control))
-            || !double.IsNaN(DesignLayout.GetY(control));
+        return SurfaceLayout.GetIsTracked(control)
+            || !double.IsNaN(SurfaceLayout.GetX(control))
+            || !double.IsNaN(SurfaceLayout.GetY(control));
     }
 
     internal static void EnsureTracked(Control control)
@@ -257,7 +257,7 @@ public partial class DesignEditor
         // Track идемпотентен. Прежний guard по GetIsTracked не работал:
         // Track не выставляет публичное IsTracked, поэтому для контролов
         // с одними Layout.X/Y условие было истинно всегда.
-        DesignLayout.Track(control);
+        SurfaceLayout.Track(control);
     }
 
     /// <summary>
@@ -269,18 +269,18 @@ public partial class DesignEditor
     /// контрола внутри вложенного — вложенный, для вложенного контейнера — его владелец.
     /// Это единица группировки выделения: вместе выбираются только соседи по host'у.
     /// </remarks>
-    private static DesignEditorItem? FindTargetHost(Control target)
-        => target.FindAncestorOfType<DesignEditorItem>();
+    private static UiDesignerItem? FindTargetHost(Control target)
+        => target.FindAncestorOfType<UiDesignerItem>();
 
-    internal static IEnumerable<Control> EnumerateSelectionCandidates(DesignEditorItem item)
+    internal static IEnumerable<Control> EnumerateSelectionCandidates(UiDesignerItem item)
     {
-        if (item.ContentMode == DesignContentMode.Loaded)
+        if (item.ContentMode == SurfaceContentMode.Loaded)
             return EnumerateAuthoredContent(item);
 
         return EnumerateVisualCandidates(item);
     }
 
-    private static IEnumerable<Control> EnumerateVisualCandidates(DesignEditorItem item)
+    private static IEnumerable<Control> EnumerateVisualCandidates(UiDesignerItem item)
     {
         foreach (var descendant in item.GetVisualDescendants())
         {
@@ -306,7 +306,7 @@ public partial class DesignEditor
     /// пуст, и клик по кнопке выбирал бы её надпись.
     /// </para>
     /// </remarks>
-    private static IEnumerable<Control> EnumerateAuthoredContent(DesignEditorItem item)
+    private static IEnumerable<Control> EnumerateAuthoredContent(UiDesignerItem item)
     {
         var root = (item.Presenter as Control)?.GetVisualChildren().OfType<Control>().FirstOrDefault()
                    ?? item.Content as Control;

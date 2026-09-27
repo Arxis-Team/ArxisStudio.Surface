@@ -29,7 +29,7 @@ internal static class PublicSurface
     [
         typeof(ArxisStudio.Surface.SurfaceView).Assembly,
         typeof(ArxisStudio.Surface.Editing.SurfaceGuides).Assembly,
-        typeof(DesignEditor).Assembly,
+        typeof(UiDesignerView).Assembly,
         typeof(ArxisStudio.Surface.Nodes.NodeEditor).Assembly
     ];
 

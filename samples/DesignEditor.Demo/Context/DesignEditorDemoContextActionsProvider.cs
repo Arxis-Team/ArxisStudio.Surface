@@ -26,8 +26,8 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
         SurfaceContextRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Действия демо — действия дизайнера форм: над другой поверхностью им нечего делать.
-        if (surface is not global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
+        // Действия демо — действия дизайнера интерфейса: над другой поверхностью им нечего делать.
+        if (surface is not global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor)
             return ValueTask.FromResult<IReadOnlyList<SurfaceContextAction>>(Array.Empty<SurfaceContextAction>());
 
         var actions = request.Scope switch
@@ -42,7 +42,7 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
         return ValueTask.FromResult(actions);
     }
 
-    private static IReadOnlyList<SurfaceContextAction> CreateSurfaceActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
+    private static IReadOnlyList<SurfaceContextAction> CreateSurfaceActions(global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor)
     {
         return new[]
         {
@@ -55,7 +55,7 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
     }
 
     private static IReadOnlyList<SurfaceContextAction> CreateContainerActions(
-        global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
+        global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor,
         SurfaceContextRequest request)
     {
         var hasTarget = request.Target != null;
@@ -86,7 +86,7 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
     }
 
     private static IReadOnlyList<SurfaceContextAction> CreateNestedActions(
-        global::ArxisStudio.Surface.UiDesigner.DesignEditor editor,
+        global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor,
         SurfaceContextRequest request)
     {
         var nestedTarget = request.Target?.Target;
@@ -129,7 +129,7 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
         };
     }
 
-    private static IReadOnlyList<SurfaceContextAction> CreateSelectionActions(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor)
+    private static IReadOnlyList<SurfaceContextAction> CreateSelectionActions(global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor)
     {
         return new[]
         {
@@ -168,7 +168,7 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
         };
     }
 
-    private static void AddElement(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, DesignItemViewModel element)
+    private static void AddElement(global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor, DesignItemViewModel element)
     {
         if (editor.DataContext is not MainWindowViewModel viewModel)
             return;
@@ -176,7 +176,7 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
         viewModel.Elements.Add(element);
     }
 
-    private static void DeleteTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, SurfaceContextRequest request)
+    private static void DeleteTarget(global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor, SurfaceContextRequest request)
     {
         if (editor.DataContext is not MainWindowViewModel viewModel || request.Target == null)
             return;
@@ -185,13 +185,13 @@ public sealed class DesignEditorDemoContextActionsProvider : ISurfaceContextActi
             viewModel.Elements.Remove(element);
     }
 
-    private static void CenterTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, SurfaceContextRequest request)
+    private static void CenterTarget(global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor, SurfaceContextRequest request)
     {
         if (request.Target?.Container is { } container)
             editor.CenterOnItem(container);
     }
 
-    private static void FitTarget(global::ArxisStudio.Surface.UiDesigner.DesignEditor editor, SurfaceContextRequest request)
+    private static void FitTarget(global::ArxisStudio.Surface.UiDesigner.UiDesignerView editor, SurfaceContextRequest request)
     {
         if (request.Target?.Container is { } container)
             editor.FitToView(container);

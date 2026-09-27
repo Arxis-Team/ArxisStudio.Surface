@@ -143,7 +143,7 @@ public class PublicSurfaceTests
     {
         var leaked = Leaked(name => name.Contains("SelectionAdornerLayer", StringComparison.Ordinal)
                                     || name.Contains("SelectionAdornerInfo", StringComparison.Ordinal)
-                                    || name.Contains("DesignSurface", StringComparison.Ordinal));
+                                    || name.Contains("UiDesignerPanel", StringComparison.Ordinal));
 
         Assert.True(leaked.Count == 0, "Детали overlay должны быть internal:\n" + string.Join("\n", leaked));
     }

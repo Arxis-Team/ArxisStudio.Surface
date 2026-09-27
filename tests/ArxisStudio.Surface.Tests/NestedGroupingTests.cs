@@ -11,7 +11,7 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using ArxisStudio.Surface.UiDesigner;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
 
@@ -35,7 +35,7 @@ public class NestedGroupingTests
     {
         var nodes = new List<TestNode> { new("form0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -53,8 +53,8 @@ public class NestedGroupingTests
                         Background = Brushes.Transparent
                     };
 
-                    DesignLayout.SetX(cell, 10 + (i * 90));
-                    DesignLayout.SetY(cell, 10);
+                    SurfaceLayout.SetX(cell, 10 + (i * 90));
+                    SurfaceLayout.SetY(cell, 10);
                     panel.Children.Add(cell);
                 }
 
@@ -99,7 +99,7 @@ public class NestedGroupingTests
         return harness;
     }
 
-    private static string? PathOf(EditorHarness harness, string name) => DesignGroup.GetId(Cell(harness, name));
+    private static string? PathOf(EditorHarness harness, string name) => SurfaceGroup.GetId(Cell(harness, name));
 
     // ---- Вложенность ------------------------------------------------------------
 
@@ -148,16 +148,16 @@ public class NestedGroupingTests
         Assert.Equal(2, adorners.Count);
 
         var groupFrame = Assert.Single(adorners, a => a.Role == SelectionAdornerRole.Group);
-        var expected = DesignBoundsOf(harness, "A").Union(DesignBoundsOf(harness, "B"));
+        var expected = SurfaceBoundsOf(harness, "A").Union(SurfaceBoundsOf(harness, "B"));
         Assert.Equal(expected, groupFrame.Bounds);
 
         var loneFrame = Assert.Single(adorners, a => a.Role != SelectionAdornerRole.Group);
         Assert.Same(Cell(harness, "C"), loneFrame.Target);
     }
 
-    private static Rect DesignBoundsOf(EditorHarness harness, string name)
+    private static Rect SurfaceBoundsOf(EditorHarness harness, string name)
     {
-        Assert.True(harness.Editor.TryGetDesignBounds(Cell(harness, name), out var bounds));
+        Assert.True(harness.Editor.TryGetTargetBounds(Cell(harness, name), out var bounds));
         return bounds;
     }
 
@@ -243,7 +243,7 @@ public class NestedGroupingTests
     public void A_Sibling_Segment_Is_Refused()
     {
         var harness = CreateNested(out var outer, out var inner);
-        DesignGroup.SetId(Cell(harness, "D"), outer + "/left");
+        SurfaceGroup.SetId(Cell(harness, "D"), outer + "/left");
 
         Assert.False(harness.Editor.RenameGroup(harness.Container(0), inner, "left"));
         Assert.Equal(inner, PathOf(harness, "A"));
@@ -311,8 +311,8 @@ public class NestedGroupingTests
         var harness = CreateWithGroup();
         Select(harness, "A", "C");
 
-        var before = DesignBoundsOf(harness, "C");
-        var frame = DesignBoundsOf(harness, "A").Union(DesignBoundsOf(harness, "B"));
+        var before = SurfaceBoundsOf(harness, "C");
+        var frame = SurfaceBoundsOf(harness, "A").Union(SurfaceBoundsOf(harness, "B"));
 
         var adorner = harness.Editor.GetVisualDescendants()
             .OfType<SelectionAdornerLayer>()
@@ -325,8 +325,8 @@ public class NestedGroupingTests
         adorner.RaiseEvent(new VectorEventArgs { RoutedEvent = SelectionAdorner.ResizeCompletedEvent, Vector = delta });
         harness.RunLayout();
 
-        Assert.Equal(before, DesignBoundsOf(harness, "C"));
-        Assert.True(DesignBoundsOf(harness, "A").Union(DesignBoundsOf(harness, "B")).Width > frame.Width);
+        Assert.Equal(before, SurfaceBoundsOf(harness, "C"));
+        Assert.True(SurfaceBoundsOf(harness, "A").Union(SurfaceBoundsOf(harness, "B")).Width > frame.Width);
     }
 
     /// <summary>Собирает две отдельные группы: A+B и C+D.</summary>
@@ -424,7 +424,7 @@ public class NestedGroupingTests
         Assert.True(harness.Editor.GroupSelection());
         harness.RunLayout();
 
-        outer = DesignGroupPath.Split(PathOf(harness, "A"))[0];
+        outer = SurfaceGroupPath.Split(PathOf(harness, "A"))[0];
         return harness;
     }
 
@@ -513,7 +513,7 @@ public class NestedGroupingTests
         var outer = PathOf(harness, "C")!;
         Assert.Equal(outer, PathOf(harness, "A"));
         Assert.Equal(inner, PathOf(harness, "B"));
-        Assert.DoesNotContain(DesignGroupPath.Separator, PathOf(harness, "A")!);
+        Assert.DoesNotContain(SurfaceGroupPath.Separator, PathOf(harness, "A")!);
     }
 
     /// <summary>
@@ -527,7 +527,7 @@ public class NestedGroupingTests
     public void Renaming_The_Outer_Level_Rebases_Descendants()
     {
         var harness = CreateNested(out var outer, out var inner);
-        var leaf = DesignGroupPath.Leaf(inner);
+        var leaf = SurfaceGroupPath.Leaf(inner);
 
         Assert.True(harness.Editor.RenameGroup(harness.Container(0), outer, "screen"));
         harness.RunLayout();
@@ -621,16 +621,16 @@ public class NestedGroupingTests
         StartClusterResize(harness);
         harness.RunLayout();
 
-        // Читать design-координаты можно только после layout-прохода: они отстают
+        // Читать координаты поверхности можно только после layout-прохода: они отстают
         // на один проход диспетчера.
-        var beforeA = DesignBoundsOf(harness, "A");
-        var beforeB = DesignBoundsOf(harness, "B");
+        var beforeA = SurfaceBoundsOf(harness, "A");
+        var beforeB = SurfaceBoundsOf(harness, "B");
 
         Resize(ClusterAdorner(harness, group: false), new Vector(30, 0));
         harness.RunLayout();
 
-        Assert.Equal(beforeA, DesignBoundsOf(harness, "A"));
-        Assert.Equal(beforeB, DesignBoundsOf(harness, "B"));
-        Assert.True(DesignBoundsOf(harness, "C").Width > CellWidth);
+        Assert.Equal(beforeA, SurfaceBoundsOf(harness, "A"));
+        Assert.Equal(beforeB, SurfaceBoundsOf(harness, "B"));
+        Assert.True(SurfaceBoundsOf(harness, "C").Width > CellWidth);
     }
 }

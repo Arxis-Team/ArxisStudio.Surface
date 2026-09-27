@@ -28,7 +28,7 @@ public class PlacementStrategyTests
         return child;
     }
 
-    // Семантика сверяется по имени: DesignMoveSemantics — internal,
+    // Семантика сверяется по имени: SurfaceMoveSemantics — internal,
     // а сигнатура публичного теста не может быть менее доступной.
     [AvaloniaTheory]
     [InlineData(typeof(AbsolutePanel), "Absolute", "Reposition")]
@@ -43,7 +43,7 @@ public class PlacementStrategyTests
         var parent = (Control)System.Activator.CreateInstance(parentType)!;
         var child = ChildOf(parent);
 
-        var strategy = DesignEditor.GetPlacementStrategy(child);
+        var strategy = UiDesignerView.GetPlacementStrategy(child);
 
         Assert.Equal(name, strategy.Name);
         Assert.Equal(semantics, strategy.MoveSemantics.ToString());
@@ -54,7 +54,7 @@ public class PlacementStrategyTests
     {
         // Голый контрол вне дерева: на нём стоят GroupResizeOperationTests,
         // и семантика для него обязана совпадать с прежней.
-        var strategy = DesignEditor.GetPlacementStrategy(new Border());
+        var strategy = UiDesignerView.GetPlacementStrategy(new Border());
 
         Assert.Equal("Absolute", strategy.Name);
         Assert.Equal("Reposition", strategy.MoveSemantics.ToString());
@@ -63,7 +63,7 @@ public class PlacementStrategyTests
     [AvaloniaFact]
     public void Layout_Cannot_Widen_A_User_Lock()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var panel = new AbsolutePanel();
         var child = ChildOf(panel);
         SurfaceInteraction.SetMovePolicy(child, MovePolicy.None);
@@ -75,7 +75,7 @@ public class PlacementStrategyTests
     [AvaloniaFact]
     public void User_Policy_Cannot_Widen_The_Layout()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var panel = new StackPanel();
         var child = ChildOf(panel);
         SurfaceInteraction.SetMovePolicy(child, MovePolicy.Both);
@@ -89,7 +89,7 @@ public class PlacementStrategyTests
     [AvaloniaFact]
     public void Axis_Restriction_Survives_A_Permissive_Layout()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var panel = new AbsolutePanel();
         var child = ChildOf(panel);
         SurfaceInteraction.SetMovePolicy(child, MovePolicy.X);

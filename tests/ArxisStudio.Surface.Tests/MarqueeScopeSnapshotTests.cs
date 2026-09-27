@@ -6,7 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface;
 
@@ -55,15 +55,15 @@ public class MarqueeScopeSnapshotTests
     /// Свежий обход дерева нашёл бы его и отдал бы рамке как более глубокого
     /// владельца; снимок, снятый до добавления, — нет. На этой разнице тест и стоит.
     /// </remarks>
-    private static DesignEditorItem AddNestedContainer(EditorHarness harness)
+    private static UiDesignerItem AddNestedContainer(EditorHarness harness)
     {
         var panel = (Panel)harness.Nested(0).GetVisualParent()!;
 
         // Содержимое обязательно: контейнер без единого target'а разрешению контекста
         // отвечать нечем, и тест падал бы не на снимке, а на пустой форме.
         var child = new Border { Name = "AddedChild", Width = 40, Height = 30 };
-        DesignLayout.SetX(child, 5);
-        DesignLayout.SetY(child, 5);
+        SurfaceLayout.SetX(child, 5);
+        SurfaceLayout.SetY(child, 5);
 
         var content = new AbsolutePanel();
         content.Children.Add(child);
@@ -71,7 +71,7 @@ public class MarqueeScopeSnapshotTests
         // Вложенный контейнер позиционируется как обычный ребёнок AbsolutePanel —
         // через Layout.X/Y и выравнивание по левому верхнему углу. Location здесь
         // не работает: это свойство контейнера верхнего уровня.
-        var nested = new DesignEditorItem
+        var nested = new UiDesignerItem
         {
             Name = "Added",
             Width = ContainerSize.Width,

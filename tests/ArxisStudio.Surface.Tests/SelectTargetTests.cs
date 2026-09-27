@@ -183,7 +183,7 @@ public class SelectTargetTests
     {
         var harness = CreateTwo();
         var container = harness.Container(0);
-        container.ContentMode = DesignContentMode.Loaded;
+        container.ContentMode = SurfaceContentMode.Loaded;
         harness.RunLayout();
 
         var part = container.GetVisualDescendants()

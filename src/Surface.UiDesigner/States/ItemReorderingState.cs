@@ -35,7 +35,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
     /// </summary>
     /// <param name="container">Контейнер, внутри которого идёт перестановка.</param>
     /// <param name="initialPointerPosition">Начальная позиция указателя в координатах редактора.</param>
-    public ItemReorderingState(DesignEditorItem container, Point initialPointerPosition)
+    public ItemReorderingState(UiDesignerItem container, Point initialPointerPosition)
         : base(container)
     {
         _initialPointerPosition = initialPointerPosition;
@@ -44,7 +44,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
     /// <inheritdoc />
     public override void Enter(SurfaceItemState from)
     {
-        var editor = Container.FindAncestorOfType<DesignEditor>();
+        var editor = Container.FindAncestorOfType<UiDesignerView>();
         if (editor == null)
             return;
 
@@ -62,7 +62,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
     /// <inheritdoc />
     public override void OnPointerMoved(PointerEventArgs e)
     {
-        var editor = Container.FindAncestorOfType<DesignEditor>();
+        var editor = Container.FindAncestorOfType<UiDesignerView>();
         if (editor == null)
             return;
 
@@ -73,7 +73,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
     /// <inheritdoc />
     public override void OnPointerReleased(PointerReleasedEventArgs e)
     {
-        var editor = Container.FindAncestorOfType<DesignEditor>();
+        var editor = Container.FindAncestorOfType<UiDesignerView>();
 
         var handled = false;
 
@@ -99,7 +99,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
     /// <inheritdoc />
     public override void Exit()
     {
-        Container.FindAncestorOfType<DesignEditor>()?.CancelReorder();
+        Container.FindAncestorOfType<UiDesignerView>()?.CancelReorder();
         _cursor.Restore();
     }
 
@@ -119,7 +119,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
         return Math.Sqrt((dx * dx) + (dy * dy));
     }
 
-    private void UpdateIndicator(DesignEditor editor, Point pointerInEditor)
+    private void UpdateIndicator(UiDesignerView editor, Point pointerInEditor)
     {
         if (_panel == null || _panel.Children.Count == 0)
             return;
@@ -145,7 +145,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
 
         for (var i = 0; i < _panel.Children.Count; i++)
         {
-            if (!editor.TryGetDesignBounds(_panel.Children[i], out var childBounds))
+            if (!editor.TryGetTargetBounds(_panel.Children[i], out var childBounds))
                 continue;
 
             var distance = DistanceTo(childBounds, world);
@@ -173,7 +173,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
             editor.UpdateReorderIndicator(indicator);
     }
 
-    private bool TryGetIndicatorBounds(DesignEditor editor, bool vertical, out Rect bounds)
+    private bool TryGetIndicatorBounds(UiDesignerView editor, bool vertical, out Rect bounds)
     {
         bounds = default;
 
@@ -183,7 +183,7 @@ internal sealed class ItemReorderingState : SurfaceItemState
         var atEnd = _insertBefore >= _panel.Children.Count;
         var anchor = atEnd ? _panel.Children.Count - 1 : _insertBefore;
 
-        if (anchor < 0 || !editor.TryGetDesignBounds(_panel.Children[anchor], out var anchorBounds))
+        if (anchor < 0 || !editor.TryGetTargetBounds(_panel.Children[anchor], out var anchorBounds))
             return false;
 
         // Линия натянута по соседу, а не по всей панели: в раскладке с переносом

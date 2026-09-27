@@ -4,7 +4,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Xunit;
-using DesignLayout = ArxisStudio.Surface.UiDesigner.Layout;
+using SurfaceLayout = ArxisStudio.Surface.UiDesigner.Layout;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
@@ -23,7 +23,7 @@ internal sealed class TestNode
 }
 
 /// <summary>
-/// Сборка реализованного <see cref="DesignEditor"/> в headless-окне.
+/// Сборка реализованного <see cref="UiDesignerView"/> в headless-окне.
 /// </summary>
 /// <remarks>
 /// Шаблон элемента даёт <see cref="AbsolutePanel"/> с одним вложенным
@@ -40,7 +40,7 @@ internal sealed class EditorHarness
     /// <summary>Отступ карточки в стенде <see cref="CreateStackHosted"/>.</summary>
     public const double CardPadding = 30;
 
-    private EditorHarness(Window window, DesignEditor editor, IReadOnlyList<TestNode> nodes)
+    private EditorHarness(Window window, UiDesignerView editor, IReadOnlyList<TestNode> nodes)
     {
         Window = window;
         Editor = editor;
@@ -48,7 +48,7 @@ internal sealed class EditorHarness
     }
 
     public Window Window { get; }
-    public DesignEditor Editor { get; }
+    public UiDesignerView Editor { get; }
     public IReadOnlyList<TestNode> Nodes { get; }
 
     /// <summary>
@@ -72,7 +72,7 @@ internal sealed class EditorHarness
             .Select(i => new TestNode("node" + i))
             .ToList();
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -84,8 +84,8 @@ internal sealed class EditorHarness
                     Width = NestedWidth,
                     Height = NestedHeight
                 };
-                DesignLayout.SetX(nested, NestedOffset);
-                DesignLayout.SetY(nested, NestedOffset);
+                SurfaceLayout.SetX(nested, NestedOffset);
+                SurfaceLayout.SetY(nested, NestedOffset);
 
                 // Второй сосед в том же host'е — для проверки группового выделения.
                 var sibling = new Border
@@ -94,8 +94,8 @@ internal sealed class EditorHarness
                     Width = NestedWidth,
                     Height = NestedHeight
                 };
-                DesignLayout.SetX(sibling, SiblingOffset);
-                DesignLayout.SetY(sibling, NestedOffset);
+                SurfaceLayout.SetX(sibling, SiblingOffset);
+                SurfaceLayout.SetY(sibling, NestedOffset);
 
                 var panel = new AbsolutePanel();
                 panel.Children.Add(nested);
@@ -134,7 +134,7 @@ internal sealed class EditorHarness
     {
         var nodes = new List<TestNode> { new("stack0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -143,10 +143,10 @@ internal sealed class EditorHarness
                 // IsHitTestVisible=false — как в демо: иначе живой Button помечает
                 // нажатие обработанным и оно не доходит до контейнера.
                 var title = new TextBlock { Name = "Title", Text = "Login Form", IsHitTestVisible = false };
-                DesignLayout.SetIsTracked(title, true);
+                SurfaceLayout.SetIsTracked(title, true);
 
                 var field = new TextBox { Name = "Field", IsHitTestVisible = false };
-                DesignLayout.SetIsTracked(field, true);
+                SurfaceLayout.SetIsTracked(field, true);
 
                 var action = new Button
                 {
@@ -155,17 +155,17 @@ internal sealed class EditorHarness
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     IsHitTestVisible = false
                 };
-                DesignLayout.SetIsTracked(action, true);
+                SurfaceLayout.SetIsTracked(action, true);
 
                 var inner = new StackPanel { Name = "Inner", Spacing = 12 };
                 inner.Children.Add(field);
                 inner.Children.Add(action);
-                DesignLayout.SetIsTracked(inner, true);
+                SurfaceLayout.SetIsTracked(inner, true);
 
                 var outer = new StackPanel { Name = "Outer", Spacing = 20 };
                 outer.Children.Add(title);
                 outer.Children.Add(inner);
-                DesignLayout.SetIsTracked(outer, true);
+                SurfaceLayout.SetIsTracked(outer, true);
 
                 var card = new Border
                 {
@@ -174,7 +174,7 @@ internal sealed class EditorHarness
                     CornerRadius = new CornerRadius(12),
                     Child = outer
                 };
-                DesignLayout.SetIsTracked(card, true);
+                SurfaceLayout.SetIsTracked(card, true);
 
                 return card;
             }, supportsRecycling: false)
@@ -193,7 +193,7 @@ internal sealed class EditorHarness
     /// <summary>
     /// Оборачивает уже собранный редактор, когда тесту нужен собственный шаблон элемента.
     /// </summary>
-    public static EditorHarness Adopt(Window window, DesignEditor editor, IReadOnlyList<TestNode> nodes)
+    public static EditorHarness Adopt(Window window, UiDesignerView editor, IReadOnlyList<TestNode> nodes)
         => new(window, editor, nodes);
 
     /// <summary>
@@ -206,9 +206,9 @@ internal sealed class EditorHarness
         manager?.ExecuteLayoutPass();
     }
 
-    public DesignEditorItem Container(int index)
+    public UiDesignerItem Container(int index)
     {
-        var container = Editor.ContainerFromItem(Nodes[index]) as DesignEditorItem;
+        var container = Editor.ContainerFromItem(Nodes[index]) as UiDesignerItem;
         Assert.NotNull(container);
         return container!;
     }
@@ -216,7 +216,7 @@ internal sealed class EditorHarness
     /// <summary>
     /// Размещает контейнер в мировых координатах и задаёт ему размер.
     /// </summary>
-    public DesignEditorItem PlaceContainer(int index, Point location, Size size)
+    public UiDesignerItem PlaceContainer(int index, Point location, Size size)
     {
         var container = Container(index);
         container.Width = size.Width;

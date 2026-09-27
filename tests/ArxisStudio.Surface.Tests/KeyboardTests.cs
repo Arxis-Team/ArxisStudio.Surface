@@ -33,9 +33,9 @@ public class KeyboardTests
         return harness;
     }
 
-    private static Point DesignPositionOf(EditorHarness harness) => new(
-        Layout.GetDesignX(harness.Nested(0)),
-        Layout.GetDesignY(harness.Nested(0)));
+    private static Point SurfacePositionOf(EditorHarness harness) => new(
+        Layout.GetSurfaceX(harness.Nested(0)),
+        Layout.GetSurfaceY(harness.Nested(0)));
 
     [AvaloniaFact]
     public void Clicking_The_Editor_Gives_It_Keyboard_Focus()
@@ -54,12 +54,12 @@ public class KeyboardTests
     public void Arrow_Nudges_Selection_By_One_Step(Key key, double dx, double dy)
     {
         var harness = CreateWithSelection();
-        var before = DesignPositionOf(harness);
+        var before = SurfacePositionOf(harness);
 
         harness.Window.KeyPressQwerty(PhysicalKeyFromArrow(key), RawInputModifiers.None);
         harness.RunLayout();
 
-        var after = DesignPositionOf(harness);
+        var after = SurfacePositionOf(harness);
         Assert.Equal(before.X + dx, after.X, 1);
         Assert.Equal(before.Y + dy, after.Y, 1);
     }
@@ -68,12 +68,12 @@ public class KeyboardTests
     public void Modifier_Switches_To_The_Large_Step()
     {
         var harness = CreateWithSelection();
-        var before = DesignPositionOf(harness);
+        var before = SurfacePositionOf(harness);
 
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.Shift);
         harness.RunLayout();
 
-        Assert.Equal(before.X + 10, DesignPositionOf(harness).X, 1);
+        Assert.Equal(before.X + 10, SurfacePositionOf(harness).X, 1);
     }
 
     [AvaloniaFact]
@@ -97,13 +97,13 @@ public class KeyboardTests
     {
         var harness = CreateWithSelection();
         SurfaceInteraction.SetMovePolicy(harness.Nested(0), MovePolicy.Y);
-        var before = DesignPositionOf(harness);
+        var before = SurfacePositionOf(harness);
 
         harness.Window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
         harness.RunLayout();
 
         // Ось X запрещена политикой — смещения нет и записи в стек тоже.
-        Assert.Equal(before.X, DesignPositionOf(harness).X, 1);
+        Assert.Equal(before.X, SurfacePositionOf(harness).X, 1);
     }
 
     [AvaloniaFact]

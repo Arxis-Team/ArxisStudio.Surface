@@ -31,7 +31,7 @@ public class GroupSnapTests
     {
         var nodes = new List<TestNode> { new("group0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,
@@ -184,7 +184,7 @@ public class GroupSnapTests
     {
         var nodes = new List<TestNode> { new("grouprow0") };
 
-        var editor = new DesignEditor
+        var editor = new UiDesignerView
         {
             ItemsSource = nodes,
             SelectionMode = SelectionMode.Multiple,

@@ -101,13 +101,13 @@
                             сразу при запуске, до всякой группировки мышью.
                         -->
                         <Button Content="Доброе утро" HorizontalAlignment="Stretch" Background="#EEF1F5"
-                                surface:DesignGroup.Id="scenes"
+                                surface:SurfaceGroup.Id="scenes"
                                 Foreground="#16191D" BorderThickness="0" CornerRadius="8" />
                         <Button Content="Ушёл из дома" HorizontalAlignment="Stretch" Background="#EEF1F5"
-                                surface:DesignGroup.Id="scenes"
+                                surface:SurfaceGroup.Id="scenes"
                                 Foreground="#16191D" BorderThickness="0" CornerRadius="8" />
                         <Button Content="Ночь" HorizontalAlignment="Stretch" Background="#EEF1F5"
-                                surface:DesignGroup.Id="scenes"
+                                surface:SurfaceGroup.Id="scenes"
                                 Foreground="#16191D" BorderThickness="0" CornerRadius="8" />
                     </StackPanel>
                 </Border>

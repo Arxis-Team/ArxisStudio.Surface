@@ -147,8 +147,8 @@ public class EditContractTests
         harness.RunLayout();
 
         var restored = new Rect(
-            ArxisStudio.Surface.UiDesigner.Layout.GetDesignX(change.Target),
-            ArxisStudio.Surface.UiDesigner.Layout.GetDesignY(change.Target),
+            ArxisStudio.Surface.UiDesigner.Layout.GetSurfaceX(change.Target),
+            ArxisStudio.Surface.UiDesigner.Layout.GetSurfaceY(change.Target),
             change.Target.Bounds.Width,
             change.Target.Bounds.Height);
 
@@ -182,13 +182,13 @@ public class EditContractTests
 
     // ---- Отмена и повтор -------------------------------------------------------
 
-    /// <summary>Позиция target'а в design-координатах после прогона layout.</summary>
+    /// <summary>Позиция target'а в координатах поверхности после прогона layout.</summary>
     private static Point Position(EditorHarness harness, Control target)
     {
         harness.RunLayout();
         return new Point(
-            ArxisStudio.Surface.UiDesigner.Layout.GetDesignX(target),
-            ArxisStudio.Surface.UiDesigner.Layout.GetDesignY(target));
+            ArxisStudio.Surface.UiDesigner.Layout.GetSurfaceX(target),
+            ArxisStudio.Surface.UiDesigner.Layout.GetSurfaceY(target));
     }
 
     /// <summary>

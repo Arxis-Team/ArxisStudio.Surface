@@ -17,11 +17,11 @@ namespace ArxisStudio.Tests;
 /// </remarks>
 public class InteractionPolicyTests
 {
-    private static (DesignEditor Editor, Control Target) Create(
+    private static (UiDesignerView Editor, Control Target) Create(
         MovePolicy move = MovePolicy.Both,
         ResizePolicy resize = ResizePolicy.All)
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var target = new Border();
         SurfaceInteraction.SetMovePolicy(target, move);
         SurfaceInteraction.SetResizePolicy(target, resize);
@@ -81,7 +81,7 @@ public class InteractionPolicyTests
     [AvaloniaFact]
     public void Defaults_Are_Fully_Permissive()
     {
-        var editor = new DesignEditor();
+        var editor = new UiDesignerView();
         var target = new Border();
 
         Assert.Equal(MovePolicy.Both, SurfaceInteraction.GetMovePolicy(target));

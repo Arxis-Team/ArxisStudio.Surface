@@ -26,8 +26,8 @@ public enum SurfaceGuideOrientation
 /// координату и ничего больше.
 /// </para>
 /// <para>
-/// Координата — <b>мировая</b>, то есть та же, в которой лежат <c>Layout.DesignX</c>
-/// и <c>Layout.DesignY</c> и которую видно на фоновой сетке.
+/// Координата — <b>мировая</b>, то есть та же, в которой лежат <c>Layout.SurfaceX</c>
+/// и <c>Layout.SurfaceY</c> и которую видно на фоновой сетке.
 /// </para>
 /// </remarks>
 public readonly struct SurfaceGuide : IEquatable<SurfaceGuide>

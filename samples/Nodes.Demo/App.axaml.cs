@@ -12,7 +12,7 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
 
 #if DEBUG
-        // На приложении, а не на окне — как в демо дизайнера форм: F12 из любого окна открывает
+        // На приложении, а не на окне — как в демо дизайнера интерфейса: F12 из любого окна открывает
         // один и тот же DevTools.
         this.AttachAvaDevTools();
 #endif
