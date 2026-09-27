@@ -14,10 +14,10 @@ interface ArxisStudio.Surface.UiDesigner.ISurfaceGroupStore
     method Void SetGroup(Control, String)
 static class ArxisStudio.Surface.UiDesigner.Layout
     avalonia IsTrackedProperty -> IsTracked : Boolean (attached) = false
-    avalonia SurfaceXProperty -> SurfaceX : Double (attached) = 0
-    avalonia SurfaceYProperty -> SurfaceY : Double (attached) = 0
-    avalonia XProperty -> X : Double (attached) = NaN
-    avalonia YProperty -> Y : Double (attached) = NaN
+    avalonia SurfaceXProperty -> SurfaceX : Double (attached) = 0 [TwoWay]
+    avalonia SurfaceYProperty -> SurfaceY : Double (attached) = 0 [TwoWay]
+    avalonia XProperty -> X : Double (attached) = NaN [TwoWay]
+    avalonia YProperty -> Y : Double (attached) = NaN [TwoWay]
     method Boolean GetIsTracked(AvaloniaObject)
     method Double GetSurfaceX(AvaloniaObject)
     method Double GetSurfaceY(AvaloniaObject)

@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Avalonia;
+using Avalonia.Data;
 using ArxisStudio.Surface.UiDesigner;
 
 namespace ArxisStudio.Tests;
@@ -130,7 +131,8 @@ internal static class PublicSurface
             field.GetValue(null) is AvaloniaProperty property)
         {
             var kind = property.IsDirect ? "direct" : property.IsAttached ? "attached" : "styled";
-            return $"avalonia {field.Name} -> {property.Name} : {Name(property.PropertyType)} ({kind}){DefaultValue(property, field.DeclaringType!)}";
+            return $"avalonia {field.Name} -> {property.Name} : {Name(property.PropertyType)} ({kind})"
+                + DefaultValue(property, field.DeclaringType!) + DefaultBindingMode(property, field.DeclaringType!);
         }
 
         var constant = field is { IsLiteral: true, IsInitOnly: false }
@@ -171,6 +173,20 @@ internal static class PublicSurface
             return " = <" + Name(value.GetType()) + ">";
 
         return " = " + Literal(value);
+    }
+
+    /// <summary>
+    /// Режим привязки по умолчанию, если он не односторонний.
+    /// </summary>
+    /// <remarks>
+    /// Такое же умолчание, как значение: <c>{Binding Location}</c> без режима у двустороннего
+    /// свойства пишет в модель, у одностороннего — нет, и сигнатура этой разницы не покажет.
+    /// Односторонний не печатается — он у Avalonia обычный, и слепок иначе вырос бы на каждой строке.
+    /// </remarks>
+    private static string DefaultBindingMode(AvaloniaProperty property, Type owner)
+    {
+        var mode = property.GetMetadata(owner).DefaultBindingMode;
+        return mode is BindingMode.OneWay or BindingMode.Default ? string.Empty : $" [{mode}]";
     }
 
     private static string Accessors(PropertyInfo property)

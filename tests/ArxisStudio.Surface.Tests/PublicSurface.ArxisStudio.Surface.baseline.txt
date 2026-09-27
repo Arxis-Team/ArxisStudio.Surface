@@ -230,7 +230,7 @@ class ArxisStudio.Surface.SurfaceInteractionOptions : AvaloniaObject
     property Double ZoomStep { get; set; }
 class ArxisStudio.Surface.SurfaceItem : ContentControl
     avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
-    avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false
+    avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false [TwoWay]
     avalonia LocationProperty -> Location : Point (styled) = 0, 0
     ctor .ctor()
     event EventHandler<DragCompletedEventArgs> DragCompleted
