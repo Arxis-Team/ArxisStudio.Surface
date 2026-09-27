@@ -106,6 +106,15 @@ public class VirtualizationTests
         return stand;
     }
 
+    private static void Drag(Stand stand, Point from, Vector by)
+    {
+        stand.Window.MouseDown(from, MouseButton.Left);
+        stand.Window.MouseMove(from + new Vector(10, 5));
+        stand.Window.MouseMove(from + by);
+        stand.Window.MouseUp(from + by, MouseButton.Left);
+        stand.RunLayout();
+    }
+
     /// <summary>
     /// Развёрнуто ровно то, что пересекает видимую область с запасом, и закреплённое.
     /// </summary>
@@ -426,6 +435,79 @@ public class VirtualizationTests
         stand.RunLayout();
         Assert.Null(stand.Container(0));
         AssertConsistent(stand);
+    }
+
+    [AvaloniaFact]
+    public void Undo_And_Redo_Move_The_Same_Item_Whatever_Became_Of_Its_Container()
+    {
+        // Холст сдвинут так, что сворачивается один первый столбец, а входят четыре новых: контейнеры
+        // первого столбца уходят к новым элементам все. Отмена обязана найти элемент, а не двигать
+        // того, кому достался контейнер.
+        var stand = Create();
+        var edits = new List<SurfaceEditCompletedEventArgs>();
+        stand.View.EditCompleted += (_, e) => edits.Add(e);
+        var moved = stand.Container(0)!;
+        Drag(stand, new Point(50, 30), new Vector(40, 30));
+        Assert.Equal(new Point(40, 30), stand.Model(0).Location);
+        var edit = Assert.Single(edits);
+
+        // Щелчок отдал контейнеру выбор и фокус клавиатуры, а такой контейнер не сворачивается.
+        stand.View.Selection.Clear();
+        stand.View.Focus();
+        stand.Pan(new Point(550, 0));
+        Assert.Null(stand.Container(0));
+        Assert.NotEqual(-1, stand.View.IndexFromContainer(moved));
+
+        foreach (var change in edit.Changes)
+            stand.View.Revert(change);
+
+        Assert.Equal(new Point(0, 0), stand.Model(0).Location);
+        for (var i = 1; i < stand.Items.Count; i++)
+            Assert.Equal(LocationOf(i, 20), stand.Model(i).Location);
+
+        // Повтор так же находит элемент, где бы ни был его контейнер.
+        stand.Pan(new Point(-5000, -5000));
+        foreach (var change in edit.Changes)
+            stand.View.Reapply(change);
+
+        Assert.Equal(new Point(40, 30), stand.Model(0).Location);
+    }
+
+    [AvaloniaFact]
+    public void An_Order_Change_Reaches_Its_Item_Not_The_Container()
+    {
+        // Порядок перекрытия пишет только дизайнер интерфейса, а он не виртуализирует; правка здесь
+        // собрана руками и помнит элемент так же, как её помнила бы сборка правок жеста.
+        var stand = Create();
+        var container = stand.Container(0)!;
+        var change = new OrderChange(container, 0, 5);
+        change.RememberItem(stand.View);
+
+        stand.Pan(new Point(550, 0));
+        Assert.NotEqual(-1, stand.View.IndexFromContainer(container));
+
+        stand.View.Reapply(change);
+
+        Assert.Equal(0, container.ZIndex);
+        Assert.Equal(5, stand.Container(0)!.ZIndex);
+    }
+
+    [AvaloniaFact]
+    public void A_Container_Given_Back_Keeps_No_Size_Or_Order_Of_Its_Item()
+    {
+        // Размер и перекрытие редактор пишет контейнеру сам, локальными значениями; переработанный
+        // контейнер отдал бы их следующему элементу.
+        var stand = Create();
+        var container = stand.Container(0)!;
+        Assert.True(stand.View.SetTargetGeometry(container, new Rect(0, 0, 180, 90)));
+        stand.View.ApplyOrder(container, 5);
+
+        stand.Pan(new Point(-5000, -5000));
+
+        Assert.Equal(-1, stand.View.IndexFromContainer(container));
+        Assert.True(double.IsNaN(container.Width));
+        Assert.True(double.IsNaN(container.Height));
+        Assert.Equal(0, container.ZIndex);
     }
 
     [AvaloniaFact]

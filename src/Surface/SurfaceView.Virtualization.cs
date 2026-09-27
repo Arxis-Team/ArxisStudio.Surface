@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Selection;
 
 namespace ArxisStudio.Surface;
@@ -46,6 +47,19 @@ public partial class SurfaceView
     {
         if (ItemsPanelRoot is VirtualizingSurfacePanel { IsVirtualizing: true } panel)
             panel.RealizeWithin(bounds);
+    }
+
+    /// <summary>
+    /// Контейнер элемента: развёрнутый сейчас или развёрнутый ради этого вызова.
+    /// </summary>
+    /// <returns>Контейнер или <see langword="null"/>, если элемента в коллекции нет.</returns>
+    internal Control? RealizeItem(object? item)
+    {
+        var index = ItemsView.IndexOf(item);
+        if (index < 0)
+            return null;
+
+        return ContainerFromIndex(index) ?? (ItemsPanelRoot as VirtualizingSurfacePanel)?.RealizeNow(index);
     }
 
     /// <inheritdoc />

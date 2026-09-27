@@ -350,7 +350,7 @@ public partial class SurfaceView
         if (scope == null)
             return false;
 
-        var changes = scope.BuildChanges();
+        var changes = scope.BuildChanges(this);
         if (changes.Count == 0)
             return false;
 

@@ -66,7 +66,7 @@ internal sealed class SurfaceEditScope
     /// <summary>
     /// Собирает итоговый список изменений, отбрасывая те, что вернулись к исходному.
     /// </summary>
-    public IReadOnlyList<TargetChange> BuildChanges()
+    public IReadOnlyList<TargetChange> BuildChanges(SurfaceView view)
     {
         List<TargetChange>? changes = null;
 
@@ -98,7 +98,14 @@ internal sealed class SurfaceEditScope
             }
         }
 
-        return changes ?? (IReadOnlyList<TargetChange>)Array.Empty<TargetChange>();
+        if (changes == null)
+            return Array.Empty<TargetChange>();
+
+        // Элемент — на конец жеста: участники жеста выбраны, и контейнеры у них те же, что на входе.
+        foreach (var change in changes)
+            change.RememberItem(view);
+
+        return changes;
     }
 
     private Entry Touch(SurfaceView view, Control target)

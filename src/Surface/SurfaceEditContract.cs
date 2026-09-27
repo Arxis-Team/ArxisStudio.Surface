@@ -63,7 +63,52 @@ public abstract class TargetChange
     /// <summary>
     /// Получает изменённый контрол.
     /// </summary>
+    /// <remarks>
+    /// У виртуализирующей поверхности контейнер элемента живёт, пока элемент виден: к отмене он может
+    /// лежать в пуле или стоять на другом элементе. Отмена и повтор поэтому ищут контейнер по элементу,
+    /// которому принадлежал этот (ADR 0007), а свойство остаётся тем контролом, что менялся.
+    /// </remarks>
     public Control Target { get; }
+
+    /// <summary>
+    /// Элемент коллекции, чьим контейнером был <see cref="Target"/>, если он контейнер верхнего уровня.
+    /// </summary>
+    internal object? Item { get; private set; }
+
+    /// <summary>
+    /// Запомнен ли элемент: он сам бывает <see langword="null"/>.
+    /// </summary>
+    internal bool HasItem { get; private set; }
+
+    /// <summary>
+    /// Запоминает элемент, чьим контейнером сейчас служит <see cref="Target"/>.
+    /// </summary>
+    internal void RememberItem(SurfaceView view)
+    {
+        if (view.IndexFromContainer(Target) < 0)
+            return;
+
+        Item = view.ItemFromContainer(Target);
+        HasItem = true;
+    }
+
+    /// <summary>
+    /// Находит, к чему применять изменение: к контейнеру элемента, а не к контролу, который им был.
+    /// </summary>
+    /// <returns>
+    /// Контейнер элемента — развёрнутый сейчас, если был свёрнут; <see langword="null"/>, если
+    /// элемента в коллекции больше нет.
+    /// </returns>
+    internal Control? ResolveTarget(SurfaceView view)
+    {
+        if (!HasItem)
+            return Target;
+
+        if (view.IndexFromContainer(Target) >= 0 && Equals(view.ItemFromContainer(Target), Item))
+            return Target;
+
+        return view.RealizeItem(Item);
+    }
 
     /// <summary>
     /// Применяет изменение к поверхности: возвращает состояние до него или после.
@@ -105,7 +150,10 @@ public sealed class OrderChange : TargetChange
     public int NewZIndex { get; }
 
     internal override void ApplyTo(SurfaceView view, bool revert)
-        => view.ApplyOrder(Target, revert ? OldZIndex : NewZIndex);
+    {
+        if (ResolveTarget(view) is { } target)
+            view.ApplyOrder(target, revert ? OldZIndex : NewZIndex);
+    }
 }
 
 /// <summary>
@@ -174,7 +222,10 @@ public sealed class GeometryChange : TargetChange
     public Rect NewBounds { get; }
 
     internal override void ApplyTo(SurfaceView view, bool revert)
-        => view.ApplyGeometry(Target, revert ? OldBounds : NewBounds);
+    {
+        if (ResolveTarget(view) is { } target)
+            view.ApplyGeometry(target, revert ? OldBounds : NewBounds);
+    }
 }
 
 /// <summary>

@@ -275,23 +275,34 @@ public partial class SurfaceView : SelectingItemsControl
     }
 
     /// <summary>
-    /// Снимает у контейнера привязку положения, когда он уходит в пул или удаляется.
+    /// Отпускает контейнер, который уходит в пул или удаляется: снимает привязку положения и то, что
+    /// редактор записал ему сам.
     /// </summary>
     /// <param name="container">Контейнер.</param>
     /// <remarks>
     /// Контейнер в пуле хранит прежний контекст данных, и не снятая привязка продолжала бы двигать его
-    /// вслед прежней модели, а отданный другому элементу — слушать обе. Положение, которое хост поставил
-    /// сам, без <see cref="ItemLocationBinding"/>, не трогается.
+    /// вслед прежней модели, а отданный другому элементу — слушать обе. Размер и порядок перекрытия
+    /// редактор пишет контейнеру локальными значениями — жестом, отменой, <c>SetTargetGeometry</c>, — и
+    /// переработанный контейнер отдал бы их следующему элементу; привязка хоста к ним из стиля от этого
+    /// не страдает. Положение, которое хост поставил сам, без <see cref="ItemLocationBinding"/>, не
+    /// трогается.
     /// </remarks>
     protected override void ClearContainerForItemOverride(Control container)
     {
         base.ClearContainerForItemOverride(container);
 
-        if (container is SurfaceItem { LocationBinding: { } binding } item)
+        if (container is not SurfaceItem item)
+            return;
+
+        if (item.LocationBinding is { } binding)
         {
             binding.Dispose();
             item.LocationBinding = null;
         }
+
+        item.ClearValue(WidthProperty);
+        item.ClearValue(HeightProperty);
+        item.ClearValue(ZIndexProperty);
     }
 
     /// <summary>
