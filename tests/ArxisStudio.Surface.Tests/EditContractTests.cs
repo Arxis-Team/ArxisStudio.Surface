@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.VisualTree;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Xunit;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
@@ -321,6 +322,49 @@ public class EditContractTests
         adorner.RaiseEvent(new ResizeDeltaEventArgs(delta, ResizeDirection.Right, SelectionAdorner.ResizeDeltaEvent));
         adorner.RaiseEvent(new VectorEventArgs { RoutedEvent = SelectionAdorner.ResizeCompletedEvent, Vector = delta });
         harness.RunLayout();
+    }
+
+    /// <summary>
+    /// Отмена и повтор сдвига не закрепляют размер: его задаёт содержимое, и после них тоже.
+    /// </summary>
+    /// <remarks>
+    /// Правка сдвига несёт размер в обеих рамках, и прежде отмена писала его контейнеру в
+    /// <c>Width</c>/<c>Height</c>. Узел графа, размер которого задаёт содержимое, после отмены сдвига
+    /// переставал расти — у выбранного толще рамка, и живая проверка демо нашла это по концу связи,
+    /// отставшему на пиксель. Стенд — голый <see cref="SurfaceView"/> и готовый контейнер без размера.
+    /// </remarks>
+    [AvaloniaFact]
+    public void Undoing_A_Move_Leaves_The_Size_To_The_Content()
+    {
+        var content = new Border { Width = 80, Height = 40 };
+        var item = new SurfaceItem { Location = new Point(100, 100), Content = content };
+        var view = new SurfaceView { ItemsSource = new[] { item } };
+        var window = new Window { Width = 800, Height = 600, Content = view };
+        window.Show();
+        var manager = window.GetLayoutManager()!;
+        manager.ExecuteInitialLayoutPass();
+
+        var edits = new List<SurfaceEditCompletedEventArgs>();
+        view.EditCompleted += (_, e) => edits.Add(e);
+        var from = new Point(140, 120);
+        window.MouseDown(from, MouseButton.Left);
+        window.MouseMove(from + new Vector(10, 6));
+        window.MouseMove(from + new Vector(60, 40));
+        window.MouseUp(from + new Vector(60, 40), MouseButton.Left);
+        manager.ExecuteLayoutPass();
+        var change = Assert.IsType<GeometryChange>(edits.Single().Changes.Single());
+
+        view.Revert(change);
+        manager.ExecuteLayoutPass();
+        Assert.Equal(new Point(100, 100), item.Location);
+
+        view.Reapply(change);
+        content.Width = 120;
+        manager.ExecuteLayoutPass();
+
+        Assert.Equal(new Point(160, 140), item.Location);
+        Assert.False(item.IsSet(Layoutable.WidthProperty), "сдвиг, отменённый и повторённый, задал ширину");
+        Assert.Equal(120, item.Bounds.Width);
     }
 
     [AvaloniaFact]

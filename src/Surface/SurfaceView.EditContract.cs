@@ -277,6 +277,11 @@ public partial class SurfaceView
     /// Предназначен для отмены и повтора: принимает <see cref="GeometryChange.OldBounds"/>
     /// или <see cref="GeometryChange.NewBounds"/> напрямую. Запись изменений на время
     /// вызова подавляется, поэтому отмена не порождает новую запись в стеке.
+    /// <para>
+    /// Пишет обе половины рамки, в том числе размер — локальными <c>Width</c>/<c>Height</c>.
+    /// <see cref="Revert"/> и <see cref="Reapply"/> размер правки сдвига не пишут: его правка не
+    /// меняла, а записанный закрепил бы контейнер, размер которого задаёт содержимое.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code language="csharp"><![CDATA[
@@ -289,11 +294,21 @@ public partial class SurfaceView
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
+        ApplyGeometryCore(target, bounds, size: true);
+    }
+
+    /// <summary>
+    /// Применяет рамку или одно положение, не создавая новой единицы редактирования.
+    /// </summary>
+    internal void ApplyGeometryCore(Control target, Rect bounds, bool size)
+    {
         var previous = _suppressEditRecording;
         _suppressEditRecording = true;
         try
         {
-            SetTargetSize(target, bounds.Size);
+            if (size)
+                SetTargetSize(target, bounds.Size);
+
             SetTargetPosition(target, bounds.Position);
         }
         finally

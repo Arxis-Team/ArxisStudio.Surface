@@ -223,8 +223,10 @@ public sealed class GeometryChange : TargetChange
 
     internal override void ApplyTo(SurfaceView view, bool revert)
     {
+        // Размер, которого правка не меняла, не пишется: сдвиг несёт его в обеих рамках, и отмена
+        // закрепила бы контейнер, размер которого задаёт содержимое, — узел графа переставал расти.
         if (ResolveTarget(view) is { } target)
-            view.ApplyGeometry(target, revert ? OldBounds : NewBounds);
+            view.ApplyGeometryCore(target, revert ? OldBounds : NewBounds, size: OldBounds.Size != NewBounds.Size);
     }
 }
 
