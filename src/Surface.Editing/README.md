@@ -1,0 +1,267 @@
+# ArxisStudio.Surface.Editing
+
+Инструменты редактирования поверх [ядра](../Surface/README.md): рамка выделения с ручками изменения
+размера, привязка к сетке, направляющие выравнивания и равные интервалы, пользовательские направляющие
+и линейки, блокировки перемещения и размера, миникарта. Сборка ссылается только на ядро и не знает ни
+дизайнера интерфейса, ни редактора узлов.
+
+| | |
+| --- | --- |
+| Пакет и сборка | `ArxisStudio.Surface.Editing`, `net8.0` |
+| Пространство имён | `ArxisStudio.Surface.Editing` |
+| Адрес разметки | `https://github.com/Arxis-Team/ArxisStudio.Surface` |
+| Тема | `avares://ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml` |
+| Зависимости | `ArxisStudio.Surface` |
+
+Тему инструментов включают точки входа дизайнера интерфейса и редактора узлов. Приложению на голом
+`SurfaceView`, которому нужны миникарта или линейка, достаточно двух тем:
+
+```xml
+<ResourceInclude Source="avares://ArxisStudio.Surface/Themes/SurfaceTheme.axaml" />
+<ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml" />
+```
+
+## Как инструменты попадают на поверхность
+
+Инструменты бывают двух видов.
+
+- **Контролы**, которые хост ставит сам и связывает с поверхностью свойством `Editor`:
+  `SurfaceMinimap`, `SurfaceRuler`, `SnapGuideLayer`. Работают с любым `SurfaceView`.
+- **Службы**, которые встраиваются в жесты поверхности: привязка (`SnapService`), пользовательские
+  направляющие (`UserGuideService`), политика блокировок. Они internal, и регистрирует их редактор
+  слоя выше через швы ядра. Свойства служб объявлены присоединёнными у `SurfaceSnapping` и
+  `SurfaceGuides`, а редактор забирает их себе через `AddOwner`, поэтому в разметке они выглядят его
+  собственными (`UiDesignerView.ShowRulers`, `UiDesignerView.Guides`).
+
+| Возможность | `SurfaceView` | `NodeEditor` | `UiDesignerView` |
+| --- | --- | --- | --- |
+| миникарта | да | да, со связями | да |
+| шкала линейки | да | да | да |
+| привязка к сетке | нет | да, для узлов | да |
+| направляющие выравнивания, равные интервалы | нет | нет | да |
+| пользовательские направляющие, протяжка с линейки | нет | нет | да |
+| рамка с ручками изменения размера | нет | нет | да |
+| блокировки `SurfaceInteraction` | нет | нет | да |
+
+Числа и выключатели привязки лежат в `SurfaceInteractionOptions` ядра (`IsSnapToGridEnabled`, `SnapStep`,
+`IsSnapToGuidesEnabled`, `SnapGuideTolerance`, `IsEqualSpacingEnabled`), модификатор обхода — в
+`SurfaceInputGestures.SnapBypassModifiers` (по умолчанию `Alt`).
+
+## Миникарта
+
+`SurfaceMinimap` показывает контейнеры верхнего уровня и рамку видимой области. Хост ставит её рядом с
+поверхностью или поверх неё; остальное карта берёт у `Editor` сама.
+
+```xml
+<Grid>
+    <surface:NodeEditor x:Name="Editor" ItemsSource="{Binding Nodes}" Links="{Binding Links}" />
+    <surface:SurfaceMinimap Editor="{Binding #Editor}" Width="220" Height="150"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" />
+</Grid>
+```
+
+- Показывает **объединение занятого и видимого** с полем в 5 % большей стороны, в одном масштабе по
+  обеим осям: рамка видимой области всегда на карте. Следствие: щелчок в пустоту за краем занятого
+  уводит холст туда, карта раздвигается, и повторный щелчок в ту же точку уводит дальше. Внутри
+  занятого повторный щелчок холст не двигает.
+- Щелчок ставит туда центр холста. Взятую рамку ведут без скачка: запоминается смещение захвата. Пока
+  рамку тянут, соответствие карты заморожено, иначе карта ехала бы под указателем.
+- Перерисовывается на смене viewport и после каждого прохода раскладки **окна** — событие раскладки у
+  Avalonia общее на окно. На графе из 2000 узлов перерисовка стоит около 1,4 мс в `Release`, то есть
+  примерно половину кадра перетаскивания.
+- Снятая с дерева карта отписывается от поверхности.
+
+Слой выше дорисовывает на карте своё через internal-шов `IMinimapLayer`, найденный службой поверхности:
+так редактор узлов добавляет связи.
+
+| Свойство | Ключ |
+| --- | --- |
+| `Background` | `SurfaceMinimap.Background` |
+| `ItemFill` | `SurfaceMinimap.ItemFill` |
+| `ViewportFill`, `ViewportStroke` | `SurfaceMinimap.ViewportFill`, `SurfaceMinimap.ViewportStroke` |
+| курсор над картой | `SurfaceMinimap.Cursor` |
+
+## Линейки
+
+`SurfaceRuler` ставится рядом с поверхностью, а не в её шаблон: у поверхности точка ввода совпадает с
+точкой viewport'а, и слой сверху или слева сдвинул бы это соответствие. Масштаб и положение линейка
+берёт у `Editor`.
+
+```xml
+<Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,*">
+    <surface:SurfaceRuler Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Editor="{Binding #Editor}" />
+    <surface:SurfaceRuler Grid.Row="1" Grid.Column="0" Orientation="Vertical" Editor="{Binding #Editor}" />
+    <surface:UiDesignerView Grid.Row="1" Grid.Column="1" x:Name="Editor" Guides="{Binding Guides}" />
+</Grid>
+```
+
+- Шаг шкалы — ряд 1-2-5 на степенях десяти; крупное деление определяется номером шага, а не остатком,
+  поэтому подписи не пропадают вдали от начала координат.
+- Протяжка с горизонтальной линейки создаёт горизонтальную направляющую, с вертикальной — вертикальную.
+  Отпускание мимо холста не создаёт ничего. Создание — запрос `GuideChangeRequested`, поэтому линейка
+  создаёт направляющие только у поверхности со службой направляющих и подписчиком на запрос; у
+  остальных она показывает шкалу.
+- `ShowRulers` на поверхности гасит обе линейки разом: линейка ставит себе `IsVisible` через
+  `SetCurrentValue`, и привязка хоста это переживает. `IsScaleVisible` на линейке убирает только деления
+  и подписи; полоса остаётся, и с неё по-прежнему вытягиваются направляющие.
+
+Ключи: `Surface.Ruler.BackgroundBrush`, `Surface.Ruler.TickBrush`, `Surface.Ruler.LabelBrush`,
+`Surface.Ruler.LabelFontSize`, `Surface.Ruler.Thickness`, `Surface.Ruler.CursorHorizontal`,
+`Surface.Ruler.CursorVertical`.
+
+## Пользовательские направляющие
+
+`SurfaceGuide` — линия с ориентацией и мировой координатой (`SurfaceGuide.Horizontal(y)`,
+`SurfaceGuide.Vertical(x)`). Набор задаёт хост свойством `Guides` (`SurfaceGuides.Guides`); коллекция с
+`INotifyCollectionChanged` отслеживается, переприсваивать её не нужно.
+
+```csharp
+public ObservableCollection<SurfaceGuide> Guides { get; } = new()
+{
+    SurfaceGuide.Vertical(560),
+    SurfaceGuide.Horizontal(420),
+};
+
+editor.GuideChangeRequested += (_, e) =>
+{
+    switch (e.Kind)
+    {
+        case SurfaceGuideChangeKind.Add: Guides.Add(e.Guide); break;
+        case SurfaceGuideChangeKind.Move: Guides[Guides.IndexOf(e.Original!.Value)] = e.Guide; break;
+        case SurfaceGuideChangeKind.Remove: Guides.Remove(e.Guide); break;
+    }
+
+    e.Handled = true;
+};
+```
+
+- Набором владеет хост. Протяжка линии, протяжка с линейки и увод линии за край холста — запросы;
+  пока обработчик не выставил `Handled`, ничего не меняется. Без подписчика жест не начинается.
+- Линия рисуется через весь viewport: она задаёт координату, а не отношение двух элементов.
+- Притягивает так же, как сосед, — по общим правилам направляющих ниже.
+- `ShowGuides = false` прячет линии, не трогая набор; спрятанную нельзя ни подвинуть, ни вытянуть новую.
+  Притяжение к ней продолжается, как у сетки при `ShowGrid = false`; выключает его
+  `IsSnapToGuidesEnabled`.
+- Нажатие на линию перехватывается на туннелировании, раньше контейнера под ней; мимо линии выбор
+  работает как без неё.
+
+Опубликованное: `UserGuides` — снимок набора, `GuidePreview` — линия, которую сейчас тянут.
+
+## Привязка к сетке
+
+Перетаскивание и изменение размера ставят результат на узел сетки.
+
+- **Привязывается результат, а не смещение**, иначе элемент сохранил бы исходный сдвиг относительно
+  сетки.
+- **При изменении размера привязывается двигающийся край**; противоположный стоит.
+- **У группы привязывается рамка выделения целиком**, а не каждый элемент.
+- Смещение стрелками не привязывается: клавиатура задаёт шаг точно.
+- Шаг — `SnapStep`; `NaN` (по умолчанию) берёт `CellSize` сетки шаблона, поэтому нарисованное и
+  притягивающее не расходятся. Нет сетки — нет привязки.
+- Середина между узлами округляется вверх (`Math.Floor(v / step + 0.5)`), а не к чётному: край не
+  дёргается назад при медленной протяжке.
+
+## Направляющие выравнивания
+
+Во время перетаскивания и изменения размера элемент выравнивается по краям и центрам соседей, а
+совпавшие линии рисуются поверх холста.
+
+- По каждой оси сравниваются три точки элемента с тремя точками соседа: ближний край, центр, дальний
+  край. Побеждает наименьшее смещение.
+- **Оси независимы**: направляющая занимает свою ось, сетка получает другую.
+- **Направляющая сильнее сетки** на занятой оси.
+- Соседи — то, что поверхность даёт выбрать, плюс границы формы; у контейнера верхнего уровня — другие
+  контейнеры. Всё, что едет вместе с жестом, из соседей исключено. Соседи снимаются один раз на входе
+  в жест.
+- `SnapGuideTolerance` задан в пикселях экрана и делится на масштаб.
+- При изменении размера выравнивается потянутый край — и по краю соседа, и по его центральной оси.
+- Линия натянута между элементом и соседом; её вид — `SurfaceSnapGuideKind.Edge` или `Centre`. Центр
+  засчитывается, только когда центры совпали с обеих сторон.
+
+Опубликованное: `SnapGuides` — `IReadOnlyList<SurfaceSnapGuide>` (`Orientation`, `Position`, `Start`,
+`End`, `Kind`), публикуется, только если набор изменился.
+
+## Равные интервалы
+
+Элемент встаёт туда, где зазоры вокруг него равны, а зазоры показываются отрезками с засечками.
+
+- **Посередине**: зазоры до соседей слева и справа (сверху и снизу) равны.
+- **Повтор шага**: зазор до ближайшего соседа равен зазору, уже стоящему дальше по ряду; работает и в
+  конце ряда.
+- Из подходящих побеждает ближайший к ведомому положению. Показывается вся цепочка равных зазоров.
+- Сосед по интервалу — только в том же ряду, то есть перекрывающийся по другой оси; прямоугольники
+  нулевой площади (пользовательские направляющие) не участвуют.
+- Порядок разрешения на оси: выравнивание → интервал → сетка.
+- При изменении размера неподвижный край задаёт зазор, потянутый встаёт так, чтобы второй стал равным;
+  схлопнуть элемент ради равенства нельзя.
+
+Опубликованное: `SpacingHints` — `IReadOnlyList<SurfaceSpacingHint>` (`Orientation`, `Position`,
+`Start`, `End`).
+
+## Рамка выделения и ручки
+
+`SelectionAdorner` — рамка и восемь ручек. Дизайнер интерфейса ставит её в оверлей своего шаблона,
+а внешний вид задаётся ресурсами, без копирования шаблона.
+
+| Свойство | Смысл |
+| --- | --- |
+| `Role` | `Primary`, `Secondary` (у каждого из нескольких выбранных), `Group` (рамка кластера) |
+| `ResizePolicy`, `MovePolicy` | действующие политики; запрещённые ручки неактивны |
+| `IsInteractive`, `ShowHandles` | принимает ли ввод, показывает ли ручки |
+| `HandleSize`, `StrokeThickness`, `StrokeDashArray`, `AdornerBrush`, `Fill` | вид |
+
+События `ResizeStarted`, `ResizeDelta` (`Delta`, `Direction`), `ResizeCompleted`. Полностью
+заблокированный target (`None`/`None`) рисуется locked-вариантом. Смещение ручки считается от
+указателя, а не от самой ручки: остаток, съеденный привязкой или ограничением, возвращается следующим
+движением, и край не отстаёт от курсора.
+
+Ключи — по ролям и состояниям: `Surface.SelectionAdorner.Brush`, `…Fill`, `…PrimaryBrush`,
+`…PrimaryFill`, `…SecondaryBrush`, `…SecondaryFill`, `…GroupBrush`, `…GroupFill`, `…LockedBrush`,
+`…HandleBackground`, `…HandlePointerOverBackground`, `…HandlePressedBackground`,
+`…HandleLockedBackground`, `…HandleLockedBorderBrush`, `…HandleSize`, курсоры `…CursorTopLeft`,
+`…CursorTop`, `…CursorTopRight`, `…CursorLeft`, `…CursorRight`, `…CursorBottomLeft`, `…CursorBottom`,
+`…CursorBottomRight`. Отступ ручки выводится из `HandleSize`, поэтому размер ручки меняется одним
+ключом.
+
+## Блокировки
+
+`SurfaceInteraction` — присоединённые политики на редактируемых контролах:
+
+- `SurfaceInteraction.MovePolicy` — `None`, `X`, `Y`, `Both`;
+- `SurfaceInteraction.ResizePolicy` — флаги сторон: `None`, `Left`, `Top`, `Right`, `Bottom`,
+  `Horizontal`, `Vertical`, `All`.
+
+```xml
+<TextBlock surface:Layout.X="200" surface:Layout.Y="100"
+           surface:SurfaceInteraction.MovePolicy="X"
+           surface:SurfaceInteraction.ResizePolicy="Horizontal"
+           Text="Заголовок" />
+```
+
+Политики действуют одинаково на одиночный target, группу и групповые операции; смешанная группа из
+заблокированного и свободного не двигается вовсе. Дизайнер интерфейса пересекает их с возможностями
+панели-родителя: действующая политика — `пользовательская ∧ раскладки`. Ограничивают политики жесты,
+а не хоста: `SetTargetGeometry` их не спрашивает.
+
+## Замена слоя направляющих
+
+Встроенный слой рисует линии выравнивания, интервалы, пользовательские направляющие и превью протяжки.
+Хост, которому нужна своя отрисовка, кладёт поверх поверхности `SnapGuideLayer` или свой контрол и
+гасит встроенный:
+
+```xml
+<Grid>
+    <surface:UiDesignerView x:Name="Editor" ShowSnapGuides="False" ShowGuides="False" />
+    <surface:SnapGuideLayer Editor="{Binding #Editor}" LineBrush="Orange" />
+</Grid>
+```
+
+Слою достаточно `Editor`: положение, масштаб и все четыре набора (`SnapGuides`, `SpacingHints`,
+`UserGuides`, `GuidePreview`) он берёт оттуда. Выключатели показа поверхности он **не** подхватывает —
+иначе погас бы вместе со встроенным; у него свои `ShowSnapGuides` и `ShowUserGuides`. Притяжение и
+интервалы при спрятанном встроенном слое продолжают работать.
+
+Ключи встроенного слоя: `Surface.SnapGuideBrush` (край), `Surface.SnapGuide.CentreBrush` (центр),
+`Surface.SnapGuide.DashStyle`, `Surface.SnapGuide.Thickness` (пиксели устройства),
+`Surface.UserGuideBrush`, `Surface.UserGuide.DashStyle`, `Surface.SpacingBrush`. Линии выравнивания по
+умолчанию пунктирные — они живут внутри жеста, пользовательские сплошные — они стоят на макете.

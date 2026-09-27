@@ -2,7 +2,7 @@
 
     <!--
         Общее у библиотек семейства ArxisStudio.Surface (ADR 0003, 0004): ядро, инструменты
-        редактирования, дизайнер форм и редактор узлов. Каждая — отдельная сборка и отдельный пакет,
+        редактирования, дизайнер интерфейса и редактор узлов. Каждая — отдельная сборка и отдельный пакет,
         а направление ссылок между ними держат ProjectReference: сборка слоя ниже не
         ссылается на слой выше, поэтому ссылку вверх не даст написать компилятор.
     -->
@@ -57,8 +57,12 @@
         <PackageReference Include="Avalonia"/>
     </ItemGroup>
 
+    <!--
+        Каждый пакет везёт свой README — из папки своего проекта: общий README репозитория
+        описывает семейство, а потребителю пакета нужен его собственный API.
+    -->
     <ItemGroup>
-        <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath="/"/>
+        <None Include="$(MSBuildProjectDirectory)/README.md" Pack="true" PackagePath="/"/>
     </ItemGroup>
 
 </Project>
