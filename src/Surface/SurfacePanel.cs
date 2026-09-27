@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface;
 
@@ -16,6 +18,12 @@ namespace ArxisStudio.Surface;
 /// являющийся <see cref="SurfaceItem"/>, стоит в начале координат.
 /// </para>
 /// <para>
+/// Сдвиг элемента переставляет его одного (ADR 0007): мера ребёнка от положения не зависит,
+/// и перемерять и переставлять всех ради одного значило бы платить за каждый кадр
+/// перетаскивания размером всего холста. Полная расстановка — после прохода меры, то есть
+/// когда сменился чей-то размер или состав детей.
+/// </para>
+/// <para>
 /// Дизайнер интерфейса пользуется своей панелью: его формы стоят в координатах
 /// <c>Layout.X/Y</c>, которые он синхронизирует с <see cref="SurfaceItem.Location"/>.
 /// </para>
@@ -28,19 +36,27 @@ public class SurfacePanel : Panel
     public static readonly StyledProperty<Rect> ExtentProperty =
         AvaloniaProperty.Register<SurfacePanel, Rect>(nameof(Extent));
 
+    // Сдвинутые с прошлой расстановки: только их расстановка и ставит заново.
+    private readonly HashSet<SurfaceItem> _moved = new();
+    private bool _arrangeAll = true;
+    private bool _extentStale;
+
     static SurfacePanel()
     {
-        // Сдвиг элемента меняет и его место, и занятую область.
-        AffectsParentMeasure<SurfacePanel>(SurfaceItem.LocationProperty);
-        AffectsParentArrange<SurfacePanel>(SurfaceItem.LocationProperty);
+        SurfaceItem.LocationProperty.Changed.AddClassHandler<SurfaceItem>((item, e) =>
+        {
+            if (item.GetVisualParent() is SurfacePanel panel)
+                panel.OnChildMoved(item, e.OldValue is Point old ? old : default);
+        });
     }
 
     /// <summary>
     /// Получает область в мировых координатах, которую занимают элементы.
     /// </summary>
     /// <remarks>
-    /// Пересчитывается на каждом измерении. Её читает <see cref="SurfaceView.ItemsExtent"/>,
-    /// а через него — вписывание в окно.
+    /// Её читает <see cref="SurfaceView.ItemsExtent"/>, а через него — вписывание в окно. Сдвиг
+    /// элемента растит её объединением; сжаться она может, только если с края ушёл элемент,
+    /// который его и задавал, — тогда она пересчитывается целиком в ближайшей расстановке.
     /// </remarks>
     public Rect Extent
     {
@@ -62,22 +78,17 @@ public class SurfacePanel : Panel
     protected override Size MeasureOverride(Size availableSize)
     {
         var infinite = new Size(double.PositiveInfinity, double.PositiveInfinity);
-        Rect? extent = null;
-
         foreach (var child in Children)
         {
             MeasuredChildren++;
             child.Measure(infinite);
-
-            var size = child.DesiredSize;
-            if (size.Width <= 0 || size.Height <= 0)
-                continue;
-
-            var bounds = new Rect(LocationOf(child), size);
-            extent = extent is { } current ? current.Union(bounds) : bounds;
         }
 
-        var occupied = extent ?? default;
+        // После меры — сменился ли чей-то размер или состав детей — расставляются все, охват
+        // заново: состав детей панель меняет только проходом меры.
+        _arrangeAll = true;
+        var occupied = ComputeExtent();
+        _extentStale = false;
         SetCurrentValue(ExtentProperty, occupied);
 
         // Как и панель дизайнера интерфейса: в холсте панель меряют бесконечностью, и тогда
@@ -90,21 +101,84 @@ public class SurfacePanel : Panel
     /// <inheritdoc />
     protected override Size ArrangeOverride(Size finalSize)
     {
-        foreach (var child in Children)
+        if (_arrangeAll)
         {
-            ArrangedChildren++;
-            child.Arrange(new Rect(LocationOf(child), child.DesiredSize));
+            foreach (var child in Children)
+                ArrangeChild(child);
+
+            _arrangeAll = false;
+        }
+        else
+        {
+            foreach (var item in _moved)
+            {
+                // Ушедший из панели после сдвига ставить уже некуда.
+                if (ReferenceEquals(item.GetVisualParent(), this))
+                    ArrangeChild(item);
+            }
+        }
+
+        _moved.Clear();
+
+        if (_extentStale)
+        {
+            _extentStale = false;
+            SetCurrentValue(ExtentProperty, ComputeExtent());
         }
 
         return finalSize;
     }
 
-    private static Point LocationOf(Control child)
+    private void ArrangeChild(Control child)
     {
-        if (child is not SurfaceItem item)
-            return default;
-
-        var location = item.Location;
-        return double.IsNaN(location.X) || double.IsNaN(location.Y) ? default : location;
+        ArrangedChildren++;
+        child.Arrange(new Rect(LocationOf(child), child.DesiredSize));
     }
+
+    private void OnChildMoved(SurfaceItem item, Point oldLocation)
+    {
+        if (!_arrangeAll)
+            _moved.Add(item);
+
+        var size = item.DesiredSize;
+        if (!_extentStale && size.Width > 0 && size.Height > 0)
+        {
+            var extent = Extent;
+            var before = new Rect(Normalize(oldLocation), size);
+            var after = new Rect(LocationOf(item), size);
+
+            // Прежний прямоугольник на краю — край мог уйти вместе с ним: пересчёт целиком.
+            if (extent.Width <= 0 || extent.Height <= 0 || TouchesEdge(before, extent))
+                _extentStale = true;
+            else if (!extent.Contains(after))
+                SetCurrentValue(ExtentProperty, extent.Union(after));
+        }
+
+        InvalidateArrange();
+    }
+
+    private Rect ComputeExtent()
+    {
+        Rect? extent = null;
+        foreach (var child in Children)
+        {
+            var size = child.DesiredSize;
+            if (size.Width <= 0 || size.Height <= 0)
+                continue;
+
+            var bounds = new Rect(LocationOf(child), size);
+            extent = extent is { } current ? current.Union(bounds) : bounds;
+        }
+
+        return extent ?? default;
+    }
+
+    private static bool TouchesEdge(Rect bounds, Rect extent) =>
+        bounds.X <= extent.X || bounds.Y <= extent.Y || bounds.Right >= extent.Right || bounds.Bottom >= extent.Bottom;
+
+    private static Point LocationOf(Control child) =>
+        child is SurfaceItem item ? Normalize(item.Location) : default;
+
+    private static Point Normalize(Point location) =>
+        double.IsNaN(location.X) || double.IsNaN(location.Y) ? default : location;
 }

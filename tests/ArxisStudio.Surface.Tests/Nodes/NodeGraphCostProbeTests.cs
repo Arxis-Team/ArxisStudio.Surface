@@ -241,9 +241,9 @@ public class NodeGraphCostProbeTests
     public void A_Drag_Frame_Grows_With_The_Graph_Though_Its_Links_Do_Not()
     {
         // Связи за кадр пересчитываются только у узла, и всё же кадр растёт вместе с графом:
-        // платят раскладка, проходящая по всем детям обеих панелей, и отрисовка. Кадр — это уже
-        // миллисекунды, и рост здесь утверждается; но кадр малого графа шумит в разы, поэтому
-        // порог мягкий, а разбивка печатается: по ней решается, чем лечить.
+        // безголовый ввод прогоняет и раскладку, и отрисовку окна, а отрисовка обходит все
+        // визуалы, видимые и нет. Кадр — это уже миллисекунды, и рост здесь утверждается; но кадр
+        // малого графа шумит в разы, поэтому порог мягкий, а разбивка печатается.
         var drag = new Dictionary<int, double>();
         foreach (var size in new[] { Small, Large })
         {
@@ -327,35 +327,53 @@ public class NodeGraphCostProbeTests
     }
 
     [AvaloniaFact]
-    public void A_Drag_Frame_Arranges_Every_Child_Of_Both_Panels()
+    public void A_Drag_Frame_Arranges_The_Moved_Node_Alone()
     {
-        // Откуда рост кадра: сдвиг одного узла заново расставляет всех детей панели узлов, а две
-        // пересчитанные связи — все связи своей панели. Счётчики печатаются и утверждаются.
+        // Сдвиг узла переставляет его одного и ничего не перемеряет — при любом размере графа.
         foreach (var size in new[] { Small, Large })
         {
             var stand = CreateGraph(size);
             var nodes = NodePanel(stand);
+            var frame = DragFrame(stand, StartDrag(stand));
+            frame();
+
+            const int frames = 10;
+            var measured = nodes.MeasuredChildren;
+            var arranged = nodes.ArrangedChildren;
+            for (var i = 0; i < frames; i++)
+                frame();
+
+            var perFrameMeasured = (nodes.MeasuredChildren - measured) / frames;
+            var perFrameArranged = (nodes.ArrangedChildren - arranged) / frames;
+            _output.WriteLine($"{size} узлов: за кадр измерено {perFrameMeasured}, расставлено {perFrameArranged}");
+
+            Assert.Equal(0, perFrameMeasured);
+            Assert.Equal(1, perFrameArranged);
+        }
+    }
+
+    [AvaloniaFact]
+    public void A_Drag_Frame_Arranges_Every_Link()
+    {
+        // Две пересчитанные связи заново расставляют все связи своей панели.
+        foreach (var size in new[] { Small, Large })
+        {
+            var stand = CreateGraph(size);
             var links = LinkPanelOf(stand);
             var frame = DragFrame(stand, StartDrag(stand));
             frame();
 
             const int frames = 10;
-            var measuredNodes = nodes.MeasuredChildren;
-            var arrangedNodes = nodes.ArrangedChildren;
-            var measuredLinks = links.MeasuredChildren;
-            var arrangedLinks = links.ArrangedChildren;
+            var measured = links.MeasuredChildren;
+            var arranged = links.ArrangedChildren;
             for (var i = 0; i < frames; i++)
                 frame();
 
-            var nodesMeasured = (nodes.MeasuredChildren - measuredNodes) / frames;
-            var nodesArranged = (nodes.ArrangedChildren - arrangedNodes) / frames;
-            var linksMeasured = (links.MeasuredChildren - measuredLinks) / frames;
-            var linksArranged = (links.ArrangedChildren - arrangedLinks) / frames;
-            _output.WriteLine($"{size} узлов, {stand.Links.Count} связей: за кадр узлов измерено {nodesMeasured}, "
-                + $"расставлено {nodesArranged}; связей измерено {linksMeasured}, расставлено {linksArranged}");
+            var perFrameMeasured = (links.MeasuredChildren - measured) / frames;
+            var perFrameArranged = (links.ArrangedChildren - arranged) / frames;
+            _output.WriteLine($"{stand.Links.Count} связей: за кадр измерено {perFrameMeasured}, расставлено {perFrameArranged}");
 
-            Assert.Equal(size, nodesArranged);
-            Assert.Equal(stand.Links.Count, linksArranged);
+            Assert.Equal(stand.Links.Count, perFrameArranged);
         }
     }
 
