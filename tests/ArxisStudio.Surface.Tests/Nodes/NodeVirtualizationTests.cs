@@ -4,7 +4,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 using Xunit;
 using ArxisStudio.Surface.Nodes;
@@ -219,6 +221,27 @@ public class NodeVirtualizationTests
         stand.Pan(new Point(2800, 0));
         Assert.True(stand.LinkOf(stand.AToB).IsVisible);
         Assert.Equal(stand.PinOf(stand.B.In), stand.LinkOf(stand.AToB).TargetAnchor);
+    }
+
+    [AvaloniaFact]
+    public void A_Link_Being_Drawn_Holds_The_Nodes_It_Took()
+    {
+        // Протяжка снимает порты на входе; узел, от которого тянут, не сворачивается, даже когда
+        // холст уехал, — и уходит на ближайшей мере после отпускания.
+        var stand = Create();
+        var from = stand.PinOf(stand.A.Out);
+        stand.Window.MouseDown(from, MouseButton.Left);
+        stand.Window.MouseMove(from + new Vector(20, 10));
+
+        // Нажатие на порт отдало узлу фокус клавиатуры, а узел с фокусом не сворачивается и без жеста:
+        // фокус уводится, чтобы узел держало одно удержание.
+        stand.Editor.Focus();
+        stand.Pan(new Point(2800, 0));
+        Assert.NotNull(stand.Editor.ContainerFromIndex(0));
+
+        stand.Window.MouseUp(from + new Vector(20, 10), MouseButton.Left);
+        stand.RunLayout();
+        Assert.Null(stand.Editor.ContainerFromIndex(0));
     }
 
     [AvaloniaFact]

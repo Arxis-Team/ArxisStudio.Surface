@@ -20,8 +20,14 @@ namespace ArxisStudio.Surface.Nodes.States;
 /// <see cref="NodeEditor.PortCaptureRadius"/> пикселей экрана, попал указатель.
 /// </para>
 /// <para>
+/// Снятое держится развёрнутым до конца жеста (ADR 0007): автопрокрутка увозит холст, и контейнер
+/// узла из снимка, свёрнутый посреди протяжки, ушёл бы в пул или достался другому узлу — а порт с
+/// привязанными данными сменил бы ключ, и связь пришла бы не туда.
+/// </para>
+/// <para>
 /// Все пути выхода — отпускание, Escape, потеря захвата — идут через <see cref="Exit"/>, и
-/// уборка стоит там одна: превью, подсветка кандидата, отцепляемая связь, автопрокрутка, захват.
+/// уборка стоит там одна: превью, подсветка кандидата, отцепляемая связь, автопрокрутка, захват,
+/// удержание развёрнутого.
 /// </para>
 /// </remarks>
 internal sealed class PendingLinkState : EditorState
@@ -33,6 +39,7 @@ internal sealed class PendingLinkState : EditorState
     private readonly Point _startScreen;
     private readonly LinkDetachment? _detachment;
     private readonly List<(Port Port, object Key, Point Anchor, Rect Bounds)> _ports = new();
+    private IDisposable? _realizationHold;
     private Point _originAnchor;
     private Port? _candidate;
     private bool _candidateAllowed;
@@ -64,6 +71,7 @@ internal sealed class PendingLinkState : EditorState
     {
         _pointer.Capture(_editor);
         _detachment?.Link.SetDetaching(true);
+        _realizationHold = _editor.HoldRealization();
 
         _origin.TryGetAnchor(out _originAnchor);
         foreach (var (key, port) in _editor.Ports.Snapshot())
@@ -81,6 +89,8 @@ internal sealed class PendingLinkState : EditorState
         SetCandidate(null, allowed: false);
         _editor.PendingPreview?.Hide();
         _detachment?.Link.SetDetaching(false);
+        _realizationHold?.Dispose();
+        _realizationHold = null;
 
         if (ReferenceEquals(_pointer.Captured, _editor))
             _pointer.Capture(null);
