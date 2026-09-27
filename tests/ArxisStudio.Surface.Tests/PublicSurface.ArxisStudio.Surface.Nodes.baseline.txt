@@ -52,6 +52,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
     avalonia LinksProperty -> Links : IEnumerable (styled) = null
     avalonia PortCaptureRadiusProperty -> PortCaptureRadius : Double (styled) = 12
+    avalonia PortNodeBindingProperty -> PortNodeBinding : BindingBase (styled) = null
     avalonia SelectedLinksProperty -> SelectedLinks : IReadOnlyList<Object> (direct)
     ctor .ctor()
     event EventHandler<ConnectRequestedEventArgs> ConnectRequested
@@ -67,8 +68,10 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     method Void OnPointerExited(PointerEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property BindingBase LinkSourceBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
+    property BindingBase PortNodeBinding { get; set; }
     property Double LinkHitTolerance { get; set; }
     property Double PortCaptureRadius { get; set; }
     property IEnumerable Links { get; set; }

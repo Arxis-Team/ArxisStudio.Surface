@@ -15,8 +15,10 @@ namespace ArxisStudio.Surface.Nodes;
 /// и <see cref="NodeEditor.LinkTargetBinding"/>; готовые <see cref="Link"/> в той же коллекции
 /// тоже годятся.
 /// <para>
-/// Пока хотя бы одного порта нет на поверхности, связь не рисуется: её узел мог ещё не прийти или
-/// уже уйти, и она появится сама, когда порт вернётся.
+/// Конец без живого порта берётся у свёрнутого узла — смещением порта с его последнего показа — и у
+/// ни разу не показанного — оценкой по краю через <see cref="NodeEditor.PortNodeBinding"/>
+/// (ADR 0007). Если взять его неоткуда — узел ещё не пришёл или уже ушёл, — связь не рисуется и
+/// появится сама, когда конец найдётся.
 /// </para>
 /// </remarks>
 public class Link : Control
@@ -209,8 +211,8 @@ public class Link : Control
 
         Point source = default, target = default;
         var resolved = Source != null && Target != null
-            && _editor.TryGetPortAnchor(Source, out source)
-            && _editor.TryGetPortAnchor(Target, out target);
+            && _editor.TryGetLinkEnd(Source, LinkEnd.Source, out source)
+            && _editor.TryGetLinkEnd(Target, LinkEnd.Target, out target);
 
         if (resolved)
         {

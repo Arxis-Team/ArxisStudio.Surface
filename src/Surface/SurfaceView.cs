@@ -117,6 +117,43 @@ public partial class SurfaceView : SelectingItemsControl
     internal void OnContentChanged() => ContentChanged?.Invoke(this, EventArgs.Empty);
 
     /// <summary>
+    /// Возникает, когда сменилась геометрия элемента без контейнера — его модель сдвинулась, пока он
+    /// свёрнут, или он ушёл из коллекции; <see langword="null"/> — геометрия прочитана заново целиком.
+    /// </summary>
+    /// <remarks>
+    /// Для слоёв, которые держат на элементах своё, как редактор узлов — концы связей: у развёрнутого
+    /// об этом говорит его контейнер, у свёрнутого — только этот сигнал (ADR 0007).
+    /// </remarks>
+    internal event Action<object?>? ItemGeometryChanged;
+
+    /// <summary>
+    /// Сообщает, что сменилась геометрия элемента без контейнера.
+    /// </summary>
+    internal void OnItemGeometryChanged(object? item) => ItemGeometryChanged?.Invoke(item);
+
+    /// <summary>
+    /// Прямоугольник элемента в мировых координатах, есть у него контейнер или нет.
+    /// </summary>
+    /// <remarks>
+    /// Без контейнера его знает только виртуализирующая панель: положение — привязкой, размер —
+    /// последний измеренный или предполагаемый.
+    /// </remarks>
+    internal bool TryGetItemBounds(object? item, out Rect bounds)
+    {
+        if (ItemsPanelRoot is VirtualizingSurfacePanel panel)
+            return panel.TryGetItemBounds(item, out bounds);
+
+        if (ContainerFromItem(item!) is SurfaceItem { IsVisible: true } container)
+        {
+            bounds = new Rect(container.Location, container.Bounds.Size);
+            return true;
+        }
+
+        bounds = default;
+        return false;
+    }
+
+    /// <summary>
     /// Прямоугольники элементов верхнего уровня в мировых координатах.
     /// </summary>
     /// <remarks>

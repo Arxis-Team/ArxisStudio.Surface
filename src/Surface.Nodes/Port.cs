@@ -103,6 +103,11 @@ public class Port : ContentControl
     internal NodeEditor? Editor => _editor;
 
     /// <summary>
+    /// Узел, внутри которого порт стоит.
+    /// </summary>
+    internal Node? Node => _node ?? this.FindAncestorOfType<Node>();
+
+    /// <summary>
     /// Где был конец связи внутри узла, когда его сверяли в последний раз.
     /// </summary>
     /// <remarks>

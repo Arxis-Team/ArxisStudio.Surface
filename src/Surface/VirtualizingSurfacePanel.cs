@@ -67,6 +67,11 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     // Сдвинутые с прошлой расстановки: только их расстановка и ставит заново.
     private readonly HashSet<Control> _moved = new();
 
+    // Индекс элемента по нему самому — для тех, кто спрашивает геометрию элемента, а не индекса;
+    // пересобирается лениво после правки коллекции.
+    private readonly Dictionary<object, int> _indexByItem = new();
+    private bool _indexByItemStale = true;
+
     // Модели, за которыми панель следит, со счётом их вхождений в коллекцию, и сменившиеся с прошлой меры.
     private readonly Dictionary<INotifyPropertyChanged, int> _tracked = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<object> _changed = new(ReferenceEqualityComparer.Instance);
@@ -74,7 +79,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     private readonly List<KeyValuePair<int, Control>> _scratch = new();
 
     private SurfaceView? _view;
-    private ItemLocationReader? _reader;
+    private PointBindingReader? _reader;
     private Rect _extent;
     private bool _extentStale = true;
     private bool _slotsStale = true;
@@ -158,6 +163,35 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             if (bounds.Width > 0 && bounds.Height > 0)
                 yield return bounds;
         }
+    }
+
+    /// <summary>
+    /// Прямоугольник элемента в мировых координатах — развёрнутого или нет.
+    /// </summary>
+    /// <returns><see langword="false"/>, если элемента в коллекции нет или геометрия ещё не прочитана.</returns>
+    internal bool TryGetItemBounds(object? item, out Rect bounds)
+    {
+        bounds = default;
+        if (item == null || _slotsStale)
+            return false;
+
+        if (_indexByItemStale)
+        {
+            _indexByItemStale = false;
+            _indexByItem.Clear();
+            var items = Items;
+            for (var i = items.Count - 1; i >= 0; i--)
+            {
+                if (items[i] is { } each)
+                    _indexByItem[each] = i;
+            }
+        }
+
+        if (!_indexByItem.TryGetValue(item, out var index) || index >= _slots.Count)
+            return false;
+
+        bounds = BoundsOf(_slots[index]);
+        return true;
     }
 
     /// <summary>
@@ -342,6 +376,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         _slots.Clear();
         _slotsStale = true;
         _extentStale = true;
+        _indexByItemStale = true;
         _reader = null;
 
         _view = ItemsControl as SurfaceView;
@@ -355,6 +390,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     protected override void OnItemsChanged(IReadOnlyList<object?> items, NotifyCollectionChangedEventArgs e)
     {
         base.OnItemsChanged(items, e);
+        _indexByItemStale = true;
 
         if (_slotsStale)
         {
@@ -450,7 +486,9 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         }
         else if (e.Property == SurfaceView.EstimatedItemSizeProperty)
         {
+            // Размер тех, кто ни разу не показывался, — а с ним их прямоугольники у всех, кто их читает.
             _extentStale = true;
+            _view?.OnItemGeometryChanged(null);
             InvalidateMeasure();
         }
         else if (IsVirtualizing
@@ -503,22 +541,28 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             return;
 
         var reader = Reader();
-        var changed = false;
+        List<object>? moved = null;
         for (var i = 0; i < items.Count; i++)
         {
             if (items[i] is not { } item || !_changed.Contains(item) || _realized.ContainsKey(i))
                 continue;
 
+            var before = _slots[i].Location;
             ChangeSlot(i, _slots[i] with { Location = Normalize(reader?.Read(item) ?? default) });
-            changed = true;
+            if (_slots[i].Location != before)
+                (moved ??= new List<object>()).Add(item);
         }
 
         reader?.Release();
         _changed.Clear();
+        if (moved == null)
+            return;
 
-        // Развёрнутый элемент сообщает о себе сам — сменой границ контейнера; свёрнутый — только так.
-        if (changed)
-            _view?.OnContentChanged();
+        // Развёрнутый элемент сообщает о себе сам — сменой границ контейнера; свёрнутый — только так:
+        // холсту целиком и тем, кто держит на нём своё, как концы связей.
+        _view?.OnContentChanged();
+        foreach (var item in moved)
+            _view?.OnItemGeometryChanged(item);
     }
 
     private void RebuildSlots(IReadOnlyList<object?> items)
@@ -542,6 +586,9 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         }
 
         reader?.Release();
+
+        // Прочитано всё заново: каждый, кто держит на геометрии своё, перечитывает его.
+        _view?.OnItemGeometryChanged(null);
     }
 
     private void InsertItems(int index, int count, IReadOnlyList<object?> items)
@@ -574,6 +621,12 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
 
         _slots.RemoveRange(index, count);
         Shift(index + count, -count);
+
+        // Ушедший свёрнутым о себе не сообщит ничем: его портов нет, а держащие на нём своё должны
+        // узнать, что его больше нет.
+        _indexByItemStale = true;
+        foreach (var item in removed)
+            _view?.OnItemGeometryChanged(item);
     }
 
     /// <summary>
@@ -811,13 +864,13 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         return new Rect(slot.Location, size);
     }
 
-    private ItemLocationReader? Reader()
+    private PointBindingReader? Reader()
     {
         if (_view?.ItemLocationBinding is not { } binding)
             return null;
 
         if (_reader == null || !ReferenceEquals(_reader.Binding, binding))
-            _reader = new ItemLocationReader(binding);
+            _reader = new PointBindingReader(binding);
 
         return _reader;
     }

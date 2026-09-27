@@ -39,6 +39,9 @@ public partial class NodeEditor : SurfaceView
 
         Ports.Changed += OnPortsChanged;
 
+        // Узел без контейнера о своём сдвиге говорит только панели, а она — сюда.
+        ItemGeometryChanged += RefreshLinksOfItem;
+
         // Свои команды — впереди встроенных: они отвечают, только когда им есть что делать.
         // Escape сперва бросает протяжку, потом снимает выбор связей и лишь затем — узлов.
         KeyCommands.Insert(0, CancelLinkCommand());
@@ -53,18 +56,6 @@ public partial class NodeEditor : SurfaceView
     /// Живые порты на поверхности по их ключу.
     /// </summary>
     internal PortRegistry Ports { get; } = new();
-
-    /// <summary>
-    /// Отвечает, где на холсте конец связи у порта с этими данными.
-    /// </summary>
-    /// <param name="data">Ключ порта.</param>
-    /// <param name="world">Точка в мировых координатах.</param>
-    /// <returns><see langword="false"/>, если такого порта на поверхности нет или он ещё не разложен.</returns>
-    internal bool TryGetPortAnchor(object data, out Point world)
-    {
-        world = default;
-        return Ports.Find(data) is { } port && port.TryGetAnchor(out world);
-    }
 
     /// <summary>
     /// Определяет, нужен ли элементу коллекции контейнер <see cref="Node"/>.

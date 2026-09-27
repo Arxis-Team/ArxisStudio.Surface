@@ -26,7 +26,7 @@ public class PortTests
 
     private static Point AnchorOf(NodeStand stand, string key)
     {
-        Assert.True(stand.Editor.TryGetPortAnchor(key, out var anchor), $"Порт «{key}» обязан быть на поверхности.");
+        Assert.True(stand.Editor.TryGetLinkEnd(key, LinkEnd.Source, out var anchor), $"Порт «{key}» обязан быть на поверхности.");
         return anchor;
     }
 
@@ -78,11 +78,11 @@ public class PortTests
 
         stand.Items.RemoveAt(1);
         stand.RunLayout();
-        Assert.False(stand.Editor.TryGetPortAnchor(Out(1), out _), "Порт убранного узла обязан уйти из реестра.");
+        Assert.False(stand.Editor.TryGetLinkEnd(Out(1), LinkEnd.Source, out _), "Порт убранного узла обязан уйти из реестра.");
 
         stand.Items.Add(removed);
         stand.RunLayout();
-        Assert.True(stand.Editor.TryGetPortAnchor(Out(1), out _), "Вернувшийся узел обязан вернуть свои порты.");
+        Assert.True(stand.Editor.TryGetLinkEnd(Out(1), LinkEnd.Source, out _), "Вернувшийся узел обязан вернуть свои порты.");
     }
 
     [AvaloniaFact]
@@ -99,8 +99,8 @@ public class PortTests
         }, supportsRecycling: false);
         var stand = NodeStand.Create([new Point(100, 100)], itemTemplate: template);
 
-        Assert.True(stand.Editor.TryGetPortAnchor(NodeStand.NodeName(0), out _), "Порт без Data ключуется своим DataContext.");
-        Assert.True(stand.Editor.TryGetPortAnchor("явный", out _), "Порт с Data ключуется им.");
+        Assert.True(stand.Editor.TryGetLinkEnd(NodeStand.NodeName(0), LinkEnd.Source, out _), "Порт без Data ключуется своим DataContext.");
+        Assert.True(stand.Editor.TryGetLinkEnd("явный", LinkEnd.Source, out _), "Порт с Data ключуется им.");
     }
 
     [AvaloniaFact]
@@ -111,8 +111,8 @@ public class PortTests
 
         port.Data = "другой";
 
-        Assert.False(stand.Editor.TryGetPortAnchor(Out(0), out _));
-        Assert.True(stand.Editor.TryGetPortAnchor("другой", out _));
+        Assert.False(stand.Editor.TryGetLinkEnd(Out(0), LinkEnd.Source, out _));
+        Assert.True(stand.Editor.TryGetLinkEnd("другой", LinkEnd.Source, out _));
     }
 
     [AvaloniaFact]
