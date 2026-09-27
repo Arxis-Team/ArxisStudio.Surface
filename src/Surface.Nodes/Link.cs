@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
@@ -224,14 +223,24 @@ public class Link : Control
         IsResolved = resolved;
         IsVisible = resolved;
 
-        InvalidateMeasure();
-        (this.GetVisualParent() as Layoutable)?.InvalidateArrange();
+        // Мера от кривой не зависит: связь только просит панель переставить её — одну её, а не
+        // все связи холста (ADR 0007).
+        (this.GetVisualParent() as LinkPanel)?.OnLinkMoved(this);
         InvalidateVisual();
     }
 
-    /// <inheritdoc />
-    protected override Size MeasureOverride(Size availableSize) =>
-        IsResolved ? WorldBounds.Size : default;
+    /// <summary>
+    /// Отвечает постоянным нулевым размером: размер связи — её рамка, и ставит её туда расстановка
+    /// панели связей.
+    /// </summary>
+    /// <remarks>
+    /// Желаемый размер не зависит от кривой намеренно (ADR 0007). Его смена поднимает перемер
+    /// родителя, то есть всех связей холста, а связь, растянутая в свой прямоугольник, берёт размер
+    /// из него, а не из меры.
+    /// </remarks>
+    /// <param name="availableSize">Доступный размер.</param>
+    /// <returns>Нулевой размер.</returns>
+    protected override Size MeasureOverride(Size availableSize) => default;
 
     /// <inheritdoc />
     public override void Render(DrawingContext context)

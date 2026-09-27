@@ -353,9 +353,10 @@ public class NodeGraphCostProbeTests
     }
 
     [AvaloniaFact]
-    public void A_Drag_Frame_Arranges_Every_Link()
+    public void A_Drag_Frame_Arranges_The_Moved_Links_Alone()
     {
-        // Две пересчитанные связи заново расставляют все связи своей панели.
+        // Две пересчитанные связи узла переставляются сами, и панель связей ничего не перемеряет;
+        // каждая стоит в своей новой рамке.
         foreach (var size in new[] { Small, Large })
         {
             var stand = CreateGraph(size);
@@ -373,7 +374,11 @@ public class NodeGraphCostProbeTests
             var perFrameArranged = (links.ArrangedChildren - arranged) / frames;
             _output.WriteLine($"{stand.Links.Count} связей: за кадр измерено {perFrameMeasured}, расставлено {perFrameArranged}");
 
-            Assert.Equal(stand.Links.Count, perFrameArranged);
+            Assert.Equal(0, perFrameMeasured);
+            Assert.Equal(2, perFrameArranged);
+
+            foreach (var link in new[] { LinkFrom(stand, Dragged - 1), LinkFrom(stand, Dragged) })
+                Assert.Equal(link.WorldBounds, link.Bounds);
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
@@ -69,9 +70,19 @@ internal sealed class LinksPresenter : ItemsControl
 /// <remarks>
 /// Прямоугольник у связи настоящий, а не весь холст: по нему считаются и области перерисовки, и
 /// то, что уходит за край. Координаты панели — мировые, как у панели узлов.
+/// <para>
+/// Пересчитанная связь переставляется одна (ADR 0007): она просит об этом сама, а её желаемый
+/// размер от кривой не зависит, поэтому пересчёт не поднимает перемер панели — то есть всех
+/// связей холста. Собственная мера панели нужна только при смене состава детей, а размер самой
+/// панели, лежащей в холсте, ни на что не влияет.
+/// </para>
 /// </remarks>
 internal sealed class LinkPanel : Panel
 {
+    // Пересчитанные с прошлой расстановки: только их расстановка и ставит заново.
+    private readonly HashSet<Link> _moved = new();
+    private bool _arrangeAll = true;
+
     /// <summary>
     /// Сколько раз панель меряла связи — для стенда стоимости.
     /// </summary>
@@ -81,6 +92,17 @@ internal sealed class LinkPanel : Panel
     /// Сколько раз панель расставляла связи — для стенда стоимости.
     /// </summary>
     internal int ArrangedChildren { get; private set; }
+
+    /// <summary>
+    /// Отмечает связь, сменившую концы: в следующей расстановке она встанет в новый прямоугольник.
+    /// </summary>
+    internal void OnLinkMoved(Link link)
+    {
+        if (!_arrangeAll)
+            _moved.Add(link);
+
+        InvalidateArrange();
+    }
 
     /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)
@@ -100,21 +122,40 @@ internal sealed class LinkPanel : Panel
             }
         }
 
+        // Мера панели — только при смене состава: расставить после неё надо всех.
+        _arrangeAll = true;
         return new Size(right, bottom);
     }
 
     /// <inheritdoc />
     protected override Size ArrangeOverride(Size finalSize)
     {
-        foreach (var child in Children)
+        if (_arrangeAll)
         {
-            ArrangedChildren++;
-            if (child is Link { IsResolved: true } link)
-                child.Arrange(link.WorldBounds);
-            else
-                child.Arrange(default);
+            foreach (var child in Children)
+                ArrangeChild(child);
+
+            _arrangeAll = false;
+        }
+        else
+        {
+            foreach (var link in _moved)
+            {
+                if (ReferenceEquals(link.GetVisualParent(), this))
+                    ArrangeChild(link);
+            }
         }
 
+        _moved.Clear();
         return finalSize;
+    }
+
+    private void ArrangeChild(Control child)
+    {
+        ArrangedChildren++;
+        if (child is Link { IsResolved: true } link)
+            child.Arrange(link.WorldBounds);
+        else
+            child.Arrange(default);
     }
 }
