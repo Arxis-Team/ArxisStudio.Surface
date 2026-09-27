@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -18,12 +19,18 @@ namespace ArxisStudio.Tests;
 /// Стенд: окно 800 × 600, голый <see cref="SurfaceView"/> с двумя элементами 100 × 60 в (100, 100) и
 /// (300, 100), поверх него в правом нижнем углу — миникарта 200 × 150. Холст отведён в
 /// (1000, 1000): элементы лежат вне видимой области, и на карте рамка стоит отдельно от них.
+/// <para>
+/// Часы карты стоят (<see cref="MinimapClock"/>): правка содержимого собирается сразу, только если
+/// тест перевёл их на интервал, а иначе ждёт таймера, который тест заменяет
+/// <see cref="SurfaceMinimap.FlushContent"/>.
+/// </para>
 /// </remarks>
 public class SurfaceMinimapTests
 {
     private static readonly Size ItemSize = new(100, 60);
 
-    private sealed record Stand(Window Window, SurfaceView View, SurfaceMinimap Map)
+    private sealed record Stand(
+        Window Window, SurfaceView View, SurfaceMinimap Map, MinimapClock Clock, ObservableCollection<string> Items)
     {
         public SurfaceItem Item(int index) => (SurfaceItem)View.ContainerFromIndex(index)!;
 
@@ -65,12 +72,14 @@ public class SurfaceMinimapTests
 
     private static Stand Create()
     {
-        var view = new SurfaceView { ItemsSource = new[] { "Первый", "Второй" } };
+        var items = new ObservableCollection<string> { "Первый", "Второй" };
+        var view = new SurfaceView { ItemsSource = items };
         var map = NewMap(view);
+        var clock = MinimapClock.On(map);
         var window = new Window { Width = 800, Height = 600, Content = new Grid { Children = { view, map } } };
         window.Show();
 
-        var stand = new Stand(window, view, map);
+        var stand = new Stand(window, view, map, clock, items);
         stand.RunLayout();
         for (var i = 0; i < 2; i++)
         {
@@ -131,10 +140,14 @@ public class SurfaceMinimapTests
     }
 
     [AvaloniaFact]
-    public void Panning_The_Surface_Redraws_The_Map()
+    public void Panning_The_Surface_Redraws_The_Map_Without_Rebuilding_It()
     {
+        // Интервал прошёл, и пересборке ничто не мешало бы, — но содержимое не менялось, и карта
+        // рисует готовое, сдвинув одну рамку видимой области.
         var stand = Create();
         var drawn = stand.Map.RenderCount;
+        var rebuilt = stand.Map.ContentRebuilds;
+        stand.Clock.PassInterval();
 
         // Только кадр: смена видимой области прохода раскладки не вызывает, и перерисовать карту
         // её обязана подписка на сам viewport.
@@ -142,6 +155,7 @@ public class SurfaceMinimapTests
         stand.Window.CaptureRenderedFrame();
 
         Assert.True(stand.Map.RenderCount > drawn, "Смена видимой области обязана перерисовать карту.");
+        Assert.Equal(rebuilt, stand.Map.ContentRebuilds);
     }
 
     [AvaloniaFact]
@@ -163,15 +177,108 @@ public class SurfaceMinimapTests
     }
 
     [AvaloniaFact]
-    public void Moving_An_Item_Redraws_The_Map()
+    public void A_Move_After_A_Quiet_Interval_Is_Drawn_At_Once()
     {
         var stand = Create();
         var drawn = stand.Map.RenderCount;
+        stand.Clock.PassInterval();
 
         stand.Item(0).Location = new Point(150, 400);
         stand.Render();
 
         Assert.True(stand.Map.RenderCount > drawn, "Сдвиг элемента обязан перерисовать карту.");
+        Assert.Equal(new Rect(150, 100, 250, 360), stand.Map.ContentBounds);
+    }
+
+    [AvaloniaFact]
+    public void A_Hidden_Item_Leaves_The_Map()
+    {
+        // Спрятанный контейнер своих границ не меняет, и о нём поверхность сообщает отдельно.
+        var stand = Create();
+        stand.Clock.PassInterval();
+
+        stand.Item(0).IsVisible = false;
+        stand.Render();
+
+        Assert.Equal(new Rect(new Point(300, 100), ItemSize), stand.Map.ContentBounds);
+    }
+
+    [AvaloniaFact]
+    public void A_Removed_Item_Leaves_The_Map()
+    {
+        // Ушедший контейнер своих границ не меняет: о нём говорит коллекция.
+        var stand = Create();
+        stand.Clock.PassInterval();
+
+        stand.Items.RemoveAt(0);
+        stand.Render();
+
+        Assert.Equal(new Rect(new Point(300, 100), ItemSize), stand.Map.ContentBounds);
+    }
+
+    [AvaloniaFact]
+    public void Moves_Within_The_Interval_Are_Drawn_Once_When_It_Ends()
+    {
+        // Часы стоят: все сдвиги — в одном интервале после сборки. Карта не пересобирается и не
+        // перерисовывается — без пересборки она показала бы то же самое, — а ждёт таймера; таймер
+        // собирает итог один раз.
+        var stand = Create();
+        var drawn = stand.Map.RenderCount;
+        var rebuilt = stand.Map.ContentRebuilds;
+
+        for (var i = 1; i <= 3; i++)
+        {
+            stand.Item(0).Location = new Point(100 + (i * 50), 400);
+            stand.Render();
+        }
+
+        Assert.Equal(rebuilt, stand.Map.ContentRebuilds);
+        Assert.Equal(drawn, stand.Map.RenderCount);
+        Assert.True(stand.Map.IsRebuildScheduled, "Отложенную пересборку обязан назначить таймер.");
+
+        stand.Map.FlushContent();
+        stand.Window.CaptureRenderedFrame();
+
+        Assert.Equal(rebuilt + 1, stand.Map.ContentRebuilds);
+        Assert.Equal(new Rect(250, 100, 150, 360), stand.Map.ContentBounds);
+        Assert.False(stand.Map.IsRebuildScheduled);
+    }
+
+    [AvaloniaFact]
+    public void A_Layout_Outside_The_Surface_Does_Not_Redraw_The_Map()
+    {
+        // Проход раскладки у Avalonia общий на окно; карта слушает содержимое поверхности, а не его.
+        var stand = Create();
+        var label = new TextBlock { Text = "0", HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        ((Grid)stand.Window.Content!).Children.Add(label);
+        stand.Render();
+        var drawn = stand.Map.RenderCount;
+
+        label.Text = "10";
+        stand.Render();
+
+        Assert.Equal(drawn, stand.Map.RenderCount);
+    }
+
+    [AvaloniaFact]
+    public void Another_Surface_Is_Drawn_At_Once()
+    {
+        // Часы стоят, и прореживание отложило бы карту до таймера. Но это новое содержимое, а не
+        // правка прежнего, и собирается оно сразу.
+        var stand = Create();
+        var other = new SurfaceView { ItemsSource = new[] { "Третий" } };
+        ((Grid)stand.Window.Content!).Children.Insert(0, other);
+        stand.RunLayout();
+        var item = (SurfaceItem)other.ContainerFromIndex(0)!;
+        item.Width = ItemSize.Width;
+        item.Height = ItemSize.Height;
+        item.Location = new Point(700, 700);
+        stand.RunLayout();
+
+        stand.Map.Editor = other;
+        stand.Render();
+
+        Assert.Equal(new Rect(new Point(700, 700), ItemSize), stand.Map.ContentBounds);
     }
 
     [AvaloniaFact]
@@ -227,6 +334,39 @@ public class SurfaceMinimapTests
 
         Assert.False(removed.IsAlive, "Снятая миникарта осталась в памяти.");
         Assert.True(kept.IsAlive);
+    }
+
+    [AvaloniaFact]
+    public void A_Map_Removed_While_A_Rebuild_Waits_Is_Not_Held()
+    {
+        // Назначенный таймер лежит у диспетчера и держал бы карту до своего срабатывания, а в
+        // безголовом режиме — навсегда.
+        var stand = Create();
+        var removed = AddMoveAndRemove(stand);
+
+        stand.Render();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(removed.IsAlive, "Снятая миникарта с отложенной пересборкой осталась в памяти.");
+    }
+
+    private static WeakReference AddMoveAndRemove(Stand stand)
+    {
+        var grid = (Grid)stand.Window.Content!;
+        var map = NewMap(stand.View);
+        MinimapClock.On(map);
+        grid.Children.Add(map);
+        stand.Render();
+
+        stand.Item(0).Location = new Point(150, 400);
+        stand.Render();
+        Assert.True(map.IsRebuildScheduled);
+
+        grid.Children.Remove(map);
+        stand.Render();
+        return new WeakReference(map);
     }
 
     private static WeakReference AddAndRemove(Stand stand)

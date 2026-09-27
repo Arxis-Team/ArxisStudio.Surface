@@ -1,8 +1,10 @@
 using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface.Editing;
@@ -22,9 +24,21 @@ namespace ArxisStudio.Surface.Editing;
 /// тянут, масштаб карты стоит: рамка — часть того, что карта показывает, и иначе карта ехала бы
 /// под указателем.
 /// </para>
+/// <para>
+/// Содержимое — контейнеры и фигуры слоёв — собирается в одну геометрию в мировых координатах и
+/// рисуется одной трансформацией (ADR 0007). Пересобирается оно по сигналу поверхности «содержимое
+/// сменилось», а не после прохода раскладки окна, и во время непрерывных правок — не чаще раза в
+/// <see cref="RebuildInterval"/>; отложенное дособерёт таймер. Рамка видимой области рисуется на
+/// каждой перерисовке.
+/// </para>
 /// </remarks>
 public class SurfaceMinimap : Control
 {
+    /// <summary>
+    /// Не чаще этого содержимое пересобирается, пока правки идут подряд.
+    /// </summary>
+    internal static readonly TimeSpan RebuildInterval = TimeSpan.FromMilliseconds(50);
+
     /// <summary>
     /// Идентификатор свойства редактора.
     /// </summary>
@@ -67,6 +81,15 @@ public class SurfaceMinimap : Control
     private Point _offset;
     private bool _dragging;
     private Vector _grab;
+
+    // Содержимое в мировых координатах: контейнеры и фигуры слоя выше. Пока оно устарело,
+    // пересборка назначена — кадром или таймером, — и новый сигнал её не назначает заново.
+    private StreamGeometry? _items;
+    private StreamGeometry? _layer;
+    private IMinimapLayer? _layerSource;
+    private bool _contentStale = true;
+    private long? _lastRebuild;
+    private DispatcherTimer? _rebuildTimer;
 
     static SurfaceMinimap()
     {
@@ -125,6 +148,27 @@ public class SurfaceMinimap : Control
     internal int RenderCount { get; private set; }
 
     /// <summary>
+    /// Сколько раз миникарта пересобирала содержимое — для тестов и стенда.
+    /// </summary>
+    internal int ContentRebuilds { get; private set; }
+
+    /// <summary>
+    /// Охват контейнеров в последнем собранном содержимом, в мировых координатах.
+    /// </summary>
+    internal Rect ContentBounds { get; private set; }
+
+    /// <summary>
+    /// Ждёт ли отложенная пересборка своего таймера.
+    /// </summary>
+    internal bool IsRebuildScheduled => _rebuildTimer?.IsEnabled == true;
+
+    /// <summary>
+    /// Часы прореживания — метка <see cref="Stopwatch"/>; тест подменяет их, потому что в безголовом
+    /// режиме время стоит, а настоящие часы идут.
+    /// </summary>
+    internal Func<long> Clock { get; set; } = Stopwatch.GetTimestamp;
+
+    /// <summary>
     /// Рамка видимой области в координатах миникарты.
     /// </summary>
     internal Rect ViewportFrame { get; private set; }
@@ -154,16 +198,19 @@ public class SurfaceMinimap : Control
         if (!_dragging)
             UpdateMapping(editor);
 
-        if (ItemFill is { } fill)
-        {
-            for (var i = 0; i < editor.ItemCount; i++)
-            {
-                if (editor.ContainerFromIndex(i) is SurfaceItem { IsVisible: true } item)
-                    context.DrawRectangle(fill, null, Map(new Rect(item.Location, item.Bounds.Size)));
-            }
-        }
+        if (_contentStale && UntilRebuild() <= TimeSpan.Zero)
+            RebuildContent(editor);
 
-        editor.GetService<IMinimapLayer>()?.Render(context, WorldToMinimapMatrix(), this);
+        // Содержимое лежит в мировых координатах и рисуется одной трансформацией; толщина обводки
+        // делится на масштаб, чтобы после трансформации остаться в одну точку.
+        using (context.PushTransform(WorldToMinimapMatrix()))
+        {
+            if (_items != null && ItemFill is { } fill)
+                context.DrawGeometry(fill, null, _items);
+
+            if (_layer != null && _layerSource?.FindStroke(this) is { } layerStroke)
+                context.DrawGeometry(null, new Pen(layerStroke, 1 / _scale), _layer);
+        }
 
         ViewportFrame = Map(VisibleWorld(editor));
         var pen = ViewportStroke is { } stroke ? new Pen(stroke) : null;
@@ -237,8 +284,22 @@ public class SurfaceMinimap : Control
     {
         base.OnDetachedFromVisualTree(e);
 
-        // Редактор живёт дольше миникарты, и подписка на него держала бы её в памяти.
+        // Редактор живёт дольше миникарты, и подписка на него держала бы её в памяти, а таймер
+        // отложенной пересборки — до своего срабатывания.
         Listen(null);
+    }
+
+    /// <summary>
+    /// Пересобирает отложенное содержимое сейчас — так срабатывает таймер, и так тест, в котором
+    /// время стоит, доводит карту до итога.
+    /// </summary>
+    internal void FlushContent()
+    {
+        _rebuildTimer?.Stop();
+        if (_contentStale && _listening is { } editor)
+            RebuildContent(editor);
+
+        InvalidateVisual();
     }
 
     /// <inheritdoc />
@@ -251,21 +312,33 @@ public class SurfaceMinimap : Control
     }
 
     /// <summary>
-    /// Слушает редактор: смену видимой области — сразу, сдвиг и появление контейнеров — после
-    /// прохода раскладки.
+    /// Слушает редактор: смену видимой области — подпиской на её свойства, смену содержимого —
+    /// сигналом поверхности (<see cref="SurfaceView.ContentChanged"/>).
     /// </summary>
+    /// <remarks>
+    /// Проход раскладки окна карта не слушает: событие раскладки у Avalonia общее на окно, и карта
+    /// перерисовывалась бы от раскладки, к редактору отношения не имеющей.
+    /// </remarks>
     private void Listen(SurfaceView? editor)
     {
         _subscription?.Dispose();
         _subscription = null;
 
         if (_listening != null)
-            _listening.LayoutUpdated -= OnEditorLayoutUpdated;
+            _listening.ContentChanged -= OnEditorContentChanged;
 
+        // Новый редактор — новое содержимое, и собирается оно сразу, без прореживания.
         _listening = editor;
+        _rebuildTimer?.Stop();
+        _items = null;
+        _layer = null;
+        _layerSource = null;
+        _contentStale = true;
+        _lastRebuild = null;
+
         if (editor != null)
         {
-            editor.LayoutUpdated += OnEditorLayoutUpdated;
+            editor.ContentChanged += OnEditorContentChanged;
             _subscription = new Subscriptions(
                 editor.GetObservable(SurfaceView.ViewportLocationProperty).Subscribe(new Invalidator<Point>(this)),
                 editor.GetObservable(SurfaceView.ViewportZoomProperty).Subscribe(new Invalidator<double>(this)));
@@ -274,7 +347,83 @@ public class SurfaceMinimap : Control
         InvalidateVisual();
     }
 
-    private void OnEditorLayoutUpdated(object? sender, EventArgs e) => InvalidateVisual();
+    private void OnEditorContentChanged(object? sender, EventArgs e)
+    {
+        if (_contentStale)
+            return;
+
+        // Прошло больше интервала — пересобирается на ближайшем кадре; иначе карта остаётся
+        // прежней, пока не сработает таймер: перерисовка без пересборки показала бы то же самое.
+        _contentStale = true;
+        var wait = UntilRebuild();
+        if (wait <= TimeSpan.Zero)
+        {
+            InvalidateVisual();
+            return;
+        }
+
+        if (_rebuildTimer == null)
+        {
+            _rebuildTimer = new DispatcherTimer();
+            _rebuildTimer.Tick += (_, _) => FlushContent();
+        }
+
+        _rebuildTimer.Interval = wait;
+        _rebuildTimer.Start();
+    }
+
+    /// <summary>
+    /// Сколько ещё ждать пересборки; ноль и меньше — пора.
+    /// </summary>
+    private TimeSpan UntilRebuild() =>
+        _lastRebuild is { } last ? RebuildInterval - Stopwatch.GetElapsedTime(last, Clock()) : TimeSpan.Zero;
+
+    /// <summary>
+    /// Собирает контейнеры и фигуры слоя выше в геометрию мировых координат.
+    /// </summary>
+    private void RebuildContent(SurfaceView editor)
+    {
+        // Прямоугольники обходятся в одну сторону, и правило NonZero закрашивает их объединение:
+        // по умолчанию EvenOdd, и перекрытие двух контейнеров вышло бы дырой.
+        var items = new StreamGeometry();
+        var bounds = default(Rect);
+        var any = false;
+        using (var context = items.Open())
+        {
+            context.SetFillRule(FillRule.NonZero);
+            foreach (var rect in editor.EnumerateItemBounds())
+            {
+                context.BeginFigure(rect.TopLeft, isFilled: true);
+                context.LineTo(rect.TopRight);
+                context.LineTo(rect.BottomRight);
+                context.LineTo(rect.BottomLeft);
+                context.EndFigure(isClosed: true);
+                bounds = any ? bounds.Union(rect) : rect;
+                any = true;
+            }
+        }
+
+        _items = items;
+        ContentBounds = bounds;
+
+        _layerSource = editor.GetService<IMinimapLayer>();
+        if (_layerSource is { } source)
+        {
+            var layer = new StreamGeometry();
+            using (var context = layer.Open())
+                source.Build(context);
+
+            _layer = layer;
+        }
+        else
+        {
+            _layer = null;
+        }
+
+        _contentStale = false;
+        _lastRebuild = Clock();
+        ContentRebuilds++;
+    }
 
     private void UpdateMapping(SurfaceView editor)
     {

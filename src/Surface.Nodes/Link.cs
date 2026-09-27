@@ -227,6 +227,7 @@ public class Link : Control
         // все связи холста (ADR 0007).
         (this.GetVisualParent() as LinkPanel)?.OnLinkMoved(this);
         InvalidateVisual();
+        _editor.OnContentChanged();
     }
 
     /// <summary>

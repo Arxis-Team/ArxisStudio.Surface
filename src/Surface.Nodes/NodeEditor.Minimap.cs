@@ -10,49 +10,42 @@ namespace ArxisStudio.Surface.Nodes;
 public partial class NodeEditor
 {
     /// <summary>
-    /// Сколько связей миникарта нарисовала в последний раз — для тестов.
+    /// Сколько связей попало на миникарту при последней сборке её содержимого — для тестов.
     /// </summary>
     internal int LinksOnMinimap { get; private set; }
 
     /// <summary>
-    /// Рисует связи на миникарте — той же кубической кривой, что на холсте, в одну точку толщиной.
+    /// Отдаёт миникарте связи — той же кубической кривой, что на холсте; карта рисует их в одну
+    /// точку толщиной.
     /// </summary>
     /// <remarks>
-    /// Рисуются только разрешённые связи: связь, у которой нет порта на поверхности, не видна и на
-    /// холсте. Кисть — та же, что у связей, ключ <c>NodeEditor.Link.Stroke</c>.
+    /// Отдаются только разрешённые связи: связь, у которой нет порта на поверхности, не видна и на
+    /// холсте. Кисть — та же, что у связей, ключ <c>NodeEditor.Link.Stroke</c>. Кривые строятся на
+    /// сборке содержимого карты, а не на каждой её перерисовке (ADR 0007).
     /// </remarks>
     private sealed class LinkMinimapLayer(NodeEditor editor) : IMinimapLayer
     {
-        public void Render(DrawingContext context, Matrix worldToMinimap, SurfaceMinimap minimap)
+        public void Build(StreamGeometryContext context)
         {
-            editor.LinksOnMinimap = 0;
-            if (!minimap.TryFindResource("NodeEditor.Link.Stroke", minimap.ActualThemeVariant, out var value)
-                || value is not IBrush brush)
-            {
-                return;
-            }
-
-            var pen = new Pen(brush, 1);
+            var built = 0;
             foreach (var link in editor._links)
             {
                 if (!link.IsResolved)
                     continue;
 
                 var g = link.Geometry;
-                var figure = new StreamGeometry();
-                using (var ctx = figure.Open())
-                {
-                    ctx.BeginFigure(g.Source.Transform(worldToMinimap), isFilled: false);
-                    ctx.CubicBezierTo(
-                        g.SourceControl.Transform(worldToMinimap),
-                        g.TargetControl.Transform(worldToMinimap),
-                        g.Target.Transform(worldToMinimap));
-                    ctx.EndFigure(isClosed: false);
-                }
-
-                context.DrawGeometry(null, pen, figure);
-                editor.LinksOnMinimap++;
+                context.BeginFigure(g.Source, isFilled: false);
+                context.CubicBezierTo(g.SourceControl, g.TargetControl, g.Target);
+                context.EndFigure(isClosed: false);
+                built++;
             }
+
+            editor.LinksOnMinimap = built;
         }
+
+        public IBrush? FindStroke(SurfaceMinimap minimap) =>
+            minimap.TryFindResource("NodeEditor.Link.Stroke", minimap.ActualThemeVariant, out var value)
+                ? value as IBrush
+                : null;
     }
 }

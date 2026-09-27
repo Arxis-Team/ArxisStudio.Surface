@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Avalonia;
@@ -49,6 +50,13 @@ public partial class SurfaceView : SelectingItemsControl
             if (item.IsSelected)
                 item.FindAncestorOfType<SurfaceView>()?.RefreshSelectionOverlay();
         });
+
+        // Контейнер встал на новое место, сменил размер или спрятан — сменилось содержимое холста.
+        // Спрятанный своих границ не меняет, поэтому видимость слушается отдельно.
+        SurfaceItem.BoundsProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
+            item.FindAncestorOfType<SurfaceView>()?.OnContentChanged());
+        SurfaceItem.IsVisibleProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
+            item.FindAncestorOfType<SurfaceView>()?.OnContentChanged());
     }
 
     /// <summary>
@@ -86,6 +94,35 @@ public partial class SurfaceView : SelectingItemsControl
         dpiGroup.Children.Add(_scaleTransform);
         dpiGroup.Children.Add(_dpiTranslateTransform);
         SetCurrentValue(DpiScaledViewportTransformProperty, dpiGroup);
+
+        ItemsView.CollectionChanged += (_, _) => OnContentChanged();
+    }
+
+    /// <summary>
+    /// Возникает, когда сменилось содержимое холста: контейнер сдвинулся, сменил размер, спрятан,
+    /// появился или ушёл, — или слой выше сменил своё, как связи редактора узлов.
+    /// </summary>
+    /// <remarks>
+    /// Для тех, кто рисует холст целиком, как миникарта (ADR 0007). Проход раскладки окна
+    /// поднимается и от чужих контролов, а это событие — только от своего содержимого.
+    /// </remarks>
+    internal event EventHandler? ContentChanged;
+
+    /// <summary>
+    /// Сообщает, что содержимое холста сменилось.
+    /// </summary>
+    internal void OnContentChanged() => ContentChanged?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// Прямоугольники контейнеров верхнего уровня в мировых координатах.
+    /// </summary>
+    internal IEnumerable<Rect> EnumerateItemBounds()
+    {
+        for (var i = 0; i < ItemCount; i++)
+        {
+            if (ContainerFromIndex(i) is SurfaceItem { IsVisible: true } item)
+                yield return new Rect(item.Location, item.Bounds.Size);
+        }
     }
 
     /// <summary>

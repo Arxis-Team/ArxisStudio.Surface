@@ -175,11 +175,13 @@ public partial class NodeEditor
     /// </summary>
     internal int LinkDistanceChecks { get; private set; }
 
+    // О новой связи содержимое сообщает её первый пересчёт концов; об ушедшей — только уход.
     internal void OnLinkAttached(Link link) => _links.Add(link);
 
     internal void OnLinkDetached(Link link)
     {
         _links.Remove(link);
+        OnContentChanged();
 
         if (ReferenceEquals(_highlightedLink, link))
             SetHighlightedLink(null);

@@ -310,8 +310,14 @@ public class NodeGraphCostProbeTests
     [AvaloniaFact]
     public void The_Minimap_Draws_Every_Resolved_Link_At_Any_Size()
     {
-        // Миникарта перерисовывается после прохода раскладки, то есть на каждом кадре
-        // перетаскивания: её цена ложится на кадр целиком. Печатается перерисовка одной карты.
+        // Контейнеры и связи собираются в геометрию на смене содержимого, а перерисовка рисует
+        // готовую (ADR 0007). Печатаются обе цены: перерисовка — её платит смена видимой области, — и
+        // пересборка — её платит правка холста, не чаще раза в интервал.
+        //
+        // Пересборка здесь дороже настоящей и растёт квадратом: геометрию в безголовом режиме
+        // собирает заглушка платформы, а у неё конец каждой фигуры пересчитывает рамку по всем уже
+        // добавленным точкам. На Skia та же сборка линейна — около 0,3 мкс на прямоугольник и
+        // 0,2 мкс на кривую (ADR 0007), — поэтому для решений отсюда берётся перерисовка.
         foreach (var size in new[] { Small, Large })
         {
             var stand = CreateGraph(size);
@@ -322,7 +328,13 @@ public class NodeGraphCostProbeTests
 
             var bitmap = new RenderTargetBitmap(new PixelSize(200, 150));
             var redraw = MicrosecondsPerCall(() => bitmap.Render(map), calls: 20) / 1000;
-            _output.WriteLine($"{size} узлов, {stand.Links.Count} связей: перерисовка миникарты {redraw:F3} мс");
+            var rebuild = MicrosecondsPerCall(() =>
+            {
+                stand.Editor.OnContentChanged();
+                map.FlushContent();
+            }, calls: 2) / 1000;
+            _output.WriteLine($"{size} узлов, {stand.Links.Count} связей: перерисовка миникарты {redraw:F3} мс, "
+                + $"пересборка {rebuild:F3} мс на заглушке платформы");
         }
     }
 
@@ -419,25 +431,35 @@ public class NodeGraphCostProbeTests
     }
 
     [AvaloniaFact]
-    public void The_Minimap_Redraws_After_Any_Layout_Of_The_Window()
+    public void The_Minimap_Is_Rebuilt_Once_Per_Interval_Of_A_Drag()
     {
-        // Миникарта слушает проход раскладки окна: перерисовывается на каждом кадре перетаскивания
-        // и от раскладки, к редактору отношения не имеющей.
+        // Миникарта слушает содержимое поверхности, а не проход раскладки окна: раскладка, к
+        // редактору отношения не имеющая, её не трогает, а перетаскивание пересобирает её не чаще
+        // раза в интервал. Часы карты стоят, и десять кадров укладываются в один интервал:
+        // пересобирает и перерисовывает карту только первый кадр, остальное дособирает таймер.
         var stand = CreateGraph(Small);
         var map = AddMinimap(stand);
+        var clock = MinimapClock.On(map);
         var label = new TextBlock { Text = "0", HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
         ((Grid)stand.Window.Content!).Children.Add(label);
         stand.RunLayout();
         stand.Window.CaptureRenderedFrame();
 
-        var before = map.RenderCount;
+        var drawn = map.RenderCount;
         label.Text = "10";
         stand.RunLayout();
         stand.Window.CaptureRenderedFrame();
-        Assert.Equal(before + 1, map.RenderCount);
+        Assert.Equal(drawn, map.RenderCount);
 
+        // Нажатие тоже правит холст; его правку карта дособирает до кадров, чтобы первый кадр
+        // пришёл после тихого интервала.
         var frame = DragFrame(stand, StartDrag(stand));
-        before = map.RenderCount;
+        map.FlushContent();
+        stand.Window.CaptureRenderedFrame();
+        clock.PassInterval();
+
+        drawn = map.RenderCount;
+        var rebuilt = map.ContentRebuilds;
         const int frames = 10;
         for (var i = 0; i < frames; i++)
         {
@@ -445,10 +467,14 @@ public class NodeGraphCostProbeTests
             stand.Window.CaptureRenderedFrame();
         }
 
-        // Проходов раскладки на кадр стенда два, и перерисовок выходит больше кадров; утверждается
-        // нижняя граница — не реже раза на кадр.
-        _output.WriteLine($"перерисовок миникарты за {frames} кадров перетаскивания: {map.RenderCount - before}");
-        Assert.True(map.RenderCount - before >= frames, $"{map.RenderCount - before} перерисовок за {frames} кадров");
+        _output.WriteLine($"за {frames} кадров перетаскивания миникарта перерисована {map.RenderCount - drawn} раз, "
+            + $"пересобрана {map.ContentRebuilds - rebuilt}");
+        Assert.Equal(rebuilt + 1, map.ContentRebuilds);
+        Assert.Equal(drawn + 1, map.RenderCount);
+        Assert.True(map.IsRebuildScheduled, "Правки после первого кадра обязан дособрать таймер.");
+
+        map.FlushContent();
+        Assert.Equal(rebuilt + 2, map.ContentRebuilds);
     }
 
     private static SurfacePanel NodePanel(NodeStand stand) =>

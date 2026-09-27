@@ -41,4 +41,56 @@ public class NodeMinimapTests
         Assert.True(map.RenderCount > 0);
         Assert.Equal(2, stand.Editor.LinksOnMinimap);
     }
+
+    [AvaloniaFact]
+    public void A_Removed_Link_Leaves_The_Map()
+    {
+        // Ни узел, ни другая связь не меняются: об ушедшей связи карте говорит её уход.
+        var stand = NodeStand.Create(
+            [new Point(100, 100), new Point(400, 200), new Point(100, 380)],
+            itemTemplate: NodeStand.PortedNode);
+        stand.Connect(0, 1);
+        var gone = stand.Connect(2, 1);
+
+        stand.Window.Content = null;
+        var map = new SurfaceMinimap { Editor = stand.Editor, Width = 200, Height = 150 };
+        var clock = MinimapClock.On(map);
+        stand.Window.Content = new Grid { Children = { stand.Editor, map } };
+        stand.RunLayout();
+        stand.Window.CaptureRenderedFrame();
+        Assert.Equal(2, stand.Editor.LinksOnMinimap);
+        clock.PassInterval();
+
+        stand.Links.Remove(gone);
+        stand.RunLayout();
+        stand.Window.CaptureRenderedFrame();
+
+        Assert.Equal(1, stand.Editor.LinksOnMinimap);
+    }
+
+    [AvaloniaFact]
+    public void A_Link_Moved_To_Another_Port_Rebuilds_The_Map()
+    {
+        // Перецепленная связь меняет только себя — ни один узел не сдвинулся, — и сообщить карте о
+        // новой кривой обязана она сама.
+        var stand = NodeStand.Create(
+            [new Point(100, 100), new Point(400, 200), new Point(400, 380)],
+            itemTemplate: NodeStand.PortedNode);
+        var data = stand.Connect(0, 1);
+
+        stand.Window.Content = null;
+        var map = new SurfaceMinimap { Editor = stand.Editor, Width = 200, Height = 150 };
+        var clock = MinimapClock.On(map);
+        stand.Window.Content = new Grid { Children = { stand.Editor, map } };
+        stand.RunLayout();
+        stand.Window.CaptureRenderedFrame();
+        var rebuilt = map.ContentRebuilds;
+        clock.PassInterval();
+
+        stand.LinkOf(data).Target = NodeStand.In(2);
+        stand.RunLayout();
+        stand.Window.CaptureRenderedFrame();
+
+        Assert.Equal(rebuilt + 1, map.ContentRebuilds);
+    }
 }
