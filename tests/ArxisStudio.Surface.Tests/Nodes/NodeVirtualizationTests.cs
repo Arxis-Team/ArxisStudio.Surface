@@ -28,62 +28,7 @@ public class NodeVirtualizationTests
 {
     private static readonly Size NodeSize = new(120, 80);
 
-    private sealed class NodeModel : INotifyPropertyChanged
-    {
-        private Point _location;
-
-        public NodeModel(string name, Point location)
-        {
-            Name = name;
-            _location = location;
-            In = new PortModel(this, "in");
-            Out = new PortModel(this, "out");
-        }
-
-        public string Name { get; }
-
-        public PortModel In { get; }
-
-        public PortModel Out { get; }
-
-        public Point Location
-        {
-            get => _location;
-            set
-            {
-                if (_location == value)
-                    return;
-
-                _location = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Location)));
-            }
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-    }
-
-    private sealed class PortModel(NodeModel node, string name)
-    {
-        public NodeModel Node { get; } = node;
-
-        public override string ToString() => Node.Name + "." + name;
-    }
-
-    private sealed record LinkModel(PortModel From, PortModel To);
-
-    // Переработка очищает содержимое контейнера, пока он ещё в дереве, и шаблон строится и с пустыми
-    // данными — как шаблон разметки, он обязан это переносить.
-    private static readonly IDataTemplate NodeTemplate = new FuncDataTemplate<NodeModel?>((node, _) => new StackPanel
-    {
-        Width = NodeSize.Width,
-        Height = NodeSize.Height,
-        Children =
-        {
-            new TextBlock { Text = node?.Name },
-            new Port { Direction = PortDirection.Input, Data = node?.In, Content = "in" },
-            new Port { Direction = PortDirection.Output, Data = node?.Out, Content = "out" }
-        }
-    }, supportsRecycling: false);
+    private static readonly IDataTemplate NodeTemplate = GraphTemplates.Node(NodeSize);
 
     private sealed record Stand(Window Window, NodeEditor Editor, ObservableCollection<object> Nodes, NodeModel A, NodeModel B)
     {

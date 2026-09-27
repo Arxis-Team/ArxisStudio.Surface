@@ -61,6 +61,13 @@ public partial class NodeEditor
             return true;
         }
 
+        // Без виртуализации узлы не сворачиваются, и конца, кроме живого, у связи нет.
+        if (!IsLinkVirtualizing)
+        {
+            world = default;
+            return false;
+        }
+
         if (_lastOffsets.TryGetValue(key, out var last) && TryGetItemBounds(last.Node, out var bounds))
         {
             world = bounds.TopLeft + last.Offset;
@@ -87,7 +94,7 @@ public partial class NodeEditor
     /// </remarks>
     private void RememberOffset(object key, Port port, Point world)
     {
-        if (ItemsPanelRoot is not VirtualizingSurfacePanel { IsVirtualizing: true }
+        if (!IsLinkVirtualizing
             || port.Node is not { } node
             || IndexFromContainer(node) < 0
             || ItemFromContainer(node) is not { } item)

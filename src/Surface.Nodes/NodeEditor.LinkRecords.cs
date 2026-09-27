@@ -43,6 +43,11 @@ public partial class NodeEditor
     internal int RealizedLinks => _recordByItem.Values.Count(record => record.Control != null);
 
     /// <summary>
+    /// Сколько контролов связей редактор создал за свою жизнь — для стенда: пул их переиспользует.
+    /// </summary>
+    internal int LinksCreated { get; private set; }
+
+    /// <summary>
     /// Запись элемента коллекции связей, если он в ней есть.
     /// </summary>
     internal LinkRecord? RecordOf(object? item) =>
@@ -51,7 +56,13 @@ public partial class NodeEditor
     /// <summary>
     /// Виртуализирует ли редактор связи: вместе с узлами, когда задана привязка положения.
     /// </summary>
-    internal bool IsLinkVirtualizing => ItemsPanelRoot is VirtualizingSurfacePanel { IsVirtualizing: true };
+    /// <remarks>
+    /// Решает привязка, а не уже созданная панель узлов: панель связей стоит в шаблоне раньше и
+    /// меряется первой, и без привязки в ответе она развернула бы все связи графа, чтобы свернуть их,
+    /// как только появится панель узлов.
+    /// </remarks>
+    internal bool IsLinkVirtualizing =>
+        ItemLocationBinding != null && ItemsPanelRoot is null or VirtualizingSurfacePanel;
 
     /// <summary>
     /// Пересчитывает концы связи — по живым портам, смещениям с последнего показа или оценке.
@@ -75,7 +86,7 @@ public partial class NodeEditor
 
         if (record.Control is { } control)
             control.Sync();
-        else if (resolved && IsLinkVirtualizing && _linkPanel != null && LinkWindows().Realize.Intersects(record.WorldBounds))
+        else if (_linkPanel != null && (!IsLinkVirtualizing || (resolved && LinkWindows().Realize.Intersects(record.WorldBounds))))
             _linkPanel.InvalidateMeasure();
 
         OnContentChanged();
@@ -236,10 +247,16 @@ public partial class NodeEditor
 
     private void Realize(LinkRecord record, LinkPanel panel)
     {
-        var link = record.Own ?? (_linkPool.Count > 0 ? _linkPool.Pop() : new Link());
+        var link = record.Own ?? (_linkPool.Count > 0 ? _linkPool.Pop() : CreateLink());
         record.Control = link;
         link.Show(this, record);
         panel.Children.Add(link);
+    }
+
+    private Link CreateLink()
+    {
+        LinksCreated++;
+        return new Link();
     }
 
     private void Unrealize(LinkRecord record, LinkPanel panel)

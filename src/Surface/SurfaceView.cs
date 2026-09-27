@@ -143,7 +143,8 @@ public partial class SurfaceView : SelectingItemsControl
         if (ItemsPanelRoot is VirtualizingSurfacePanel panel)
             return panel.TryGetItemBounds(item, out bounds);
 
-        if (ContainerFromItem(item!) is SurfaceItem { IsVisible: true } container)
+        // Без панели контейнеров нет, и искать элемент проходом по коллекции незачем.
+        if (ItemsPanelRoot != null && item != null && ContainerFromItem(item) is SurfaceItem { IsVisible: true } container)
         {
             bounds = new Rect(container.Location, container.Bounds.Size);
             return true;

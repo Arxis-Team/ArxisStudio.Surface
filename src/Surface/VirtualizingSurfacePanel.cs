@@ -175,6 +175,19 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         if (item == null || _slotsStale)
             return false;
 
+        var index = IndexOfItem(item);
+        if (index < 0 || index >= _slots.Count)
+            return false;
+
+        bounds = BoundsOf(_slots[index]);
+        return true;
+    }
+
+    /// <summary>
+    /// Индекс элемента в коллекции; <c>-1</c>, если его нет.
+    /// </summary>
+    private int IndexOfItem(object item)
+    {
         if (_indexByItemStale)
         {
             _indexByItemStale = false;
@@ -187,11 +200,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             }
         }
 
-        if (!_indexByItem.TryGetValue(item, out var index) || index >= _slots.Count)
-            return false;
-
-        bounds = BoundsOf(_slots[index]);
-        return true;
+        return _indexByItem.TryGetValue(item, out var index) ? index : -1;
     }
 
     /// <summary>
@@ -503,6 +512,12 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     private void OnModelChanged(object? model)
     {
         if (model == null || !IsVirtualizing)
+            return;
+
+        // Развёрнутый элемент держит свой контейнер, и положение ему уже перенесла привязка; мера
+        // ему не нужна — иначе каждый кадр жеста, записав положение в модель, перемерял бы всех
+        // развёрнутых.
+        if (IndexOfItem(model) is var index and >= 0 && _realized.ContainsKey(index))
             return;
 
         _changed.Add(model);

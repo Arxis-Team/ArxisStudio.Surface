@@ -46,17 +46,6 @@ public class NodeGraphCostProbeTests
     private const int Columns = 40;
 
     /// <summary>
-    /// Замеров, из которых берётся медиана: одиночный переживает не каждый чужой квант процессора.
-    /// </summary>
-    private const int Runs = 5;
-
-    /// <summary>
-    /// Прогрев по времени, а не по числу вызовов: оптимизированный код метода среда ставит, когда
-    /// JIT какое-то время не занят новыми методами, и короткий прогрев числом вызовов кончался раньше.
-    /// </summary>
-    private static readonly TimeSpan Warmup = TimeSpan.FromMilliseconds(300);
-
-    /// <summary>
     /// Узел, за который тянут: третий ряд, третий столбец — в окне, с соседями по цепочке с обеих
     /// сторон и вдали от краёв.
     /// </summary>
@@ -94,30 +83,7 @@ public class NodeGraphCostProbeTests
     /// <summary>
     /// Медиана времени одного вызова в микросекундах, после прогрева.
     /// </summary>
-    private static double MicrosecondsPerCall(Action call, int calls)
-    {
-        var warmup = Stopwatch.StartNew();
-        do
-        {
-            for (var i = 0; i < calls; i++)
-                call();
-        }
-        while (warmup.Elapsed < Warmup);
-
-        var samples = new List<double>();
-        for (var run = 0; run < Runs; run++)
-        {
-            var watch = Stopwatch.StartNew();
-            for (var i = 0; i < calls; i++)
-                call();
-
-            watch.Stop();
-            samples.Add(watch.Elapsed.TotalMilliseconds * 1000 / calls);
-        }
-
-        samples.Sort();
-        return samples[samples.Count / 2];
-    }
+    private static double MicrosecondsPerCall(Action call, int calls) => CostProbe.MicrosecondsPerCall(call, calls);
 
     /// <summary>
     /// Скольким связям поиск в этой точке мерил точное расстояние.

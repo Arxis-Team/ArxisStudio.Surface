@@ -438,6 +438,26 @@ public class VirtualizationTests
     }
 
     [AvaloniaFact]
+    public void A_Drag_Measures_Nothing_Though_It_Writes_The_Model()
+    {
+        // Жест пишет положение в модель, и модель об этом сообщает; развёрнутому элементу мера от
+        // этого не нужна — его контейнер уже на месте.
+        var stand = Create();
+        var from = new Point(50, 30);
+        stand.Window.MouseDown(from, MouseButton.Left);
+        stand.Window.MouseMove(from + new Vector(10, 5));
+        stand.RunLayout();
+
+        var measured = stand.Panel.MeasuredChildren;
+        stand.Window.MouseMove(from + new Vector(40, 30));
+        stand.RunLayout();
+
+        Assert.Equal(new Point(40, 30), stand.Model(0).Location);
+        Assert.Equal(measured, stand.Panel.MeasuredChildren);
+        stand.Window.MouseUp(from + new Vector(40, 30), MouseButton.Left);
+    }
+
+    [AvaloniaFact]
     public void Undo_And_Redo_Move_The_Same_Item_Whatever_Became_Of_Its_Container()
     {
         // Холст сдвинут так, что сворачивается один первый столбец, а входят четыре новых: контейнеры
