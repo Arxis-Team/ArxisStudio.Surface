@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ArxisStudio.Surface.Nodes;
@@ -227,8 +228,24 @@ internal sealed class AutomationChannel
             case "redo":
                 return new() { ["returned"] = _window.History.Redo() };
 
+            case "theme":
+            {
+                // Демо стартует в тёмной теме; оформление библиотеки проверяют в обеих.
+                if (command.TryGetProperty("value", out var value) && value.GetString() is { } variant)
+                {
+                    Application.Current!.RequestedThemeVariant = variant switch
+                    {
+                        "Light" => ThemeVariant.Light,
+                        "Dark" => ThemeVariant.Dark,
+                        _ => throw new ArgumentException($"Тема {variant}: есть Light и Dark.")
+                    };
+                }
+
+                return new() { ["theme"] = _editor.ActualThemeVariant.ToString() };
+            }
+
             default:
-                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo.");
+                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo, theme.");
         }
     }
 

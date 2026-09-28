@@ -15,7 +15,7 @@ namespace Nodes.Demo;
 public sealed class GraphDocument
 {
     /// <summary>
-    /// Шаг сетки <see cref="CreateGrid"/>. Узел с двумя входами и выходом в теме библиотеки — 178 × 75,
+    /// Шаг сетки <see cref="CreateGrid"/>. Узел с двумя входами и выходом в теме библиотеки — 178 × 76,
     /// тот же размер окно называет редактору предполагаемым; остальное — просвет для связей.
     /// </summary>
     private static readonly Vector GridStep = new(240, 150);
@@ -49,11 +49,11 @@ public sealed class GraphDocument
     {
         var document = new GraphDocument();
 
-        var image = document.Add("Изображение", new Point(60, 80), inputs: [], outputs: ["Цвет", "Альфа"], NodeKinds.Source);
-        var number = document.Add("Число", new Point(60, 300), inputs: [], outputs: ["Значение"], NodeKinds.Source);
-        var blur = document.Add("Размытие", new Point(360, 60), inputs: ["Цвет", "Радиус"], outputs: ["Цвет"], NodeKinds.Filter);
-        var mix = document.Add("Смешивание", new Point(660, 150), inputs: ["A", "B", "Доля"], outputs: ["Цвет"], NodeKinds.Blend);
-        var output = document.Add("Вывод", new Point(960, 190), inputs: ["Цвет"], outputs: [], NodeKinds.Output);
+        var image = document.Add("Изображение", new Point(60, 80), inputs: [], outputs: [Color("Цвет"), Number("Альфа")], NodeKinds.Source);
+        var number = document.Add("Число", new Point(60, 300), inputs: [], outputs: [Number("Значение")], NodeKinds.Source);
+        var blur = document.Add("Размытие", new Point(360, 60), inputs: [Color("Цвет"), Number("Радиус")], outputs: [Color("Цвет")], NodeKinds.Filter);
+        var mix = document.Add("Смешивание", new Point(660, 150), inputs: [Color("A"), Color("B"), Number("Доля")], outputs: [Color("Цвет")], NodeKinds.Blend);
+        var output = document.Add("Вывод", new Point(960, 190), inputs: [Color("Цвет")], outputs: [], NodeKinds.Output);
 
         document.Links.Add(new GraphLink(image.Outputs[0], blur.Inputs[0]));
         document.Links.Add(new GraphLink(number.Outputs[0], blur.Inputs[1]));
@@ -68,11 +68,12 @@ public sealed class GraphDocument
     /// Граф на <paramref name="count"/> узлов — проверка виртуализации (ADR 0007 библиотеки).
     /// </summary>
     /// <remarks>
-    /// Узлы стоят квадратной сеткой, каждый с входами «A», «B» и одним выходом. Цепочка идёт по ряду во
-    /// входы «A»; из каждого десятого столбца, начиная со второго, дальняя связь уходит на десять рядов
-    /// вниз во вход «B» — её второй конец у узла, который ни разу не показывался, и редактор ставит его
-    /// оценкой по краю, пока узел не покажут. Документ наполняется, пока его никто не слушает: окно
-    /// отдаёт редактору готовые коллекции, а не десять тысяч добавлений.
+    /// Узлы стоят квадратной сеткой, каждый с входами «A» (цвет), «B» (число) и выходом-цветом. Цепочка
+    /// идёт по ряду во входы «A»; из каждого десятого столбца, начиная со второго, дальняя связь уходит
+    /// на десять рядов вниз во вход «B» — её второй конец у узла, который ни разу не показывался, и
+    /// редактор ставит его оценкой по краю, пока узел не покажут. Цвет провода — по типу входа, поэтому
+    /// дальние связи видны другим цветом. Документ наполняется, пока его никто не слушает: окно отдаёт
+    /// редактору готовые коллекции, а не десять тысяч добавлений.
     /// </remarks>
     public static GraphDocument CreateGrid(int count)
     {
@@ -82,7 +83,7 @@ public sealed class GraphDocument
         for (var i = 0; i < count; i++)
         {
             var (row, column) = Math.DivRem(i, columns);
-            nodes.Add(new GraphNode($"Узел {i}", new Point(column * GridStep.X, row * GridStep.Y), ["A", "B"], ["Выход"])
+            nodes.Add(new GraphNode($"Узел {i}", new Point(column * GridStep.X, row * GridStep.Y), [Color("A"), Number("B")], [Color("Выход")])
             {
                 Accent = NodeKinds.All[(row + column) % NodeKinds.All.Length]
             });
@@ -102,32 +103,81 @@ public sealed class GraphDocument
         return document;
     }
 
-    private GraphNode Add(string title, Point location, string[] inputs, string[] outputs, Color accent)
+    private GraphNode Add(string title, Point location, GraphPortSpec[] inputs, GraphPortSpec[] outputs, Color accent)
     {
         var node = new GraphNode(title, location, inputs, outputs) { Accent = accent };
         Nodes.Add(node);
         return node;
     }
+
+    private static GraphPortSpec Color(string name) => new(name, PortKind.Color);
+
+    private static GraphPortSpec Number(string name) => new(name, PortKind.Number);
 }
 
 /// <summary>
 /// Цвета видов узла — данные графа, как категории узлов в Blueprint: ими окрашена полоса заголовка
-/// упрощённой карточки (ADR 0008 библиотеки).
+/// узла и его упрощённой карточки (ADR 0009 библиотеки).
 /// </summary>
+/// <remarks>
+/// Белое название на каждом из них читается с контрастом не ниже 4,5:1; на светлую полосу библиотека
+/// поставила бы тёмный текст сама.
+/// </remarks>
 public static class NodeKinds
 {
-    public static readonly Color Source = Color.Parse("#4F81BD");
+    public static readonly Color Source = Color.Parse("#3B6FB6");
 
-    public static readonly Color Filter = Color.Parse("#9BBB59");
+    public static readonly Color Filter = Color.Parse("#4D7A2A");
 
-    public static readonly Color Blend = Color.Parse("#F79646");
+    public static readonly Color Blend = Color.Parse("#B2560D");
 
-    public static readonly Color Output = Color.Parse("#C0504D");
+    public static readonly Color Output = Color.Parse("#A33A36");
 
-    public static readonly Color Utility = Color.Parse("#8064A2");
+    public static readonly Color Utility = Color.Parse("#6A4C93");
 
     public static readonly Color[] All = [Source, Filter, Blend, Output, Utility];
 }
+
+/// <summary>
+/// Тип значения порта: по нему красится провод, как пины и провода по типу данных в Blueprint.
+/// </summary>
+public enum PortKind
+{
+    /// <summary>Любое значение — у перевалки; провод берёт цвет другого конца.</summary>
+    Any,
+
+    /// <summary>Цвет.</summary>
+    Color,
+
+    /// <summary>Число.</summary>
+    Number
+}
+
+/// <summary>
+/// Цвета типов значения — данные графа, как и цвета видов узла.
+/// </summary>
+/// <remarks>
+/// Подобраны под тёмный холст демо: 7,7:1 и 6,4:1. На светлом они слабее, и хосту с обеими темами цвет
+/// провода стоит брать по теме.
+/// </remarks>
+public static class PortKinds
+{
+    public static readonly Color ColorWire = Color.Parse("#D4A017");
+
+    public static readonly Color NumberWire = Color.Parse("#2BA8A8");
+
+    public static Color? ColorOf(PortKind kind) => kind switch
+    {
+        PortKind.Color => ColorWire,
+        PortKind.Number => NumberWire,
+        _ => null
+    };
+}
+
+/// <summary>
+/// Порт, каким его объявляет узел: имя и тип значения.
+/// </summary>
+public readonly record struct GraphPortSpec(string Name, PortKind Kind);
 
 /// <summary>
 /// Узел графа.
@@ -143,12 +193,12 @@ public class GraphNode : INotifyPropertyChanged
 {
     private Point _location;
 
-    public GraphNode(string title, Point location, IEnumerable<string> inputs, IEnumerable<string> outputs)
+    public GraphNode(string title, Point location, IEnumerable<GraphPortSpec> inputs, IEnumerable<GraphPortSpec> outputs)
     {
         Title = title;
         _location = location;
-        Inputs = inputs.Select(name => new GraphPort(this, name, isInput: true)).ToList();
-        Outputs = outputs.Select(name => new GraphPort(this, name, isInput: false)).ToList();
+        Inputs = inputs.Select(spec => new GraphPort(this, spec.Name, isInput: true, spec.Kind)).ToList();
+        Outputs = outputs.Select(spec => new GraphPort(this, spec.Name, isInput: false, spec.Kind)).ToList();
     }
 
     public string Title { get; }
@@ -171,7 +221,7 @@ public class GraphNode : INotifyPropertyChanged
     public IReadOnlyList<GraphPort> Outputs { get; }
 
     /// <summary>
-    /// Цвет вида узла: полоса заголовка его карточки в упрощённом виде. У перевалки — нет.
+    /// Цвет вида узла: полоса под названием узла и под его упрощённой карточкой. У перевалки — нет.
     /// </summary>
     public Color? Accent { get; init; }
 
@@ -183,19 +233,22 @@ public class GraphNode : INotifyPropertyChanged
 /// <summary>
 /// Перевалка: излом связи — это узел, а не точка на связи. Шаблон у неё — <c>Reroute</c> библиотеки.
 /// </summary>
-public sealed class RerouteNode(string title, Point location) : GraphNode(title, location, ["вход"], ["выход"]);
+public sealed class RerouteNode(string title, Point location)
+    : GraphNode(title, location, [new GraphPortSpec("вход", PortKind.Any)], [new GraphPortSpec("выход", PortKind.Any)]);
 
 /// <summary>
 /// Порт узла. Им же связь называет свой конец, поэтому сравнивается он по ссылке: одноимённый порт
 /// другого узла — другой порт.
 /// </summary>
-public sealed class GraphPort(GraphNode node, string name, bool isInput)
+public sealed class GraphPort(GraphNode node, string name, bool isInput, PortKind kind)
 {
     public GraphNode Node { get; } = node;
 
     public string Name { get; } = name;
 
     public bool IsInput { get; } = isInput;
+
+    public PortKind Kind { get; } = kind;
 
     public override string ToString() => $"{Node.Title}.{Name}";
 }
@@ -205,5 +258,11 @@ public sealed class GraphPort(GraphNode node, string name, bool isInput)
 /// </summary>
 public sealed record GraphLink(GraphPort From, GraphPort To)
 {
+    /// <summary>
+    /// Цвет провода — по типу входа, а у входа перевалки — по типу выхода; редактор берёт его
+    /// привязкой <c>LinkStrokeBinding</c> в обоих видах (ADR 0009 библиотеки).
+    /// </summary>
+    public Color? Color => PortKinds.ColorOf(To.Kind) ?? PortKinds.ColorOf(From.Kind);
+
     public override string ToString() => $"{From} → {To}";
 }

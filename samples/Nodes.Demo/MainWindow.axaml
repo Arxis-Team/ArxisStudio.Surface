@@ -31,29 +31,35 @@
                 размер — измеренный при показе, а до первого показа — EstimatedItemSize, размер узла с
                 двумя входами и выходом в теме библиотеки: такие строит «10 000 узлов». PortNodeBinding
                 называет узел порта, и связь к ни разу не показанному узлу рисуется оценкой по его краю.
-                Ниже 50 % узлы рисуются карточками без контейнеров (ADR 0008): полоса заголовка — цвет
-                вида узла из ItemAccentBinding, а MinZoom опущен, чтобы граф на 10 000 узлов вошёл
-                в окно целиком.
+                Ниже 50 % узлы рисуются карточками без контейнеров (ADR 0008), и MinZoom опущен, чтобы
+                граф на 10 000 узлов вошёл в окно целиком. Название узла — из ItemHeaderBinding, полоса
+                под ним — цвет вида узла из ItemAccentBinding, провод — цвет типа порта из
+                LinkStrokeBinding (ADR 0009): обычный узел и его карточка показывают одно и то же.
                 Шаблоны узлов — по типу данных: перевалка первой, она тоже GraphNode.
             -->
             <surface:NodeEditor x:Name="Editor"
                                 ItemsSource="{Binding Nodes}"
                                 ItemLocationBinding="{Binding Location}"
+                                ItemHeaderBinding="{Binding Title}"
                                 ItemAccentBinding="{Binding Accent}"
                                 MinZoom="0.02"
-                                EstimatedItemSize="178,75"
+                                EstimatedItemSize="178,76"
                                 Links="{Binding Links}"
                                 LinkSourceBinding="{Binding From}"
                                 LinkTargetBinding="{Binding To}"
+                                LinkStrokeBinding="{Binding Color}"
                                 PortNodeBinding="{Binding Node, DataType={x:Type demo:GraphPort}}">
                 <surface:NodeEditor.DataTemplates>
                     <DataTemplate x:DataType="demo:RerouteNode">
                         <surface:Reroute Input="{Binding Inputs[0]}" Output="{Binding Outputs[0]}" />
                     </DataTemplate>
 
+                    <!--
+                        Тело узла — порты; название и полосу узел рисует сам, из ItemHeaderBinding и
+                        ItemAccentBinding (ADR 0009 библиотеки).
+                    -->
                     <DataTemplate x:DataType="demo:GraphNode">
-                        <StackPanel MinWidth="160" Spacing="6">
-                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                        <StackPanel MinWidth="160">
                             <Grid ColumnDefinitions="*,*">
                                 <ItemsControl ItemsSource="{Binding Inputs}">
                                     <ItemsControl.ItemTemplate>
