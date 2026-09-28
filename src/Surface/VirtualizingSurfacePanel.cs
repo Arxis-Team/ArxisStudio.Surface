@@ -68,9 +68,10 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     private readonly HashSet<Control> _moved = new();
 
     // Индекс элемента по нему самому — для тех, кто спрашивает геометрию элемента, а не индекса;
-    // пересобирается лениво после правки коллекции.
-    private readonly Dictionary<object, int> _indexByItem = new();
-    private bool _indexByItemStale = true;
+    // после правки коллекции сбрасывается и собирается заново, когда спросят. Сбрасывается целиком, а
+    // не чистится: так он не держит ушедшие элементы до следующего вопроса и не стоит прохода по
+    // себе на каждой вставке.
+    private Dictionary<object, int>? _indexByItem;
 
     // Модели, за которыми панель следит, со счётом их вхождений в коллекцию, и сменившиеся с прошлой меры.
     private readonly Dictionary<INotifyPropertyChanged, int> _tracked = new(ReferenceEqualityComparer.Instance);
@@ -188,11 +189,10 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     /// </summary>
     private int IndexOfItem(object item)
     {
-        if (_indexByItemStale)
+        if (_indexByItem == null)
         {
-            _indexByItemStale = false;
-            _indexByItem.Clear();
             var items = Items;
+            _indexByItem = new Dictionary<object, int>(items.Count);
             for (var i = items.Count - 1; i >= 0; i--)
             {
                 if (items[i] is { } each)
@@ -385,7 +385,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         _slots.Clear();
         _slotsStale = true;
         _extentStale = true;
-        _indexByItemStale = true;
+        _indexByItem = null;
         _reader = null;
 
         _view = ItemsControl as SurfaceView;
@@ -399,7 +399,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     protected override void OnItemsChanged(IReadOnlyList<object?> items, NotifyCollectionChangedEventArgs e)
     {
         base.OnItemsChanged(items, e);
-        _indexByItemStale = true;
+        _indexByItem = null;
 
         if (_slotsStale)
         {
@@ -409,6 +409,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             return;
         }
 
+        System.Collections.IList? left = null;
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
@@ -416,10 +417,12 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
                 break;
             case NotifyCollectionChangedAction.Remove:
                 RemoveItems(e.OldStartingIndex, e.OldItems!);
+                left = e.OldItems;
                 break;
             case NotifyCollectionChangedAction.Replace:
                 RemoveItems(e.OldStartingIndex, e.OldItems!);
                 InsertItems(e.NewStartingIndex, e.NewItems!.Count, items);
+                left = e.OldItems;
                 break;
             case NotifyCollectionChangedAction.Move when e.OldStartingIndex >= 0:
                 RemoveItems(e.OldStartingIndex, e.OldItems!);
@@ -427,6 +430,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
                 if (insertAt > e.OldStartingIndex)
                     insertAt -= e.OldItems!.Count - 1;
                 InsertItems(insertAt, e.NewItems!.Count, items);
+                left = e.OldItems;
                 break;
             default:
                 RemoveAllContainers();
@@ -439,6 +443,15 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
 
         _extentStale = true;
         InvalidateMeasure();
+
+        // Ушедший или переставленный свёрнутым о себе не сообщит ничем: его портов нет, а держащие на
+        // нём своё должны узнать, где он теперь и есть ли он вообще. Сообщается, когда хранилище снова
+        // сходится с коллекцией: посреди перестановки индекс элемента указал бы на чужую ячейку.
+        if (left != null)
+        {
+            foreach (var item in left)
+                _view?.OnItemGeometryChanged(item);
+        }
     }
 
     /// <summary>
@@ -636,12 +649,6 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
 
         _slots.RemoveRange(index, count);
         Shift(index + count, -count);
-
-        // Ушедший свёрнутым о себе не сообщит ничем: его портов нет, а держащие на нём своё должны
-        // узнать, что его больше нет.
-        _indexByItemStale = true;
-        foreach (var item in removed)
-            _view?.OnItemGeometryChanged(item);
     }
 
     /// <summary>

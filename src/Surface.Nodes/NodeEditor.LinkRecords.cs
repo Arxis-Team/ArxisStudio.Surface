@@ -430,10 +430,18 @@ public partial class NodeEditor
         return reader.Read(item);
     }
 
+    /// <summary>
+    /// Отпускает последние прочитанные объекты — в конце каждой пачки чтений.
+    /// </summary>
+    /// <remarks>
+    /// Читатели живут дольше графа, и последний прочитанный порт мог принадлежать узлу, которого уже
+    /// нет: держать его редактору нельзя.
+    /// </remarks>
     private void ReleaseReaders()
     {
         _sourceReader?.Release();
         _targetReader?.Release();
+        _portNodeReader?.Release();
     }
 
     /// <summary>

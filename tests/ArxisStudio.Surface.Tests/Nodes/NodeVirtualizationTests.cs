@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -341,8 +342,9 @@ public class NodeVirtualizationTests
     [AvaloniaFact]
     public void Collection_Changes_Keep_Link_Ends_On_Their_Nodes()
     {
-        // Вставка сдвигает индексы — конец ищется по узлу, а не по прежнему индексу; ушедший свёрнутым
-        // узел уносит свои связи.
+        // Вставка сдвигает индексы — конец ищется по узлу, а не по прежнему индексу. Перестановка
+        // сообщает об узле, когда хранилище уже сошлось с коллекцией: посреди неё индекс узла указывал
+        // на ячейку соседа, и конец уезжал к нему. Ушедший свёрнутым узел уносит свои связи.
         var stand = Create();
 
         stand.Nodes.Insert(0, new NodeModel("C", new Point(5000, 5000)));
@@ -351,9 +353,119 @@ public class NodeVirtualizationTests
         stand.RunLayout();
         Assert.Equal(new Point(3000, 340), stand.LinkOf(stand.AToB).Geometry.Target);
 
+        stand.Nodes.Move(stand.Nodes.IndexOf(stand.B), 0);
+        stand.RunLayout();
+        Assert.Equal(new Point(3000, 340), stand.LinkOf(stand.AToB).Geometry.Target);
+
         stand.Nodes.Remove(stand.B);
         stand.RunLayout();
         Assert.False(stand.LinkOf(stand.AToB).IsResolved);
         Assert.False(stand.LinkOf(stand.BToA).IsResolved);
+    }
+
+    /// <summary>
+    /// Сменённый граф редактор не держит — ни узлов его, ни портов.
+    /// </summary>
+    /// <remarks>
+    /// Оценка конца заводит запись на каждый узел, до которого дошла связь, и прежде эти записи не
+    /// убирались: демо, перезагружая граф на 10 000 узлов, прибавляло по пять мегабайт за раз. Узел D
+    /// ни разу не показывался, контейнера у него нет, и держать его могли записи концов, читатель узла
+    /// порта и указатель панели по элементам — его строит сдвиг модели свёрнутого узла, и прежде он
+    /// держал прежнюю коллекцию до следующего вопроса. Смену источника Avalonia сообщает удалением
+    /// прежних элементов, и узлы забываются по одному.
+    /// </remarks>
+    [AvaloniaFact]
+    public void A_Replaced_Graph_Is_Not_Held_By_The_Editor()
+    {
+        var (editor, node) = ReplaceGraph(clear: false);
+
+        Collect();
+
+        Assert.False(node.IsAlive, "редактор держит узел сменённого графа");
+        GC.KeepAlive(editor);
+    }
+
+    /// <summary>
+    /// Очищенный граф — тоже: очистка приходит сбросом без списка ушедших, и узлы забываются, когда
+    /// панель перечитала коллекцию.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_Cleared_Graph_Is_Not_Held_By_The_Editor()
+    {
+        var (editor, node) = ReplaceGraph(clear: true);
+
+        Collect();
+
+        Assert.False(node.IsAlive, "редактор держит узел очищенного графа");
+        GC.KeepAlive(editor);
+    }
+
+    /// <summary>
+    /// Удалённый узел редактор не держит, как и сменённый граф.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_Removed_Node_Is_Not_Held_By_The_Editor()
+    {
+        var (editor, node) = RemoveNode();
+
+        Collect();
+
+        Assert.False(node.IsAlive, "редактор держит удалённый узел");
+        GC.KeepAlive(editor);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (NodeEditor Editor, WeakReference Node) ReplaceGraph(bool clear)
+    {
+        var stand = Create();
+        var d = MoveCollapsed(stand);
+
+        if (clear)
+        {
+            ((ObservableCollection<object>)stand.Editor.Links!).Clear();
+            stand.Nodes.Clear();
+        }
+        else
+        {
+            stand.Editor.ItemsSource = new ObservableCollection<object> { new NodeModel("E", new Point(100, 100)) };
+            stand.Editor.Links = new ObservableCollection<object>();
+        }
+
+        stand.RunLayout();
+        return (stand.Editor, new WeakReference(d));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (NodeEditor Editor, WeakReference Node) RemoveNode()
+    {
+        var stand = Create();
+        var d = MoveCollapsed(stand);
+
+        // Как у хоста: сперва связи узла, затем сам узел.
+        ((ObservableCollection<object>)stand.Editor.Links!).Remove(stand.CToD);
+        stand.Nodes.Remove(d);
+        stand.RunLayout();
+        return (stand.Editor, new WeakReference(d));
+    }
+
+    /// <summary>
+    /// Сдвигает моделью свёрнутый узел D: панель ищет его индекс и строит указатель по элементам.
+    /// </summary>
+    private static NodeModel MoveCollapsed(Stand stand)
+    {
+        var d = (NodeModel)stand.Nodes[3];
+        d.Location = new Point(3400, 1100);
+        stand.RunLayout();
+        Assert.Equal(new Point(3400, 1140), stand.LinkOf(stand.CToD).Geometry.Target);
+        return d;
+    }
+
+    private static void Collect()
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
+        }
     }
 }

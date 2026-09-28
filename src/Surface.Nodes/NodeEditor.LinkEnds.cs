@@ -128,10 +128,19 @@ public partial class NodeEditor
     /// <summary>
     /// Пересчитывает связи портов узла, чья геометрия сменилась без контейнера, — а без узла все.
     /// </summary>
+    /// <remarks>
+    /// Этим же панель сообщает об узле, ушедшем из коллекции, а без узла — о том, что перечитала её
+    /// целиком. Узел, которого в ней больше нет, забывается здесь: записи держат элементы узлов и
+    /// данные портов, а оценка конца заводит запись на каждый узел, до которого дошла связь, — без
+    /// уборки редактор держал бы удалённые узлы, а сменив граф, прежний целиком. Забывается после
+    /// сообщения панели, а не по событию коллекции: оно приходит раньше, чем панель уберёт узел, и
+    /// его связи остались бы нарисованными к пустому месту.
+    /// </remarks>
     private void RefreshLinksOfItem(object? item)
     {
         if (item == null)
         {
+            ForgetAbsentNodes();
             RefreshAllLinks();
             return;
         }
@@ -148,11 +157,52 @@ public partial class NodeEditor
 
         foreach (var record in touched)
             RefreshLink(record);
+
+        if (!TryGetItemBounds(item, out _))
+            ForgetNode(item);
+
+        ReleaseReaders();
     }
 
     private void RefreshAllLinks()
     {
         foreach (var record in _recordByItem.Values.ToArray())
             RefreshLink(record);
+
+        ReleaseReaders();
+    }
+
+    /// <summary>
+    /// Забывает узлы, которых нет в коллекции: панель перечитала её целиком.
+    /// </summary>
+    private void ForgetAbsentNodes()
+    {
+        List<object>? absent = null;
+        foreach (var node in _portKeysByNode.Keys)
+        {
+            if (!TryGetItemBounds(node, out _))
+                (absent ??= new List<object>()).Add(node);
+        }
+
+        if (absent == null)
+            return;
+
+        foreach (var node in absent)
+            ForgetNode(node);
+    }
+
+    /// <summary>
+    /// Забывает смещения и слежение портов узла; читатель узла порта отпускает тот, кто звал.
+    /// </summary>
+    private void ForgetNode(object item)
+    {
+        if (!_portKeysByNode.Remove(item, out var keys))
+            return;
+
+        foreach (var key in keys)
+        {
+            if (_lastOffsets.TryGetValue(key, out var last) && ReferenceEquals(last.Node, item))
+                _lastOffsets.Remove(key);
+        }
     }
 }
