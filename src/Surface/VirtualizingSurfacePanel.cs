@@ -31,8 +31,9 @@ namespace ArxisStudio.Surface;
 /// на границе разворачивался бы и сворачивался на каждом кадре панорамы.
 /// </para>
 /// <para>
-/// Не сворачиваются выбранные элементы и контейнер с фокусом клавиатуры, а элемент, который сам
-/// контейнер, не сворачивается никогда. Свёрнутый контейнер уходит в пул по ключу и готовится для
+/// Не сворачиваются главный выбранный, выбранный не целиком и контейнер с фокусом клавиатуры, а
+/// элемент, который сам контейнер, не сворачивается никогда; прочий выбранный сворачивается и остаётся
+/// выбранным — выбор — данные (ADR 0010). Свёрнутый контейнер уходит в пул по ключу и готовится для
 /// другого элемента; его состояние, не привязанное к данным, — заданные руками размер или
 /// <c>ZIndex</c> — при этом не сохраняется.
 /// </para>
@@ -222,6 +223,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             return null;
 
         SyncSlots(items);
+        using var change = _view.BeginContainerChange();
         var container = Realize(index, items[index]);
         MeasuredChildren++;
         container.Measure(Size.Infinity);
@@ -245,6 +247,26 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             if (!_realized.ContainsKey(i) && bounds.Intersects(BoundsOf(_slots[i])))
                 RealizeNow(i);
         }
+    }
+
+    /// <summary>
+    /// Индексы свёрнутых элементов, чей прямоугольник пересекает <paramref name="bounds"/>, — рамка
+    /// выбирает их данными, не разворачивая (ADR 0010).
+    /// </summary>
+    internal List<int> CollapsedIndicesWithin(Rect bounds)
+    {
+        var result = new List<int>();
+        if (!IsVirtualizing)
+            return result;
+
+        SyncSlots(Items);
+        for (var i = 0; i < _slots.Count; i++)
+        {
+            if (!_realized.ContainsKey(i) && bounds.Intersects(BoundsOf(_slots[i])))
+                result.Add(i);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />
@@ -271,6 +293,10 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
         if (IsVirtualizing)
         {
+            // Выбор, который задевают разворачивание и сворачивание, публикуется в конце одним
+            // снимком и без события (ADR 0010).
+            using var change = view.BeginContainerChange();
+
             // Ниже порога упрощённого вида окна нет вовсе (ADR 0008): развёрнуто только закреплённое.
             var simplified = view.IsSimplified;
             var (realize, keep) = Windows(view);
@@ -289,11 +315,12 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             foreach (var pair in _scratch)
                 Recycle(pair.Key, pair.Value);
 
-            // Приходят вошедшие в окно, выбранные и те, кто сам себе контейнер.
+            // Приходят вошедшие в окно и те, кто сам себе контейнер; выбранное — данные, и за окном
+            // контейнер ему не нужен (ADR 0010).
             for (var i = 0; i < items.Count; i++)
             {
                 if (!_realized.ContainsKey(i)
-                    && ((!simplified && realize.Intersects(BoundsOf(_slots[i]))) || view.Selection.IsSelected(i) || items[i] is SurfaceItem))
+                    && ((!simplified && realize.Intersects(BoundsOf(_slots[i]))) || items[i] is SurfaceItem))
                 {
                     Realize(i, items[i]);
                 }
@@ -844,7 +871,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     }
 
     private bool IsPinned(SurfaceView view, int index, Control container) =>
-        view.Selection.IsSelected(index)
+        view.KeepsSelectedRealized(index, container)
         || container.IsKeyboardFocusWithin
         || container.GetValue(RecycleKeyProperty) == s_itemIsItsOwnContainer
         || (view.PressedItem is { } pressed && ReferenceEquals(Items[index], pressed));

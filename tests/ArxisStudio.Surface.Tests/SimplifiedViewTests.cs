@@ -248,16 +248,14 @@ public class SimplifiedViewTests
     [AvaloniaFact]
     public void A_Card_Goes_When_Its_Item_Is_Realized_And_Comes_With_The_Collection()
     {
-        // Выбранный хостом свёрнутый элемент разворачивается, и его карточка уходит — иначе она
-        // осталась бы под контейнером и выдала бы его, когда тот сдвинется. Коллекция приносит и
-        // уносит карточки.
+        // Нажатая карточка разворачивается и уходит — иначе она осталась бы под контейнером и выдала
+        // бы его, когда тот сдвинется. Коллекция приносит и уносит карточки.
         var stand = Create();
         stand.Zoom(0.4);
         stand.Render();
         Assert.Equal(stand.Items.Count, stand.Layer.Cards);
 
-        stand.View.Selection.Select(5);
-        stand.RunLayout();
+        Click(stand, Card21);
         stand.Render();
         Assert.Equal(stand.Items.Count - 1, stand.Layer.Cards);
 
@@ -315,13 +313,12 @@ public class SimplifiedViewTests
         // перечитывает, когда элемент сворачивается.
         var stand = Create(accentBinding: true);
         stand.Zoom(0.4);
-        stand.View.Selection.Select(2);
-        stand.RunLayout();
+        Click(stand, Card2);
+        Assert.NotNull(stand.Container(2));
 
         ((Card)stand.Items[2]).Accent = Colors.Green;
         stand.RunLayout();
-        stand.View.Selection.Clear();
-        stand.RunLayout();
+        Click(stand, Gap);
         stand.Render();
 
         Assert.Null(stand.Container(2));
@@ -348,6 +345,12 @@ public class SimplifiedViewTests
     /// координат.
     /// </summary>
     private static readonly Point Card21 = new(80, 52);
+
+    /// <summary>Карточка элемента 2 при масштабе 0,4 — (300, 0) в мире.</summary>
+    private static readonly Point Card2 = new(140, 12);
+
+    /// <summary>Пустое место между карточками при масштабе 0,4.</summary>
+    private static readonly Point Gap = new(50, 12);
 
     private static void Click(Stand stand, Point at, MouseButton button = MouseButton.Left)
     {

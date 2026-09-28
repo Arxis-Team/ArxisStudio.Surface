@@ -87,9 +87,6 @@ public partial class SurfaceView
     /// </remarks>
     private protected virtual void RefreshSelectionOverlay()
     {
-        if (!RealizeSelectedItems())
-            return;
-
         CleanupSelectionTargets();
 
         var primary = _selectedTargets.Count > 0 ? _selectedTargets[0] : null;

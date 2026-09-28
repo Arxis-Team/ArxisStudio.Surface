@@ -127,8 +127,14 @@ public partial class SurfaceView
     private protected IReadOnlyList<SurfaceSelectionTarget> _selectedTargetsSnapshot = Array.Empty<SurfaceSelectionTarget>();
 
     /// <summary>
-    /// Получает снимок всех выбранных targets.
+    /// Получает снимок выбранных targets — у развёрнутых элементов.
     /// </summary>
+    /// <remarks>
+    /// С <see cref="ItemLocationBinding"/> выбранный элемент за окном остаётся выбранным без контейнера
+    /// (ADR 0010), и записи у него здесь нет: полный выбор — <see cref="SelectedItems"/>. Главный
+    /// выбранный развёрнут всегда. Развернулся или свернулся выбранный — снимок меняется без
+    /// <see cref="SurfaceSelectionChanged"/>.
+    /// </remarks>
     public IReadOnlyList<SurfaceSelectionTarget> SelectedTargets
     {
         get => _selectedTargetsSnapshot;
@@ -150,6 +156,10 @@ public partial class SurfaceView
     /// Событие возникает только при фактической смене набора или primary target.
     /// Перетаскивание и изменение размера его не поднимают, хотя внутренний снимок
     /// пересобирается на каждом кадре.
+    /// </para>
+    /// <para>
+    /// Событие — о выборе, а не о разворачивании (ADR 0010): выбор свёрнутых элементов его поднимает,
+    /// хотя набора targets не меняет, а выбранный, въехавший в окно или уехавший из него, — нет.
     /// </para>
     /// </remarks>
     public event EventHandler<SurfaceSelectionChangedEventArgs>? SurfaceSelectionChanged;
@@ -182,6 +192,7 @@ public partial class SurfaceView
         if (!useContainerSelection && isCtrlPressed && marqueeOwnerItem != null && !CanAddNestedTargetToContainer(marqueeOwnerItem))
             return;
 
+        using (WriteSelection())
         using (Selection.BatchUpdate())
         {
             if (!isCtrlPressed)
@@ -211,8 +222,21 @@ public partial class SurfaceView
             }
             else
             {
-                // Рамка набирает и то, что свёрнуто: у выбранного обязан быть контейнер.
-                RealizeWithin(bounds);
+                // Рамка набирает и то, что свёрнуто. Контейнеры — единица выбора, и свёрнутое
+                // выбирается данными, без контейнера (ADR 0010); вложенным target'ам контейнер нужен,
+                // и свёрнутое разворачивается.
+                var collapsed = useContainerSelection
+                    && ItemsPanelRoot is VirtualizingSurfacePanel { IsVirtualizing: true } panel
+                        ? panel.CollapsedIndicesWithin(bounds)
+                        : null;
+
+                if (collapsed == null)
+                    RealizeWithin(bounds);
+                else
+                {
+                    foreach (var index in collapsed)
+                        Selection.Select(index);
+                }
 
                 foreach (var child in GetRealizedContainers())
                 {
@@ -707,15 +731,8 @@ public partial class SurfaceView
     /// </remarks>
     private protected void MaterialiseImplicitTargets()
     {
-        var items = SelectedItems;
-        if (items == null)
-            return;
-
-        foreach (var item in items)
+        foreach (var container in EnumerateSelectedContainers())
         {
-            if (ContainerFromItem(item) is not SurfaceItem container)
-                continue;
-
             var owned = false;
             foreach (var selected in _selectedTargets)
             {
@@ -808,29 +825,31 @@ public partial class SurfaceView
         if (_selectedTargets.Count == 0)
             return;
 
-        var selectedContainers = new HashSet<SurfaceItem>();
-        var items = SelectedItems;
-        if (items != null)
-        {
-            foreach (var item in items)
-            {
-                var container = ContainerFromItem(item) as SurfaceItem;
-                if (container == null && item is SurfaceItem directItem)
-                    container = directItem;
-
-                if (container != null)
-                    selectedContainers.Add(container);
-            }
-        }
-
-        // Target выживает, пока его владелец верхнего уровня остаётся выбранным.
-        // Владелец вычисляется по дереву, поэтому правило одинаково работает
-        // для любой глубины вложенности.
+        // Target выживает, пока его владелец верхнего уровня развёрнут и выбран. Владелец
+        // вычисляется по дереву, поэтому правило одинаково работает для любой глубины вложенности;
+        // контейнер, ушедший в пул или отданный другому элементу, выбран уже не за свой элемент.
         _selectedTargets.RemoveAll(target =>
         {
             var owner = ResolveOwningItemForTarget(target);
-            return owner == null || !selectedContainers.Contains(owner);
+            var index = owner == null ? -1 : IndexFromContainer(owner);
+            return index < 0 || !Selection.IsSelected(index);
         });
+    }
+
+    /// <summary>
+    /// Развёрнутые выбранные контейнеры верхнего уровня в порядке элементов.
+    /// </summary>
+    /// <remarks>
+    /// По индексам, а не по <c>SelectedItems</c>: поиск контейнера по элементу проходит коллекцию,
+    /// и снимок большого выбора стоил бы квадрат его размера на каждом кадре жеста (ADR 0010).
+    /// </remarks>
+    private protected IEnumerable<SurfaceItem> EnumerateSelectedContainers()
+    {
+        foreach (var index in Selection.SelectedIndexes)
+        {
+            if (ContainerFromIndex(index) is SurfaceItem container)
+                yield return container;
+        }
     }
 
     internal IReadOnlyList<Control> ResolveSelectionTargets(SurfaceItem item)
@@ -863,10 +882,14 @@ public partial class SurfaceView
     /// Снимок при этом пересобирается всегда, но выделение меняется редко, поэтому
     /// без этой проверки и свойства, и событие срабатывали бы на изменение геометрии.
     /// </remarks>
-    private protected void ApplySelectionSnapshot(IReadOnlyList<SurfaceSelectionTarget> next)
+    private protected void ApplySelectionSnapshot(IReadOnlyList<SurfaceSelectionTarget> next, bool realizationOnly = false)
     {
         var previous = _selectedTargetsSnapshot;
-        if (AreSameTargets(previous, next))
+
+        // Выбор свёрнутых снимка не меняет, но выбор сменился: отпечаток выбранных (ADR 0010).
+        var signature = SelectionSignature();
+        var selectionChanged = signature != _publishedSelection;
+        if (AreSameTargets(previous, next) && !selectionChanged)
             return;
 
         var previousPrimary = _primarySelectionTarget;
@@ -874,6 +897,12 @@ public partial class SurfaceView
         SelectedTargets = next;
         PrimarySelectionTarget = next.Count > 0 ? next[0] : null;
 
+        // Развернулось или свернулось выбранное, а выбор тот же — события нет. Сменился и выбор —
+        // событие: панель могла развернуть новый выбранный раньше, чем о выборе узнала поверхность.
+        if (realizationOnly && !selectionChanged)
+            return;
+
+        _publishedSelection = signature;
         var handler = SurfaceSelectionChanged;
         if (handler == null)
             return;
@@ -953,19 +982,8 @@ public partial class SurfaceView
         if (primaryItem != null && primaryControl != null && dedup.Add(primaryControl))
             result.Add(new SurfaceSelectionTarget(primaryItem, primaryControl, GetGroupKey(primaryControl)));
 
-        var items = SelectedItems;
-        if (items == null)
-            return result;
-
-        foreach (var item in items)
+        foreach (var container in EnumerateSelectedContainers())
         {
-            var container = ContainerFromItem(item) as SurfaceItem;
-            if (container == null && item is SurfaceItem directItem)
-                container = directItem;
-
-            if (container == null)
-                continue;
-
             foreach (var target in ResolveSelectionTargets(container))
             {
                 if (!dedup.Add(target))

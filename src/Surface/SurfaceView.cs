@@ -44,13 +44,15 @@ public partial class SurfaceView : SelectingItemsControl
         SurfaceItem.DragCompletedEvent.AddClassHandler<SurfaceView>((x, e) => x.OnItemsDragCompleted(e));
 
         // Индексный слой пишут и мимо редактора — SelectedIndex, SelectedItems хоста.
-        // Выделение обязано опубликоваться и тогда, а сдвиг выбранного — пересобрать его.
+        // Выделение обязано опубликоваться и тогда, а сдвиг выбранного — пересобрать его. Отметку,
+        // которую сделала сама поверхность или панель, разворачивая выбранное, собирает тот, кто
+        // пишет (ADR 0010).
         SurfaceItem.IsSelectedProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
-            item.FindAncestorOfType<SurfaceView>()?.RefreshSelectionOverlay());
+            item.FindAncestorOfType<SurfaceView>()?.OnSelectedContainerChanged());
         SurfaceItem.LocationProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
         {
             if (item.IsSelected)
-                item.FindAncestorOfType<SurfaceView>()?.RefreshSelectionOverlay();
+                item.FindAncestorOfType<SurfaceView>()?.OnSelectedContainerChanged();
         });
 
         // Контейнер встал на новое место, сменил размер или спрятан — сменилось содержимое холста.

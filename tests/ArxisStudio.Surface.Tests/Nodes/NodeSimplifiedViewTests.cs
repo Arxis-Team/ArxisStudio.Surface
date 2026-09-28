@@ -111,6 +111,23 @@ public class NodeSimplifiedViewTests
         return middle;
     }
 
+    /// <summary>Середина узла 22 в мире: (400, 240) плюс половина узла.</summary>
+    private static readonly Point Node22 = new(460, 280);
+
+    /// <summary>Пустое место между рядами узлов в мире.</summary>
+    private static readonly Point Gap = new(160, 100);
+
+    /// <summary>
+    /// Щелчок по точке мира: по карточке — развернуть и выбрать узел, мимо — снять закрепление.
+    /// </summary>
+    private static void Press(Stand stand, Point world)
+    {
+        var at = stand.Screen(world);
+        stand.Window.MouseDown(at, MouseButton.Left);
+        stand.Window.MouseUp(at, MouseButton.Left);
+        stand.RunLayout();
+    }
+
     [AvaloniaFact]
     public void A_Link_Has_A_Control_Only_At_A_Realized_Node_Or_When_Pinned()
     {
@@ -118,9 +135,8 @@ public class NodeSimplifiedViewTests
         Assert.True(stand.Editor.IsSimplified);
         Assert.Equal(0, stand.Editor.RealizedLinks);
 
-        // Выбранный узел развёрнут — его две связи рисуются вживую.
-        stand.Editor.Selection.Select(22);
-        stand.RunLayout();
+        // Нажатый узел развёрнут — его две связи рисуются вживую.
+        Press(stand, Node22);
         Assert.Equal(2, stand.Editor.RealizedLinks);
         Assert.NotNull(stand.Record(stand.Links[(2 * (Columns - 1)) + 1]).Control);
 
@@ -131,8 +147,7 @@ public class NodeSimplifiedViewTests
         Assert.Equal(3, stand.Editor.RealizedLinks);
 
         stand.Editor.SetLinkHighlighted(far, false);
-        stand.Editor.Selection.Clear();
-        stand.RunLayout();
+        Press(stand, Gap);
         Assert.Equal(0, stand.Editor.RealizedLinks);
     }
 
@@ -175,8 +190,7 @@ public class NodeSimplifiedViewTests
     {
         // Контролы связей держит живой порт, а не окно: панорама им ничего не меняет.
         var stand = Create();
-        stand.Editor.Selection.Select(22);
-        stand.RunLayout();
+        Press(stand, Node22);
         var panel = stand.Editor.GetVisualDescendants().OfType<LinkPanel>().Single();
         var measured = panel.MeasuredChildren;
 

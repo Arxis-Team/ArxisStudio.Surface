@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Selection;
@@ -9,9 +11,9 @@ using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface;
 
-// Виртуализация: что держит контейнеры развёрнутыми и разворачивание выбранного до сборки снимка
-// выделения (ADR 0007), упрощённый вид при малом масштабе (ADR 0008). Часть SurfaceView; общее
-// описание типа — в SurfaceView.cs.
+// Виртуализация: что держит контейнеры развёрнутыми (ADR 0007), упрощённый вид при малом масштабе
+// (ADR 0008), выбор без контейнеров и его публикация (ADR 0010). Часть SurfaceView; общее описание
+// типа — в SurfaceView.cs.
 public partial class SurfaceView
 {
     /// <summary>
@@ -27,17 +29,21 @@ public partial class SurfaceView
         AvaloniaProperty.RegisterDirect<SurfaceView, bool>(nameof(IsSimplified), o => o.IsSimplified);
 
     private int _realizationHolds;
-    private bool _realizingSelection;
     private bool _isSimplified;
     private object? _pressedItem;
     private ISelectionModel? _watchedSelection;
+    private int _containerChanges;
+    private bool _realizedSelectionChanged;
+    private int _selectionWrites;
+    private long _publishedSelection;
 
     /// <summary>
     /// Получает или задает масштаб, ниже которого элементы показываются упрощённо, без контейнеров.
     /// </summary>
     /// <remarks>
     /// ADR 0008. Ниже порога виртуализирующая панель не разворачивает ничего, кроме закреплённого, —
-    /// выбранных, контейнера с фокусом и элемента, который сам <see cref="SurfaceItem"/>. Ноль и
+    /// главного выбранного, контейнера с фокусом, нажатого и элемента, который сам
+    /// <see cref="SurfaceItem"/>. Ноль и
     /// меньше выключают упрощённый вид. Действует только с <see cref="ItemLocationBinding"/>: без неё
     /// положение свёрнутого элемента взять неоткуда, и развёрнуто всё.
     /// </remarks>
@@ -216,42 +222,89 @@ public partial class SurfaceView
     }
 
     /// <summary>
-    /// Разворачивает выбранные элементы, у которых нет контейнера.
+    /// Держит ли выбор контейнер элемента развёрнутым.
     /// </summary>
     /// <remarks>
-    /// Единая точка перед сборкой снимка выделения: слой target'ов держит контейнеры, и выбранное
-    /// хостом, рамкой за краем или «выбрать всё» обязано их получить раньше, чем снимок уйдёт наружу, —
-    /// иначе первым событием ушло бы выделение без свёрнутых, а вторым — полное. Разворачивание само
-    /// отмечает выбор на новых контейнерах и зовёт пересборку ещё раз; эти вложенные вызовы
-    /// пропускаются, снимок соберёт тот, кто начал.
+    /// ADR 0010. Выбор — данные индексного слоя, а слой target'ов описывает развёрнутое: выбранный
+    /// элемент за окном остаётся выбранным без контейнера. Держат главный выбранный —
+    /// <see cref="PrimarySelectionTarget"/> развёрнут всегда — и выбранный не целиком, с вложенным
+    /// target'ом: вложенный target — контрол, и без контейнера его нет.
     /// </remarks>
-    /// <returns>
-    /// <see langword="false"/>, если разворачивание уже идёт выше по стеку и снимок собирать рано.
-    /// </returns>
-    private protected bool RealizeSelectedItems()
+    internal bool KeepsSelectedRealized(int index, Control container)
     {
-        if (_realizingSelection)
+        if (!Selection.IsSelected(index))
             return false;
 
-        if (ItemsPanelRoot is not VirtualizingSurfacePanel { IsVirtualizing: true } panel)
+        if (container is not SurfaceItem item)
             return true;
 
-        _realizingSelection = true;
-        try
+        // Главный — опубликованный: выбор хостом слоя target'ов не пишет, а главного называет снимок.
+        if (_primarySelectionTarget is { } primary && IsOwnedByContainer(primary.Target, item))
+            return true;
+
+        foreach (var target in _selectedTargets)
         {
-            // Снимком: подготовка контейнера вправе тронуть выбор.
-            foreach (var index in Selection.SelectedIndexes.ToArray())
-            {
-                if (ContainerFromIndex(index) == null)
-                    panel.RealizeNow(index);
-            }
-        }
-        finally
-        {
-            _realizingSelection = false;
+            if (target is not SurfaceItem && IsOwnedByContainer(target, item))
+                return true;
         }
 
-        return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Открывает смену контейнеров панелью — разворачивание и сворачивание: выбор, который они
+    /// задевают, публикуется в конце одним снимком и без события.
+    /// </summary>
+    /// <remarks>
+    /// Выбор при этом не меняется, меняется только то, что у него развёрнуто: событие выделения —
+    /// о выборе, а не о панораме (ADR 0010). Без этого каждый выбранный, въехавший в окно, отмечал бы
+    /// выбор на контейнере и пересобирал снимок сам.
+    /// </remarks>
+    /// <returns>Смена; закрывается один раз.</returns>
+    internal ContainerChange BeginContainerChange()
+    {
+        _containerChanges++;
+        return new ContainerChange(this);
+    }
+
+    /// <summary>
+    /// Выбор отметился на контейнере или выбранный контейнер сдвинулся: пересобрать снимок — сейчас или
+    /// в конце идущей записи выбора и смены контейнеров.
+    /// </summary>
+    internal void OnSelectedContainerChanged()
+    {
+        if (_selectionWrites > 0)
+            return;
+
+        if (_containerChanges > 0)
+        {
+            _realizedSelectionChanged = true;
+            return;
+        }
+
+        RefreshSelectionOverlay();
+    }
+
+    /// <summary>
+    /// Открывает запись выбора поверхностью: выбор отметится на контейнерах, и отмечающие не
+    /// пересобирают снимок — его соберёт пишущий, один раз, когда закончит.
+    /// </summary>
+    /// <returns>Запись; закрывается один раз.</returns>
+    private protected SelectionWrite WriteSelection()
+    {
+        _selectionWrites++;
+        return new SelectionWrite(this);
+    }
+
+    /// <summary>
+    /// Публикует снимок выделения без события: сменилось только развёрнутое.
+    /// </summary>
+    private void PublishRealizedSelection()
+    {
+        CleanupSelectionTargets();
+        var primary = _selectedTargets.Count > 0 ? _selectedTargets[0] : null;
+        var primaryItem = primary as SurfaceItem ?? (primary != null ? FindSurfaceHost(primary) : null);
+        ApplySelectionSnapshot(CreateSelectionTargetsSnapshot(primaryItem, primary), realizationOnly: true);
     }
 
     private void WatchSelection(ISelectionModel? model)
@@ -280,14 +333,68 @@ public partial class SurfaceView
         if (e.DeselectedIndexes.Count > 0)
             panel.InvalidateMeasure();
 
-        foreach (var index in e.SelectedIndexes)
-        {
-            if (ContainerFromIndex(index) != null)
-                continue;
-
+        // Выбор свёрнутых на контейнерах не отмечается, и отметка его не опубликует: событие
+        // выделения обязано прийти и тогда (ADR 0010). Пишущая поверхность соберёт снимок сама.
+        if (_selectionWrites == 0 && (TouchesCollapsed(e.SelectedIndexes) || TouchesCollapsed(e.DeselectedIndexes)))
             RefreshSelectionOverlay();
-            return;
+    }
+
+    /// <summary>
+    /// Отпечаток выбора — какие элементы выбраны, без порядка: по нему публикация отличает смену
+    /// выбора от смены развёрнутого (ADR 0010).
+    /// </summary>
+    /// <remarks>
+    /// По элементам, а не по индексам: удаление невыбранного сдвигает индексы, а выбор не меняет.
+    /// Сумма смешанных хешей от порядка не зависит.
+    /// </remarks>
+    private long SelectionSignature()
+    {
+        var items = SelectedItems;
+        if (items == null)
+            return 0;
+
+        long signature = items.Count;
+        foreach (var item in items)
+        {
+            var mixed = unchecked((ulong)(uint)(item == null ? 0 : RuntimeHelpers.GetHashCode(item)) * 0x9E3779B97F4A7C15UL);
+            signature = unchecked(signature + (long)(mixed ^ (mixed >> 29)));
         }
+
+        return signature;
+    }
+
+    private bool TouchesCollapsed(IReadOnlyList<int> indexes)
+    {
+        foreach (var index in indexes)
+        {
+            if (ContainerFromIndex(index) == null)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Смена контейнеров панелью: закрытие последней публикует развёрнутое выбранное.
+    /// </summary>
+    internal readonly struct ContainerChange(SurfaceView view) : IDisposable
+    {
+        public void Dispose()
+        {
+            if (--view._containerChanges > 0 || !view._realizedSelectionChanged)
+                return;
+
+            view._realizedSelectionChanged = false;
+            view.PublishRealizedSelection();
+        }
+    }
+
+    /// <summary>
+    /// Запись выбора поверхностью; снимок собирает пишущий.
+    /// </summary>
+    private protected readonly struct SelectionWrite(SurfaceView view) : IDisposable
+    {
+        public void Dispose() => view._selectionWrites--;
     }
 
     private sealed class RealizationHold(SurfaceView view) : IDisposable

@@ -248,11 +248,16 @@ public partial class SurfaceView
 
     internal bool TryClearSelection()
     {
-        if (SelectedTargets.Count == 0)
+        // Выбор — индексный слой: выбранное бывает и без контейнеров (ADR 0010).
+        if (SelectedTargets.Count == 0 && Selection.Count == 0)
             return false;
 
-        Selection.Clear();
-        _selectedTargets.Clear();
+        using (WriteSelection())
+        {
+            Selection.Clear();
+            _selectedTargets.Clear();
+        }
+
         RefreshSelectionOverlay();
         return true;
     }
@@ -262,18 +267,23 @@ public partial class SurfaceView
         if (ItemCount == 0)
             return false;
 
-        using (Selection.BatchUpdate())
+        // Выбирается всё, а разворачивается только видимое: у выбранного контейнер не обязателен
+        // (ADR 0010).
+        using (WriteSelection())
         {
-            Selection.Clear();
-            Selection.SelectAll();
-        }
+            using (Selection.BatchUpdate())
+            {
+                Selection.Clear();
+                Selection.SelectAll();
+            }
 
-        // Выбор всего работает на уровне контейнеров: это единица документа.
-        _selectedTargets.Clear();
-        foreach (var child in GetRealizedContainers())
-        {
-            if (child is SurfaceItem container)
-                AddSelectedTarget(container);
+            // Выбор всего работает на уровне контейнеров: это единица документа.
+            _selectedTargets.Clear();
+            foreach (var child in GetRealizedContainers())
+            {
+                if (child is SurfaceItem container)
+                    AddSelectedTarget(container);
+            }
         }
 
         RefreshSelectionOverlay();
