@@ -191,6 +191,44 @@ public class SelectionWithoutContainersTests
     }
 
     [AvaloniaFact]
+    public void Delete_Names_Every_Selected_Item()
+    {
+        // Targets — у развёрнутых, элементы — весь выбор.
+        var stand = Create();
+        stand.SelectAll();
+        var requests = new List<SurfaceDeleteRequestedEventArgs>();
+        stand.View.DeleteRequested += (_, e) =>
+        {
+            requests.Add(e);
+            e.Handled = true;
+        };
+
+        stand.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+
+        var request = Assert.Single(requests);
+        Assert.Equal(stand.Items, request.Items);
+        Assert.Equal(stand.Panel.RealizedCount, request.Targets.Count);
+    }
+
+    [AvaloniaFact]
+    public void Delete_Asks_For_A_Selection_With_Nothing_Realized()
+    {
+        // Выбор рамкой за окном — без единого развёрнутого, и запрос всё равно уходит. Клавиша —
+        // событием на поверхности, а не фокусом: фокус разворачивает выбранный.
+        var stand = Create();
+        stand.View.CommitSelection(new Rect(2000, 1200, 700, 500), isCtrlPressed: false, useContainerSelection: true);
+        Assert.Empty(stand.View.SelectedTargets);
+        var requests = new List<SurfaceDeleteRequestedEventArgs>();
+        stand.View.DeleteRequested += (_, e) => requests.Add(e);
+
+        stand.View.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Delete });
+
+        var request = Assert.Single(requests);
+        Assert.Equal(stand.View.SelectedItems!.Cast<object?>(), request.Items);
+        Assert.Empty(request.Targets);
+    }
+
+    [AvaloniaFact]
     public void A_One_Way_Binding_Realizes_What_It_Cannot_Write()
     {
         // Модель записи не принимает — элемент едет прежним путём: разворачивается и двигается

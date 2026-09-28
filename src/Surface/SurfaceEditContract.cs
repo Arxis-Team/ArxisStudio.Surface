@@ -179,14 +179,34 @@ public sealed class SurfaceDeleteRequestedEventArgs : EventArgs
     /// </summary>
     /// <param name="targets">Выделенные targets на момент запроса.</param>
     public SurfaceDeleteRequestedEventArgs(IReadOnlyList<SurfaceSelectionTarget> targets)
+        : this(targets, Array.Empty<object?>())
     {
-        Targets = targets ?? throw new ArgumentNullException(nameof(targets));
     }
 
     /// <summary>
-    /// Получает выделенные targets на момент запроса.
+    /// Инициализирует новый экземпляр с выбранными элементами.
+    /// </summary>
+    /// <param name="targets">Выделенные targets на момент запроса — у развёрнутых элементов.</param>
+    /// <param name="items">Все выбранные элементы на момент запроса.</param>
+    public SurfaceDeleteRequestedEventArgs(IReadOnlyList<SurfaceSelectionTarget> targets, IReadOnlyList<object?> items)
+    {
+        Targets = targets ?? throw new ArgumentNullException(nameof(targets));
+        Items = items ?? throw new ArgumentNullException(nameof(items));
+    }
+
+    /// <summary>
+    /// Получает выделенные targets на момент запроса — у развёрнутых элементов.
     /// </summary>
     public IReadOnlyList<SurfaceSelectionTarget> Targets { get; }
+
+    /// <summary>
+    /// Получает все выбранные элементы на момент запроса.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0010: выбранный элемент за окном остаётся выбранным без контейнера, и в <see cref="Targets"/>
+    /// его нет. Удалять выбор целиком — по этому списку.
+    /// </remarks>
+    public IReadOnlyList<object?> Items { get; }
 
     /// <summary>
     /// Получает или задает признак того, что удаление выполнено приложением.

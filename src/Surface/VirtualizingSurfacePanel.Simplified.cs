@@ -11,14 +11,16 @@ namespace ArxisStudio.Surface;
 public partial class VirtualizingSurfacePanel
 {
     /// <summary>
-    /// Свёрнутые элементы: прямоугольник в мировых координатах и полоса заголовка; без площади — не
-    /// отдаются.
+    /// Свёрнутые элементы: прямоугольник в мировых координатах, полоса заголовка и выбран ли элемент;
+    /// без площади — не отдаются.
     /// </summary>
     /// <remarks>
-    /// Развёрнутые рисуют себя сами и сюда не входят.
+    /// Развёрнутые рисуют себя сами и сюда не входят. Выбранный без контейнера — данные индексного
+    /// слоя (ADR 0010).
     /// </remarks>
-    internal IEnumerable<(Rect Bounds, IBrush? Accent)> EnumerateCollapsed()
+    internal IEnumerable<(Rect Bounds, IBrush? Accent, bool IsSelected)> EnumerateCollapsed()
     {
+        var selection = _view?.Selection;
         for (var i = 0; i < _slots.Count; i++)
         {
             if (_realized.ContainsKey(i))
@@ -27,7 +29,7 @@ public partial class VirtualizingSurfacePanel
             var slot = _slots[i];
             var bounds = BoundsOf(slot);
             if (bounds.Width > 0 && bounds.Height > 0)
-                yield return (bounds, slot.Accent);
+                yield return (bounds, slot.Accent, selection?.IsSelected(i) == true);
         }
     }
 

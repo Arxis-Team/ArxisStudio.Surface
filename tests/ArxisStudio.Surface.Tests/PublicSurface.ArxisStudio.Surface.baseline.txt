@@ -128,7 +128,9 @@ class ArxisStudio.Surface.SurfaceCursors : AvaloniaObject
     property Cursor Reorder { get; set; }
 sealed class ArxisStudio.Surface.SurfaceDeleteRequestedEventArgs : EventArgs
     ctor .ctor(IReadOnlyList<SurfaceSelectionTarget>)
+    ctor .ctor(IReadOnlyList<SurfaceSelectionTarget>, IReadOnlyList<Object>)
     property Boolean Handled { get; set; }
+    property IReadOnlyList<Object> Items { get; }
     property IReadOnlyList<SurfaceSelectionTarget> Targets { get; }
 sealed class ArxisStudio.Surface.SurfaceEditCompletedEventArgs : EventArgs
     ctor .ctor(SurfaceEditKind, IReadOnlyList<TargetChange>)
@@ -317,6 +319,8 @@ sealed class ArxisStudio.Surface.SurfaceSelectionTarget
 sealed class ArxisStudio.Surface.SurfaceSimplifiedLayer : Control
     avalonia AccentHeightProperty -> AccentHeight : Double (styled) = 16
     avalonia FillProperty -> Fill : IBrush (styled) = null
+    avalonia SelectedStrokeProperty -> SelectedStroke : IBrush (styled) = null
+    avalonia SelectedStrokeThicknessProperty -> SelectedStrokeThickness : Double (styled) = 2
     avalonia StrokeProperty -> Stroke : IBrush (styled) = null
     ctor .ctor()
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
@@ -324,7 +328,9 @@ sealed class ArxisStudio.Surface.SurfaceSimplifiedLayer : Control
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void Render(DrawingContext)
     property Double AccentHeight { get; set; }
+    property Double SelectedStrokeThickness { get; set; }
     property IBrush Fill { get; set; }
+    property IBrush SelectedStroke { get; set; }
     property IBrush Stroke { get; set; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (direct)

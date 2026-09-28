@@ -246,6 +246,29 @@ public class SimplifiedViewTests
     }
 
     [AvaloniaFact]
+    public void Selected_Cards_Show_The_Selection()
+    {
+        // Выбранный без контейнера остаётся выбранным (ADR 0010), и карточка несёт рамку выбора; смена
+        // выбора пересобирает карточки.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.View.Selection.SelectAll();
+        stand.RunLayout();
+        stand.Render();
+
+        Assert.True(stand.Layer.Cards > 0);
+        Assert.Equal(stand.Layer.Cards, stand.Layer.SelectedCards);
+
+        // Снятие выбора со свёрнутого не трогает ни одного контейнера: пересобирает карточки сама смена
+        // выбора.
+        var collapsed = Enumerable.Range(0, stand.Items.Count).First(i => stand.Container(i) == null);
+        stand.View.Selection.Deselect(collapsed);
+        stand.RunLayout();
+        stand.Render();
+        Assert.Equal(stand.Layer.Cards - 1, stand.Layer.SelectedCards);
+    }
+
+    [AvaloniaFact]
     public void A_Card_Goes_When_Its_Item_Is_Realized_And_Comes_With_The_Collection()
     {
         // Нажатая карточка разворачивается и уходит — иначе она осталась бы под контейнером и выдала

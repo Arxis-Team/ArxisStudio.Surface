@@ -53,6 +53,7 @@
                                                         IsHitTestVisible="False"
                                                         Fill="{DynamicResource NodeEditor.Node.Background}"
                                                         Stroke="{DynamicResource NodeEditor.Node.BorderBrush}"
+                                                        SelectedStroke="{DynamicResource NodeEditor.Node.SelectedBorderBrush}"
                                                         AccentHeight="{DynamicResource NodeEditor.Node.HeaderHeight}" />
 
                         <Canvas Name="PART_ItemsLayer"

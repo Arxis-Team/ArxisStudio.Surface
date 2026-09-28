@@ -34,6 +34,7 @@
                                                         IsHitTestVisible="False"
                                                         Fill="{DynamicResource Surface.Simplified.ItemFill}"
                                                         Stroke="{DynamicResource Surface.Simplified.ItemStroke}"
+                                                        SelectedStroke="{DynamicResource SurfaceItem.SelectionBrush}"
                                                         AccentHeight="{DynamicResource Surface.Item.AccentHeight}" />
 
                         <Canvas Name="PART_ItemsLayer"

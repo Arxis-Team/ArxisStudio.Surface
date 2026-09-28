@@ -404,6 +404,10 @@ public partial class SurfaceView
         if (e.DeselectedIndexes.Count > 0)
             panel.InvalidateMeasure();
 
+        // Выбранная карточка рисуется рамкой выбора: её слою пора собраться заново.
+        if (IsSimplified)
+            OnSimplifiedContentChanged();
+
         // Выбор свёрнутых на контейнерах не отмечается, и отметка его не опубликует: событие
         // выделения обязано прийти и тогда (ADR 0010). Пишущая поверхность соберёт снимок сама.
         if (_selectionWrites == 0 && (TouchesCollapsed(e.SelectedIndexes) || TouchesCollapsed(e.DeselectedIndexes)))

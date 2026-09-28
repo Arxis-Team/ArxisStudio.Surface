@@ -44,14 +44,27 @@ public sealed class SurfaceSimplifiedLayer : Control
     public static readonly StyledProperty<double> AccentHeightProperty =
         AvaloniaProperty.Register<SurfaceSimplifiedLayer, double>(nameof(AccentHeight), 16);
 
+    /// <summary>
+    /// Идентификатор свойства <see cref="SelectedStroke"/>.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> SelectedStrokeProperty =
+        AvaloniaProperty.Register<SurfaceSimplifiedLayer, IBrush?>(nameof(SelectedStroke));
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="SelectedStrokeThickness"/>.
+    /// </summary>
+    public static readonly StyledProperty<double> SelectedStrokeThicknessProperty =
+        AvaloniaProperty.Register<SurfaceSimplifiedLayer, double>(nameof(SelectedStrokeThickness), 2);
+
     private SurfaceView? _view;
     private StreamGeometry? _cards;
+    private StreamGeometry? _selected;
     private List<(IBrush Brush, StreamGeometry Geometry)>? _bands;
     private bool _stale = true;
 
     static SurfaceSimplifiedLayer()
     {
-        AffectsRender<SurfaceSimplifiedLayer>(FillProperty, StrokeProperty);
+        AffectsRender<SurfaceSimplifiedLayer>(FillProperty, StrokeProperty, SelectedStrokeProperty, SelectedStrokeThicknessProperty);
     }
 
     /// <summary>
@@ -88,6 +101,34 @@ public sealed class SurfaceSimplifiedLayer : Control
         get => GetValue(AccentHeightProperty);
         set => SetValue(AccentHeightProperty, value);
     }
+
+    /// <summary>
+    /// Получает или задает рамку выбранной карточки (ADR 0010).
+    /// </summary>
+    /// <remarks>
+    /// Выбранный элемент без контейнера остаётся выбранным, и карточка показывает это рамкой выбора
+    /// поверх своей. Ставит её тема: у поверхности ядра — <c>SurfaceItem.SelectionBrush</c>, у редактора
+    /// узлов — рамка выбранного узла.
+    /// </remarks>
+    public IBrush? SelectedStroke
+    {
+        get => GetValue(SelectedStrokeProperty);
+        set => SetValue(SelectedStrokeProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает толщину рамки выбранной карточки в пикселях экрана.
+    /// </summary>
+    public double SelectedStrokeThickness
+    {
+        get => GetValue(SelectedStrokeThicknessProperty);
+        set => SetValue(SelectedStrokeThicknessProperty, value);
+    }
+
+    /// <summary>
+    /// Сколько выбранных карточек в последней сборке — для тестов.
+    /// </summary>
+    internal int SelectedCards { get; private set; }
 
     /// <summary>
     /// Сколько полос в последней сборке — для тестов.
@@ -161,6 +202,10 @@ public sealed class SurfaceSimplifiedLayer : Control
                 if (pen != null)
                     context.DrawGeometry(null, pen, _cards);
             }
+
+            // Рамка выбора — поверх всех карточек, чтобы соседняя её не закрыла.
+            if (_selected != null && SelectedStroke is { } selected)
+                context.DrawGeometry(null, new Pen(selected, SelectedStrokeThickness * StrokeThickness), _selected);
         }
 
         Draws++;
@@ -202,6 +247,7 @@ public sealed class SurfaceSimplifiedLayer : Control
 
         _view = view;
         _cards = null;
+        _selected = null;
         _bands = null;
         _stale = true;
 
@@ -227,6 +273,7 @@ public sealed class SurfaceSimplifiedLayer : Control
         {
             // Над порогом геометрия не нужна и не держится: на большом холсте это тысячи фигур.
             _cards = null;
+            _selected = null;
             _bands = null;
             _stale = true;
             InvalidateVisual();
@@ -248,16 +295,25 @@ public sealed class SurfaceSimplifiedLayer : Control
         // умолчанию EvenOdd, и перекрытие двух карточек вышло бы дырой. Полосы — по геометрии на
         // кисть: их немного, а рисуются они одним вызовом на кисть.
         var cards = new StreamGeometry();
+        var selected = new StreamGeometry();
         Dictionary<IBrush, (StreamGeometry Geometry, StreamGeometryContext Context)>? bands = null;
         var count = 0;
+        var selectedCount = 0;
         var bandCount = 0;
         using (var context = cards.Open())
+        using (var selectedContext = selected.Open())
         {
             context.SetFillRule(FillRule.NonZero);
-            foreach (var (bounds, accent) in panel.EnumerateCollapsed())
+            foreach (var (bounds, accent, isSelected) in panel.EnumerateCollapsed())
             {
                 AddRectangle(context, bounds);
                 count++;
+
+                if (isSelected)
+                {
+                    AddRectangle(selectedContext, bounds);
+                    selectedCount++;
+                }
 
                 if (accent == null || AccentHeight <= 0)
                     continue;
@@ -288,8 +344,10 @@ public sealed class SurfaceSimplifiedLayer : Control
         }
 
         _cards = count > 0 ? cards : null;
+        _selected = selectedCount > 0 ? selected : null;
         _bands = built;
         Cards = count;
+        SelectedCards = selectedCount;
         Bands = bandCount;
     }
 

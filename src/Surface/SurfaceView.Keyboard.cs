@@ -296,15 +296,20 @@ public partial class SurfaceView
 
     private bool TryRequestDelete()
     {
+        // Выбор — индексный слой: выбранное бывает и без контейнеров (ADR 0010).
         var targets = SelectedTargets;
-        if (targets.Count == 0)
+        if (targets.Count == 0 && Selection.Count == 0)
             return false;
 
         var handler = DeleteRequested;
         if (handler == null)
             return false;
 
-        var args = new SurfaceDeleteRequestedEventArgs(targets);
+        var items = new List<object?>(Selection.Count);
+        foreach (var item in Selection.SelectedItems)
+            items.Add(item);
+
+        var args = new SurfaceDeleteRequestedEventArgs(targets, items);
 
         // Обработчики обходятся по одному, и первый же выполнивший удаление
         // останавливает обход. Список targets снят до правки, поэтому следующему
