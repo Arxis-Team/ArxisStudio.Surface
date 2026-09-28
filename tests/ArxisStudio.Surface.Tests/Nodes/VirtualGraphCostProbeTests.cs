@@ -173,6 +173,51 @@ public class VirtualGraphCostProbeTests
     }
 
     [AvaloniaFact]
+    public void Select_All_Realizes_Nothing_And_A_Drag_Moves_The_Whole_Graph()
+    {
+        // Выбор — данные (ADR 0010): «выбрать всё» разворачивает не больше, чем уже развёрнуто, на обоих
+        // графах, а кадр перетаскивания всего выбора двигает свёрнутые узлы записью в модель.
+        var realized = new Dictionary<int, (int Nodes, int Links)>();
+        foreach (var size in new[] { Small, Large })
+        {
+            var graph = Create(size);
+            var before = (graph.Panel.RealizedCount, graph.Editor.RealizedLinks);
+            graph.Editor.Focus();
+            var watch = Stopwatch.StartNew();
+            graph.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control);
+            graph.RunLayout();
+            watch.Stop();
+
+            Assert.Equal(size, graph.Editor.Selection.Count);
+            Assert.Equal(before, (graph.Panel.RealizedCount, graph.Editor.RealizedLinks));
+
+            var last = graph.Node(size - 1);
+            var start = last.Location;
+            var frame = StartDrag(graph);
+            frame();
+            Assert.NotEqual(start, last.Location);
+            Assert.Equal(graph.Node(Dragged).Location - new Point(Dragged % Columns * 200, Dragged / Columns * 120), last.Location - start);
+
+            // Модель, записанная панелью, отвечает эхом, а дочитка по эху — проход всей коллекции: на
+            // каждой записи он делал кадр квадратом графа, а раз на кадр — читал все модели заново.
+            // Ячейку панель ставит сама, и проходов в кадре нет.
+            // Узел порта читается привязкой раз на порт, а не на каждом кадре по два раза на связь.
+            var (passes, reads) = (graph.Panel.SlotPasses, graph.Editor.PortNodeReads);
+            frame();
+            Assert.Equal(passes, graph.Panel.SlotPasses);
+            Assert.Equal(reads, graph.Editor.PortNodeReads);
+
+            var frameMs = CostProbe.MicrosecondsPerCall(frame, calls: 6) / 1000;
+            realized[size] = (graph.Panel.RealizedCount, graph.Editor.RealizedLinks);
+            _output.WriteLine($"{size} узлов: «выбрать всё» {watch.Elapsed.TotalMilliseconds:F0} мс, "
+                + $"кадр перетаскивания всего выбора {frameMs:F1} мс; развёрнуто узлов {realized[size].Nodes}, "
+                + $"связей {realized[size].Links}");
+        }
+
+        Assert.Equal(realized[Small], realized[Large]);
+    }
+
+    [AvaloniaFact]
     public void A_Pan_Frame_Measures_What_Is_Realized_Not_The_Graph()
     {
         // Панорама перемеряет панели — но только развёрнутые контейнеры, и их столько же на любом

@@ -152,6 +152,23 @@ public class NodeSimplifiedViewTests
     }
 
     [AvaloniaFact]
+    public void Selecting_Nodes_Without_Containers_Clears_The_Link_Selection()
+    {
+        // Выбор связей и узлов исключают друг друга по элементам: выбранные ниже порога узлы не
+        // развёрнуты, а выбор связи всё равно снимается.
+        var stand = Create();
+        stand.Editor.SelectLink(stand.Links[0]);
+        Assert.Single(stand.Editor.SelectedLinks);
+
+        stand.Editor.Selection.SelectAll();
+        stand.RunLayout();
+
+        Assert.Empty(stand.Editor.SelectedLinks);
+        Assert.Equal(0, stand.Editor.RealizedLinks);
+        Assert.Equal(stand.Nodes.Count, stand.Editor.Selection.Count);
+    }
+
+    [AvaloniaFact]
     public void A_Link_Crossing_The_View_Collapses_When_The_View_Simplifies()
     {
         // Над порогом связь, пересекающая окно, развёрнута без своих узлов; ниже порога живого порта у

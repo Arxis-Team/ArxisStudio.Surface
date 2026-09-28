@@ -237,6 +237,7 @@ public partial class NodeEditor
         else if (change.Property == PortNodeBindingProperty)
         {
             _portNodeReader = null;
+            ForgetPortNodes();
             RefreshAllLinks();
         }
         else if (change.Property == ItemLocationBindingProperty || change.Property == IsSimplifiedProperty)

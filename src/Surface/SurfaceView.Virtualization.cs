@@ -305,6 +305,7 @@ public partial class SurfaceView
         if (ItemsPanelRoot is not VirtualizingSurfacePanel { IsVirtualizing: true } panel)
             return result;
 
+        panel.Sync();
         foreach (var index in Selection.SelectedIndexes)
         {
             if (ContainerFromIndex(index) == null && panel.TryGetCollapsedBounds(index, out var bounds))

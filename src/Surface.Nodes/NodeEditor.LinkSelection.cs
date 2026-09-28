@@ -299,7 +299,8 @@ public partial class NodeEditor
 
     private void OnNodeSelectionChanged(object? sender, SurfaceSelectionChangedEventArgs e)
     {
-        if (SelectedTargets.Count > 0)
+        // Выбор узлов — индексный слой: выбранные узлы бывают и без контейнеров (ADR 0010).
+        if (Selection.Count > 0)
             ClearLinkSelection();
     }
 

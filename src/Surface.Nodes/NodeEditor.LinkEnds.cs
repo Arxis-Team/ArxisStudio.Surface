@@ -23,6 +23,15 @@ public partial class NodeEditor
 
     private ObjectBindingReader? _portNodeReader;
 
+    // Узел порта по его данным, прочитанный однажды: порт между узлами не переезжает, а чтение
+    // привязкой — самое дорогое в сдвиге свёрнутого узла, по два на каждую его связь (ADR 0010).
+    private readonly Dictionary<object, object> _nodeByPort = new();
+
+    /// <summary>
+    /// Сколько раз узел порта читался привязкой — для стенда.
+    /// </summary>
+    internal int PortNodeReads { get; private set; }
+
     /// <summary>
     /// Получает или задает привязку, дающую по данным порта элемент его узла.
     /// </summary>
@@ -74,7 +83,7 @@ public partial class NodeEditor
             return true;
         }
 
-        if (ReadPortNode(key) is { } node && TryGetItemBounds(node, out bounds))
+        if (PortNode(key) is { } node && TryGetItemBounds(node, out bounds))
         {
             TrackPort(node, key);
             world = new Point(end == LinkEnd.Source ? bounds.Right : bounds.Left, bounds.Center.Y);
@@ -114,6 +123,18 @@ public partial class NodeEditor
         keys.Add(key);
     }
 
+    private object? PortNode(object key)
+    {
+        if (_nodeByPort.TryGetValue(key, out var known))
+            return known;
+
+        var node = ReadPortNode(key);
+        if (node != null)
+            _nodeByPort[key] = node;
+
+        return node;
+    }
+
     private object? ReadPortNode(object key)
     {
         if (PortNodeBinding is not { } binding)
@@ -122,8 +143,14 @@ public partial class NodeEditor
         if (_portNodeReader == null || !ReferenceEquals(_portNodeReader.Binding, binding))
             _portNodeReader = new ObjectBindingReader(binding);
 
+        PortNodeReads++;
         return _portNodeReader.Read(key);
     }
+
+    /// <summary>
+    /// Забывает прочитанные узлы портов: привязка сменилась.
+    /// </summary>
+    private void ForgetPortNodes() => _nodeByPort.Clear();
 
     /// <summary>
     /// Пересчитывает связи портов узла, чья геометрия сменилась без контейнера, — а без узла все.
@@ -203,6 +230,9 @@ public partial class NodeEditor
         {
             if (_lastOffsets.TryGetValue(key, out var last) && ReferenceEquals(last.Node, item))
                 _lastOffsets.Remove(key);
+
+            if (_nodeByPort.TryGetValue(key, out var node) && ReferenceEquals(node, item))
+                _nodeByPort.Remove(key);
         }
     }
 }

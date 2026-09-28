@@ -84,6 +84,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     private SurfaceView? _view;
     private PointBindingReader? _reader;
     private PointBindingWriter? _writer;
+    private object? _writing;
     private ObjectBindingReader? _accentReader;
     private Rect _extent;
     private bool _extentStale = true;
@@ -150,6 +151,11 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     /// Сколько контейнеров развёрнуто сейчас.
     /// </summary>
     internal int RealizedCount => _realized.Count;
+
+    /// <summary>
+    /// Сколько раз геометрия дочитывалась проходом по всей коллекции — для стенда.
+    /// </summary>
+    internal int SlotPasses { get; private set; }
 
     /// <summary>
     /// Виртуализирует ли панель: без привязки положения она разворачивает всё.
@@ -260,7 +266,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         if (!IsVirtualizing || _realized.ContainsKey(index))
             return false;
 
-        SyncSlots(Items);
+        SyncStructure();
         if (index < 0 || index >= _slots.Count)
             return false;
 
@@ -276,7 +282,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         if (item == null || !IsVirtualizing)
             return -1;
 
-        SyncSlots(Items);
+        SyncStructure();
         var index = IndexOfItem(item);
         return index >= 0 && !_realized.ContainsKey(index) ? index : -1;
     }
@@ -300,13 +306,24 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             return false;
 
         var items = Items;
-        SyncSlots(items);
+        SyncStructure();
         if (index < 0 || index >= _slots.Count)
             return false;
 
+        // Своё эхо модели панель не слушает: ячейку она ставит сама, а пересчёт по эху проходил бы
+        // всю коллекцию на каждой записи — сдвиг большого выбора стоил бы квадрат его размера.
         var item = items[index];
-        writer.Write(item, location);
-        writer.Release();
+        _writing = item;
+        try
+        {
+            writer.Write(item, location);
+            writer.Release();
+        }
+        finally
+        {
+            _writing = null;
+        }
+
         var written = Normalize(reader.Read(item));
         reader.Release();
 
@@ -322,6 +339,12 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
         return true;
     }
+
+    /// <summary>
+    /// Приводит геометрию к коллекции и дочитывает сменившиеся модели — один раз перед пакетом вопросов
+    /// о свёрнутых (<see cref="TryGetCollapsedBounds"/>), которые сами дочитывать не станут.
+    /// </summary>
+    internal void Sync() => SyncSlots(Items);
 
     /// <summary>
     /// Индексы свёрнутых элементов, чей прямоугольник пересекает <paramref name="bounds"/>, — рамка
@@ -645,7 +668,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
     private void OnModelChanged(object? model)
     {
-        if (model == null || !IsVirtualizing)
+        if (model == null || !IsVirtualizing || ReferenceEquals(model, _writing))
             return;
 
         // Развёрнутый элемент держит свой контейнер, и положение ему уже перенесла привязка; мера
@@ -689,6 +712,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         if (_changed.Count == 0)
             return;
 
+        SlotPasses++;
         var reader = Reader();
         var accents = AccentReader();
         List<object>? moved = null;
@@ -714,6 +738,17 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         _view?.OnContentChanged();
         foreach (var item in moved)
             _view?.OnItemGeometryChanged(item);
+    }
+
+    /// <summary>
+    /// Приводит к коллекции только состав ячеек, не дочитывая сменившихся моделей: для вопросов по
+    /// одному элементу, которые идут пакетом, — дочитка проходит всю коллекцию.
+    /// </summary>
+    private void SyncStructure()
+    {
+        var items = Items;
+        if (_slotsStale || _slots.Count != items.Count)
+            RebuildSlots(items);
     }
 
     private void RebuildSlots(IReadOnlyList<object?> items)
