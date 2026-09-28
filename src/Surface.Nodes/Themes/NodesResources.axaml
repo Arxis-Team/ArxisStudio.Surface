@@ -64,12 +64,14 @@
     <!--
         Область заголовка узла (ADR 0009): её высота — и высота полосы упрощённой карточки, поэтому
         отдалённый узел остаётся копией полного. Цвет названия на полосе от темы не зависит — полосу
-        красит хост, — поэтому он вне словарей вариантов: светлый и тёмный для светлой полосы.
+        красит хост, — поэтому он вне словарей вариантов: белый и чёрный для светлой полосы. Порог
+        яркости узла выбран под эту пару, и название читается с контрастом не ниже 4,5:1 на любом
+        цвете; тёмно-серое вместо чёрного давало бы 3,7:1 у полос чуть светлее порога.
     -->
     <x:Double x:Key="NodeEditor.Node.HeaderHeight">24</x:Double>
     <Thickness x:Key="NodeEditor.Node.HeaderPadding">8,0</Thickness>
     <SolidColorBrush x:Key="NodeEditor.Node.HeaderForeground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="NodeEditor.Node.HeaderForegroundOnLight" Color="#1B1D21" />
+    <SolidColorBrush x:Key="NodeEditor.Node.HeaderForegroundOnLight" Color="#000000" />
 
     <!-- Толщина связи упрощённого вида, в пикселях экрана: тысячи связей толще сливаются. -->
     <x:Double x:Key="NodeEditor.Simplified.LinkThickness">1</x:Double>

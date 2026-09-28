@@ -8,6 +8,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using Xunit;
 using ArxisStudio.Surface;
@@ -160,6 +161,63 @@ public class NodeHeaderTests
     {
         var presenter = Part<ContentPresenter>(stand.Node(index), "PART_HeaderPresenter");
         Assert.Same(stand.Resource(key), presenter.Foreground);
+    }
+
+    [AvaloniaFact]
+    public void The_Title_Reads_On_Any_Band()
+    {
+        // Порог яркости и цвета названия темы вместе держат контраст не ниже 4,5:1 (WCAG AA) при любом
+        // цвете хоста — куб RGB с шагом 17, в обеих темах. Тёмно-серое название вместо чёрного давало
+        // 3,7:1 у полос чуть светлее порога, серой #777777 в том числе.
+        var stand = Create();
+
+        foreach (var variant in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+        {
+            var light = ColorOf(stand, "NodeEditor.Node.HeaderForeground", variant);
+            var dark = ColorOf(stand, "NodeEditor.Node.HeaderForegroundOnLight", variant);
+
+            var (worst, band) = (double.MaxValue, default(Color));
+            for (var r = 0; r <= 255; r += 17)
+            {
+                for (var g = 0; g <= 255; g += 17)
+                {
+                    for (var b = 0; b <= 255; b += 17)
+                    {
+                        var candidate = Color.FromRgb((byte)r, (byte)g, (byte)b);
+                        var contrast = Contrast(candidate, Node.IsLight(candidate) ? dark : light);
+                        if (contrast < worst)
+                            (worst, band) = (contrast, candidate);
+                    }
+                }
+            }
+
+            Assert.True(worst >= 4.5, $"Тема {variant}: название на полосе {band} читается с контрастом {worst:F2}:1.");
+        }
+    }
+
+    private static Color ColorOf(Stand stand, string key, ThemeVariant variant) =>
+        stand.Editor.TryFindResource(key, variant, out var value) && value is ISolidColorBrush brush
+            ? brush.Color
+            : throw new InvalidOperationException($"Нет кисти {key} в теме {variant}.");
+
+    /// <summary>
+    /// Контраст двух цветов по WCAG 2: отношение относительных яркостей, каждая плюс 0,05.
+    /// </summary>
+    private static double Contrast(Color a, Color b)
+    {
+        static double Luminance(Color color)
+        {
+            static double Channel(byte value)
+            {
+                var c = value / 255.0;
+                return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+
+            return (0.2126 * Channel(color.R)) + (0.7152 * Channel(color.G)) + (0.0722 * Channel(color.B));
+        }
+
+        var (first, second) = (Luminance(a), Luminance(b));
+        return (Math.Max(first, second) + 0.05) / (Math.Min(first, second) + 0.05);
     }
 
     [AvaloniaFact]
