@@ -6,7 +6,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Media.Immutable;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
 
@@ -84,7 +83,6 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     private SurfaceView? _view;
     private PointBindingReader? _reader;
     private ObjectBindingReader? _accentReader;
-    private readonly Dictionary<Color, IBrush> _accentBrushes = new();
     private Rect _extent;
     private bool _extentStale = true;
     private bool _slotsStale = true;
@@ -946,23 +944,10 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     }
 
     /// <summary>
-    /// Полоса элемента: кисть как есть, цвет — кистью, одной на цвет; иное полосы не даёт.
+    /// Полоса элемента: кисть как есть, цвет — кистью из общего кеша, той же, что у контейнера.
     /// </summary>
-    private IBrush? ReadAccent(ObjectBindingReader? reader, object? item)
-    {
-        switch (reader?.Read(item))
-        {
-            case IBrush brush:
-                return brush;
-            case Color color:
-                if (!_accentBrushes.TryGetValue(color, out var cached))
-                    _accentBrushes[color] = cached = new ImmutableSolidColorBrush(color);
-
-                return cached;
-            default:
-                return null;
-        }
-    }
+    private static IBrush? ReadAccent(ObjectBindingReader? reader, object? item) =>
+        reader == null ? null : AccentBrushes.From(reader.Read(item));
 
     private void RereadAccents()
     {

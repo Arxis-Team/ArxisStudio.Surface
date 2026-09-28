@@ -137,6 +137,15 @@ public partial class SurfaceView
 
         if (change.Property == SelectionProperty)
             WatchSelection(change.GetNewValue<ISelectionModel?>());
+        else if (change.Property == ItemAccentBindingProperty)
+        {
+            // Свёрнутым полосу перечитывает панель, развёрнутым — привязка у контейнера.
+            foreach (var container in GetRealizedContainers())
+            {
+                if (container is SurfaceItem item && !ReferenceEquals(ItemFromContainer(item), item))
+                    BindAccent(item);
+            }
+        }
         else if (change.Property == ViewportZoomProperty
                  || change.Property == SimplifiedZoomProperty
                  || change.Property == ItemLocationBindingProperty)

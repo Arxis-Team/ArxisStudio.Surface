@@ -52,8 +52,8 @@
     -->
     <Thickness x:Key="SurfaceItem.SelectionThickness">2</Thickness>
 
-    <!-- Высота полосы заголовка упрощённой карточки, в мировых единицах (ADR 0008). -->
-    <x:Double x:Key="Surface.Simplified.AccentHeight">16</x:Double>
+    <!-- Высота полосы заголовка — у контейнера и у его упрощённой карточки, в мировых единицах (ADR 0009). -->
+    <x:Double x:Key="Surface.Item.AccentHeight">16</x:Double>
 
     <!-- Параметры сетки. CellSize задан в мировых единицах, LineThickness — в пикселях устройства. -->
     <x:Double x:Key="Surface.Grid.CellSize">20</x:Double>

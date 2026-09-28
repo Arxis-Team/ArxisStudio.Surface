@@ -8,6 +8,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface;
@@ -72,6 +73,40 @@ public class SurfaceItem : ContentControl, ISelectable
     /// он ушёл в пул или достался другому элементу.
     /// </remarks>
     internal IDisposable? LocationBinding { get; set; }
+
+    /// <summary>
+    /// Идентификатор свойства полосы заголовка элемента.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> AccentProperty =
+        AvaloniaProperty.Register<SurfaceItem, IBrush?>(nameof(Accent));
+
+    /// <summary>
+    /// Значение привязки полосы как его дала модель — кисть, цвет или иное; кистью его делает
+    /// контейнер (ADR 0009).
+    /// </summary>
+    internal static readonly StyledProperty<object?> AccentSourceProperty =
+        AvaloniaProperty.Register<SurfaceItem, object?>("AccentSource");
+
+    /// <summary>
+    /// Получает или задает кисть полосы заголовка элемента.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0009. Созданному контейнеру её ставит поверхность из <see cref="SurfaceView.ItemAccentBinding"/>
+    /// — ту же кисть, что у карточки элемента в упрощённом виде; готовому контейнеру из коллекции её
+    /// задаёт тот, кто его создал. Тема контейнера ядра рисует полосу над содержимым, тема узла — под
+    /// заголовком. <see langword="null"/> — полосы нет.
+    /// </remarks>
+    public IBrush? Accent
+    {
+        get => GetValue(AccentProperty);
+        set => SetValue(AccentProperty, value);
+    }
+
+    /// <summary>
+    /// Привязка полосы, которую контейнеру поставила поверхность; снимается освобождением, как привязка
+    /// положения.
+    /// </summary>
+    internal IDisposable? AccentBinding { get; set; }
 
     /// <summary>
     /// Идентификатор свойства, определяющего возможность перетаскивания элемента.
@@ -194,6 +229,8 @@ public class SurfaceItem : ContentControl, ISelectable
 
         if (change.Property == IsSelectedProperty)
             PseudoClasses.Set(":selected", IsSelected);
+        else if (change.Property == AccentSourceProperty)
+            SetCurrentValue(AccentProperty, AccentBrushes.From(change.NewValue));
     }
 
     internal void OnResizeStarted(Vector vector) => RaiseEvent(new VectorEventArgs { RoutedEvent = ResizeStartedEvent, Vector = vector });

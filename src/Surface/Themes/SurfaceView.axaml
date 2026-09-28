@@ -34,7 +34,7 @@
                                                         IsHitTestVisible="False"
                                                         Fill="{DynamicResource Surface.Simplified.ItemFill}"
                                                         Stroke="{DynamicResource Surface.Simplified.ItemStroke}"
-                                                        AccentHeight="{DynamicResource Surface.Simplified.AccentHeight}" />
+                                                        AccentHeight="{DynamicResource Surface.Item.AccentHeight}" />
 
                         <Canvas Name="PART_ItemsLayer"
                                 RenderTransform="{TemplateBinding ViewportTransform}"

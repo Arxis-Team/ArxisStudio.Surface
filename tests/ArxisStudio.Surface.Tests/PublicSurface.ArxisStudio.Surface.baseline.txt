@@ -229,6 +229,7 @@ class ArxisStudio.Surface.SurfaceInteractionOptions : AvaloniaObject
     property Double SnapStep { get; set; }
     property Double ZoomStep { get; set; }
 class ArxisStudio.Surface.SurfaceItem : ContentControl
+    avalonia AccentProperty -> Accent : IBrush (styled) = null
     avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
     avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false [TwoWay]
     avalonia LocationProperty -> Location : Point (styled) = 0, 0 [TwoWay]
@@ -252,6 +253,7 @@ class ArxisStudio.Surface.SurfaceItem : ContentControl
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Boolean IsDraggable { get; set; }
     property Boolean IsSelected { get; set; }
+    property IBrush Accent { get; set; }
     property Point Location { get; set; }
 sealed class ArxisStudio.Surface.SurfaceKeyCommand
     ctor .ctor(String, Func<SurfaceView, KeyEventArgs, Boolean>, Func<SurfaceView, KeyEventArgs, Boolean>)

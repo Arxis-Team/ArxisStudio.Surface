@@ -10,18 +10,27 @@
 
         Фон Transparent, а не пустой: контейнер обязан отвечать на нажатие всей своей
         площадью, и там, где содержимое ничего не рисует, тоже.
+
+        Полоса заголовка — над содержимым, когда задана (ADR 0009): та же, что у карточки
+        элемента в упрощённом виде, и той же высоты.
     -->
     <ControlTheme x:Key="{x:Type surface:SurfaceItem}" TargetType="surface:SurfaceItem">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="ClipToBounds" Value="False" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid Background="{TemplateBinding Background}">
+                <Grid Background="{TemplateBinding Background}" RowDefinitions="Auto,*">
+                    <Border Name="PART_Accent"
+                            Height="{DynamicResource Surface.Item.AccentHeight}"
+                            Background="{TemplateBinding Accent}"
+                            IsVisible="{TemplateBinding Accent, Converter={x:Static ObjectConverters.IsNotNull}}" />
                     <ContentPresenter Name="PART_ContentPresenter"
+                                      Grid.Row="1"
                                       Content="{TemplateBinding Content}"
                                       ContentTemplate="{TemplateBinding ContentTemplate}"
                                       Padding="{TemplateBinding Padding}" />
                     <Border Name="PART_SelectionBorder"
+                            Grid.RowSpan="2"
                             BorderBrush="{DynamicResource SurfaceItem.SelectionBrush}"
                             BorderThickness="{DynamicResource SurfaceItem.SelectionThickness}"
                             IsHitTestVisible="False"

@@ -291,12 +291,14 @@ public partial class SurfaceView : SelectingItemsControl
     /// Получает или задает привязку, дающую цвет полосы заголовка элемента в упрощённом виде.
     /// </summary>
     /// <remarks>
-    /// ADR 0008. Ниже <see cref="SimplifiedZoom"/> элемент без контейнера рисуется карточкой, и эта
-    /// привязка красит её верхнюю полосу — как заголовок узла в Blueprint. Применяется с элементом
-    /// коллекции в качестве контекста данных, тем же приёмом, что <see cref="ItemLocationBinding"/>:
-    /// <c>ItemAccentBinding="{Binding Category.Color}"</c>. Значение — кисть или цвет; иное, как и
-    /// <see langword="null"/>, полосы не даёт. Читается без контейнера, когда панель читает положение
-    /// элемента, и заново — по <c>INotifyPropertyChanged</c> свёрнутого элемента и при сворачивании.
+    /// ADR 0008, 0009. Полоса видна в любом масштабе: развёрнутому элементу привязка ставит
+    /// <see cref="SurfaceItem.Accent"/>, и тема контейнера рисует полосу над содержимым, а ниже
+    /// <see cref="SimplifiedZoom"/> ею окрашена верхняя полоса карточки — как заголовок узла в Blueprint.
+    /// Применяется с элементом коллекции в качестве контекста данных, тем же приёмом, что
+    /// <see cref="ItemLocationBinding"/>: <c>ItemAccentBinding="{Binding Category.Color}"</c>. Значение —
+    /// кисть или цвет; иное, как и <see langword="null"/>, полосы не даёт. Без контейнера читается, когда
+    /// панель читает положение элемента, и заново — по <c>INotifyPropertyChanged</c> свёрнутого элемента и
+    /// при сворачивании. Смена привязки переставляет полосу и развёрнутым контейнерам.
     /// </remarks>
     [AssignBinding]
     [InheritDataTypeFromItems(nameof(ItemsSource))]
@@ -338,11 +340,28 @@ public partial class SurfaceView : SelectingItemsControl
     {
         base.PrepareContainerForItemOverride(container, item, index);
 
-        if (container is SurfaceItem surfaceItem && !ReferenceEquals(container, item) && ItemLocationBinding is { } location)
+        if (container is not SurfaceItem surfaceItem || ReferenceEquals(container, item))
+            return;
+
+        if (ItemLocationBinding is { } location)
         {
             surfaceItem.LocationBinding?.Dispose();
             surfaceItem.LocationBinding = surfaceItem.Bind(SurfaceItem.LocationProperty, location);
         }
+
+        BindAccent(surfaceItem);
+    }
+
+    /// <summary>
+    /// Ставит созданному контейнеру полосу из <see cref="ItemAccentBinding"/> — или снимает её, когда
+    /// привязки нет (ADR 0009).
+    /// </summary>
+    private void BindAccent(SurfaceItem container)
+    {
+        container.AccentBinding?.Dispose();
+        container.AccentBinding = ItemAccentBinding is { } accent
+            ? container.Bind(SurfaceItem.AccentSourceProperty, accent)
+            : null;
     }
 
     /// <summary>
@@ -369,6 +388,12 @@ public partial class SurfaceView : SelectingItemsControl
         {
             binding.Dispose();
             item.LocationBinding = null;
+        }
+
+        if (item.AccentBinding is { } accent)
+        {
+            accent.Dispose();
+            item.AccentBinding = null;
         }
 
         item.ClearValue(WidthProperty);

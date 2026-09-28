@@ -58,7 +58,7 @@ public class ThemeTests
         "Surface.Selection.StrokeThickness",
         "Surface.Simplified.ItemFill",
         "Surface.Simplified.ItemStroke",
-        "Surface.Simplified.AccentHeight",
+        "Surface.Item.AccentHeight",
         "Surface.SelectionAdorner.HandleSize",
         "UiDesignerItem.BorderThickness",
         "UiDesignerItem.CornerRadius",
