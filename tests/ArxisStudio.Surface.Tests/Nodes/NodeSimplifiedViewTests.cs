@@ -238,6 +238,72 @@ public class NodeSimplifiedViewTests
         Assert.Equal(rebuilds, stand.Layer.Rebuilds);
     }
 
+    /// <summary>
+    /// Сколько связей без контролов пересекает видимую часть мира — прямым проходом по записям, мимо
+    /// сетки слоя; рамка кривой — по контрольным точкам.
+    /// </summary>
+    private static int VisibleByHand(Stand stand)
+    {
+        var world = new Rect(stand.Editor.ViewportLocation, stand.Editor.Bounds.Size / stand.Editor.ViewportZoom);
+        return stand.Editor.LinkRecords.Count(record =>
+        {
+            if (record.Control != null || !record.IsResolved)
+                return false;
+
+            var g = record.Geometry;
+            Point[] points = [g.Source, g.SourceControl, g.TargetControl, g.Target];
+            var hull = new Rect(
+                new Point(points.Min(p => p.X), points.Min(p => p.Y)),
+                new Point(points.Max(p => p.X), points.Max(p => p.Y)));
+            return hull.Intersects(world);
+        });
+    }
+
+    [AvaloniaFact]
+    public void A_Frame_Draws_Only_The_Visible_Links_In_Segments_By_Their_Length()
+    {
+        // Кадр берёт из сетки только видимые связи (ADR 0011) и рисует каждую ломаной: на экране
+        // крупнее — отрезков больше, но не меньше одного у видимой.
+        var stand = Create();
+        stand.Editor.ViewportLocation = new Point(700, 300);
+        stand.RunLayout();
+        stand.Render();
+
+        var (visible, segments) = stand.Layer.CountVisible();
+        Assert.InRange(visible, 1, stand.Layer.Links - 1);
+        Assert.Equal(VisibleByHand(stand), visible);
+        Assert.True(segments >= visible, $"{segments} отрезков на {visible} связей");
+
+        stand.Editor.ViewportLocation = new Point(-5000, -5000);
+        stand.RunLayout();
+        stand.Render();
+        Assert.Equal((0, 0), stand.Layer.CountVisible());
+
+        stand.Editor.ViewportLocation = default;
+        stand.Editor.ViewportZoom = 0.1;
+        stand.RunLayout();
+        stand.Render();
+        var (all, fewer) = stand.Layer.CountVisible();
+        Assert.Equal(stand.Links.Count, all);
+        stand.Editor.ViewportZoom = 0.45;
+        stand.RunLayout();
+        stand.Render();
+        var (_, more) = stand.Layer.CountVisible();
+        Assert.True(more > fewer, $"на 0,45 отрезков {more}, на 0,1 — {fewer}");
+    }
+
+    [AvaloniaFact]
+    public void A_Curve_Shorter_Than_A_Pixel_Has_No_Segments()
+    {
+        // Длина — по контрольным точкам, в пикселях экрана; отрезок — на каждые 12 пикселей, не
+        // больше 16.
+        var (a, b, c, d) = (new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0));
+        Assert.Equal(0, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d, 0.3));
+        Assert.Equal(1, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d, 1));
+        Assert.Equal(3, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d * 10, 1));
+        Assert.Equal(16, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d * 1000, 1));
+    }
+
     [AvaloniaFact]
     public void The_Layer_Draws_The_Links_Without_Controls_And_The_Selected_Apart()
     {

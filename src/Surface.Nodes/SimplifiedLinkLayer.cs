@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using ArxisStudio.Surface.Editing;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
+using Avalonia.Rendering.SceneGraph;
 
 namespace ArxisStudio.Surface.Nodes;
 
@@ -14,9 +17,15 @@ namespace ArxisStudio.Surface.Nodes;
 /// Стоит в шаблоне редактора под панелью связей, во весь его размер, и переводит мир в экран
 /// трансформацией viewport сам — как слой карточек ядра, и по той же причине: слой без размера под
 /// трансформацией рендерер отсекает. Ниже порога контрол есть только у закреплённой связи и у связи
-/// развёрнутого узла; остальные слой рисует сам — одной геометрией, выбранные — второй, своей кистью.
-/// Геометрия держится, пока не сменится запись без контрола, состав развёрнутых или выбор, и над
-/// порогом не держится. Толщина — в пикселях экрана.
+/// развёрнутого узла; остальные слой рисует сам, выбранные — поверх, своей кистью. Снимок кривых с
+/// сеткой ячеек по их рамкам держится, пока не сменится запись без контрола, состав развёрнутых или
+/// выбор, и над порогом не держится. Толщина — в пикселях экрана.
+/// <para>
+/// Рисует слой своей операцией, а не геометрией (ADR 0011): композитор меряет границы каждой новой
+/// записи геометрии, и кривые десяти тысяч связей на каждом кадре панорамы стоили сотни миллисекунд.
+/// Операция берёт из сетки только видимые связи и рисует каждую ломаной, отрезков — по её длине на
+/// экране (<see cref="Polyline"/>); связь короче пикселя не рисуется.
+/// </para>
 /// </remarks>
 internal sealed class SimplifiedLinkLayer : Control
 {
@@ -29,10 +38,18 @@ internal sealed class SimplifiedLinkLayer : Control
     public static readonly StyledProperty<double> StrokeThicknessProperty =
         AvaloniaProperty.Register<SimplifiedLinkLayer, double>(nameof(StrokeThickness), 1);
 
+    /// <summary>
+    /// Номер кисти у записи снимка: кисть темы.
+    /// </summary>
+    private const int ThemeStroke = -1;
+
+    /// <summary>
+    /// Номер кисти у записи снимка: кисть выбора.
+    /// </summary>
+    private const int SelectedStrokeIndex = -2;
+
     private NodeEditor? _editor;
-    private StreamGeometry? _links;
-    private StreamGeometry? _selected;
-    private List<(IBrush Brush, StreamGeometry Geometry)>? _colored;
+    private Snapshot? _snapshot;
     private bool _stale = true;
 
     static SimplifiedLinkLayer()
@@ -80,7 +97,7 @@ internal sealed class SimplifiedLinkLayer : Control
     /// <summary>
     /// Сколько разных цветов модели у проводов последней сборки — для тестов.
     /// </summary>
-    internal int StrokeGroups => _colored?.Count ?? 0;
+    internal int StrokeGroups => _snapshot?.Palette.Length ?? 0;
 
     /// <summary>
     /// Сколько раз связи собирались заново — для тестов и стенда.
@@ -92,6 +109,27 @@ internal sealed class SimplifiedLinkLayer : Control
     /// </summary>
     internal int Draws { get; private set; }
 
+    /// <summary>
+    /// Сколько связей нарисовал бы кадр сейчас и сколько в них отрезков — тем же отбором, что у
+    /// операции; для тестов и стенда.
+    /// </summary>
+    internal (int Visible, int Segments) CountVisible()
+    {
+        if (_snapshot is not { } snapshot || _editor is not { } editor)
+            return default;
+
+        var (world, zoom) = Viewport(editor, out _);
+        var (visible, segments) = (0, 0);
+        foreach (var i in snapshot.Grid.Within(world))
+        {
+            var c = snapshot.Curves[i];
+            visible++;
+            segments += Polyline.Segments(c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
+        }
+
+        return (visible, segments);
+    }
+
     /// <inheritdoc />
     public override void Render(DrawingContext context)
     {
@@ -101,24 +139,26 @@ internal sealed class SimplifiedLinkLayer : Control
         if (_stale)
             Rebuild(editor);
 
-        // Геометрия мировая: под трансформацией viewport пиксель экрана — это 1 / zoom мировых единиц.
-        var thickness = StrokeThickness / Math.Max(editor.ViewportZoom, 0.0001);
-        using (context.PushTransform(editor.ViewportTransform?.Value ?? Matrix.Identity))
-        {
-            if (_links != null && Stroke is { } stroke)
-                context.DrawGeometry(null, new Pen(stroke, thickness), _links);
+        if (_snapshot is not { } snapshot)
+            return;
 
-            if (_colored != null)
-            {
-                foreach (var (brush, geometry) in _colored)
-                    context.DrawGeometry(null, new Pen(brush, thickness), geometry);
-            }
-
-            if (_selected != null && SelectedStroke is { } selected)
-                context.DrawGeometry(null, new Pen(selected, thickness), _selected);
-        }
+        var (world, zoom) = Viewport(editor, out var matrix);
+        context.Custom(new LinksOperation(
+            new Rect(Bounds.Size), snapshot, matrix, world, zoom, StrokeThickness,
+            Stroke?.ToImmutable(), SelectedStroke?.ToImmutable()));
 
         Draws++;
+    }
+
+    /// <summary>
+    /// Видимая часть мира и масштаб — по трансформации viewport, которой слой рисует.
+    /// </summary>
+    private (Rect World, double Zoom) Viewport(NodeEditor editor, out Matrix matrix)
+    {
+        matrix = editor.ViewportTransform?.Value ?? Matrix.Identity;
+        var bounds = new Rect(Bounds.Size);
+        var world = matrix.TryInvert(out var inverse) ? bounds.TransformToAABB(inverse) : bounds;
+        return (world, Math.Max(editor.ViewportZoom, 0.0001));
     }
 
     /// <inheritdoc />
@@ -179,9 +219,7 @@ internal sealed class SimplifiedLinkLayer : Control
 
     private void Forget()
     {
-        _links = null;
-        _selected = null;
-        _colored = null;
+        _snapshot = null;
         _stale = true;
     }
 
@@ -190,68 +228,135 @@ internal sealed class SimplifiedLinkLayer : Control
         _stale = false;
         Rebuilds++;
 
-        // Провода без цвета модели — одной геометрией кистью темы, с цветом — по геометрии на кисть,
-        // выбранные — своей, цветом выбора.
-        var links = new StreamGeometry();
-        var selected = new StreamGeometry();
-        Dictionary<IBrush, (StreamGeometry Geometry, StreamGeometryContext Context)>? colored = null;
+        // Провода без цвета модели — кистью темы, с цветом — номером в палитре, выбранные — кистью
+        // выбора. Рамка кривой для сетки — по контрольным точкам: кривая лежит внутри их оболочки.
+        var curves = new List<MinimapCurve>();
+        var rects = new List<Rect>();
+        var strokes = new List<int>();
+        var palette = new List<IImmutableBrush>();
+        Dictionary<IBrush, int>? paletteIndex = null;
         var (count, selectedCount) = (0, 0);
-        using (var linksContext = links.Open())
-        using (var selectedContext = selected.Open())
+        foreach (var record in editor.LinkRecords)
         {
-            foreach (var record in editor.LinkRecords)
+            if (record.Control != null || !record.IsResolved)
+                continue;
+
+            int stroke;
+            if (record.IsSelected)
             {
-                if (record.Control != null || !record.IsResolved)
-                    continue;
-
-                StreamGeometryContext context;
-                if (record.IsSelected)
+                stroke = SelectedStrokeIndex;
+                selectedCount++;
+            }
+            else
+            {
+                count++;
+                stroke = ThemeStroke;
+                if (record.Stroke is { } brush)
                 {
-                    context = selectedContext;
-                    selectedCount++;
-                }
-                else
-                {
-                    count++;
-                    if (record.Stroke is { } brush)
+                    paletteIndex ??= new Dictionary<IBrush, int>(ReferenceEqualityComparer.Instance);
+                    if (!paletteIndex.TryGetValue(brush, out stroke))
                     {
-                        colored ??= new Dictionary<IBrush, (StreamGeometry, StreamGeometryContext)>(ReferenceEqualityComparer.Instance);
-                        if (!colored.TryGetValue(brush, out var group))
-                        {
-                            var geometry = new StreamGeometry();
-                            colored[brush] = group = (geometry, geometry.Open());
-                        }
-
-                        context = group.Context;
-                    }
-                    else
-                    {
-                        context = linksContext;
+                        stroke = palette.Count;
+                        paletteIndex[brush] = stroke;
+                        palette.Add(brush.ToImmutable());
                     }
                 }
-
-                var g = record.Geometry;
-                context.BeginFigure(g.Source, isFilled: false);
-                context.CubicBezierTo(g.SourceControl, g.TargetControl, g.Target);
-                context.EndFigure(isClosed: false);
             }
+
+            var g = record.Geometry;
+            var curve = new MinimapCurve(g.Source, g.SourceControl, g.TargetControl, g.Target);
+            curves.Add(curve);
+            rects.Add(Hull(curve));
+            strokes.Add(stroke);
         }
 
-        List<(IBrush, StreamGeometry)>? groups = null;
-        if (colored != null)
-        {
-            groups = new List<(IBrush, StreamGeometry)>(colored.Count);
-            foreach (var (brush, group) in colored)
-            {
-                group.Context.Dispose();
-                groups.Add((brush, group.Geometry));
-            }
-        }
-
-        _links = links;
-        _selected = selectedCount > 0 ? selected : null;
-        _colored = groups;
+        _snapshot = curves.Count > 0
+            ? new Snapshot(CellGrid.Build(rects.ToArray()), curves.ToArray(), strokes.ToArray(), selectedCount, palette.ToArray())
+            : null;
         Links = count;
         SelectedLinks = selectedCount;
+    }
+
+    private static Rect Hull(MinimapCurve c)
+    {
+        var left = Math.Min(Math.Min(c.Source.X, c.SourceControl.X), Math.Min(c.TargetControl.X, c.Target.X));
+        var top = Math.Min(Math.Min(c.Source.Y, c.SourceControl.Y), Math.Min(c.TargetControl.Y, c.Target.Y));
+        var right = Math.Max(Math.Max(c.Source.X, c.SourceControl.X), Math.Max(c.TargetControl.X, c.Target.X));
+        var bottom = Math.Max(Math.Max(c.Source.Y, c.SourceControl.Y), Math.Max(c.TargetControl.Y, c.Target.Y));
+        return new Rect(left, top, right - left, bottom - top);
+    }
+
+    /// <summary>
+    /// Связи без контролов, собранные на UI-потоке: кривые по сетке и номер кисти. Неизменяемо — его
+    /// читает поток отрисовки.
+    /// </summary>
+    private sealed class Snapshot(CellGrid grid, MinimapCurve[] curves, int[] strokes, int selectedCount, IImmutableBrush[] palette)
+    {
+        public CellGrid Grid { get; } = grid;
+
+        public MinimapCurve[] Curves { get; } = curves;
+
+        public int[] Strokes { get; } = strokes;
+
+        public int SelectedCount { get; } = selectedCount;
+
+        public IImmutableBrush[] Palette { get; } = palette;
+    }
+
+    /// <summary>
+    /// Кадр связей упрощённого вида: только видимые, ломаными по длине на экране.
+    /// </summary>
+    private sealed class LinksOperation(
+        Rect bounds, Snapshot snapshot, Matrix matrix, Rect world, double zoom, double thickness,
+        IImmutableBrush? stroke, IImmutableBrush? selectedStroke)
+        : ICustomDrawOperation
+    {
+        public Rect Bounds => bounds;
+
+        public bool HitTest(Point p) => false;
+
+        public bool Equals(ICustomDrawOperation? other) => ReferenceEquals(this, other);
+
+        public void Dispose()
+        {
+        }
+
+        public void Render(ImmediateDrawingContext context)
+        {
+            // Мир под трансформацией viewport: пиксель экрана — это 1 / zoom мировых единиц.
+            var width = thickness / zoom;
+            var themePen = stroke != null ? new ImmutablePen(stroke, width) : null;
+            var palettePens = new ImmutablePen[snapshot.Palette.Length];
+            for (var i = 0; i < palettePens.Length; i++)
+                palettePens[i] = new ImmutablePen(snapshot.Palette[i], width);
+
+            using (context.PushClip(bounds))
+            using (context.PushPreTransform(matrix))
+            {
+                foreach (var i in snapshot.Grid.Within(world))
+                {
+                    var index = snapshot.Strokes[i];
+                    if (index == SelectedStrokeIndex)
+                        continue;
+
+                    if ((index >= 0 ? palettePens[index] : themePen) is { } pen)
+                        Draw(context, pen, snapshot.Curves[i]);
+                }
+
+                // Выбранные — поверх, чтобы соседний провод их не закрыл.
+                if (selectedStroke != null && snapshot.SelectedCount > 0)
+                {
+                    var selectedPen = new ImmutablePen(selectedStroke, width);
+                    foreach (var i in snapshot.Grid.Within(world))
+                    {
+                        if (snapshot.Strokes[i] == SelectedStrokeIndex)
+                            Draw(context, selectedPen, snapshot.Curves[i]);
+                    }
+                }
+            }
+        }
+
+        private void Draw(ImmediateDrawingContext context, ImmutablePen pen, MinimapCurve c) =>
+            Polyline.Draw(context, pen, c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
     }
 }
