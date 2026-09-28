@@ -53,7 +53,7 @@
                                                         IsHitTestVisible="False"
                                                         Fill="{DynamicResource NodeEditor.Node.Background}"
                                                         Stroke="{DynamicResource NodeEditor.Node.BorderBrush}"
-                                                        AccentHeight="{DynamicResource NodeEditor.Simplified.AccentHeight}" />
+                                                        AccentHeight="{DynamicResource NodeEditor.Node.HeaderHeight}" />
 
                         <Canvas Name="PART_ItemsLayer"
                                 RenderTransform="{TemplateBinding ViewportTransform}"

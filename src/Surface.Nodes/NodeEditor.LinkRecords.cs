@@ -209,6 +209,14 @@ public partial class NodeEditor
                 Rekey(record);
             }
         }
+        else if (change.Property == ItemHeaderBindingProperty)
+        {
+            foreach (var container in GetRealizedContainers())
+            {
+                if (container is Node node && !ReferenceEquals(ItemFromContainer(node), node))
+                    BindHeader(node);
+            }
+        }
         else if (change.Property == PortNodeBindingProperty)
         {
             _portNodeReader = null;

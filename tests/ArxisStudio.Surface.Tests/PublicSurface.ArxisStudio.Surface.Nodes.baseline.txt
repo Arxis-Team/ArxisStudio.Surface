@@ -41,9 +41,15 @@ sealed class ArxisStudio.Surface.Nodes.LinkSplitRequestedEventArgs : EventArgs
     property Object Link { get; }
     property Point Location { get; }
 class ArxisStudio.Surface.Nodes.Node : SurfaceItem
+    avalonia HeaderProperty -> Header : Object (styled) = null
+    avalonia HeaderTemplateProperty -> HeaderTemplate : IDataTemplate (styled) = null
     ctor .ctor()
     method Size ArrangeOverride(Size)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    property IDataTemplate HeaderTemplate { get; set; }
+    property Object Header { get; set; }
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
+    avalonia ItemHeaderBindingProperty -> ItemHeaderBinding : BindingBase (styled) = null
     avalonia LinkCutModifiersProperty -> LinkCutModifiers : KeyModifiers (styled) = Alt
     avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
@@ -61,12 +67,15 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Boolean SelectLink(Object, Boolean)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
+    method Void ClearContainerForItemOverride(Control)
     method Void ClearLinkSelection()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnPointerExited(PointerEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    method Void PrepareContainerForItemOverride(Control, Object, Int32)
+    property BindingBase ItemHeaderBinding { get; set; }
     property BindingBase LinkSourceBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
     property BindingBase PortNodeBinding { get; set; }

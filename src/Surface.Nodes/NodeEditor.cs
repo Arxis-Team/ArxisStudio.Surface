@@ -1,6 +1,8 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
+using Avalonia.Metadata;
 using ArxisStudio.Surface.Editing;
 
 namespace ArxisStudio.Surface.Nodes;
@@ -53,9 +55,60 @@ public partial class NodeEditor : SurfaceView
     }
 
     /// <summary>
+    /// Идентификатор свойства привязки заголовка узла.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> ItemHeaderBindingProperty =
+        AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(ItemHeaderBinding));
+
+    /// <summary>
+    /// Получает или задает привязку, дающую узлу заголовок из его элемента.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0009. Применяется к <see cref="Node.Header"/> созданного контейнера с элементом коллекции в
+    /// качестве контекста данных — тем же приёмом, что <see cref="SurfaceView.ItemLocationBinding"/>:
+    /// <c>ItemHeaderBinding="{Binding Title}"</c>. Снимается, когда контейнер уходит в пул; смена
+    /// привязки переставляет заголовок и развёрнутым узлам. Готовый <see cref="Node"/> из коллекции не
+    /// трогается.
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(ItemsSource))]
+    public BindingBase? ItemHeaderBinding
+    {
+        get => GetValue(ItemHeaderBindingProperty);
+        set => SetValue(ItemHeaderBindingProperty, value);
+    }
+
+    /// <summary>
     /// Живые порты на поверхности по их ключу.
     /// </summary>
     internal PortRegistry Ports { get; } = new();
+
+    /// <inheritdoc />
+    protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
+    {
+        base.PrepareContainerForItemOverride(container, item, index);
+
+        if (container is Node node && !ReferenceEquals(container, item))
+            BindHeader(node);
+    }
+
+    /// <inheritdoc />
+    protected override void ClearContainerForItemOverride(Control container)
+    {
+        base.ClearContainerForItemOverride(container);
+
+        if (container is Node { HeaderBinding: { } binding } node)
+        {
+            binding.Dispose();
+            node.HeaderBinding = null;
+        }
+    }
+
+    private void BindHeader(Node node)
+    {
+        node.HeaderBinding?.Dispose();
+        node.HeaderBinding = ItemHeaderBinding is { } header ? node.Bind(Node.HeaderProperty, header) : null;
+    }
 
     /// <summary>
     /// Определяет, нужен ли элементу коллекции контейнер <see cref="Node"/>.

@@ -8,6 +8,11 @@
 
         Фон карточки непрозрачный, а у самого контейнера — Transparent: контейнер отвечает на
         нажатие всей площадью, и там, где карточка скруглена, тоже.
+
+        Базовый дизайн (ADR 0009): сверху — область заголовка на полосе Accent, под ней — тело из
+        ItemTemplate с отступом карточки. Области нет без заголовка и полосы (:header); название
+        на полосе светлое, а на светлой полосе (:light-accent) — тёмное. Карточка обрезает полосу по
+        своему скруглению.
     -->
     <ControlTheme x:Key="{x:Type nodes:Node}" TargetType="nodes:Node">
         <Setter Property="Background" Value="Transparent" />
@@ -22,10 +27,25 @@
                             BorderBrush="{DynamicResource NodeEditor.Node.BorderBrush}"
                             BorderThickness="{DynamicResource NodeEditor.Node.BorderThickness}"
                             CornerRadius="{DynamicResource NodeEditor.Node.CornerRadius}"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter Name="PART_ContentPresenter"
-                                          Content="{TemplateBinding Content}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+                            ClipToBounds="True">
+                        <DockPanel>
+                            <Border Name="PART_Header"
+                                    DockPanel.Dock="Top"
+                                    Background="{TemplateBinding Accent}"
+                                    MinHeight="{DynamicResource NodeEditor.Node.HeaderHeight}"
+                                    Padding="{DynamicResource NodeEditor.Node.HeaderPadding}"
+                                    IsVisible="False">
+                                <ContentPresenter Name="PART_HeaderPresenter"
+                                                  VerticalAlignment="Center"
+                                                  FontWeight="SemiBold"
+                                                  Content="{TemplateBinding Header}"
+                                                  ContentTemplate="{TemplateBinding HeaderTemplate}" />
+                            </Border>
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Padding="{TemplateBinding Padding}"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}" />
+                        </DockPanel>
                     </Border>
                 </Grid>
             </ControlTemplate>
@@ -40,6 +60,18 @@
             <Setter Property="BorderThickness" Value="{DynamicResource NodeEditor.Node.SelectedBorderThickness}" />
         </Style>
 
+        <Style Selector="^:header /template/ Border#PART_Header">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:accent /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="Foreground" Value="{DynamicResource NodeEditor.Node.HeaderForeground}" />
+        </Style>
+
+        <Style Selector="^:light-accent /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="Foreground" Value="{DynamicResource NodeEditor.Node.HeaderForegroundOnLight}" />
+        </Style>
+
         <!--
             Перевалка сама себе карточка: узел снимает свою, и выбор показывает её кольцо. Стоит после
             :selected, чтобы у выбранной перевалки рамка карточки не вернулась.
@@ -51,6 +83,10 @@
         <Style Selector="^:reroute /template/ Border#PART_Card">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="^:reroute /template/ Border#PART_Header">
+            <Setter Property="IsVisible" Value="False" />
         </Style>
     </ControlTheme>
 </ResourceDictionary>
