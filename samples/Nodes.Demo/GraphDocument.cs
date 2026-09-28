@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Avalonia;
 
 namespace Nodes.Demo;
@@ -12,6 +13,12 @@ namespace Nodes.Demo;
 /// </remarks>
 public sealed class GraphDocument
 {
+    /// <summary>
+    /// Шаг сетки <see cref="CreateGrid"/>. Узел с двумя входами и выходом в теме библиотеки — 178 × 75,
+    /// тот же размер окно называет редактору предполагаемым; остальное — просвет для связей.
+    /// </summary>
+    private static readonly Vector GridStep = new(240, 150);
+
     private int _reroutes;
 
     public ObservableCollection<GraphNode> Nodes { get; } = new();
@@ -56,6 +63,41 @@ public sealed class GraphDocument
         return document;
     }
 
+    /// <summary>
+    /// Граф на <paramref name="count"/> узлов — проверка виртуализации (ADR 0007 библиотеки).
+    /// </summary>
+    /// <remarks>
+    /// Узлы стоят квадратной сеткой, каждый с входами «A», «B» и одним выходом. Цепочка идёт по ряду во
+    /// входы «A»; из каждого десятого столбца, начиная со второго, дальняя связь уходит на десять рядов
+    /// вниз во вход «B» — её второй конец у узла, который ни разу не показывался, и редактор ставит его
+    /// оценкой по краю, пока узел не покажут. Документ наполняется, пока его никто не слушает: окно
+    /// отдаёт редактору готовые коллекции, а не десять тысяч добавлений.
+    /// </remarks>
+    public static GraphDocument CreateGrid(int count)
+    {
+        var document = new GraphDocument();
+        var nodes = document.Nodes;
+        var columns = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(count)));
+        for (var i = 0; i < count; i++)
+        {
+            var (row, column) = Math.DivRem(i, columns);
+            nodes.Add(new GraphNode($"Узел {i}", new Point(column * GridStep.X, row * GridStep.Y), ["A", "B"], ["Выход"]));
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            var column = i % columns;
+            if (column + 1 < columns && i + 1 < count)
+                document.Links.Add(new GraphLink(nodes[i].Outputs[0], nodes[i + 1].Inputs[0]));
+
+            var far = i + (10 * columns) + 1;
+            if (column % 10 == 2 && column + 1 < columns && far < count)
+                document.Links.Add(new GraphLink(nodes[i].Outputs[0], nodes[far].Inputs[1]));
+        }
+
+        return document;
+    }
+
     private GraphNode Add(string title, Point location, string[] inputs, string[] outputs)
     {
         var node = new GraphNode(title, location, inputs, outputs);
@@ -68,27 +110,44 @@ public sealed class GraphDocument
 /// Узел графа.
 /// </summary>
 /// <remarks>
-/// <see cref="Location"/> — то место, где узел поставить, когда его контейнер появится. Во время
-/// жизни контейнера положением распоряжается редактор, и приложение забирает его обратно, когда
-/// узел уходит (<c>MainWindow.RemoveNodes</c>): тогда отмена удаления вернёт узел туда, где он стоял.
+/// <see cref="Location"/> — место узла на холсте, и держит его модель: редактор привязан к нему
+/// <c>ItemLocationBinding</c> в обе стороны. Перетаскивание и отмена пишут сюда, правка отсюда двигает
+/// узел, а у свёрнутого узла — вне окна, без контейнера — панель берёт положение отсюда же и узнаёт о
+/// правке по <see cref="PropertyChanged"/>. Поэтому удалённый узел помнит, где стоял, и отмена удаления
+/// возвращает его на место без помощи окна.
 /// </remarks>
-public class GraphNode
+public class GraphNode : INotifyPropertyChanged
 {
+    private Point _location;
+
     public GraphNode(string title, Point location, IEnumerable<string> inputs, IEnumerable<string> outputs)
     {
         Title = title;
-        Location = location;
+        _location = location;
         Inputs = inputs.Select(name => new GraphPort(this, name, isInput: true)).ToList();
         Outputs = outputs.Select(name => new GraphPort(this, name, isInput: false)).ToList();
     }
 
     public string Title { get; }
 
-    public Point Location { get; set; }
+    public Point Location
+    {
+        get => _location;
+        set
+        {
+            if (_location == value)
+                return;
+
+            _location = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Location)));
+        }
+    }
 
     public IReadOnlyList<GraphPort> Inputs { get; }
 
     public IReadOnlyList<GraphPort> Outputs { get; }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public override string ToString() => Title;
 }

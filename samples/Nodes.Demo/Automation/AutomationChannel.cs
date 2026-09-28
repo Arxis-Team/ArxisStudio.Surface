@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Threading;
@@ -159,7 +160,27 @@ internal sealed class AutomationChannel
         switch (name)
         {
             case "state":
-                return State();
+                return State(Flag("realizedOnly"));
+
+            case "generate":
+            {
+                var count = Number("count", 10_000);
+                var watch = Stopwatch.StartNew();
+                var document = GraphDocument.CreateGrid(count);
+                var built = watch.Elapsed;
+
+                _window.Load(document);
+                _window.UpdateLayout();
+                watch.Stop();
+
+                var response = Realization();
+                response["buildMs"] = Math.Round(built.TotalMilliseconds);
+                response["loadMs"] = Math.Round((watch.Elapsed - built).TotalMilliseconds);
+                return response;
+            }
+
+            case "realization":
+                return Realization();
 
             case "selectLink":
             {
@@ -200,43 +221,71 @@ internal sealed class AutomationChannel
                 return new() { ["returned"] = _window.History.Redo() };
 
             default:
-                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, selectLink, clearLinkSelection, events, viewport, undo, redo.");
+                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, selectLink, clearLinkSelection, events, viewport, undo, redo.");
         }
     }
 
-    private Dictionary<string, object?> State()
+    /// <summary>
+    /// Узлы, связи, порты, выбор и история.
+    /// </summary>
+    /// <param name="realizedOnly">
+    /// Только узлы с контейнером и связи с контролом — у графа на десять тысяч узлов полный ответ весит
+    /// мегабайты.
+    /// </param>
+    /// <remarks>
+    /// Положение узла — из модели: привязка держит его там и у свёрнутого узла. Размер, концы связи и
+    /// выбор связи есть только у развёрнутых — у остальных нет контрола, и поле пустое.
+    /// </remarks>
+    private Dictionary<string, object?> State(bool realizedOnly)
     {
         var document = _window.Document;
         var selectedNodes = _editor.SelectedTargets
             .Select(t => _editor.ItemFromContainer(t.Container))
             .ToHashSet();
 
-        var nodes = document.Nodes.Select(model =>
+        // Словари по развёрнутому, а не поиск по графу на каждый элемент: ContainerFromItem ищет
+        // элемент в коллекции, и на десяти тысячах узлов обход стоил бы секунды.
+        var containers = new Dictionary<object, Node>(ReferenceEqualityComparer.Instance);
+        foreach (var container in _editor.GetRealizedContainers())
         {
-            var node = _editor.ContainerFromItem(model) as Node;
-            return new Dictionary<string, object?>
-            {
-                ["title"] = model.Title,
-                ["location"] = node == null ? null : PointOf(node.Location),
-                ["size"] = node == null ? null : new { width = node.Bounds.Width, height = node.Bounds.Height },
-                ["selected"] = selectedNodes.Contains(model)
-            };
-        }).ToList();
+            if (container is Node node && _editor.ItemFromContainer(node) is { } item)
+                containers[item] = node;
+        }
 
-        var linkControls = _editor.GetVisualDescendants().OfType<Link>().ToList();
-        var links = document.Links.Select((item, index) =>
+        var linkControls = new Dictionary<object, Link>(ReferenceEqualityComparer.Instance);
+        foreach (var link in _editor.GetVisualDescendants().OfType<Link>())
         {
-            var link = linkControls.FirstOrDefault(l => ReferenceEquals(l.DataContext, item));
-            return new Dictionary<string, object?>
+            if (link.DataContext is { } item)
+                linkControls.TryAdd(item, link);
+        }
+
+        var nodes = document.Nodes
+            .Where(model => !realizedOnly || containers.ContainsKey(model))
+            .Select(model =>
             {
-                ["index"] = index,
-                ["link"] = item.ToString(),
-                ["visible"] = link?.IsVisible,
-                ["selected"] = link?.IsSelected,
-                ["sourceAnchor"] = link == null ? null : PointOf(link.SourceAnchor),
-                ["targetAnchor"] = link == null ? null : PointOf(link.TargetAnchor)
-            };
-        }).ToList();
+                var node = containers.GetValueOrDefault(model);
+                return new Dictionary<string, object?>
+                {
+                    ["title"] = model.Title,
+                    ["location"] = PointOf(model.Location),
+                    ["realized"] = node != null,
+                    ["size"] = node == null ? null : new { width = node.Bounds.Width, height = node.Bounds.Height },
+                    ["selected"] = selectedNodes.Contains(model)
+                };
+            }).ToList();
+
+        var links = document.Links
+            .Select((item, index) => (Item: item, Index: index, Link: linkControls.GetValueOrDefault(item)))
+            .Where(entry => !realizedOnly || entry.Link != null)
+            .Select(entry => new Dictionary<string, object?>
+            {
+                ["index"] = entry.Index,
+                ["link"] = entry.Item.ToString(),
+                ["visible"] = entry.Link?.IsVisible,
+                ["selected"] = entry.Link?.IsSelected,
+                ["sourceAnchor"] = entry.Link == null ? null : PointOf(entry.Link.SourceAnchor),
+                ["targetAnchor"] = entry.Link == null ? null : PointOf(entry.Link.TargetAnchor)
+            }).ToList();
 
         var ports = _editor.GetVisualDescendants().OfType<Port>()
             .Select(port => new Dictionary<string, object?>
@@ -256,6 +305,27 @@ internal sealed class AutomationChannel
             ["selectedLinks"] = _editor.SelectedLinks.Select(Name).ToList(),
             ["canUndo"] = _window.History.CanUndo,
             ["canRedo"] = _window.History.CanRedo
+        };
+    }
+
+    /// <summary>
+    /// Сколько узлов и связей в графе и сколько из них развёрнуто — то, что обещает виртуализация.
+    /// </summary>
+    /// <remarks>
+    /// Память — после полной сборки мусора: без неё число гуляет на десятки мегабайт.
+    /// </remarks>
+    private Dictionary<string, object?> Realization()
+    {
+        var links = _editor.GetVisualDescendants().OfType<Link>().ToList();
+        return new()
+        {
+            ["nodes"] = _window.Document.Nodes.Count,
+            ["links"] = _window.Document.Links.Count,
+            ["realizedNodes"] = _editor.GetRealizedContainers().Count(),
+            ["realizedLinks"] = links.Count,
+            ["visibleLinks"] = links.Count(link => link.IsVisible),
+            ["viewport"] = new { zoom = _editor.ViewportZoom, location = PointOf(_editor.ViewportLocation) },
+            ["managedMb"] = Math.Round(GC.GetTotalMemory(forceFullCollection: true) / 1048576.0, 1)
         };
     }
 

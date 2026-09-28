@@ -34,7 +34,6 @@ public partial class MainWindow : Window
         // после окна, не увидел бы ни одного выполненного запроса.
         Automation.AutomationChannel.TryStart(Program.AutomationDirectory, Editor, this);
 
-        Editor.ContainerPrepared += OnContainerPrepared;
         Editor.ConnectValidating += OnConnectValidating;
         Editor.ConnectRequested += OnConnectRequested;
         Editor.ReconnectRequested += OnReconnectRequested;
@@ -52,6 +51,19 @@ public partial class MainWindow : Window
     internal GraphDocument Document => _document ?? throw new InvalidOperationException("У окна нет графа.");
 
     internal SurfaceHistory History => _history;
+
+    /// <summary>
+    /// Ставит окну новый граф и забывает историю прежнего.
+    /// </summary>
+    /// <remarks>
+    /// История помнит правки коллекций и узлы прежнего документа: отменённая после смены графа, она
+    /// правила бы то, чего на холсте уже нет.
+    /// </remarks>
+    internal void Load(GraphDocument document)
+    {
+        DataContext = document;
+        _history.Clear();
+    }
 
     /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
@@ -72,20 +84,6 @@ public partial class MainWindow : Window
         }
 
         UpdateChrome();
-    }
-
-    /// <summary>
-    /// Ставит узел туда, где он стоит в модели, когда появляется его контейнер.
-    /// </summary>
-    /// <remarks>
-    /// Не привязкой: перетаскивание пишет положение контейнеру локальным значением, и привязка
-    /// стилем проиграла бы ему. Пока контейнер жив, положением распоряжается редактор, а модель
-    /// забирает его обратно, когда узел уходит (<see cref="OnDeleteRequested"/>).
-    /// </remarks>
-    private void OnContainerPrepared(object? sender, ContainerPreparedEventArgs e)
-    {
-        if (e.Container is Node node && Editor.ItemFromContainer(node) is GraphNode model)
-            node.Location = model.Location;
     }
 
     private void OnConnectValidating(object? sender, ConnectValidatingEventArgs e)
@@ -171,17 +169,17 @@ public partial class MainWindow : Window
     /// <summary>
     /// Удаляет выбранные узлы вместе с их связями — одной записью истории.
     /// </summary>
+    /// <remarks>
+    /// Положение забирать у контейнера не нужно: привязка уже держит его в модели, и отмена удаления
+    /// вернёт узел туда, где он стоял.
+    /// </remarks>
     private void OnDeleteRequested(object? sender, SurfaceDeleteRequestedEventArgs e)
     {
         var nodes = new List<GraphNode>();
         foreach (var target in e.Targets)
         {
-            if (target.Container is not Node node || Editor.ItemFromContainer(node) is not GraphNode model || nodes.Contains(model))
-                continue;
-
-            // Положение забирается у контейнера: отмена удаления вернёт узел туда, где он стоял.
-            model.Location = node.Location;
-            nodes.Add(model);
+            if (Editor.ItemFromContainer(target.Container) is GraphNode model && !nodes.Contains(model))
+                nodes.Add(model);
         }
 
         if (nodes.Count == 0)
@@ -196,6 +194,8 @@ public partial class MainWindow : Window
     }
 
     private void OnGraphChanged(object? sender, NotifyCollectionChangedEventArgs e) => UpdateChrome();
+
+    private void OnLargeGraphClick(object? sender, RoutedEventArgs e) => Load(GraphDocument.CreateGrid(10_000));
 
     private void OnUndoClick(object? sender, RoutedEventArgs e) => _history.Undo();
 
