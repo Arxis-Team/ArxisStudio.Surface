@@ -50,6 +50,25 @@
 коллекции привязки не получает. Положение можно ставить и кодом в `ContainerPrepared`; итог жеста
 одной единицей правки приходит в `EditCompleted` (см. «Контракт изменений»).
 
+### Полоса
+
+`ItemAccentBinding` даёт элементу полосу — цвет его вида из модели, как категория узла в Blueprint.
+Значение — кисть или цвет: цвет становится кистью из общего кеша ядра, иное полосы не даёт.
+
+```xml
+<surface:SurfaceView ItemsSource="{Binding Items}"
+                     ItemLocationBinding="{Binding Location}"
+                     ItemAccentBinding="{Binding Category.Color}" />
+```
+
+Созданный контейнер получает полосу в `SurfaceItem.Accent` той же привязкой, что и положение, и тема
+контейнера рисует её над содержимым высотой `Surface.Item.AccentHeight` (16); без полосы этой строки нет
+вовсе. Карточка упрощённого вида красит ту же полосу той же кистью, поэтому элемент выглядит одинаково в
+обоих видах. Готовому `SurfaceItem` из коллекции полосу ставит хост. Привязка снимается, когда контейнер
+уходит в пул, а новая `ItemAccentBinding` перекрашивает развёрнутые контейнеры сразу. Своя тема
+контейнера рисует полосу сама, из `Accent`: так узел редактора узлов заливает ею область заголовка
+(ADR 0009).
+
 ### Виртуализация
 
 С `ItemLocationBinding` панель поверхности держит контейнеры только у элементов, чей прямоугольник
@@ -81,14 +100,8 @@
 Ниже `SurfaceView.SimplifiedZoom` (0,5; ноль и меньше — выключено) при заданной `ItemLocationBinding`
 поверхность не разворачивает ничего, кроме закреплённого, а свёрнутые элементы рисует карточками
 `SurfaceSimplifiedLayer` — слой шаблона во весь размер, под элементами. `IsSimplified` говорит, что
-вид упрощён. Полосу заголовка карточки красит `ItemAccentBinding` — привязка той же формы, что
-положение, со значением-кистью или цветом:
-
-```xml
-<surface:SurfaceView ItemsSource="{Binding Items}"
-                     ItemLocationBinding="{Binding Location}"
-                     ItemAccentBinding="{Binding Category.Color}" />
-```
+вид упрощён. Полоса карточки — та же, что у контейнера («Полоса» выше), и той же высоты: тема ядра
+ставит слою `AccentHeight` из `Surface.Item.AccentHeight`.
 
 Нажатие по карточке разворачивает верхний элемент под точкой и отдаёт нажатие его контейнеру:
 щелчок выбирает, протяжка двигает модель, правая кнопка открывает контекст по нему. Развёрнутый
@@ -345,7 +358,8 @@ view.DeleteRequested += (_, e) =>
 | `Surface.Selection.StrokeThickness` | толщина рамки выделения |
 | `Surface.Grid.*` | сетка, см. «Сетка» |
 | `SurfaceItem.SelectionBrush`, `SurfaceItem.HoverBrush`, `SurfaceItem.SelectionThickness` | контур контейнера ядра |
-| `Surface.Simplified.ItemFill`, `…ItemStroke`, `…AccentHeight` | карточка упрощённого вида |
+| `Surface.Item.AccentHeight` | высота полосы — у контейнера и у карточки упрощённого вида |
+| `Surface.Simplified.ItemFill`, `…ItemStroke` | карточка упрощённого вида |
 
 Кисти объявлены в `ThemeDictionaries`, отдельно для `Light` и `Dark`.
 

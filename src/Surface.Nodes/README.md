@@ -32,13 +32,14 @@
 <surface:NodeEditor x:Name="Editor"
                     ItemsSource="{Binding Nodes}"
                     ItemLocationBinding="{Binding Location}"
+                    ItemHeaderBinding="{Binding Title}"
                     Links="{Binding Links}"
                     LinkSourceBinding="{Binding From}"
                     LinkTargetBinding="{Binding To}">
     <surface:NodeEditor.DataTemplates>
+        <!-- тело узла — порты; название узел рисует сам, из ItemHeaderBinding -->
         <DataTemplate x:DataType="vm:NodeViewModel">
             <StackPanel>
-                <TextBlock Text="{Binding Title}" />
                 <ItemsControl ItemsSource="{Binding Inputs}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PortViewModel">
@@ -54,6 +55,8 @@
 ```
 
 - **Узлы** — `ItemsSource`; контейнер каждого — `Node : SurfaceItem`.
+- **Заголовок** — `ItemHeaderBinding`, название узла из модели. Узел рисует его сам, над телом из
+  шаблона; о полосе и цвете проводов — «Оформление узла».
 - **Связи** — `Links`, любая коллекция данных приложения. Концы связи — ключи портов, которые достают
   `LinkSourceBinding` и `LinkTargetBinding`, как `DisplayMemberBinding`: в разметке они компилируются,
   тип данных компилятор берёт у `Links`.
@@ -208,21 +211,90 @@ editor.LinkSplitRequested += (_, e) =>
 </Grid>
 ```
 
-## Оформление
+## Оформление узла
+
+Дизайн карточки, заголовка, портов и проводов задаёт хост, а без единой строки оформления редактор
+рисует базовый (ADR 0009 библиотеки):
+
+- **карточка** — скруглённая, с рамкой; под курсором и выбранная — своей рамкой; тело — шаблон узла с
+  отступом;
+- **область заголовка** — сверху, высотой не меньше `NodeEditor.Node.HeaderHeight` (24), залитая
+  полосой, с названием полужирным. Нет ни заголовка, ни полосы — нет и области; заголовок без полосы
+  лежит на фоне карточки цветом её текста. Название на полосе белое, а на светлой — чёрное: узел
+  выбирает по относительной яркости полосы (порог WCAG 0,179), и контраст не ниже 4,5:1 при любом цвете
+  хоста. Хост, заменивший цвета названия, держит контраст сам — порог выбран под белый и чёрный;
+- **порт** — штырёк и подпись, связь приходит в центр штырька;
+- **провод** — кубическая кривая пером темы; выбор, наведение, отцепление и разрез — своими цветами.
+
+Модель даёт узлу и проводу по значению — привязками к своему элементу:
+
+```xml
+<surface:NodeEditor ItemsSource="{Binding Nodes}"
+                    ItemLocationBinding="{Binding Location}"
+                    ItemHeaderBinding="{Binding Title}"
+                    ItemAccentBinding="{Binding Kind.Color}"
+                    Links="{Binding Links}"
+                    LinkSourceBinding="{Binding From}"
+                    LinkTargetBinding="{Binding To}"
+                    LinkStrokeBinding="{Binding DataType.Color}" />
+```
+
+- `ItemHeaderBinding` — заголовок, `Node.Header`: строка или любое содержимое для `HeaderTemplate`.
+- `ItemAccentBinding` ядра — полоса, `SurfaceItem.Accent`: кисть или цвет, как категория узла в
+  Blueprint. Узел показывает её под названием, упрощённая карточка — полосой той же высоты.
+- `LinkStrokeBinding` — цвет провода, как тип данных в Blueprint: кисть или цвет, без значения — перо
+  темы. Цвет модели — обычное состояние провода: выбранный, подсвеченный и перечёркнутый провод красится
+  цветом темы, потому что обратная связь жеста важнее типа. Упрощённый вид рисует провода теми же
+  цветами. Готовую `Link` из коллекции хост красит сам, её `Stroke`.
+
+Цвета модели — данные, а не значения темы. Название на полосе подстраивается само, а провод хосту с
+обеими темами стоит красить по теме: цвет, заметный на тёмном холсте, на светлом бывает слабее 3:1.
+
+Заменяется всё по частям:
+
+| Что | Чем |
+| --- | --- |
+| карточка и область заголовка | своя `ControlTheme` для `Node`: части `PART_Card`, `PART_Header`, `PART_HeaderPresenter`, `PART_ContentPresenter`, псевдоклассы `:header`, `:accent`, `:light-accent` |
+| вид заголовка | `Node.HeaderTemplate` — стилем узла |
+| тело узла | шаблон узла — `ItemTemplate` или `DataTemplates` |
+| порт | своя тема `Port`; связь приходит в центр части `PART_Pin`, а без неё — в середину края порта |
+| провод | своя тема `Link` или её ключи; цвет по модели — `LinkStrokeBinding` |
+| цвета, толщины, отступы | ключи `NodeEditor.*` ниже |
+
+Заголовок с иконкой — модель целиком в заголовок и свой шаблон:
+
+```xml
+<surface:NodeEditor ItemHeaderBinding="{Binding}" ...>
+    <surface:NodeEditor.Styles>
+        <Style Selector="surface|Node">
+            <Setter Property="HeaderTemplate">
+                <DataTemplate x:DataType="vm:NodeViewModel">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{Binding Icon}" Width="12" Height="12" />
+                        <TextBlock Text="{Binding Title}" />
+                    </StackPanel>
+                </DataTemplate>
+            </Setter>
+        </Style>
+    </surface:NodeEditor.Styles>
+</surface:NodeEditor>
+```
 
 Псевдоклассы: `Port` — `:input`, `:output`, `:connected`, `:accepting`, `:refusing`; `Link` —
-`:selected`, `:highlighted`, `:detaching`, `:cutting`; `Node` — `:selected`, `:dragging`, `:reroute`;
+`:selected`, `:highlighted`, `:detaching`, `:cutting`; `Node` — `:selected`, `:dragging`, `:reroute`,
+`:header` (есть заголовок или полоса), `:accent` (есть полоса), `:light-accent` (полоса светлая);
 `Reroute` — `:selected`.
 
 | Ключи | Что |
 | --- | --- |
 | `NodeEditor.Node.Background`, `…Foreground`, `…BorderBrush`, `…BorderThickness`, `…CornerRadius`, `…Padding`, `…HoverBorderBrush`, `…SelectedBorderBrush`, `…SelectedBorderThickness` | карточка узла |
+| `NodeEditor.Node.HeaderHeight`, `…HeaderPadding`, `…HeaderForeground`, `…HeaderForegroundOnLight` | область заголовка: наименьшая высота — она же высота полосы упрощённой карточки, — отступ, название на тёмной и на светлой полосе; цвета названия вне вариантов темы — полосу красит хост |
 | `NodeEditor.Port.PinSize`, `…PinMargin`, `…PinFill`, `…PinStroke`, `…PinStrokeThickness`, `…ConnectedFill`, `…AcceptingStroke`, `…RefusingStroke` | порт и штырёк |
 | `NodeEditor.Link.Stroke`, `…Thickness`, `…SelectedStroke`, `…HighlightedStroke`, `…DetachingOpacity` | связь |
 | `NodeEditor.PendingLink.Stroke` | протягиваемая связь |
 | `NodeEditor.Cut.Stroke`, `NodeEditor.Cut.Thickness` | отрезок разреза |
 | `NodeEditor.Reroute.Size`, `…RingThickness`, `…SelectedRingThickness` | перевалка |
-| `NodeEditor.Simplified.AccentHeight`, `…LinkThickness` | упрощённый вид: полоса заголовка и связь |
+| `NodeEditor.Simplified.LinkThickness` | упрощённый вид: толщина связи в пикселях экрана |
 
 Связи лежат в мировых координатах и масштабируются вместе с узлами; отрезок разреза рисуется своим
 слоем поверх узлов, и его толщина задана в пикселях экрана.
@@ -256,15 +328,10 @@ editor.LinkSplitRequested += (_, e) =>
 Ниже `SimplifiedZoom` ядра (0,5) узлы рисуются карточками без контейнеров (ADR 0008 библиотеки), а
 связи — так: контрол есть у связи под курсором, под разрезом и отцепляемой и у связи развёрнутого
 узла — перетаскиваемый узел ведёт свои связи вживую; остальные рисует слой связей одной геометрией,
-выбранные — кистью выбора, в пиксель экрана. Полоса заголовка карточки — цвет, который отдаёт
-`ItemAccentBinding` ядра, как категория узла в Blueprint:
-
-```xml
-<surface:NodeEditor ItemsSource="{Binding Nodes}"
-                    ItemLocationBinding="{Binding Location}"
-                    ItemAccentBinding="{Binding Kind.Color}"
-                    Links="{Binding Links}" />
-```
+выбранные — кистью выбора, в пиксель экрана, окрашенные моделью — своими цветами. Карточка — копия
+узла: фон и рамка — ключи карточки, полоса — из той же `ItemAccentBinding` высотой
+`NodeEditor.Node.HeaderHeight`. Заголовок выше этой высоты — свой шаблон, крупный шрифт — карточка не
+повторяет: высоту полосы она берёт у ключа, а не у узла.
 
 Нажатие по карточке разворачивает узел и отдаёт нажатие ему: щелчок выбирает, протяжка двигает. Порт
 на карточке не нажимается, пока узел свёрнут; на развёрнутом — как обычно. Наведение и нажатие над

@@ -39,7 +39,8 @@ xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
 ```xml
 <surface:UiDesignerView ItemsSource="{Binding Screens}" SelectionMode="Multiple" />
 
-<surface:NodeEditor ItemsSource="{Binding Nodes}" Links="{Binding Links}"
+<surface:NodeEditor ItemsSource="{Binding Nodes}" ItemHeaderBinding="{Binding Title}"
+                    Links="{Binding Links}"
                     LinkSourceBinding="{Binding From}" LinkTargetBinding="{Binding To}" />
 ```
 
@@ -65,6 +66,10 @@ xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
 - **Малый масштаб рисуется, а не разворачивается** ([ADR 0008](docs/adr/0008-the-small-zoom-is-drawn-not-realized.md)):
   ниже `SimplifiedZoom` элементы — карточки с полосой заголовка из `ItemAccentBinding`, контейнер есть
   только у закреплённого, а нажатие разворачивает карточку под собой.
+- **Базовый вид — у библиотеки, дизайн — у хоста** ([ADR 0009](docs/adr/0009-the-node-card-has-a-header-and-the-host-designs-it.md)):
+  без строки оформления узел — карточка с названием на цветной полосе, порт — штырёк, провод — кривая;
+  каждую часть хост заменяет своей темой, шаблоном или ключом, а цвета полосы и провода даёт
+  привязками к модели.
 - **Значения — ресурсами.** Цвета, толщины, размеры ручек задаются ключами темы (`Surface.*`,
   `UiDesigner.*`, `NodeEditor.*`, `SurfaceMinimap.*`) отдельно для `Light` и `Dark`, без копирования
   шаблонов.
@@ -118,6 +123,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0006](docs/adr/0006-names-follow-the-layers.md) | Имена следуют слоям: приставка `Design` уступает `Surface`, дизайнер — `UiDesignerView` |
 | [0007](docs/adr/0007-containers-follow-the-viewport.md) | Контейнеры следуют видимой области: раскладка по изменениям, виртуализация узлов и связей, закешированная миникарта |
 | [0008](docs/adr/0008-the-small-zoom-is-drawn-not-realized.md) | Малый масштаб рисуется: карточки без контейнеров с полосой заголовка из привязки хоста, нажатие разворачивает |
+| [0009](docs/adr/0009-the-node-card-has-a-header-and-the-host-designs-it.md) | У карточки узла есть заголовок, а дизайн задаёт хост: базовый вид — темами, цвета полосы и провода — привязками к модели |
 
 ## Лицензия
 
