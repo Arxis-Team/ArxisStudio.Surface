@@ -205,16 +205,16 @@ public class VirtualGraphCostProbeTests
     }
 
     [AvaloniaFact]
-    public void Zooming_Out_Realizes_What_It_Shows()
+    public void Zooming_Out_Realizes_Down_To_The_Simplified_Zoom_And_No_Further()
     {
-        // Характеризует этап 3: окно на 30 % видит на порядок больше узлов, чем на 100 %, и все они
-        // развёрнуты (ADR 0008).
+        // До порога упрощённого вида окно видит тем больше, чем дальше холст, и развёрнуто всё видимое:
+        // на 50 % — вчетверо больше, чем на 100 %. Ниже порога не развёрнуто ничего (ADR 0008).
         var graph = Create(Small);
         var atFull = graph.Panel.RealizedCount;
         _output.WriteLine($"{Small} узлов на 100 %: развёрнуто {atFull}");
 
         var counts = new Dictionary<double, int>();
-        foreach (var zoom in new[] { 0.5, 0.3 })
+        foreach (var zoom in new[] { 0.5, 0.3, 0.1 })
         {
             var (realized, milliseconds, megabytes) = ZoomTo(graph, zoom);
             counts[zoom] = realized;
@@ -222,7 +222,9 @@ public class VirtualGraphCostProbeTests
                 + $"память {megabytes:F1} МБ");
         }
 
-        Assert.True(counts[0.3] >= 8 * atFull, $"на 30 % развёрнуто {counts[0.3]}, на 100 % — {atFull}");
+        Assert.True(counts[0.5] >= 3 * atFull, $"на 50 % развёрнуто {counts[0.5]}, на 100 % — {atFull}");
+        Assert.Equal(0, counts[0.3]);
+        Assert.Equal(0, counts[0.1]);
     }
 
     /// <summary>

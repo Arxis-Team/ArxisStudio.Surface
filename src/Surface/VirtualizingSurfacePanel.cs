@@ -269,6 +269,8 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
 
         if (IsVirtualizing)
         {
+            // Ниже порога упрощённого вида окна нет вовсе (ADR 0008): развёрнуто только закреплённое.
+            var simplified = view.IsSimplified;
             var (realize, keep) = Windows(view);
 
             // Уходят вышедшие из окна с запасом, кроме закреплённых; под удержанием жеста — никто.
@@ -277,7 +279,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             {
                 foreach (var pair in _realized)
                 {
-                    if (!keep.Intersects(BoundsOf(_slots[pair.Key])) && !IsPinned(view, pair.Key, pair.Value))
+                    if ((simplified || !keep.Intersects(BoundsOf(_slots[pair.Key]))) && !IsPinned(view, pair.Key, pair.Value))
                         _scratch.Add(pair);
                 }
             }
@@ -289,7 +291,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             for (var i = 0; i < items.Count; i++)
             {
                 if (!_realized.ContainsKey(i)
-                    && (realize.Intersects(BoundsOf(_slots[i])) || view.Selection.IsSelected(i) || items[i] is SurfaceItem))
+                    && ((!simplified && realize.Intersects(BoundsOf(_slots[i]))) || view.Selection.IsSelected(i) || items[i] is SurfaceItem))
                 {
                     Realize(i, items[i]);
                 }
@@ -513,11 +515,18 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
             _view?.OnItemGeometryChanged(null);
             InvalidateMeasure();
         }
+        else if (e.Property == SurfaceView.IsSimplifiedProperty)
+        {
+            // Через порог всё видимое на нём разом сворачивается или разворачивается.
+            InvalidateMeasure();
+        }
         else if (IsVirtualizing
+                 && _view is { IsSimplified: false }
                  && (e.Property == SurfaceView.ViewportLocationProperty
                      || e.Property == SurfaceView.ViewportZoomProperty
                      || e.Property == BoundsProperty))
         {
+            // В упрощённом виде окна нет, и панораме с масштабом разворачивать нечего.
             InvalidateMeasure();
         }
     }

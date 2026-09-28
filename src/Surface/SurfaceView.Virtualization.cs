@@ -7,12 +7,55 @@ using Avalonia.Controls.Selection;
 namespace ArxisStudio.Surface;
 
 // Виртуализация: что держит контейнеры развёрнутыми и разворачивание выбранного до сборки снимка
-// выделения (ADR 0007). Часть SurfaceView; общее описание типа — в SurfaceView.cs.
+// выделения (ADR 0007), упрощённый вид при малом масштабе (ADR 0008). Часть SurfaceView; общее
+// описание типа — в SurfaceView.cs.
 public partial class SurfaceView
 {
+    /// <summary>
+    /// Идентификатор свойства <see cref="SimplifiedZoom"/>.
+    /// </summary>
+    public static readonly StyledProperty<double> SimplifiedZoomProperty =
+        AvaloniaProperty.Register<SurfaceView, double>(nameof(SimplifiedZoom), 0.5);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="IsSimplified"/>.
+    /// </summary>
+    public static readonly DirectProperty<SurfaceView, bool> IsSimplifiedProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, bool>(nameof(IsSimplified), o => o.IsSimplified);
+
     private int _realizationHolds;
     private bool _realizingSelection;
+    private bool _isSimplified;
     private ISelectionModel? _watchedSelection;
+
+    /// <summary>
+    /// Получает или задает масштаб, ниже которого элементы показываются упрощённо, без контейнеров.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0008. Ниже порога виртуализирующая панель не разворачивает ничего, кроме закреплённого, —
+    /// выбранных, контейнера с фокусом и элемента, который сам <see cref="SurfaceItem"/>. Ноль и
+    /// меньше выключают упрощённый вид. Действует только с <see cref="ItemLocationBinding"/>: без неё
+    /// положение свёрнутого элемента взять неоткуда, и развёрнуто всё.
+    /// </remarks>
+    public double SimplifiedZoom
+    {
+        get => GetValue(SimplifiedZoomProperty);
+        set => SetValue(SimplifiedZoomProperty, value);
+    }
+
+    /// <summary>
+    /// Получает признак упрощённого вида: задана <see cref="ItemLocationBinding"/>, а масштаб ниже
+    /// <see cref="SimplifiedZoom"/>.
+    /// </summary>
+    /// <remarks>
+    /// Сворачивает контейнеры виртуализирующая панель; панель хоста, которая не виртуализирует,
+    /// разворачивает всё и при нём.
+    /// </remarks>
+    public bool IsSimplified
+    {
+        get => _isSimplified;
+        private set => SetAndRaise(IsSimplifiedProperty, ref _isSimplified, value);
+    }
 
     /// <summary>
     /// Держит развёрнутым всё, что развёрнуто, пока удержание не освобождено.
@@ -69,6 +112,10 @@ public partial class SurfaceView
 
         if (change.Property == SelectionProperty)
             WatchSelection(change.GetNewValue<ISelectionModel?>());
+        else if (change.Property == ViewportZoomProperty
+                 || change.Property == SimplifiedZoomProperty
+                 || change.Property == ItemLocationBindingProperty)
+            IsSimplified = ItemLocationBinding != null && SimplifiedZoom > 0 && ViewportZoom < SimplifiedZoom;
     }
 
     /// <summary>

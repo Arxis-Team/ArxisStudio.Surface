@@ -314,6 +314,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia InputGesturesProperty -> InputGestures : SurfaceInputGestures (direct)
     avalonia InteractionOptionsProperty -> InteractionOptions : SurfaceInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
+    avalonia IsSimplifiedProperty -> IsSimplified : Boolean (direct)
     avalonia ItemLocationBindingProperty -> ItemLocationBinding : BindingBase (styled) = null
     avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia MarqueeScopeProperty -> MarqueeScope : SurfaceItem (direct)
@@ -327,6 +328,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia SelectionModeProperty -> SelectionMode : SelectionMode (styled) = Single
     avalonia SelectionProperty -> Selection : ISelectionModel (direct)
     avalonia ShowGridProperty -> ShowGrid : Boolean (styled) = true
+    avalonia SimplifiedZoomProperty -> SimplifiedZoom : Double (styled) = 0.5
     avalonia ViewportLocationProperty -> ViewportLocation : Point (styled) = 0, 0
     avalonia ViewportTransformProperty -> ViewportTransform : Transform (styled) = <TransformGroup>
     avalonia ViewportZoomProperty -> ViewportZoom : Double (styled) = 1
@@ -371,9 +373,11 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void ZoomAt(Double, Point)
     property BindingBase ItemLocationBinding { get; set; }
     property Boolean IsSelecting { get; set; }
+    property Boolean IsSimplified { get; }
     property Boolean ShowGrid { get; set; }
     property Double MaxZoom { get; set; }
     property Double MinZoom { get; set; }
+    property Double SimplifiedZoom { get; set; }
     property Double ViewportZoom { get; set; }
     property IList SelectedItems { get; set; }
     property IList<ISurfaceContextActionProvider> ContextActionProviders { get; }
