@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
+using Avalonia.Rendering.SceneGraph;
 
 namespace ArxisStudio.Surface;
 
@@ -15,11 +17,17 @@ namespace ArxisStudio.Surface;
 /// экранные трансформацией viewport сам, как сетка. Слой без размера в холсте под трансформацией
 /// рендерер отсекал бы, когда его начало ложится на край окна: живая проверка так потеряла все
 /// карточки на 20 % при холсте в начале координат. Прямоугольники слой берёт у виртуализирующей панели
-/// своей поверхности — той, чей шаблон его создал, — и собирает их в одну геометрию, которую держит,
-/// пока свёрнутое не сменится: геометрия элемента без контейнера, коллекция, состав развёрнутых.
-/// Панорама и перетаскивание развёрнутого элемента её не пересобирают — панорама только перерисовывает
-/// готовое. Развёрнутые элементы в карточки не входят — рисуют себя сами, поверх слоя. Рамка карточки —
-/// в один пиксель экрана при любом масштабе.
+/// своей поверхности — той, чей шаблон его создал, — и собирает их в снимок с сеткой ячеек, который
+/// держит, пока свёрнутое не сменится: геометрия элемента без контейнера, коллекция, состав развёрнутых.
+/// Панорама и перетаскивание развёрнутого элемента его не пересобирают. Развёрнутые элементы в карточки
+/// не входят — рисуют себя сами, поверх слоя. Рамка карточки — в один пиксель экрана при любом масштабе.
+/// <para>
+/// Рисует слой своей операцией, а не геометрией (ADR 0011): её границы — прямоугольник слоя, и
+/// композитору нечего мерить, а геометрию на десять тысяч фигур он мерил бы на каждом кадре панорамы —
+/// сотни миллисекунд. Операция берёт из сетки только видимые карточки. Мельче
+/// <see cref="MinOutlinedPixels"/> пикселей экрана карточка рисуется без рамки, а полоса — не тоньше
+/// пикселя.
+/// </para>
 /// <para>
 /// Панель не рисует сама: <see cref="Panel.Render"/> в Avalonia запечатан.
 /// </para>
@@ -56,10 +64,13 @@ public sealed class SurfaceSimplifiedLayer : Control
     public static readonly StyledProperty<double> SelectedStrokeThicknessProperty =
         AvaloniaProperty.Register<SurfaceSimplifiedLayer, double>(nameof(SelectedStrokeThickness), 2);
 
+    /// <summary>
+    /// Мельче этого по меньшей стороне, в пикселях экрана, карточка рисуется без рамки.
+    /// </summary>
+    internal const double MinOutlinedPixels = 4;
+
     private SurfaceView? _view;
-    private StreamGeometry? _cards;
-    private StreamGeometry? _selected;
-    private List<(IBrush Brush, StreamGeometry Geometry)>? _bands;
+    private Snapshot? _snapshot;
     private bool _stale = true;
 
     static SurfaceSimplifiedLayer()
@@ -138,7 +149,7 @@ public sealed class SurfaceSimplifiedLayer : Control
     /// <summary>
     /// Сколько разных кистей у полос последней сборки — для тестов.
     /// </summary>
-    internal int AccentGroups => _bands?.Count ?? 0;
+    internal int AccentGroups => _snapshot?.Palette.Length ?? 0;
 
     /// <summary>
     /// Сколько карточек в последней сборке — для тестов и стенда.
@@ -168,7 +179,40 @@ public sealed class SurfaceSimplifiedLayer : Control
     /// <summary>
     /// Рамка всех карточек последней сборки в мировых координатах — для тестов.
     /// </summary>
-    internal Rect CardsBounds => _cards?.Bounds ?? default;
+    internal Rect CardsBounds => _snapshot?.Bounds ?? default;
+
+    /// <summary>
+    /// Сколько карточек нарисовал бы кадр сейчас и у скольких из них рамка — тем же отбором, что у
+    /// операции; для тестов и стенда.
+    /// </summary>
+    internal (int Visible, int Outlined) CountVisible()
+    {
+        if (_snapshot is not { } snapshot || _view is not { } view)
+            return default;
+
+        var (world, zoom) = Viewport(view, out _);
+        var (visible, outlined) = (0, 0);
+        foreach (var i in snapshot.Grid.Within(world))
+        {
+            visible++;
+            if (IsOutlined(snapshot.Grid.Rects[i], zoom))
+                outlined++;
+        }
+
+        return (visible, outlined);
+    }
+
+    /// <summary>
+    /// Рисуется ли у карточки рамка при этом масштабе.
+    /// </summary>
+    internal static bool IsOutlined(Rect card, double zoom) => Math.Min(card.Width, card.Height) * zoom >= MinOutlinedPixels;
+
+    /// <summary>
+    /// Высота полосы: не выше трети карточки и <paramref name="accentHeight"/>, не тоньше пикселя
+    /// экрана и не выше самой карточки.
+    /// </summary>
+    internal static double BandHeight(Rect card, double accentHeight, double zoom) =>
+        Math.Min(card.Height, Math.Max(Math.Min(accentHeight, card.Height / 3), 1 / zoom));
 
     /// <inheritdoc />
     public override void Render(DrawingContext context)
@@ -180,35 +224,28 @@ public sealed class SurfaceSimplifiedLayer : Control
         if (_stale)
             Rebuild(panel);
 
-        if (_cards == null)
+        if (_snapshot is not { } snapshot)
             return;
 
-        // Геометрия мировая: под трансформацией viewport пиксель экрана — это 1 / zoom мировых единиц.
-        StrokeThickness = 1 / Math.Max(view.ViewportZoom, 0.0001);
-        var pen = Stroke is { } stroke ? new Pen(stroke, StrokeThickness) : null;
-        using (context.PushTransform(view.ViewportTransform?.Value ?? Matrix.Identity))
-        {
-            if (_bands == null)
-            {
-                context.DrawGeometry(Fill, pen, _cards);
-            }
-            else
-            {
-                // Полоса ложится на заливку, а рамка — поверх полосы.
-                context.DrawGeometry(Fill, null, _cards);
-                foreach (var (brush, geometry) in _bands)
-                    context.DrawGeometry(brush, null, geometry);
-
-                if (pen != null)
-                    context.DrawGeometry(null, pen, _cards);
-            }
-
-            // Рамка выбора — поверх всех карточек, чтобы соседняя её не закрыла.
-            if (_selected != null && SelectedStroke is { } selected)
-                context.DrawGeometry(null, new Pen(selected, SelectedStrokeThickness * StrokeThickness), _selected);
-        }
+        // Снимок мировой: под трансформацией viewport пиксель экрана — это 1 / zoom мировых единиц.
+        var (world, zoom) = Viewport(view, out var matrix);
+        StrokeThickness = 1 / zoom;
+        context.Custom(new CardsOperation(
+            new Rect(Bounds.Size), snapshot, matrix, world, zoom, AccentHeight,
+            Fill?.ToImmutable(), Stroke?.ToImmutable(), SelectedStroke?.ToImmutable(), SelectedStrokeThickness));
 
         Draws++;
+    }
+
+    /// <summary>
+    /// Видимая часть мира и масштаб — по трансформации viewport, которой слой рисует.
+    /// </summary>
+    private (Rect World, double Zoom) Viewport(SurfaceView view, out Matrix matrix)
+    {
+        matrix = view.ViewportTransform?.Value ?? Matrix.Identity;
+        var bounds = new Rect(Bounds.Size);
+        var world = matrix.TryInvert(out var inverse) ? bounds.TransformToAABB(inverse) : bounds;
+        return (world, Math.Max(view.ViewportZoom, 0.0001));
     }
 
     /// <inheritdoc />
@@ -246,9 +283,7 @@ public sealed class SurfaceSimplifiedLayer : Control
         }
 
         _view = view;
-        _cards = null;
-        _selected = null;
-        _bands = null;
+        _snapshot = null;
         _stale = true;
 
         if (_view != null)
@@ -271,10 +306,8 @@ public sealed class SurfaceSimplifiedLayer : Control
     {
         if (e.Property == SurfaceView.IsSimplifiedProperty)
         {
-            // Над порогом геометрия не нужна и не держится: на большом холсте это тысячи фигур.
-            _cards = null;
-            _selected = null;
-            _bands = null;
+            // Над порогом снимок не нужен и не держится: на большом холсте это тысячи карточек.
+            _snapshot = null;
             _stale = true;
             InvalidateVisual();
         }
@@ -291,72 +324,119 @@ public sealed class SurfaceSimplifiedLayer : Control
         _stale = false;
         Rebuilds++;
 
-        // Прямоугольники обходятся в одну сторону, и правило NonZero закрашивает их объединение: по
-        // умолчанию EvenOdd, и перекрытие двух карточек вышло бы дырой. Полосы — по геометрии на
-        // кисть: их немного, а рисуются они одним вызовом на кисть.
-        var cards = new StreamGeometry();
-        var selected = new StreamGeometry();
-        Dictionary<IBrush, (StreamGeometry Geometry, StreamGeometryContext Context)>? bands = null;
-        var count = 0;
-        var selectedCount = 0;
-        var bandCount = 0;
-        using (var context = cards.Open())
-        using (var selectedContext = selected.Open())
+        // Полосы — номером в палитре: кистей немного, а поток отрисовки получает их неизменяемыми.
+        var rects = new List<Rect>();
+        var accents = new List<int>();
+        var selected = new List<bool>();
+        var palette = new List<IImmutableBrush>();
+        Dictionary<IBrush, int>? paletteIndex = null;
+        var bounds = default(Rect);
+        var (selectedCount, bandCount) = (0, 0);
+        foreach (var (card, accent, isSelected) in panel.EnumerateCollapsed())
         {
-            context.SetFillRule(FillRule.NonZero);
-            foreach (var (bounds, accent, isSelected) in panel.EnumerateCollapsed())
+            bounds = rects.Count > 0 ? bounds.Union(card) : card;
+            rects.Add(card);
+            selected.Add(isSelected);
+            if (isSelected)
+                selectedCount++;
+
+            if (accent == null || AccentHeight <= 0)
             {
-                AddRectangle(context, bounds);
-                count++;
-
-                if (isSelected)
-                {
-                    AddRectangle(selectedContext, bounds);
-                    selectedCount++;
-                }
-
-                if (accent == null || AccentHeight <= 0)
-                    continue;
-
-                bands ??= new Dictionary<IBrush, (StreamGeometry, StreamGeometryContext)>(ReferenceEqualityComparer.Instance);
-                if (!bands.TryGetValue(accent, out var band))
-                {
-                    var geometry = new StreamGeometry();
-                    band = (geometry, geometry.Open());
-                    band.Context.SetFillRule(FillRule.NonZero);
-                    bands[accent] = band;
-                }
-
-                AddRectangle(band.Context, bounds.WithHeight(Math.Min(AccentHeight, bounds.Height / 3)));
-                bandCount++;
+                accents.Add(-1);
+                continue;
             }
+
+            paletteIndex ??= new Dictionary<IBrush, int>(ReferenceEqualityComparer.Instance);
+            if (!paletteIndex.TryGetValue(accent, out var index))
+            {
+                index = palette.Count;
+                paletteIndex[accent] = index;
+                palette.Add(accent.ToImmutable());
+            }
+
+            accents.Add(index);
+            bandCount++;
         }
 
-        List<(IBrush, StreamGeometry)>? built = null;
-        if (bands != null)
-        {
-            built = new List<(IBrush, StreamGeometry)>(bands.Count);
-            foreach (var (brush, band) in bands)
-            {
-                band.Context.Dispose();
-                built.Add((brush, band.Geometry));
-            }
-        }
-
-        _cards = count > 0 ? cards : null;
-        _selected = selectedCount > 0 ? selected : null;
-        _bands = built;
-        Cards = count;
+        _snapshot = rects.Count > 0
+            ? new Snapshot(CellGrid.Build(rects.ToArray()), accents.ToArray(), selected.ToArray(), selectedCount, palette.ToArray(), bounds)
+            : null;
+        Cards = rects.Count;
         SelectedCards = selectedCount;
         Bands = bandCount;
     }
 
-    private static void AddRectangle(StreamGeometryContext context, Rect bounds)
+    /// <summary>
+    /// Свёрнутое, собранное на UI-потоке: карточки по сетке, номер кисти полосы и выбор. Неизменяемо —
+    /// его читает поток отрисовки.
+    /// </summary>
+    private sealed class Snapshot(
+        CellGrid grid, int[] accents, bool[] selected, int selectedCount, IImmutableBrush[] palette, Rect bounds)
     {
-        context.BeginFigure(bounds.TopLeft, isFilled: true);
-        context.LineTo(bounds.TopRight);
-        context.LineTo(bounds.BottomRight);
-        context.LineTo(bounds.BottomLeft);
-        context.EndFigure(isClosed: true);
+        public CellGrid Grid { get; } = grid;
+
+        public int[] Accents { get; } = accents;
+
+        public bool[] Selected { get; } = selected;
+
+        public int SelectedCount { get; } = selectedCount;
+
+        public IImmutableBrush[] Palette { get; } = palette;
+
+        public Rect Bounds { get; } = bounds;
+    }
+
+    /// <summary>
+    /// Кадр упрощённого вида: только видимые карточки, детализация по масштабу.
+    /// </summary>
+    private sealed class CardsOperation(
+        Rect bounds, Snapshot snapshot, Matrix matrix, Rect world, double zoom, double accentHeight,
+        IImmutableBrush? fill, IImmutableBrush? stroke, IImmutableBrush? selectedStroke, double selectedThickness)
+        : ICustomDrawOperation
+    {
+        public Rect Bounds => bounds;
+
+        public bool HitTest(Point p) => false;
+
+        public bool Equals(ICustomDrawOperation? other) => ReferenceEquals(this, other);
+
+        public void Dispose()
+        {
+        }
+
+        public void Render(ImmediateDrawingContext context)
+        {
+            var pixel = 1 / zoom;
+            var pen = stroke != null ? new ImmutablePen(stroke, pixel) : null;
+            var rects = snapshot.Grid.Rects;
+            using (context.PushClip(bounds))
+            using (context.PushPreTransform(matrix))
+            {
+                // Полоса ложится на заливку, а рамка — поверх полосы.
+                foreach (var i in snapshot.Grid.Within(world))
+                {
+                    var card = rects[i];
+                    if (fill != null)
+                        context.FillRectangle(fill, card);
+
+                    if (snapshot.Accents[i] is var accent and >= 0 && accentHeight > 0)
+                        context.FillRectangle(snapshot.Palette[accent], card.WithHeight(BandHeight(card, accentHeight, zoom)));
+
+                    if (pen != null && IsOutlined(card, zoom))
+                        context.DrawRectangle(pen, card);
+                }
+
+                // Рамка выбора — поверх всех карточек, чтобы соседняя её не закрыла.
+                if (selectedStroke != null && snapshot.SelectedCount > 0)
+                {
+                    var selectedPen = new ImmutablePen(selectedStroke, selectedThickness * pixel);
+                    foreach (var i in snapshot.Grid.Within(world))
+                    {
+                        if (snapshot.Selected[i])
+                            context.DrawRectangle(selectedPen, rects[i]);
+                    }
+                }
+            }
+        }
     }
 }

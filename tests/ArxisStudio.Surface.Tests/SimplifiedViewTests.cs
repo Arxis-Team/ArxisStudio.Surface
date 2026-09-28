@@ -521,6 +521,62 @@ public class SimplifiedViewTests
         Assert.Equal(rebuilds, stand.Layer.Rebuilds);
     }
 
+    /// <summary>
+    /// Сколько карточек пересекает видимую часть мира — прямым проходом, мимо сетки слоя.
+    /// </summary>
+    private static int VisibleByHand(Stand stand)
+    {
+        var world = new Rect(stand.View.ViewportLocation, stand.View.Bounds.Size / stand.View.ViewportZoom);
+        return stand.Items.Cast<Card>().Count(card => new Rect(card.Location, ItemSize).Intersects(world));
+    }
+
+    [AvaloniaFact]
+    public void A_Frame_Draws_Only_The_Visible_Cards()
+    {
+        // Карточек в снимке — все свёрнутые, а кадр берёт из сетки только видимые (ADR 0011): на
+        // 0,4 в окне часть сетки 20 × 20, за краем — ничего, на «всё» — все.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        Assert.Equal(stand.Items.Count, stand.Layer.Cards);
+        Assert.InRange(VisibleByHand(stand), 1, stand.Items.Count - 100);
+        Assert.Equal(VisibleByHand(stand), stand.Layer.CountVisible().Visible);
+
+        stand.Pan(new Point(1234, 567));
+        stand.Render();
+        Assert.Equal(VisibleByHand(stand), stand.Layer.CountVisible().Visible);
+
+        stand.Pan(new Point(-5000, -5000));
+        stand.Render();
+        Assert.Equal(0, stand.Layer.CountVisible().Visible);
+
+        stand.Pan(new Point(0, 0));
+        stand.Zoom(0.1);
+        stand.Render();
+        Assert.Equal(stand.Items.Count, stand.Layer.CountVisible().Visible);
+    }
+
+    [AvaloniaFact]
+    public void A_Card_Smaller_Than_Four_Pixels_Has_No_Outline_And_Its_Band_Stays_A_Pixel()
+    {
+        // Карточка 100 × 60: на 0,1 меньшая сторона — 6 пикселей, на 0,05 — 3. Полоса 16 мира на
+        // 0,05 — меньше пикселя, и рисуется в пиксель, то есть в 20 мира.
+        var stand = Create();
+        stand.Zoom(0.1);
+        stand.Render();
+        Assert.Equal((stand.Items.Count, stand.Items.Count), stand.Layer.CountVisible());
+
+        stand.Zoom(0.05);
+        stand.Render();
+        Assert.Equal((stand.Items.Count, 0), stand.Layer.CountVisible());
+
+        var card = new Rect(ItemSize);
+        Assert.Equal(16, SurfaceSimplifiedLayer.BandHeight(card, 16, 0.4), 6);
+        Assert.Equal(20, SurfaceSimplifiedLayer.BandHeight(card, 16, 0.05), 6);
+        Assert.Equal(20, SurfaceSimplifiedLayer.BandHeight(card, 40, 0.4), 6);
+        Assert.Equal(60, SurfaceSimplifiedLayer.BandHeight(card, 16, 0.01), 6);
+    }
+
     [AvaloniaFact]
     public void The_Card_Stroke_Stays_One_Screen_Pixel()
     {
