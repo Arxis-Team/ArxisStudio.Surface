@@ -205,6 +205,40 @@ public class VirtualGraphCostProbeTests
     }
 
     [AvaloniaFact]
+    public void Zooming_Out_Realizes_What_It_Shows()
+    {
+        // Характеризует этап 3: окно на 30 % видит на порядок больше узлов, чем на 100 %, и все они
+        // развёрнуты (ADR 0008).
+        var graph = Create(Small);
+        var atFull = graph.Panel.RealizedCount;
+        _output.WriteLine($"{Small} узлов на 100 %: развёрнуто {atFull}");
+
+        var counts = new Dictionary<double, int>();
+        foreach (var zoom in new[] { 0.5, 0.3 })
+        {
+            var (realized, milliseconds, megabytes) = ZoomTo(graph, zoom);
+            counts[zoom] = realized;
+            _output.WriteLine($"{Small} узлов на {zoom:P0}: развёрнуто {realized} за {milliseconds:F0} мс, "
+                + $"память {megabytes:F1} МБ");
+        }
+
+        Assert.True(counts[0.3] >= 8 * atFull, $"на 30 % развёрнуто {counts[0.3]}, на 100 % — {atFull}");
+    }
+
+    /// <summary>
+    /// Ставит масштаб у начала координат и отвечает, сколько развёрнуто после прохода раскладки, за
+    /// сколько он прошёл и сколько управляемой памяти осталось после полной сборки.
+    /// </summary>
+    private static (int Realized, double Milliseconds, double Megabytes) ZoomTo(Graph graph, double zoom)
+    {
+        var watch = Stopwatch.StartNew();
+        graph.Editor.ViewportZoom = zoom;
+        graph.RunLayout();
+        watch.Stop();
+        return (graph.Panel.RealizedCount, watch.Elapsed.TotalMilliseconds, GC.GetTotalMemory(forceFullCollection: true) / 1048576.0);
+    }
+
+    [AvaloniaFact]
     public void The_Minimap_Redraw_Does_Not_Grow_With_The_Graph()
     {
         // Перерисовка рисует собранное — её цена от графа не зависит. Пересборка печатается у
