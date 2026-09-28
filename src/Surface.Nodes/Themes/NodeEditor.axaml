@@ -41,6 +41,11 @@
                         <Canvas Name="PART_ItemsLayer"
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
+                            <!-- Упрощённый узел — под узлами, цветами карточки узла (ADR 0008). -->
+                            <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
+                                                            IsHitTestVisible="False"
+                                                            Fill="{DynamicResource NodeEditor.Node.Background}"
+                                                            Stroke="{DynamicResource NodeEditor.Node.BorderBrush}" />
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>

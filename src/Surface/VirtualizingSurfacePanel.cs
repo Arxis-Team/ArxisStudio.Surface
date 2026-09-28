@@ -36,7 +36,7 @@ namespace ArxisStudio.Surface;
 /// <c>ZIndex</c> — при этом не сохраняется.
 /// </para>
 /// </remarks>
-public class VirtualizingSurfacePanel : VirtualizingPanel
+public partial class VirtualizingSurfacePanel : VirtualizingPanel
 {
     /// <summary>
     /// Идентификатор свойства области, занятой элементами.
@@ -402,6 +402,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     {
         base.OnItemsChanged(items, e);
         _indexByItem = null;
+        OnCollapsedChanged();
 
         if (_slotsStale)
         {
@@ -512,6 +513,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         {
             // Размер тех, кто ни разу не показывался, — а с ним их прямоугольники у всех, кто их читает.
             _extentStale = true;
+            OnCollapsedChanged();
             _view?.OnItemGeometryChanged(null);
             InvalidateMeasure();
         }
@@ -623,6 +625,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         }
 
         reader?.Release();
+        OnCollapsedChanged();
 
         // Прочитано всё заново: каждый, кто держит на геометрии своё, перечитывает его.
         _view?.OnItemGeometryChanged(null);
@@ -788,6 +791,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
     {
         _realized[index] = container;
         _indexOf[container] = index;
+        OnCollapsedChanged();
     }
 
     private void Unregister(int index, Control container)
@@ -795,6 +799,7 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         _realized.Remove(index);
         _indexOf.Remove(container);
         _moved.Remove(container);
+        OnCollapsedChanged();
     }
 
     /// <summary>
@@ -854,7 +859,14 @@ public class VirtualizingSurfacePanel : VirtualizingPanel
         var before = BoundsOf(_slots[index]);
         _slots[index] = next;
         var after = BoundsOf(next);
-        if (_extentStale || before == after)
+        if (before == after)
+            return;
+
+        // Развёрнутый рисует себя сам; карточки меняются только от свёрнутого.
+        if (!_realized.ContainsKey(index))
+            OnCollapsedChanged();
+
+        if (_extentStale)
             return;
 
         if (!HasArea(_extent) || (HasArea(before) && TouchesEdge(before, _extent)))

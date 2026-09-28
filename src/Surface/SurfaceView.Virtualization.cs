@@ -58,6 +58,17 @@ public partial class SurfaceView
     }
 
     /// <summary>
+    /// Возникает, когда сменилось свёрнутое — геометрия элемента без контейнера, коллекция или состав
+    /// развёрнутых: слою упрощённого вида пора собрать карточки заново (ADR 0008).
+    /// </summary>
+    internal event EventHandler? SimplifiedContentChanged;
+
+    /// <summary>
+    /// Сообщает, что свёрнутое сменилось.
+    /// </summary>
+    internal void OnSimplifiedContentChanged() => SimplifiedContentChanged?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
     /// Держит развёрнутым всё, что развёрнуто, пока удержание не освобождено.
     /// </summary>
     /// <remarks>

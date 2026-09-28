@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Ресурсы ядра: фон поверхности, рамка выделения и сетка.
+        Ресурсы ядра: фон поверхности, рамка выделения, сетка и карточки упрощённого вида.
         Здесь лежат lightweight styling resources, которые можно переопределять
         без копирования ControlTheme конкретных контролов. Ключи сохранили прежние
         имена (UiDesignerView.*): их переопределяют приложения, и имя ключа — часть
@@ -20,6 +20,9 @@
 
             <SolidColorBrush x:Key="SurfaceItem.SelectionBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="SurfaceItem.HoverBrush" Color="#660F6CBD" />
+
+            <SolidColorBrush x:Key="Surface.Simplified.ItemFill" Color="#E4E8EE" />
+            <SolidColorBrush x:Key="Surface.Simplified.ItemStroke" Color="#B8C1CD" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -33,6 +36,9 @@
 
             <SolidColorBrush x:Key="SurfaceItem.SelectionBrush" Color="#1E90FF" />
             <SolidColorBrush x:Key="SurfaceItem.HoverBrush" Color="#661E90FF" />
+
+            <SolidColorBrush x:Key="Surface.Simplified.ItemFill" Color="#2D3139" />
+            <SolidColorBrush x:Key="Surface.Simplified.ItemStroke" Color="#4A5260" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

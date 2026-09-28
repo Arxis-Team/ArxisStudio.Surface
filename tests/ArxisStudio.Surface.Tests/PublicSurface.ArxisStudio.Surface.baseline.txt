@@ -305,6 +305,15 @@ sealed class ArxisStudio.Surface.SurfaceSelectionTarget
     property String GroupId { get; }
     property SurfaceItem Container { get; }
     property SurfaceSelectionScope Scope { get; }
+sealed class ArxisStudio.Surface.SurfaceSimplifiedLayer : Control
+    avalonia FillProperty -> Fill : IBrush (styled) = null
+    avalonia StrokeProperty -> Stroke : IBrush (styled) = null
+    ctor .ctor()
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void Render(DrawingContext)
+    property IBrush Fill { get; set; }
+    property IBrush Stroke { get; set; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia AdditiveSelectionModifiersProperty -> AdditiveSelectionModifiers : KeyModifiers (direct)
     avalonia ContainerInteractionModifiersProperty -> ContainerInteractionModifiers : KeyModifiers (direct)

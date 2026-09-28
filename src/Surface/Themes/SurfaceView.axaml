@@ -29,6 +29,11 @@
                         <Canvas Name="PART_ItemsLayer"
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
+                            <!-- Карточки упрощённого вида — под элементами (ADR 0008). -->
+                            <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
+                                                            IsHitTestVisible="False"
+                                                            Fill="{DynamicResource Surface.Simplified.ItemFill}"
+                                                            Stroke="{DynamicResource Surface.Simplified.ItemStroke}" />
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>

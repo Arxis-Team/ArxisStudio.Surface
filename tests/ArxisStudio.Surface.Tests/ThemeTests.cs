@@ -56,6 +56,8 @@ public class ThemeTests
         "Surface.Grid.LineBrush",
         "Surface.Grid.MajorLineBrush",
         "Surface.Selection.StrokeThickness",
+        "Surface.Simplified.ItemFill",
+        "Surface.Simplified.ItemStroke",
         "Surface.SelectionAdorner.HandleSize",
         "UiDesignerItem.BorderThickness",
         "UiDesignerItem.CornerRadius",

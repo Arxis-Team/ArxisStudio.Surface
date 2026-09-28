@@ -52,7 +52,11 @@ public class SimplifiedViewTests
     {
         public VirtualizingSurfacePanel Panel => View.GetVisualDescendants().OfType<VirtualizingSurfacePanel>().Single();
 
+        public SurfaceSimplifiedLayer Layer => View.GetVisualDescendants().OfType<SurfaceSimplifiedLayer>().Single();
+
         public SurfaceItem? Container(int index) => View.ContainerFromIndex(index) as SurfaceItem;
+
+        public void Render() => Window.CaptureRenderedFrame();
 
         public int Realized => Enumerable.Range(0, Items.Count).Count(i => Container(i) != null);
 
@@ -177,5 +181,101 @@ public class SimplifiedViewTests
 
         Assert.Equal(measured, stand.Panel.MeasuredChildren);
         Assert.Equal(1, stand.Realized);
+    }
+
+    [AvaloniaFact]
+    public void The_Layer_Draws_A_Card_For_Every_Collapsed_Item()
+    {
+        // Развёрнутый рисует себя сам: карточек ровно столько, сколько свёрнутых, а охватывают они
+        // всю сетку — выбранный лежит внутри неё.
+        var stand = Create();
+        stand.View.Selection.Select(1);
+        stand.Zoom(0.4);
+        stand.Render();
+
+        Assert.Equal(stand.Items.Count - 1, stand.Layer.Cards);
+        Assert.Equal(new Rect(0, 0, (19 * 150) + 100, (19 * 100) + 60), stand.Layer.CardsBounds);
+        Assert.Equal(1, stand.Layer.Draws);
+    }
+
+    [AvaloniaFact]
+    public void Only_A_Collapsed_Change_Rebuilds_The_Cards()
+    {
+        // Сдвиг развёрнутого карточек не касается; сдвиг модели свёрнутого — пересобирает их, и
+        // карточка встаёт на новое место.
+        var stand = Create();
+        stand.View.Selection.Select(1);
+        stand.Zoom(0.4);
+        stand.Render();
+        var rebuilds = stand.Layer.Rebuilds;
+
+        stand.Container(1)!.SetCurrentValue(SurfaceItem.LocationProperty, new Point(4000, 4000));
+        stand.Pan(new Point(100, 100));
+        stand.Render();
+        Assert.Equal(rebuilds, stand.Layer.Rebuilds);
+
+        ((Card)stand.Items[^1]).Location = new Point(5000, 5000);
+        stand.RunLayout();
+        stand.Render();
+        Assert.Equal(rebuilds + 1, stand.Layer.Rebuilds);
+        Assert.Equal(new Point(5100, 5060), stand.Layer.CardsBounds.BottomRight);
+    }
+
+    [AvaloniaFact]
+    public void A_Card_Goes_When_Its_Item_Is_Realized_And_Comes_With_The_Collection()
+    {
+        // Выбранный хостом свёрнутый элемент разворачивается, и его карточка уходит — иначе она
+        // осталась бы под контейнером и выдала бы его, когда тот сдвинется. Коллекция приносит и
+        // уносит карточки.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        Assert.Equal(stand.Items.Count, stand.Layer.Cards);
+
+        stand.View.Selection.Select(5);
+        stand.RunLayout();
+        stand.Render();
+        Assert.Equal(stand.Items.Count - 1, stand.Layer.Cards);
+
+        stand.Items.Add(new Card(new Point(6000, 6000)));
+        stand.RunLayout();
+        stand.Render();
+        Assert.Equal(stand.Items.Count - 1, stand.Layer.Cards);
+        Assert.Equal(new Point(6100, 6060), stand.Layer.CardsBounds.BottomRight);
+
+        stand.Items.RemoveAt(stand.Items.Count - 1);
+        stand.RunLayout();
+        stand.Render();
+        Assert.Equal(stand.Items.Count - 1, stand.Layer.Cards);
+    }
+
+    [AvaloniaFact]
+    public void Leaving_The_Simplified_View_Stops_Drawing()
+    {
+        // Над порогом слой отрисовывается заново — пустым: нарисованные карточки иначе остались бы
+        // под развёрнутыми узлами.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        var (renders, draws) = (stand.Layer.Renders, stand.Layer.Draws);
+
+        stand.Zoom(1);
+        stand.Render();
+
+        Assert.True(stand.Layer.Renders > renders, "слой не отрисован заново");
+        Assert.Equal(draws, stand.Layer.Draws);
+    }
+
+    [AvaloniaFact]
+    public void The_Card_Stroke_Stays_One_Screen_Pixel()
+    {
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        Assert.Equal(2.5, stand.Layer.StrokeThickness, 6);
+
+        stand.Zoom(0.25);
+        stand.Render();
+        Assert.Equal(4, stand.Layer.StrokeThickness, 6);
     }
 }
