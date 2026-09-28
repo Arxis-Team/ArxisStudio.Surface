@@ -164,10 +164,10 @@ public class SurfaceMinimapTests
         // Видимая область внутри занятого: соответствие карты стоит, и содержимое, кэшированное в
         // картинку, не записывается заново (ADR 0011) — едет одна рамка.
         var stand = Create();
+        stand.Clock.PassInterval();
         stand.Item(1).Location = new Point(0, 0);
         stand.Item(1).Width = 3000;
         stand.Item(1).Height = 3000;
-        stand.Clock.PassInterval();
         stand.Render();
         var content = stand.Map.ContentRenders;
         var frame = stand.Map.ViewportFrame;

@@ -118,10 +118,26 @@ public class Node : SurfaceItem
     /// </remarks>
     protected override Size ArrangeOverride(Size finalSize)
     {
-        var size = base.ArrangeOverride(finalSize);
+        Size size;
+        IsArranging = true;
+        try
+        {
+            size = base.ArrangeOverride(finalSize);
+        }
+        finally
+        {
+            IsArranging = false;
+        }
+
         this.FindAncestorOfType<NodeEditor>()?.OnNodeArranged(this);
         return size;
     }
+
+    /// <summary>
+    /// Идёт ли раскладка поддерева узла: границы порта в это время ранние, и сверку сделает конец
+    /// раскладки (ADR 0011).
+    /// </summary>
+    internal bool IsArranging { get; private set; }
 
     /// <summary>
     /// Отмечает узел перевалкой — его ставит и снимает сам <see cref="Reroute"/>.

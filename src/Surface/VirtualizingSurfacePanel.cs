@@ -31,6 +31,14 @@ namespace ArxisStudio.Surface;
 /// на границе разворачивался бы и сворачивался на каждом кадре панорамы.
 /// </para>
 /// <para>
+/// Панорама стоит видимого (ADR 0011). Окно панель пересматривает, только когда видимая область
+/// ушла на четверть запаса от места, где его пересматривали: до того видимое и так внутри окна, и кадру
+/// панорамы мерить нечего. Вошедших в окно она ищет по ячейкам мира, а не проходом по коллекции, и за
+/// меру разворачивает из запаса не больше <see cref="RealizationBudget"/> элементов — видимые всегда
+/// сразу, остаток на следующем кадре: ряд узлов, вошедший в запас, иначе разворачивался бы в одном
+/// кадре.
+/// </para>
+/// <para>
 /// Не сворачиваются главный выбранный, выбранный не целиком и контейнер с фокусом клавиатуры, а
 /// элемент, который сам контейнер, не сворачивается никогда; прочий выбранный сворачивается и остаётся
 /// выбранным — выбор — данные (ADR 0010). Свёрнутый контейнер уходит в пул по ключу и готовится для
@@ -51,6 +59,12 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     /// </summary>
     public static readonly StyledProperty<double> RealizationMarginProperty =
         AvaloniaProperty.Register<VirtualizingSurfacePanel, double>(nameof(RealizationMargin), 200);
+
+    /// <summary>
+    /// Идентификатор свойства бюджета разворачивания.
+    /// </summary>
+    public static readonly StyledProperty<int> RealizationBudgetProperty =
+        AvaloniaProperty.Register<VirtualizingSurfacePanel, int>(nameof(RealizationBudget), 8);
 
     private static readonly AttachedProperty<object?> RecycleKeyProperty =
         AvaloniaProperty.RegisterAttached<VirtualizingSurfacePanel, Control, object?>("RecycleKey");
@@ -91,6 +105,23 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     private bool _slotsStale = true;
     private bool _arrangeAll = true;
     private bool _isInLayout;
+
+    // Ячейки мира: индексы элементов по ячейкам, которые задевает их прямоугольник, — вход в окно ищется
+    // по ячейкам окна. Строятся заново после правки коллекции, а сдвиг элемента переносит его сам.
+    private readonly Dictionary<(int X, int Y), List<int>> _cells = new();
+    private readonly List<int> _visibleEntrants = new();
+    private readonly List<int> _marginEntrants = new();
+    private double _cellSize = 1;
+    private bool _cellsStale = true;
+
+    // Проход по всей коллекции нужен после правки её состава: элемент, который сам себе контейнер,
+    // разворачивается всегда, а окно его не ищет.
+    private bool _fullPass = true;
+
+    // Где окно пересматривали в последний раз: видимая область, масштаб и размер поверхности.
+    private Rect _windowVisible;
+    private bool _hasWindow;
+    private bool _morePending;
 
     static VirtualizingSurfacePanel()
     {
@@ -138,9 +169,39 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     }
 
     /// <summary>
+    /// Получает или задает, сколько элементов из запаса за видимой областью разворачивается за одну
+    /// меру; ноль и меньше — без предела.
+    /// </summary>
+    /// <remarks>
+    /// Видимые разворачиваются всегда сразу, остаток запаса — на следующих кадрах. Чем бюджет меньше,
+    /// тем ровнее кадры панорамы и тем дольше запас догоняет быструю протяжку.
+    /// </remarks>
+    public int RealizationBudget
+    {
+        get => GetValue(RealizationBudgetProperty);
+        set => SetValue(RealizationBudgetProperty, value);
+    }
+
+    /// <summary>
     /// Сколько раз панель меряла детей — для стенда стоимости.
     /// </summary>
     internal int MeasuredChildren { get; private set; }
+
+    /// <summary>
+    /// Сколько раз панель пересматривала окно — для тестов и стенда.
+    /// </summary>
+    internal int WindowPasses { get; private set; }
+
+    /// <summary>
+    /// Сколько элементов панель проверила, ища вошедших в окно, — для тестов и стенда: не растёт с
+    /// коллекцией.
+    /// </summary>
+    internal int WindowChecks { get; private set; }
+
+    /// <summary>
+    /// Ждёт ли остаток запаса следующего кадра.
+    /// </summary>
+    internal bool IsRealizationDeferred => _morePending;
 
     /// <summary>
     /// Сколько раз панель расставляла детей — для стенда стоимости.
@@ -402,7 +463,10 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
             // Ниже порога упрощённого вида окна нет вовсе (ADR 0008): развёрнуто только закреплённое.
             var simplified = view.IsSimplified;
-            var (realize, keep) = Windows(view);
+            var (visible, realize, keep) = Windows(view);
+            WindowPasses++;
+            _windowVisible = visible;
+            _hasWindow = true;
 
             // Уходят вышедшие из окна с запасом, кроме закреплённых; под удержанием жеста — никто.
             _scratch.Clear();
@@ -418,16 +482,21 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             foreach (var pair in _scratch)
                 Recycle(pair.Key, pair.Value);
 
-            // Приходят вошедшие в окно и те, кто сам себе контейнер; выбранное — данные, и за окном
-            // контейнер ему не нужен (ADR 0010).
-            for (var i = 0; i < items.Count; i++)
+            // Сам себе контейнер разворачивается всегда, и искать его приходится проходом — только
+            // после правки состава: развёрнутый так не сворачивается.
+            if (_fullPass)
             {
-                if (!_realized.ContainsKey(i)
-                    && ((!simplified && realize.Intersects(BoundsOf(_slots[i]))) || items[i] is SurfaceItem))
+                _fullPass = false;
+                for (var i = 0; i < items.Count; i++)
                 {
-                    Realize(i, items[i]);
+                    if (items[i] is SurfaceItem && !_realized.ContainsKey(i))
+                        Realize(i, items[i]);
                 }
             }
+
+            // Приходят вошедшие в окно; выбранное — данные, и за окном контейнер ему не нужен (ADR 0010).
+            if (!simplified)
+                RealizeEntrants(view, items, visible, realize);
         }
         else
         {
@@ -522,6 +591,9 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         _indexByItem = null;
         _reader = null;
         _writer = null;
+        _cellsStale = true;
+        _fullPass = true;
+        _hasWindow = false;
 
         _view = ItemsControl as SurfaceView;
         if (ItemsControl != null)
@@ -536,6 +608,8 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         base.OnItemsChanged(items, e);
         UpdateIndexByItem(items, e);
         OnCollapsedChanged();
+        _cellsStale = true;
+        _fullPass = true;
 
         if (_slotsStale)
         {
@@ -698,6 +772,8 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             _reader = null;
             _writer = null;
             _slotsStale = true;
+            _cellsStale = true;
+            _fullPass = true;
             InvalidateMeasure();
         }
         else if (e.Property == SurfaceView.ItemAccentBindingProperty)
@@ -709,6 +785,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         {
             // Размер тех, кто ни разу не показывался, — а с ним их прямоугольники у всех, кто их читает.
             _extentStale = true;
+            _cellsStale = true;
             OnCollapsedChanged();
             _view?.OnItemGeometryChanged(null);
             InvalidateMeasure();
@@ -719,15 +796,162 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             InvalidateMeasure();
         }
         else if (IsVirtualizing
-                 && _view is { IsSimplified: false }
+                 && _view is { IsSimplified: false } view
                  && (e.Property == SurfaceView.ViewportLocationProperty
                      || e.Property == SurfaceView.ViewportZoomProperty
-                     || e.Property == BoundsProperty))
+                     || e.Property == BoundsProperty)
+                 && WindowMoved(view))
         {
             // В упрощённом виде окна нет, и панораме с масштабом разворачивать нечего.
             InvalidateMeasure();
         }
     }
+
+    /// <summary>
+    /// Ушла ли видимая область от места, где окно пересматривали, достаточно, чтобы пересмотреть его
+    /// снова: на четверть запаса по любой оси, или сменились масштаб или размер.
+    /// </summary>
+    /// <remarks>
+    /// До этого видимое и так внутри окна разворачивания — запас его накрывает с остатком в три
+    /// четверти, — и кадр панорамы проходит без меры.
+    /// </remarks>
+    private bool WindowMoved(SurfaceView view)
+    {
+        if (!_hasWindow)
+            return true;
+
+        var (visible, _, _) = Windows(view);
+        if (visible.Size != _windowVisible.Size)
+            return true;
+
+        var step = Math.Max(0, RealizationMargin) / Math.Max(view.ViewportZoom, 0.0001) / 4;
+        return Math.Abs(visible.X - _windowVisible.X) > step || Math.Abs(visible.Y - _windowVisible.Y) > step;
+    }
+
+    /// <summary>
+    /// Разворачивает вошедших в окно: видимых — всех, из запаса — не больше
+    /// <see cref="RealizationBudget"/>, а остаток назначает на следующий кадр.
+    /// </summary>
+    private void RealizeEntrants(SurfaceView view, IReadOnlyList<object?> items, Rect visible, Rect realize)
+    {
+        EnsureCells();
+        _visibleEntrants.Clear();
+        _marginEntrants.Clear();
+
+        // Сперва собрать, потом разворачивать: разворачивание сверяет ячейку с контейнером, и сдвиг
+        // переложил бы индекс в другую ячейку посреди обхода.
+        var (c0, r0, c1, r1) = CellsOf(realize);
+        for (var y = r0; y <= r1; y++)
+        {
+            for (var x = c0; x <= c1; x++)
+            {
+                if (!_cells.TryGetValue((x, y), out var cell))
+                    continue;
+
+                foreach (var i in cell)
+                {
+                    WindowChecks++;
+                    if (_realized.ContainsKey(i))
+                        continue;
+
+                    var bounds = BoundsOf(_slots[i]);
+                    if (!realize.Intersects(bounds))
+                        continue;
+
+                    // Элемент в нескольких ячейках попадётся не раз — берётся в первой.
+                    var (ic0, ir0, _, _) = CellsOf(bounds);
+                    if (x != Math.Max(ic0, c0) || y != Math.Max(ir0, r0))
+                        continue;
+
+                    (visible.Intersects(bounds) ? _visibleEntrants : _marginEntrants).Add(i);
+                }
+            }
+        }
+
+        foreach (var i in _visibleEntrants)
+            Realize(i, items[i]);
+
+        var budget = RealizationBudget;
+        var take = budget > 0 ? Math.Min(budget, _marginEntrants.Count) : _marginEntrants.Count;
+        for (var k = 0; k < take; k++)
+            Realize(_marginEntrants[k], items[_marginEntrants[k]]);
+
+        if (take < _marginEntrants.Count)
+            RealizeMoreNextFrame();
+    }
+
+    /// <summary>
+    /// Назначает следующую меру на ближайший кадр — дойти до остатка запаса.
+    /// </summary>
+    /// <remarks>
+    /// Кадром, а не просьбой о мере прямо сейчас: раскладка повторяет проход, пока есть что мерить, и
+    /// весь запас развернулся бы в том же кадре.
+    /// </remarks>
+    private void RealizeMoreNextFrame()
+    {
+        if (_morePending || TopLevel.GetTopLevel(this) is not { } top)
+            return;
+
+        _morePending = true;
+        top.RequestAnimationFrame(_ =>
+        {
+            _morePending = false;
+            InvalidateMeasure();
+        });
+    }
+
+    /// <summary>
+    /// Раскладывает элементы по ячейкам мира, если состав менялся с прошлой раскладки.
+    /// </summary>
+    private void EnsureCells()
+    {
+        if (!_cellsStale)
+            return;
+
+        _cellsStale = false;
+        _cells.Clear();
+
+        // Ячейка — несколько предполагаемых элементов: мельче — больше ячеек на окно, крупнее — больше
+        // чужих элементов в каждой.
+        var estimated = _view?.EstimatedItemSize ?? default;
+        _cellSize = Math.Max(256, 4 * Math.Max(estimated.Width, estimated.Height));
+        for (var i = 0; i < _slots.Count; i++)
+            AddToCells(i, BoundsOf(_slots[i]));
+    }
+
+    private void AddToCells(int index, Rect bounds)
+    {
+        var (c0, r0, c1, r1) = CellsOf(bounds);
+        for (var y = r0; y <= r1; y++)
+        {
+            for (var x = c0; x <= c1; x++)
+            {
+                if (!_cells.TryGetValue((x, y), out var cell))
+                    _cells[(x, y)] = cell = new List<int>();
+
+                cell.Add(index);
+            }
+        }
+    }
+
+    private void RemoveFromCells(int index, Rect bounds)
+    {
+        var (c0, r0, c1, r1) = CellsOf(bounds);
+        for (var y = r0; y <= r1; y++)
+        {
+            for (var x = c0; x <= c1; x++)
+            {
+                if (_cells.TryGetValue((x, y), out var cell))
+                    cell.Remove(index);
+            }
+        }
+    }
+
+    private (int C0, int R0, int C1, int R1) CellsOf(Rect bounds) =>
+        (Cell(bounds.Left), Cell(bounds.Top), Cell(bounds.Right), Cell(bounds.Bottom));
+
+    // Прямоугольник на огромных координатах уложил бы в одну крайнюю ячейку, а не переполнил число.
+    private int Cell(double value) => (int)Math.Clamp(Math.Floor(value / _cellSize), -1_000_000, 1_000_000);
 
     private void OnModelChanged(object? model)
     {
@@ -818,6 +1042,8 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     {
         _slotsStale = false;
         _extentStale = true;
+        _cellsStale = true;
+        _fullPass = true;
         _changed.Clear();
         UntrackAll();
         _slots.Clear();
@@ -1050,12 +1276,12 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         || container.GetValue(RecycleKeyProperty) == s_itemIsItsOwnContainer
         || (view.PressedItem is { } pressed && ReferenceEquals(Items[index], pressed));
 
-    private (Rect Realize, Rect Keep) Windows(SurfaceView view)
+    private (Rect Visible, Rect Realize, Rect Keep) Windows(SurfaceView view)
     {
         var zoom = Math.Max(view.ViewportZoom, 0.0001);
         var visible = new Rect(view.ViewportLocation, view.Bounds.Size / zoom);
         var margin = Math.Max(0, RealizationMargin) / zoom;
-        return (visible.Inflate(margin), visible.Inflate(margin * 2));
+        return (visible, visible.Inflate(margin), visible.Inflate(margin * 2));
     }
 
     private void ArrangeChild(Control child)
@@ -1092,6 +1318,18 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
         var before = BoundsOf(previous);
         var after = BoundsOf(next);
+        if (before != after)
+        {
+            // Содержимое холста — ячейки: о сдвиге развёрнутого, свёрнутого или первой мере сообщает
+            // панель, а не границы контейнера (ADR 0011).
+            _view?.OnContentChanged();
+            if (!_cellsStale)
+            {
+                RemoveFromCells(index, before);
+                AddToCells(index, after);
+            }
+        }
+
         if (_extentStale || before == after)
             return;
 

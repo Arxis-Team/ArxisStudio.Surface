@@ -74,6 +74,12 @@ internal sealed class LinkRecord
     public Rect WorldBounds { get; set; }
 
     /// <summary>
+    /// Прямоугольник, по которому запись лежит в ячейках окна связей; <see langword="null"/> — не лежит
+    /// (ADR 0011).
+    /// </summary>
+    public Rect? IndexedBounds { get; set; }
+
+    /// <summary>
     /// Цвет провода из модели (<see cref="NodeEditor.LinkStrokeBinding"/>); без него — цвет темы.
     /// </summary>
     public Avalonia.Media.IBrush? Stroke { get; set; }

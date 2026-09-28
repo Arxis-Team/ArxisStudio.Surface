@@ -103,6 +103,7 @@ public class VirtualizationTests
 
         var stand = new Stand(window, view, items);
         stand.RunLayout();
+        Settle(stand);
         return stand;
     }
 
@@ -116,10 +117,26 @@ public class VirtualizationTests
     }
 
     /// <summary>
-    /// Развёрнуто ровно то, что пересекает видимую область с запасом, и закреплённое.
+    /// Даёт панели дойти до остатка запаса: он разворачивается порциями, по кадру на порцию (ADR 0011).
+    /// </summary>
+    private static void Settle(Stand stand)
+    {
+        for (var i = 0; i < 200 && stand.Panel.IsRealizationDeferred; i++)
+        {
+            stand.Window.CaptureRenderedFrame();
+            stand.RunLayout();
+        }
+
+        Assert.False(stand.Panel.IsRealizationDeferred, "запас не развернулся и за 200 кадров");
+    }
+
+    /// <summary>
+    /// Развёрнуто ровно то, что пересекает видимую область с запасом, и закреплённое, — когда запас
+    /// развернулся весь.
     /// </summary>
     private static void AssertRealizedExactlyWhatIsSeen(Stand stand, params int[] pinned)
     {
+        Settle(stand);
         var window = stand.Visible.Inflate(stand.Panel.RealizationMargin / stand.View.ViewportZoom);
         for (var i = 0; i < stand.Items.Count; i++)
         {
@@ -187,6 +204,111 @@ public class VirtualizationTests
         Assert.Null(stand.Container(0));
         Assert.True(containers.Count <= Math.Max(before, stand.Panel.RealizedCount),
             $"подготовлено {containers.Count} контейнеров на окна по {before} и {stand.Panel.RealizedCount}");
+    }
+
+    [AvaloniaFact]
+    public void The_Visible_Comes_At_Once_And_The_Margin_In_Portions()
+    {
+        // Прыжок в новое место (ADR 0011): всё видимое развёрнуто в той же мере, из запаса — не больше
+        // бюджета, остальное — следующими кадрами.
+        var stand = Create(columns: 60, rows: 60);
+        stand.Pan(new Point(3000, 2000));
+
+        var visible = Enumerable.Range(0, stand.Items.Count)
+            .Where(i => new Rect(stand.Model(i).Location, ItemSize).Intersects(stand.Visible)).ToList();
+        Assert.All(visible, i => Assert.NotNull(stand.Container(i)));
+        Assert.InRange(stand.Panel.RealizedCount - visible.Count, 1, stand.Panel.RealizationBudget);
+        Assert.True(stand.Panel.IsRealizationDeferred, "остаток запаса обязан ждать кадра");
+
+        AssertRealizedExactlyWhatIsSeen(stand);
+    }
+
+    [AvaloniaFact]
+    public void Realizing_And_Recycling_On_A_Pan_Is_No_Content_Change()
+    {
+        // Содержимое холста — ячейки панели, а не контейнеры: панорама разворачивает и сворачивает, а
+        // миникарта и прочие слушатели не пересобираются (ADR 0011). Сдвиг модели — перемена.
+        var stand = Create();
+        var changes = 0;
+        stand.View.ContentChanged += (_, _) => changes++;
+
+        stand.Pan(new Point(1500, 1000));
+        Settle(stand);
+        stand.Pan(new Point(0, 0));
+        Settle(stand);
+        Assert.Equal(0, changes);
+
+        stand.Model(0).Location = new Point(40, 30);
+        stand.RunLayout();
+        Assert.True(changes > 0, "сдвиг элемента обязан сменить содержимое");
+    }
+
+    [AvaloniaFact]
+    public void A_Selected_Container_Given_Back_Selects_Nothing_It_Is_Reused_For()
+    {
+        // Выбор с контейнера в пуле снят: оставшийся, он выбрал бы элемент, которому контейнер достанется.
+        var stand = Create();
+        stand.View.Selection.Select(0);
+        stand.View.Selection.Select(1);
+        stand.RunLayout();
+
+        stand.Pan(new Point(1500, 1000));
+        Settle(stand);
+
+        Assert.Equal(new[] { 0, 1 }, stand.View.Selection.SelectedIndexes.OrderBy(i => i));
+        Assert.All(stand.View.GetRealizedContainers().Cast<SurfaceItem>(), container =>
+            Assert.Equal(stand.View.Selection.IsSelected(stand.View.IndexFromContainer(container)), container.IsSelected));
+    }
+
+    [AvaloniaFact]
+    public void Without_A_Budget_The_Margin_Comes_At_Once()
+    {
+        var stand = Create(columns: 60, rows: 60);
+        stand.Panel.RealizationBudget = 0;
+
+        stand.Pan(new Point(3000, 2000));
+
+        Assert.False(stand.Panel.IsRealizationDeferred);
+        AssertRealizedExactlyWhatIsSeen(stand);
+    }
+
+    [AvaloniaFact]
+    public void A_Pan_Within_A_Quarter_Of_The_Margin_Keeps_The_Window()
+    {
+        // Запас 200 при масштабе 1: четверть — 50. Сдвиг на 40 окна не пересматривает, и видимое всё
+        // равно развёрнуто — запас его накрывает; ещё 20 — и окно пересмотрено.
+        var stand = Create();
+        var passes = stand.Panel.WindowPasses;
+
+        stand.Pan(new Point(40, 0));
+        Assert.Equal(passes, stand.Panel.WindowPasses);
+        Assert.All(Enumerable.Range(0, stand.Items.Count)
+                .Where(i => new Rect(stand.Model(i).Location, ItemSize).Intersects(stand.Visible)),
+            i => Assert.NotNull(stand.Container(i)));
+
+        stand.Pan(new Point(60, 0));
+        Assert.Equal(passes + 1, stand.Panel.WindowPasses);
+        AssertRealizedExactlyWhatIsSeen(stand);
+    }
+
+    [AvaloniaFact]
+    public void Entering_The_Window_Checks_Cells_Not_The_Collection()
+    {
+        // Одно и то же окно у начала координат над сеткой 20 × 20 и 100 × 100: вошедших ищут по его
+        // ячейкам, и проверок столько же — за все меры, пока запас доразворачивается.
+        int ChecksOf(Stand stand)
+        {
+            var checks = stand.Panel.WindowChecks;
+            stand.Pan(new Point(400, 300));
+            Settle(stand);
+            return stand.Panel.WindowChecks - checks;
+        }
+
+        var small = ChecksOf(Create());
+        var large = ChecksOf(Create(columns: 100, rows: 100));
+
+        Assert.Equal(small, large);
+        Assert.InRange(large, 1, 100 * 100 / 4);
     }
 
     [AvaloniaFact]

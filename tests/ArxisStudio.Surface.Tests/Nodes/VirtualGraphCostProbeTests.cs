@@ -62,6 +62,18 @@ public class VirtualGraphCostProbeTests
             manager?.ExecuteInitialLayoutPass();
             manager?.ExecuteLayoutPass();
         }
+
+        /// <summary>
+        /// Даёт запасу за окном развернуться: он идёт порциями, по кадру на порцию (ADR 0011).
+        /// </summary>
+        public void Settle()
+        {
+            for (var i = 0; i < 200 && Panel.IsRealizationDeferred; i++)
+            {
+                Window.CaptureRenderedFrame();
+                RunLayout();
+            }
+        }
     }
 
     private static Graph Create(int size)
@@ -97,6 +109,10 @@ public class VirtualGraphCostProbeTests
         var graph = new Graph(window, editor, nodes, default);
         graph.RunLayout();
         watch.Stop();
+
+        // Запас за окном разворачивается порциями, по кадру на порцию (ADR 0011): стенд меряет граф, в
+        // котором он уже развернулся.
+        graph.Settle();
         return graph with { Load = watch.Elapsed };
     }
 
@@ -218,35 +234,78 @@ public class VirtualGraphCostProbeTests
     }
 
     [AvaloniaFact]
-    public void A_Pan_Frame_Measures_What_Is_Realized_Not_The_Graph()
+    public void A_Pan_Frame_Within_A_Step_Measures_Nothing_And_A_Step_Costs_The_Same_On_Any_Graph()
     {
-        // Панорама перемеряет панели — но только развёрнутые контейнеры, и их столько же на любом
-        // графе.
-        var measuredPerFrame = new Dictionary<int, int>();
+        // Окно пересматривается, только когда видимое ушло на четверть запаса — 50 пикселей при
+        // запасе 200 (ADR 0011): кадр панорамы на 10 не меряет ничего. Шаг на 120 пересматривает окно —
+        // и перемеряет развёрнутое, а вошедших ищет по ячейкам: ни то, ни другое не растёт с графом.
+        var perStep = new Dictionary<int, (int Measured, int Checks, int LinkChecks)>();
         foreach (var size in new[] { Small, Large })
         {
             var graph = Create(size);
             var flip = false;
-            void Frame()
+            void Frame(double by)
             {
                 flip = !flip;
-                graph.Editor.ViewportLocation = new Point(flip ? 10 : 0, 0);
+                graph.Editor.ViewportLocation = new Point(flip ? by : 0, 0);
                 graph.RunLayout();
             }
 
-            Frame();
-            const int frames = 10;
+            Frame(10);
             var measured = graph.Panel.MeasuredChildren + graph.LinkPanel.MeasuredChildren;
-            for (var i = 0; i < frames; i++)
-                Frame();
+            var passes = (graph.Panel.WindowPasses, graph.Editor.LinkWindowPasses);
+            for (var i = 0; i < 10; i++)
+                Frame(10);
 
-            measuredPerFrame[size] = (graph.Panel.MeasuredChildren + graph.LinkPanel.MeasuredChildren - measured) / frames;
-            var time = CostProbe.MicrosecondsPerCall(Frame, calls: 20) / 1000;
-            _output.WriteLine($"{size} узлов: кадр панорамы {time:F3} мс, перемерено {measuredPerFrame[size]}");
+            Assert.Equal(measured, graph.Panel.MeasuredChildren + graph.LinkPanel.MeasuredChildren);
+            Assert.Equal(passes, (graph.Panel.WindowPasses, graph.Editor.LinkWindowPasses));
+            var within = CostProbe.MicrosecondsPerCall(() => Frame(10), calls: 20) / 1000;
+
+            const int steps = 10;
+            Frame(120);
+            graph.Settle();
+            measured = graph.Panel.MeasuredChildren + graph.LinkPanel.MeasuredChildren;
+            var (checks, linkChecks) = (graph.Panel.WindowChecks, graph.Editor.LinkWindowChecks);
+            for (var i = 0; i < steps; i++)
+            {
+                Frame(120);
+                graph.Settle();
+            }
+
+            perStep[size] = (
+                (graph.Panel.MeasuredChildren + graph.LinkPanel.MeasuredChildren - measured) / steps,
+                (graph.Panel.WindowChecks - checks) / steps,
+                (graph.Editor.LinkWindowChecks - linkChecks) / steps);
+            var step = CostProbe.MicrosecondsPerCall(() => Frame(120), calls: 20) / 1000;
+            _output.WriteLine($"{size} узлов: кадр панорамы внутри шага {within:F3} мс, шаг {step:F3} мс; "
+                + $"на шаг перемерено {perStep[size].Measured}, проверено узлов {perStep[size].Checks}, "
+                + $"связей {perStep[size].LinkChecks}");
         }
 
-        Assert.Equal(measuredPerFrame[Small], measuredPerFrame[Large]);
-        Assert.InRange(measuredPerFrame[Large], 1, 200);
+        Assert.Equal(perStep[Small], perStep[Large]);
+        Assert.InRange(perStep[Large].Measured, 1, 200);
+        Assert.InRange(perStep[Large].Checks, 1, Small / 4);
+        Assert.InRange(perStep[Large].LinkChecks, 1, Small / 4);
+    }
+
+    [AvaloniaFact]
+    public void A_Pan_Over_Seen_Nodes_Changes_No_Content()
+    {
+        // Узел, показанный однажды, помнит смещения своих портов, и развёрнутый заново на панораме
+        // пересчитывает связи в те же точки: второй проход туда и обратно не меняет содержимого — и
+        // миникарта не пересобирается (ADR 0011).
+        var graph = Create(Small);
+        void There() { graph.Editor.ViewportLocation = new Point(1600, 900); graph.RunLayout(); graph.Settle(); }
+        void Back() { graph.Editor.ViewportLocation = default; graph.RunLayout(); graph.Settle(); }
+
+        There();
+        Back();
+        var changes = 0;
+        graph.Editor.ContentChanged += (_, _) => changes++;
+        There();
+        Back();
+
+        Assert.Equal(0, changes);
     }
 
     [AvaloniaFact]
@@ -316,6 +375,7 @@ public class VirtualGraphCostProbeTests
         var watch = Stopwatch.StartNew();
         graph.Editor.ViewportZoom = zoom;
         graph.RunLayout();
+        graph.Settle();
         watch.Stop();
         return (graph.Panel.RealizedCount, watch.Elapsed.TotalMilliseconds, GC.GetTotalMemory(forceFullCollection: true) / 1048576.0);
     }

@@ -33,6 +33,21 @@ public partial class NodeEditor
     // Толщина линии связи без контрола — последняя, что показал контрол: запас рамки на неё.
     private double _linkThickness = 2;
 
+    // Окно связей (ADR 0011): записи по ячейкам мира — вход в окно ищется по ячейкам окна; развёрнутые и
+    // закреплённые жестом — отдельно, чтобы кадр не проходил все записи.
+    private readonly Dictionary<(int X, int Y), List<LinkRecord>> _linkCells = new();
+    private readonly HashSet<LinkRecord> _realizedLinks = new();
+    private readonly HashSet<LinkRecord> _pinnedLinks = new();
+    private readonly List<LinkRecord> _linkScratch = new();
+    private double _linkCellSize = 1;
+    private bool _linkCellsStale = true;
+
+    // Проход по всем записям — после смены коллекции, панели или вида: готовая связь из коллекции
+    // развёрнута всегда, а окно её не ищет.
+    private bool _linkFullPass = true;
+    private Rect _linkWindowVisible;
+    private bool _hasLinkWindow;
+
     /// <summary>
     /// Записи всех связей.
     /// </summary>
@@ -41,7 +56,18 @@ public partial class NodeEditor
     /// <summary>
     /// Сколько связей развёрнуто — для тестов виртуализации.
     /// </summary>
-    internal int RealizedLinks => _recordByItem.Values.Count(record => record.Control != null);
+    internal int RealizedLinks => _realizedLinks.Count;
+
+    /// <summary>
+    /// Сколько записей редактор проверил, ища вошедших в окно связей, — для тестов и стенда: не растёт с
+    /// графом.
+    /// </summary>
+    internal int LinkWindowChecks { get; private set; }
+
+    /// <summary>
+    /// Сколько раз редактор пересматривал окно связей — для тестов и стенда.
+    /// </summary>
+    internal int LinkWindowPasses { get; private set; }
 
     /// <summary>
     /// Сколько контролов связей редактор создал за свою жизнь — для стенда: пул их переиспользует.
@@ -77,6 +103,11 @@ public partial class NodeEditor
             && TryGetLinkEnd(record.Source, LinkEnd.Source, out source)
             && TryGetLinkEnd(record.Target, LinkEnd.Target, out target);
 
+        // Холст сменился, только если концы сдвинулись или связь нашлась либо потерялась: узел,
+        // развёрнутый заново на панораме, пересчитывает свои связи в те же точки (ADR 0011).
+        var moved = resolved != record.IsResolved
+            || (resolved && (!Near(record.Geometry.Source, source) || !Near(record.Geometry.Target, target)));
+
         if (resolved)
         {
             record.Geometry = new LinkGeometry(source, target);
@@ -84,6 +115,7 @@ public partial class NodeEditor
         }
 
         record.IsResolved = resolved;
+        IndexLink(record);
 
         if (record.Control is { } control)
         {
@@ -97,8 +129,15 @@ public partial class NodeEditor
             OnSimplifiedLinksChanged();
         }
 
-        OnContentChanged();
+        if (moved)
+            OnContentChanged();
     }
+
+    /// <summary>
+    /// Совпадают ли точки с точностью до шума арифметики: конец по живому порту и по смещению,
+    /// снятому при показе, считаются разными дорогами.
+    /// </summary>
+    private static bool Near(Point a, Point b) => Math.Abs(a.X - b.X) < 1e-6 && Math.Abs(a.Y - b.Y) < 1e-6;
 
     /// <summary>
     /// Возникает, когда сменилось то, что рисует слой упрощённых связей: запись без контрола, состав
@@ -128,30 +167,177 @@ public partial class NodeEditor
     internal void RealizeLinks(LinkPanel panel)
     {
         var virtualizing = IsLinkVirtualizing;
-        var (realize, keep) = virtualizing && !IsSimplified ? LinkWindows() : default;
-
-        foreach (var record in _recordByItem.Values.ToArray())
+        var windowed = virtualizing && !IsSimplified;
+        var (visible, realize, keep) = windowed ? LinkWindows() : default;
+        if (windowed)
         {
-            if (!virtualizing || record.Own != null)
+            LinkWindowPasses++;
+            _linkWindowVisible = visible;
+            _hasLinkWindow = true;
+        }
+
+        // Без окна — без виртуализации или в упрощённом виде, где связи держит живой порт, — и после
+        // смены состава проходятся все записи; такая мера редка: панорама её не зовёт.
+        if (!windowed || _linkFullPass)
+        {
+            _linkFullPass = false;
+            foreach (var record in _recordByItem.Values.ToArray())
+                RealizeOrRelease(record, panel, virtualizing, realize, keep);
+
+            return;
+        }
+
+        // Кадр окна: уходят из развёрнутых, приходят закреплённые жестом и вошедшие — по ячейкам окна.
+        _linkScratch.Clear();
+        _linkScratch.AddRange(_realizedLinks);
+        foreach (var record in _linkScratch)
+            RealizeOrRelease(record, panel, virtualizing, realize, keep);
+
+        _linkScratch.Clear();
+        _linkScratch.AddRange(_pinnedLinks);
+        foreach (var record in _linkScratch)
+            RealizeOrRelease(record, panel, virtualizing, realize, keep);
+
+        // Сперва собрать, потом разворачивать: запись, пересчитанная при показе, переложилась бы в
+        // другую ячейку посреди обхода.
+        EnsureLinkCells();
+        _linkScratch.Clear();
+        var (c0, r0, c1, r1) = LinkCellsOf(realize);
+        for (var y = r0; y <= r1; y++)
+        {
+            for (var x = c0; x <= c1; x++)
             {
-                if (record.Control == null)
-                    Realize(record, panel);
+                if (!_linkCells.TryGetValue((x, y), out var cell))
+                    continue;
 
-                continue;
+                foreach (var record in cell)
+                {
+                    LinkWindowChecks++;
+                    if (record.Control == null && record.IsResolved && realize.Intersects(record.WorldBounds))
+                        _linkScratch.Add(record);
+                }
             }
+        }
 
-            var pinned = record.IsHighlighted || record.IsCutting || record.IsDetaching;
+        // Длинная связь лежит в нескольких ячейках — развёрнутая в первой, дальше она уже с контролом.
+        foreach (var record in _linkScratch)
+        {
             if (record.Control == null)
+                Realize(record, panel);
+        }
+    }
+
+    private void RealizeOrRelease(LinkRecord record, LinkPanel panel, bool virtualizing, Rect realize, Rect keep)
+    {
+        if (!virtualizing || record.Own != null)
+        {
+            if (record.Control == null)
+                Realize(record, panel);
+
+            return;
+        }
+
+        var pinned = record.IsHighlighted || record.IsCutting || record.IsDetaching;
+        if (record.Control == null)
+        {
+            if (pinned || (record.IsResolved && WantsControl(record, realize)))
+                Realize(record, panel);
+        }
+        else if (!pinned && !IsRealizationHeld && !(record.IsResolved && WantsControl(record, keep)))
+        {
+            Unrealize(record, panel);
+        }
+    }
+
+    /// <summary>
+    /// Ушла ли видимая область от места, где окно связей пересматривали, на четверть запаса, или
+    /// сменились масштаб или размер, — как у панели узлов (ADR 0011).
+    /// </summary>
+    private bool LinkWindowMoved()
+    {
+        if (!_hasLinkWindow)
+            return true;
+
+        var (visible, _, _) = LinkWindows();
+        if (visible.Size != _linkWindowVisible.Size)
+            return true;
+
+        var margin = Math.Max(0, (ItemsPanelRoot as VirtualizingSurfacePanel)?.RealizationMargin ?? 0);
+        var step = margin / Math.Max(ViewportZoom, 0.0001) / 4;
+        return Math.Abs(visible.X - _linkWindowVisible.X) > step || Math.Abs(visible.Y - _linkWindowVisible.Y) > step;
+    }
+
+    /// <summary>
+    /// Кладёт запись в ячейки по её нынешней рамке — разрешённую, — или вынимает.
+    /// </summary>
+    private void IndexLink(LinkRecord record)
+    {
+        if (_linkCellsStale)
+            return;
+
+        var next = record.IsResolved && _recordByItem.ContainsKey(record.Item) ? record.WorldBounds : (Rect?)null;
+        if (next == record.IndexedBounds)
+            return;
+
+        if (record.IndexedBounds is { } before)
+            RemoveFromLinkCells(record, before);
+
+        if (next is { } after)
+            AddToLinkCells(record, after);
+
+        record.IndexedBounds = next;
+    }
+
+    private void EnsureLinkCells()
+    {
+        if (!_linkCellsStale)
+            return;
+
+        _linkCellsStale = false;
+        _linkCells.Clear();
+
+        // Ячейка — как у панели узлов: несколько предполагаемых узлов.
+        var estimated = EstimatedItemSize;
+        _linkCellSize = Math.Max(256, 4 * Math.Max(estimated.Width, estimated.Height));
+        foreach (var record in _recordByItem.Values)
+        {
+            record.IndexedBounds = null;
+            IndexLink(record);
+        }
+    }
+
+    private void AddToLinkCells(LinkRecord record, Rect bounds)
+    {
+        var (c0, r0, c1, r1) = LinkCellsOf(bounds);
+        for (var y = r0; y <= r1; y++)
+        {
+            for (var x = c0; x <= c1; x++)
             {
-                if (pinned || (record.IsResolved && WantsControl(record, realize)))
-                    Realize(record, panel);
-            }
-            else if (!pinned && !IsRealizationHeld && !(record.IsResolved && WantsControl(record, keep)))
-            {
-                Unrealize(record, panel);
+                if (!_linkCells.TryGetValue((x, y), out var cell))
+                    _linkCells[(x, y)] = cell = new List<LinkRecord>();
+
+                cell.Add(record);
             }
         }
     }
+
+    private void RemoveFromLinkCells(LinkRecord record, Rect bounds)
+    {
+        var (c0, r0, c1, r1) = LinkCellsOf(bounds);
+        for (var y = r0; y <= r1; y++)
+        {
+            for (var x = c0; x <= c1; x++)
+            {
+                if (_linkCells.TryGetValue((x, y), out var cell))
+                    cell.Remove(record);
+            }
+        }
+    }
+
+    private (int C0, int R0, int C1, int R1) LinkCellsOf(Rect bounds) =>
+        (LinkCell(bounds.Left), LinkCell(bounds.Top), LinkCell(bounds.Right), LinkCell(bounds.Bottom));
+
+    private int LinkCell(double value) => (int)Math.Clamp(Math.Floor(value / _linkCellSize), -1_000_000, 1_000_000);
 
     /// <summary>
     /// Готовая связь из коллекции сменила концы: переставить её в смежности и пересчитать.
@@ -173,6 +359,7 @@ public partial class NodeEditor
             return;
 
         record.WorldBounds = record.Geometry.Bounds.Inflate(link.StrokeThickness);
+        IndexLink(record);
         link.Sync();
     }
 
@@ -244,11 +431,17 @@ public partial class NodeEditor
         {
             // Виртуализация связей идёт вместе с узлами: включилась, выключилась или сменила окно на
             // живые порты упрощённого вида — пересобрать.
+            _linkFullPass = true;
             _linkPanel?.InvalidateMeasure();
+        }
+        else if (change.Property == EstimatedItemSizeProperty)
+        {
+            _linkCellsStale = true;
         }
         else if (IsLinkVirtualizing
                  && !IsSimplified
-                 && (change.Property == ViewportLocationProperty || change.Property == ViewportZoomProperty || change.Property == BoundsProperty))
+                 && (change.Property == ViewportLocationProperty || change.Property == ViewportZoomProperty || change.Property == BoundsProperty)
+                 && LinkWindowMoved())
         {
             // В упрощённом виде окна нет: контролы связей от панорамы не зависят.
             _linkPanel?.InvalidateMeasure();
@@ -272,6 +465,7 @@ public partial class NodeEditor
         }
 
         _linkPanel = panel;
+        _linkFullPass = true;
         if (panel != null)
         {
             panel.Owner = this;
@@ -282,6 +476,11 @@ public partial class NodeEditor
     private void SetState(LinkRecord record, bool value, Action<LinkRecord, bool> set)
     {
         set(record, value);
+        if (record.IsHighlighted || record.IsCutting || record.IsDetaching)
+            _pinnedLinks.Add(record);
+        else
+            _pinnedLinks.Remove(record);
+
         if (record.Control is { } control)
             control.Sync();
         else if (value && IsLinkVirtualizing)
@@ -290,18 +489,19 @@ public partial class NodeEditor
 
     private double ThicknessOf(LinkRecord record) => record.Control?.StrokeThickness ?? _linkThickness;
 
-    private (Rect Realize, Rect Keep) LinkWindows()
+    private (Rect Visible, Rect Realize, Rect Keep) LinkWindows()
     {
         var zoom = Math.Max(ViewportZoom, 0.0001);
         var visible = new Rect(ViewportLocation, Bounds.Size / zoom);
         var margin = Math.Max(0, (ItemsPanelRoot as VirtualizingSurfacePanel)?.RealizationMargin ?? 0) / zoom;
-        return (visible.Inflate(margin), visible.Inflate(margin * 2));
+        return (visible, visible.Inflate(margin), visible.Inflate(margin * 2));
     }
 
     private void Realize(LinkRecord record, LinkPanel panel)
     {
         var link = record.Own ?? (_linkPool.Count > 0 ? _linkPool.Pop() : CreateLink());
         record.Control = link;
+        _realizedLinks.Add(record);
         link.Show(this, record);
         panel.Children.Add(link);
         OnSimplifiedLinksChanged();
@@ -319,6 +519,7 @@ public partial class NodeEditor
             return;
 
         record.Control = null;
+        _realizedLinks.Remove(record);
         panel.Remove(link);
         link.Hide();
         if (record.Own == null)
@@ -339,6 +540,8 @@ public partial class NodeEditor
             WeakEvents.CollectionChanged.Subscribe(_watchedLinks, _linkWatcher);
 
         ResetRecords();
+        _linkCellsStale = true;
+        _linkFullPass = true;
     }
 
     private void ResetRecords()
@@ -423,6 +626,10 @@ public partial class NodeEditor
         if (record.Own == null && item is INotifyPropertyChanged model)
             WeakEvents.ThreadSafePropertyChanged.Subscribe(model, _linkWatcher ??= new LinkWatcher(this));
 
+        // Готовую связь из коллекции окно не ищет: она развёрнута всегда.
+        if (record.Own != null)
+            _linkFullPass = true;
+
         RefreshLink(record);
         _linkPanel?.InvalidateMeasure();
     }
@@ -438,6 +645,8 @@ public partial class NodeEditor
 
         _recordReferences.Remove(record);
         _recordByItem.Remove(record.Item);
+        IndexLink(record);
+        _pinnedLinks.Remove(record);
         UnregisterLink(record);
         if (record.Own == null && record.Item is INotifyPropertyChanged model && _linkWatcher != null)
             WeakEvents.ThreadSafePropertyChanged.Unsubscribe(model, _linkWatcher);

@@ -56,11 +56,11 @@ public partial class SurfaceView : SelectingItemsControl
         });
 
         // Контейнер встал на новое место, сменил размер или спрятан — сменилось содержимое холста.
-        // Спрятанный своих границ не меняет, поэтому видимость слушается отдельно.
-        SurfaceItem.BoundsProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
-            item.FindAncestorOfType<SurfaceView>()?.OnContentChanged());
-        SurfaceItem.IsVisibleProperty.Changed.AddClassHandler<SurfaceItem>((item, _) =>
-            item.FindAncestorOfType<SurfaceView>()?.OnContentChanged());
+        // Спрятанный своих границ не меняет, поэтому видимость слушается отдельно. У виртуализирующей
+        // панели содержимое — её ячейки, и о них она сообщает сама: контейнер, развёрнутый или
+        // свёрнутый на панораме, границы меняет, а холст — нет (ADR 0011).
+        SurfaceItem.BoundsProperty.Changed.AddClassHandler<SurfaceItem>((item, _) => OnContainerChanged(item));
+        SurfaceItem.IsVisibleProperty.Changed.AddClassHandler<SurfaceItem>((item, _) => OnContainerChanged(item));
     }
 
     /// <summary>
@@ -125,6 +125,12 @@ public partial class SurfaceView : SelectingItemsControl
     /// Сообщает, что содержимое холста сменилось.
     /// </summary>
     internal void OnContentChanged() => ContentChanged?.Invoke(this, EventArgs.Empty);
+
+    private static void OnContainerChanged(SurfaceItem item)
+    {
+        if (item.GetVisualParent() is not VirtualizingSurfacePanel)
+            item.FindAncestorOfType<SurfaceView>()?.OnContentChanged();
+    }
 
     /// <summary>
     /// Возникает, когда сменилась геометрия элемента без контейнера — его модель сдвинулась, пока он
@@ -344,6 +350,7 @@ public partial class SurfaceView : SelectingItemsControl
 
         if (container is not SurfaceItem surfaceItem || ReferenceEquals(container, item))
             return;
+
 
         if (ItemLocationBinding is { } location)
         {

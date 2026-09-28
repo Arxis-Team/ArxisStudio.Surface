@@ -437,6 +437,7 @@ abstract class ArxisStudio.Surface.TargetChange
     property Object Item { get; }
 class ArxisStudio.Surface.VirtualizingSurfacePanel : VirtualizingPanel
     avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
+    avalonia RealizationBudgetProperty -> RealizationBudget : Int32 (styled) = 8
     avalonia RealizationMarginProperty -> RealizationMargin : Double (styled) = 200
     ctor .ctor()
     method Control ContainerFromIndex(Int32)
@@ -449,4 +450,5 @@ class ArxisStudio.Surface.VirtualizingSurfacePanel : VirtualizingPanel
     method Void OnItemsChanged(IReadOnlyList<Object>, NotifyCollectionChangedEventArgs)
     method Void OnItemsControlChanged(ItemsControl)
     property Double RealizationMargin { get; set; }
+    property Int32 RealizationBudget { get; set; }
     property Rect Extent { get; set; }
