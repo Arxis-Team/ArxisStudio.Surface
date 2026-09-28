@@ -31,27 +31,33 @@
                             Связи в попадании не участвуют: по ним попадает редактор сам, с допуском
                             в пикселях экрана, и только там, где нажатие не взял ни один узел.
                         -->
+                        <!--
+                            Упрощённый вид (ADR 0008): связи без контролов — под развёрнутыми связями,
+                            карточки узлов — над связями и под развёрнутыми узлами. Оба слоя — во весь
+                            размер и переводят мир в экран сами, как сетка.
+                        -->
+                        <nodes:SimplifiedLinkLayer Name="PART_SimplifiedLinks"
+                                                   IsHitTestVisible="False"
+                                                   Stroke="{DynamicResource NodeEditor.Link.Stroke}"
+                                                   SelectedStroke="{DynamicResource NodeEditor.Link.SelectedStroke}"
+                                                   StrokeThickness="{DynamicResource NodeEditor.Simplified.LinkThickness}" />
+
                         <Canvas Name="PART_LinksLayer"
                                 IsHitTestVisible="False"
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
-                            <!-- Связи без контролов в упрощённом виде — под развёрнутыми (ADR 0008). -->
-                            <nodes:SimplifiedLinkLayer Name="PART_SimplifiedLinks"
-                                                       Stroke="{DynamicResource NodeEditor.Link.Stroke}"
-                                                       SelectedStroke="{DynamicResource NodeEditor.Link.SelectedStroke}"
-                                                       StrokeThickness="{DynamicResource NodeEditor.Simplified.LinkThickness}" />
                             <nodes:LinkPanel Name="PART_LinkPanel" />
                         </Canvas>
+
+                        <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
+                                                        IsHitTestVisible="False"
+                                                        Fill="{DynamicResource NodeEditor.Node.Background}"
+                                                        Stroke="{DynamicResource NodeEditor.Node.BorderBrush}"
+                                                        AccentHeight="{DynamicResource NodeEditor.Simplified.AccentHeight}" />
 
                         <Canvas Name="PART_ItemsLayer"
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
-                            <!-- Упрощённый узел — под узлами, цветами карточки узла (ADR 0008). -->
-                            <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
-                                                            IsHitTestVisible="False"
-                                                            Fill="{DynamicResource NodeEditor.Node.Background}"
-                                                            Stroke="{DynamicResource NodeEditor.Node.BorderBrush}"
-                                                            AccentHeight="{DynamicResource NodeEditor.Simplified.AccentHeight}" />
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>

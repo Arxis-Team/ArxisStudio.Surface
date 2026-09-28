@@ -11,12 +11,15 @@ namespace ArxisStudio.Surface;
 /// <see cref="SurfaceView.SimplifiedZoom"/> (ADR 0008).
 /// </summary>
 /// <remarks>
-/// Стоит в шаблоне поверхности под элементами, в слое с трансформацией viewport, и рисует в мировых
-/// координатах. Прямоугольники берёт у виртуализирующей панели своей поверхности — той, чей шаблон его
-/// создал, — и собирает их в одну геометрию, которую держит, пока свёрнутое не сменится: геометрия
-/// элемента без контейнера, коллекция, состав развёрнутых. Панорама и перетаскивание развёрнутого
-/// элемента её не пересобирают. Развёрнутые элементы в карточки не входят — рисуют себя сами, поверх
-/// слоя. Рамка карточки — в один пиксель экрана при любом масштабе.
+/// Стоит в шаблоне поверхности под элементами, во весь её размер, и переводит мировые координаты в
+/// экранные трансформацией viewport сам, как сетка. Слой без размера в холсте под трансформацией
+/// рендерер отсекал бы, когда его начало ложится на край окна: живая проверка так потеряла все
+/// карточки на 20 % при холсте в начале координат. Прямоугольники слой берёт у виртуализирующей панели
+/// своей поверхности — той, чей шаблон его создал, — и собирает их в одну геометрию, которую держит,
+/// пока свёрнутое не сменится: геометрия элемента без контейнера, коллекция, состав развёрнутых.
+/// Панорама и перетаскивание развёрнутого элемента её не пересобирают — панорама только перерисовывает
+/// готовое. Развёрнутые элементы в карточки не входят — рисуют себя сами, поверх слоя. Рамка карточки —
+/// в один пиксель экрана при любом масштабе.
 /// <para>
 /// Панель не рисует сама: <see cref="Panel.Render"/> в Avalonia запечатан.
 /// </para>
@@ -139,22 +142,25 @@ public sealed class SurfaceSimplifiedLayer : Control
         if (_cards == null)
             return;
 
-        // Слой лежит под трансформацией viewport: пиксель экрана — это 1 / zoom мировых единиц.
+        // Геометрия мировая: под трансформацией viewport пиксель экрана — это 1 / zoom мировых единиц.
         StrokeThickness = 1 / Math.Max(view.ViewportZoom, 0.0001);
         var pen = Stroke is { } stroke ? new Pen(stroke, StrokeThickness) : null;
-        if (_bands == null)
+        using (context.PushTransform(view.ViewportTransform?.Value ?? Matrix.Identity))
         {
-            context.DrawGeometry(Fill, pen, _cards);
-        }
-        else
-        {
-            // Полоса ложится на заливку, а рамка — поверх полосы.
-            context.DrawGeometry(Fill, null, _cards);
-            foreach (var (brush, geometry) in _bands)
-                context.DrawGeometry(brush, null, geometry);
+            if (_bands == null)
+            {
+                context.DrawGeometry(Fill, pen, _cards);
+            }
+            else
+            {
+                // Полоса ложится на заливку, а рамка — поверх полосы.
+                context.DrawGeometry(Fill, null, _cards);
+                foreach (var (brush, geometry) in _bands)
+                    context.DrawGeometry(brush, null, geometry);
 
-            if (pen != null)
-                context.DrawGeometry(null, pen, _cards);
+                if (pen != null)
+                    context.DrawGeometry(null, pen, _cards);
+            }
         }
 
         Draws++;
@@ -225,9 +231,10 @@ public sealed class SurfaceSimplifiedLayer : Control
             _stale = true;
             InvalidateVisual();
         }
-        else if (e.Property == SurfaceView.ViewportZoomProperty && _view is { IsSimplified: true })
+        else if ((e.Property == SurfaceView.ViewportZoomProperty || e.Property == SurfaceView.ViewportLocationProperty)
+                 && _view is { IsSimplified: true })
         {
-            // Рамка — в один пиксель экрана, и её толщина следует масштабу.
+            // Мир в экран слой переводит сам, а рамка — в один пиксель экрана при любом масштабе.
             InvalidateVisual();
         }
     }

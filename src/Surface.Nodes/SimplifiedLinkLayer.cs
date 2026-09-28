@@ -10,10 +10,12 @@ namespace ArxisStudio.Surface.Nodes;
 /// <see cref="SurfaceView.SimplifiedZoom"/> (ADR 0008).
 /// </summary>
 /// <remarks>
-/// Стоит в шаблоне редактора под панелью связей, в слое с трансформацией viewport. Ниже порога
-/// контрол есть только у закреплённой связи и у связи развёрнутого узла; остальные слой рисует сам —
-/// одной геометрией, выбранные — второй, своей кистью. Геометрия держится, пока не сменится запись без
-/// контрола, состав развёрнутых или выбор, и над порогом не держится. Толщина — в пикселях экрана.
+/// Стоит в шаблоне редактора под панелью связей, во весь его размер, и переводит мир в экран
+/// трансформацией viewport сам — как слой карточек ядра, и по той же причине: слой без размера под
+/// трансформацией рендерер отсекает. Ниже порога контрол есть только у закреплённой связи и у связи
+/// развёрнутого узла; остальные слой рисует сам — одной геометрией, выбранные — второй, своей кистью.
+/// Геометрия держится, пока не сменится запись без контрола, состав развёрнутых или выбор, и над
+/// порогом не держится. Толщина — в пикселях экрана.
 /// </remarks>
 internal sealed class SimplifiedLinkLayer : Control
 {
@@ -78,6 +80,11 @@ internal sealed class SimplifiedLinkLayer : Control
     /// </summary>
     internal int Rebuilds { get; private set; }
 
+    /// <summary>
+    /// Сколько раз связи нарисованы — для тестов.
+    /// </summary>
+    internal int Draws { get; private set; }
+
     /// <inheritdoc />
     public override void Render(DrawingContext context)
     {
@@ -87,13 +94,18 @@ internal sealed class SimplifiedLinkLayer : Control
         if (_stale)
             Rebuild(editor);
 
-        // Слой лежит под трансформацией viewport: пиксель экрана — это 1 / zoom мировых единиц.
+        // Геометрия мировая: под трансформацией viewport пиксель экрана — это 1 / zoom мировых единиц.
         var thickness = StrokeThickness / Math.Max(editor.ViewportZoom, 0.0001);
-        if (_links != null && Stroke is { } stroke)
-            context.DrawGeometry(null, new Pen(stroke, thickness), _links);
+        using (context.PushTransform(editor.ViewportTransform?.Value ?? Matrix.Identity))
+        {
+            if (_links != null && Stroke is { } stroke)
+                context.DrawGeometry(null, new Pen(stroke, thickness), _links);
 
-        if (_selected != null && SelectedStroke is { } selected)
-            context.DrawGeometry(null, new Pen(selected, thickness), _selected);
+            if (_selected != null && SelectedStroke is { } selected)
+                context.DrawGeometry(null, new Pen(selected, thickness), _selected);
+        }
+
+        Draws++;
     }
 
     /// <inheritdoc />
@@ -145,7 +157,8 @@ internal sealed class SimplifiedLinkLayer : Control
             Forget();
             InvalidateVisual();
         }
-        else if (e.Property == SurfaceView.ViewportZoomProperty && _editor is { IsSimplified: true })
+        else if ((e.Property == SurfaceView.ViewportZoomProperty || e.Property == SurfaceView.ViewportLocationProperty)
+                 && _editor is { IsSimplified: true })
         {
             InvalidateVisual();
         }

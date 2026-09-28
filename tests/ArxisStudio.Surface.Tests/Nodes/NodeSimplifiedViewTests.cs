@@ -190,6 +190,24 @@ public class NodeSimplifiedViewTests
     }
 
     [AvaloniaFact]
+    public void The_Link_Layer_Spans_The_Editor_And_Follows_The_Pan()
+    {
+        // Как слой карточек ядра: во весь размер, мир в экран — сам; панорама перерисовывает, не
+        // пересобирая кривых.
+        var stand = Create();
+        stand.Render();
+        Assert.Equal(new Rect(stand.Editor.Bounds.Size), stand.Layer.Bounds);
+
+        var (draws, rebuilds) = (stand.Layer.Draws, stand.Layer.Rebuilds);
+        stand.Editor.ViewportLocation = new Point(200, 100);
+        stand.RunLayout();
+        stand.Render();
+
+        Assert.Equal(draws + 1, stand.Layer.Draws);
+        Assert.Equal(rebuilds, stand.Layer.Rebuilds);
+    }
+
+    [AvaloniaFact]
     public void The_Layer_Draws_The_Links_Without_Controls_And_The_Selected_Apart()
     {
         var stand = Create();
@@ -236,6 +254,39 @@ public class NodeSimplifiedViewTests
         stand.Window.MouseUp(grip + new Vector(50, 5), MouseButton.Left);
         Assert.Equal(rebuilds, stand.Layer.Rebuilds);
         Assert.Equal(stand.Links.Count - 2, stand.Layer.Links);
+    }
+
+    [AvaloniaFact]
+    public void A_Node_Moves_With_A_Drag_From_Its_Card_And_Again_Once_Realized()
+    {
+        // Первая протяжка начинается на карточке — нажатие разворачивает узел; вторая — на уже
+        // развёрнутом и выбранном узле. Обе двигают модель на сдвиг экрана, делённый на масштаб.
+        var stand = Create();
+        var node = stand.Node(22);
+        var start = node.Location;
+
+        void Drag(Vector by)
+        {
+            var grip = stand.Screen(node.Location + new Vector(NodeSize.Width / 2, 10));
+            stand.Window.MouseDown(grip, MouseButton.Left);
+            stand.Window.MouseMove(grip + new Vector(10, 5));
+            stand.Window.MouseMove(grip + by);
+            stand.Window.MouseUp(grip + by, MouseButton.Left);
+            stand.RunLayout();
+
+            // Щелчок в стороне: иначе следующее нажатие засчиталось бы вторым щелчком двойного.
+            stand.Window.MouseDown(new Point(790, 590), MouseButton.Right);
+            stand.Window.MouseUp(new Point(790, 590), MouseButton.Right);
+            stand.RunLayout();
+        }
+
+        Drag(new Vector(40, 20));
+        Assert.Equal(start + new Vector(100, 50), node.Location);
+
+        stand.Editor.Selection.Select(22);
+        stand.RunLayout();
+        Drag(new Vector(40, 20));
+        Assert.Equal(start + new Vector(200, 100), node.Location);
     }
 
     [AvaloniaFact]

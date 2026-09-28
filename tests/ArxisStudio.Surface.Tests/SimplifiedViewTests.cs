@@ -476,6 +476,26 @@ public class SimplifiedViewTests
     }
 
     [AvaloniaFact]
+    public void The_Layer_Spans_The_Surface_And_Follows_The_Pan()
+    {
+        // Слой во весь размер поверхности и переводит мир в экран сам. Слой без размера в холсте под
+        // трансформацией рендерер отсекал, когда его начало ложилось на край окна: живая проверка так
+        // потеряла все карточки на 20 % при холсте в начале координат. Панорама поэтому перерисовывает
+        // слой, не пересобирая карточек.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        Assert.Equal(new Rect(stand.View.Bounds.Size), stand.Layer.Bounds);
+
+        var (draws, rebuilds) = (stand.Layer.Draws, stand.Layer.Rebuilds);
+        stand.Pan(new Point(200, 100));
+        stand.Render();
+
+        Assert.Equal(draws + 1, stand.Layer.Draws);
+        Assert.Equal(rebuilds, stand.Layer.Rebuilds);
+    }
+
+    [AvaloniaFact]
     public void The_Card_Stroke_Stays_One_Screen_Pixel()
     {
         var stand = Create();
