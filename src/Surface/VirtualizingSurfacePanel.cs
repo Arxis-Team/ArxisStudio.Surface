@@ -153,6 +153,11 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     internal int RealizedCount => _realized.Count;
 
     /// <summary>
+    /// Сколько раз указатель «элемент → индекс» строился заново — для тестов.
+    /// </summary>
+    internal int IndexRebuilds { get; private set; }
+
+    /// <summary>
     /// Сколько раз геометрия дочитывалась проходом по всей коллекции — для стенда.
     /// </summary>
     internal int SlotPasses { get; private set; }
@@ -201,6 +206,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     {
         if (_indexByItem == null)
         {
+            IndexRebuilds++;
             var items = Items;
             _indexByItem = new Dictionary<object, int>(items.Count);
             for (var i = items.Count - 1; i >= 0; i--)
@@ -528,7 +534,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     protected override void OnItemsChanged(IReadOnlyList<object?> items, NotifyCollectionChangedEventArgs e)
     {
         base.OnItemsChanged(items, e);
-        _indexByItem = null;
+        UpdateIndexByItem(items, e);
         OnCollapsedChanged();
 
         if (_slotsStale)
@@ -581,6 +587,63 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         {
             foreach (var item in left)
                 _view?.OnItemGeometryChanged(item);
+        }
+    }
+
+    /// <summary>
+    /// Ведёт указатель «элемент → индекс» по правке коллекции, а не строит заново.
+    /// </summary>
+    /// <remarks>
+    /// Удаление каждого элемента сообщает о нём держащим на нём своё, и те спрашивают индекс: строясь
+    /// заново на каждой правке, указатель делал удаление большого выбора квадратом коллекции (ADR 0010).
+    /// Добавление и удаление правят его с места правки до конца, то есть в конце — за константу. Элемент,
+    /// который стоит в коллекции не один раз, и прочие правки указатель сбрасывают.
+    /// </remarks>
+    private void UpdateIndexByItem(IReadOnlyList<object?> items, NotifyCollectionChangedEventArgs e)
+    {
+        if (_indexByItem is not { } index)
+            return;
+
+        int start;
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add when e.NewStartingIndex >= 0:
+                start = e.NewStartingIndex;
+                break;
+            case NotifyCollectionChangedAction.Remove when e.OldStartingIndex >= 0:
+                start = e.OldStartingIndex;
+                for (var k = 0; k < e.OldItems!.Count; k++)
+                {
+                    if (e.OldItems[k] is not { } old)
+                        continue;
+
+                    // Указатель знал этот элемент под другим индексом: он стоит в коллекции ещё раз.
+                    if (!index.Remove(old, out var at) || at != start + k)
+                    {
+                        _indexByItem = null;
+                        return;
+                    }
+                }
+
+                break;
+            default:
+                _indexByItem = null;
+                return;
+        }
+
+        for (var i = start; i < items.Count; i++)
+        {
+            if (items[i] is not { } item)
+                continue;
+
+            // Элемент уже стоит раньше места правки — он в коллекции не один раз.
+            if (index.TryGetValue(item, out var at) && at < start)
+            {
+                _indexByItem = null;
+                return;
+            }
+
+            index[item] = i;
         }
     }
 

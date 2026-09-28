@@ -459,6 +459,42 @@ public class VirtualizationTests
     }
 
     [AvaloniaFact]
+    public void Removing_Items_One_By_One_Keeps_The_Index_Of_Items()
+    {
+        // Удаление каждого элемента сообщает о нём, и держащие на нём своё спрашивают индекс: указатель
+        // «элемент → индекс», строившийся заново на каждой правке, делал удаление большого выбора
+        // квадратом коллекции. Он правится с места правки, а элемент, стоящий дважды, его сбрасывает.
+        var stand = Create();
+        var panel = stand.Panel;
+        Assert.True(panel.TryGetItemBounds(stand.Items[0], out _));
+        var rebuilds = panel.IndexRebuilds;
+
+        for (var i = 0; i < 50; i++)
+        {
+            stand.Items.RemoveAt(stand.Items.Count - 1);
+            Assert.True(panel.TryGetItemBounds(stand.Items[0], out _));
+        }
+
+        Assert.Equal(rebuilds, panel.IndexRebuilds);
+
+        var inserted = new Place(new Point(7, 7));
+        stand.Items.Insert(10, inserted);
+        stand.Items.RemoveAt(3);
+        Assert.Equal(rebuilds, panel.IndexRebuilds);
+        for (var i = 0; i < stand.Items.Count; i++)
+        {
+            Assert.True(panel.TryGetItemBounds(stand.Items[i], out var bounds));
+            Assert.Equal(stand.Model(i).Location, bounds.Position);
+        }
+
+        // Элемент дважды — указатель строится заново и называет первое место: развёрнутое, а не
+        // свёрнутую копию в конце.
+        stand.Items.Add(stand.Items[0]);
+        Assert.NotNull(stand.Container(0));
+        Assert.Equal(-1, panel.CollapsedIndexOf(stand.Items[0]));
+    }
+
+    [AvaloniaFact]
     public void A_Held_Surface_Recycles_Nothing_Until_Released()
     {
         var stand = Create();
