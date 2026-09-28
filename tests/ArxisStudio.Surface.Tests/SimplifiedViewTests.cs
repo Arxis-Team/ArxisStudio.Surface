@@ -7,6 +7,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
@@ -340,6 +341,121 @@ public class SimplifiedViewTests
         stand.Render();
 
         Assert.Equal(Enumerable.Range(0, stand.Items.Count).Count(i => AccentOf(i) != null), stand.Layer.Bands);
+    }
+
+    /// <summary>
+    /// Центр карточки элемента 21 — (150, 100) в мире — на экране при масштабе 0,4 и холсте в начале
+    /// координат.
+    /// </summary>
+    private static readonly Point Card21 = new(80, 52);
+
+    private static void Click(Stand stand, Point at, MouseButton button = MouseButton.Left)
+    {
+        stand.Window.MouseDown(at, button);
+        stand.Window.MouseUp(at, button);
+        stand.RunLayout();
+    }
+
+    [AvaloniaFact]
+    public void A_Press_Realizes_The_Top_Card_Under_It_And_Selects_It()
+    {
+        // Две карточки в одном месте: разворачивается верхняя — поставленная позже.
+        var stand = Create();
+        stand.Items.Add(new Card(new Point(150, 100)));
+        var top = stand.Items.Count - 1;
+        stand.Zoom(0.4);
+        Assert.Equal(0, stand.Realized);
+
+        Click(stand, Card21);
+
+        Assert.NotNull(stand.Container(top));
+        Assert.Null(stand.Container(21));
+        Assert.True(stand.View.Selection.IsSelected(top));
+        Assert.Same(stand.Container(top), Assert.Single(stand.View.SelectedTargets).Container);
+    }
+
+    [AvaloniaFact]
+    public void A_Drag_From_A_Card_Moves_Its_Model()
+    {
+        // Сдвиг на экране делится на масштаб: 40 × 20 пикселей при 0,4 — это 100 × 50 в мире.
+        var stand = Create();
+        stand.Zoom(0.4);
+
+        stand.Window.MouseDown(Card21, MouseButton.Left);
+        stand.Window.MouseMove(Card21 + new Vector(10, 5));
+        stand.Window.MouseMove(Card21 + new Vector(40, 20));
+        stand.Window.MouseUp(Card21 + new Vector(40, 20), MouseButton.Left);
+        stand.RunLayout();
+
+        Assert.Equal(new Point(250, 150), ((Card)stand.Items[21]).Location);
+    }
+
+    [AvaloniaFact]
+    public void The_Second_Click_Of_A_Double_Click_Reaches_The_Realized_Container()
+    {
+        var stand = Create();
+        stand.Zoom(0.4);
+        Click(stand, Card21);
+        var container = stand.Container(21)!;
+        var doubleTaps = 0;
+        container.DoubleTapped += (_, _) => doubleTaps++;
+
+        Click(stand, Card21);
+
+        Assert.Same(container, stand.Container(21));
+        Assert.Equal(1, doubleTaps);
+    }
+
+    [AvaloniaFact]
+    public void A_Right_Press_Realizes_The_Item_For_The_Context_And_Keeps_It()
+    {
+        // Контекст находит контейнер по точке; невыбранный, он держится нажатием до следующего
+        // нажатия мимо него.
+        var stand = Create();
+        stand.Zoom(0.4);
+        SurfaceContextRequest? request = null;
+        stand.View.ContextMenuRequesting += (_, e) => request = e.Request;
+
+        Click(stand, Card21, MouseButton.Right);
+
+        var container = stand.Container(21);
+        Assert.NotNull(container);
+        Assert.Same(container, request?.Target?.Container);
+        Assert.False(stand.View.Selection.IsSelected(21));
+
+        // Мимо карточек: между столбцами 100…150 мира — 40…60 экрана.
+        Click(stand, new Point(50, 52), MouseButton.Right);
+        Assert.Null(stand.Container(21));
+    }
+
+    [AvaloniaFact]
+    public void A_Pan_Press_Realizes_Nothing()
+    {
+        var stand = Create();
+        stand.View.InputGestures.PanButton = SurfacePointerButton.Left;
+        stand.Zoom(0.4);
+
+        Click(stand, Card21);
+
+        Assert.Equal(0, stand.Realized);
+    }
+
+    [AvaloniaFact]
+    public void A_Press_On_A_Realized_Container_Is_Left_To_It()
+    {
+        // Под развёрнутым выбранным лежит свёрнутая карточка: нажатие берёт контейнер, а не её.
+        var stand = Create();
+        ((Card)stand.Items[0]).Location = new Point(150, 100);
+        stand.RunLayout();
+        stand.View.Selection.Select(21);
+        stand.Zoom(0.4);
+        Assert.Null(stand.Container(0));
+
+        Click(stand, Card21);
+
+        Assert.Null(stand.Container(0));
+        Assert.True(stand.View.Selection.IsSelected(21));
+        Assert.False(stand.View.Selection.IsSelected(0));
     }
 
     [AvaloniaFact]

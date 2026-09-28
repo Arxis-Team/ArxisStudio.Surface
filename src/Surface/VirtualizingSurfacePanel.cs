@@ -845,10 +845,11 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         InsertInternalChild(lo, container);
     }
 
-    private static bool IsPinned(SurfaceView view, int index, Control container) =>
+    private bool IsPinned(SurfaceView view, int index, Control container) =>
         view.Selection.IsSelected(index)
         || container.IsKeyboardFocusWithin
-        || container.GetValue(RecycleKeyProperty) == s_itemIsItsOwnContainer;
+        || container.GetValue(RecycleKeyProperty) == s_itemIsItsOwnContainer
+        || (view.PressedItem is { } pressed && ReferenceEquals(Items[index], pressed));
 
     private (Rect Realize, Rect Keep) Windows(SurfaceView view)
     {

@@ -97,7 +97,15 @@ public partial class SurfaceView : SelectingItemsControl
         dpiGroup.Children.Add(_dpiTranslateTransform);
         SetCurrentValue(DpiScaledViewportTransformProperty, dpiGroup);
 
-        ItemsView.CollectionChanged += (_, _) => OnContentChanged();
+        // Нажатие в упрощённом виде разворачивает элемент под собой раньше всех, кто решает по
+        // нажатию мимо контейнеров, — рамки и попадания по связям редактора узлов (ADR 0008).
+        AddHandler(PointerPressedEvent, OnSimplifiedPointerPressed, RoutingStrategies.Tunnel);
+
+        ItemsView.CollectionChanged += (_, e) =>
+        {
+            OnContentChanged();
+            ForgetPressedItem(e);
+        };
         WatchSelection(Selection);
     }
 

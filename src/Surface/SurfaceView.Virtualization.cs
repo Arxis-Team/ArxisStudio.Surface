@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Specialized;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Selection;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface;
 
@@ -26,6 +29,7 @@ public partial class SurfaceView
     private int _realizationHolds;
     private bool _realizingSelection;
     private bool _isSimplified;
+    private object? _pressedItem;
     private ISelectionModel? _watchedSelection;
 
     /// <summary>
@@ -56,6 +60,16 @@ public partial class SurfaceView
         get => _isSimplified;
         private set => SetAndRaise(IsSimplifiedProperty, ref _isSimplified, value);
     }
+
+    /// <summary>
+    /// Элемент, развёрнутый нажатием в упрощённом виде: закреплён до следующего нажатия мимо него или
+    /// выхода из упрощённого вида.
+    /// </summary>
+    /// <remarks>
+    /// Без закрепления контейнер, развёрнутый правой кнопкой, ушёл бы в пул на ближайшей мере, а цель
+    /// контекстного меню, открытого по нему, осталась бы у переготовленного контейнера.
+    /// </remarks>
+    internal object? PressedItem => _pressedItem;
 
     /// <summary>
     /// Возникает, когда сменилось свёрнутое — геометрия элемента без контейнера, коллекция или состав
@@ -126,7 +140,63 @@ public partial class SurfaceView
         else if (change.Property == ViewportZoomProperty
                  || change.Property == SimplifiedZoomProperty
                  || change.Property == ItemLocationBindingProperty)
+        {
             IsSimplified = ItemLocationBinding != null && SimplifiedZoom > 0 && ViewportZoom < SimplifiedZoom;
+            if (!IsSimplified)
+                _pressedItem = null;
+        }
+    }
+
+    /// <summary>
+    /// Нажатие по карточке в упрощённом виде разворачивает её элемент и отдаёт нажатие его контейнеру.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0008. Туннелем, раньше всех, кто решает по нажатию мимо контейнеров: рамки ядра и попадания
+    /// по связям в редакторе узлов — узел лежит поверх связи и в упрощённом виде. Разворачивается
+    /// верхний свёрнутый элемент под точкой; левую кнопку дальше ведёт машина контейнера — захват,
+    /// выбор, перетаскивание, двойной щелчок, — правую — контекст ядра, который находит развёрнутый
+    /// контейнер по точке. Нажатие панорамы и нажатие по контейнеру не трогаются.
+    /// </remarks>
+    private void OnSimplifiedPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!IsSimplified || e.Handled || ItemsPanelRoot is not VirtualizingSurfacePanel panel)
+            return;
+
+        var point = e.GetCurrentPoint(this);
+        var properties = point.Properties;
+        if (!properties.IsLeftButtonPressed && !properties.IsRightButtonPressed)
+            return;
+
+        if (ShouldStartPan(properties, e.KeyModifiers)
+            || (e.Source as Visual)?.FindAncestorOfType<SurfaceItem>(includeSelf: true) != null)
+        {
+            return;
+        }
+
+        var container = panel.RealizeAt(GetWorldPosition(point.Position));
+        SetPressedItem(container == null ? null : ItemFromContainer(container), panel);
+
+        if (container is SurfaceItem item && properties.IsLeftButtonPressed)
+            item.CurrentState.OnPointerPressed(e);
+    }
+
+    private void SetPressedItem(object? item, VirtualizingSurfacePanel panel)
+    {
+        if (ReferenceEquals(_pressedItem, item))
+            return;
+
+        // Прежний нажатый свернётся на ближайшей мере, если его не держит ничто другое.
+        _pressedItem = item;
+        panel.InvalidateMeasure();
+    }
+
+    private void ForgetPressedItem(NotifyCollectionChangedEventArgs e)
+    {
+        if (_pressedItem != null
+            && (e.Action == NotifyCollectionChangedAction.Reset || e.OldItems?.Contains(_pressedItem) == true))
+        {
+            _pressedItem = null;
+        }
     }
 
     /// <summary>

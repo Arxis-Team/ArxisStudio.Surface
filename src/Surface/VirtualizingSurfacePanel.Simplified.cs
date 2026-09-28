@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 
 namespace ArxisStudio.Surface;
@@ -28,6 +29,26 @@ public partial class VirtualizingSurfacePanel
             if (bounds.Width > 0 && bounds.Height > 0)
                 yield return (bounds, slot.Accent);
         }
+    }
+
+    /// <summary>
+    /// Разворачивает верхний свёрнутый элемент под точкой — для нажатия в упрощённом виде.
+    /// </summary>
+    /// <remarks>
+    /// Верхний — с большим индексом: дети стоят в порядке элементов, и позже поставленный рисуется
+    /// поверх.
+    /// </remarks>
+    /// <returns>Контейнер или <see langword="null"/>, если под точкой свёрнутого нет.</returns>
+    internal Control? RealizeAt(Point world)
+    {
+        SyncSlots(Items);
+        for (var i = _slots.Count - 1; i >= 0; i--)
+        {
+            if (!_realized.ContainsKey(i) && BoundsOf(_slots[i]).Contains(world))
+                return RealizeNow(i);
+        }
+
+        return null;
     }
 
     /// <summary>
