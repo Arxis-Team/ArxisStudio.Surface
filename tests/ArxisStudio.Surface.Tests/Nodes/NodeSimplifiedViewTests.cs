@@ -7,6 +7,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using SkiaSharp;
 using Xunit;
 using ArxisStudio.Surface.Nodes;
 
@@ -293,15 +294,36 @@ public class NodeSimplifiedViewTests
     }
 
     [AvaloniaFact]
+    public void The_Skia_Path_Draws_Each_Link_Along_Its_Curve()
+    {
+        // Одним путём на перо (ADR 0012): середина связи на экране закрашена, пустое место между рядами —
+        // нет.
+        var stand = Create();
+        stand.Render();
+        var size = stand.Layer.Bounds.Size;
+        using var bitmap = new SKBitmap((int)size.Width, (int)size.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            canvas.Clear(SKColors.Transparent);
+            Assert.True(stand.Layer.RenderTo(canvas), "путь Skia отказался рисовать сплошными кистями");
+        }
+
+        var middle = stand.Screen(Middle(stand.Record(stand.Links[0])));
+        Assert.True(bitmap.GetPixel((int)Math.Round(middle.X), (int)Math.Round(middle.Y)).Alpha > 0, $"связь не нарисована в {middle}");
+        var gap = stand.Screen(Gap);
+        Assert.Equal(0, bitmap.GetPixel((int)gap.X, (int)gap.Y).Alpha);
+    }
+
+    [AvaloniaFact]
     public void A_Curve_Shorter_Than_A_Pixel_Has_No_Segments()
     {
         // Длина — по контрольным точкам, в пикселях экрана; отрезок — на каждые 12 пикселей, не
         // больше 16.
         var (a, b, c, d) = (new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0));
-        Assert.Equal(0, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d, 0.3));
-        Assert.Equal(1, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d, 1));
-        Assert.Equal(3, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d * 10, 1));
-        Assert.Equal(16, ArxisStudio.Surface.Editing.Polyline.Segments(a, b, c, d * 1000, 1));
+        Assert.Equal(0, ArxisStudio.Surface.CurveSegments.Count(a, b, c, d, 0.3));
+        Assert.Equal(1, ArxisStudio.Surface.CurveSegments.Count(a, b, c, d, 1));
+        Assert.Equal(3, ArxisStudio.Surface.CurveSegments.Count(a, b, c, d * 10, 1));
+        Assert.Equal(16, ArxisStudio.Surface.CurveSegments.Count(a, b, c, d * 1000, 1));
     }
 
     [AvaloniaFact]

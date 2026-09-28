@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Rendering.SceneGraph;
+using SkiaSharp;
 
 namespace ArxisStudio.Surface;
 
@@ -238,6 +239,22 @@ public sealed class SurfaceSimplifiedLayer : Control
     }
 
     /// <summary>
+    /// Рисует кадр путём Skia на данный холст — тем, каким операция рисует из аренды; для тестов.
+    /// </summary>
+    /// <returns><see langword="false"/>, если рисовать нечего или кисть не сплошная.</returns>
+    internal bool RenderTo(SKCanvas canvas)
+    {
+        if (_view is not { } view || _snapshot is not { } snapshot)
+            return false;
+
+        var (world, zoom) = Viewport(view, out var matrix);
+        var operation = new CardsOperation(
+            new Rect(Bounds.Size), snapshot, matrix, world, zoom, AccentHeight,
+            Fill?.ToImmutable(), Stroke?.ToImmutable(), SelectedStroke?.ToImmutable(), SelectedStrokeThickness);
+        return operation.CanPaint && operation.RenderSkia(canvas, 1);
+    }
+
+    /// <summary>
     /// Видимая часть мира и масштаб — по трансформации viewport, которой слой рисует.
     /// </summary>
     private (Rect World, double Zoom) Viewport(SurfaceView view, out Matrix matrix)
@@ -384,17 +401,119 @@ public sealed class SurfaceSimplifiedLayer : Control
         public IImmutableBrush[] Palette { get; } = palette;
 
         public Rect Bounds { get; } = bounds;
+
+        /// <summary>
+        /// Вершины для холста Skia — кэш потока отрисовки, собирается при первом кадре снимка.
+        /// </summary>
+        public CardVertices? Skia { get; set; }
+    }
+
+    /// <summary>
+    /// Карточки снимка треугольниками для холста Skia (ADR 0012).
+    /// </summary>
+    /// <remarks>
+    /// Все карточки — два набора вершин на кадр (<see cref="TriangleBuilder"/>): заливки,
+    /// которые от масштаба не зависят и собираются раз на снимок, и полосы с рамками — их толщина в
+    /// пикселях экрана и детализация зависят от масштаба, и набор собирается заново при его смене.
+    /// Отбора видимого здесь нет: лишние треугольники обрезает видеокарта, а не цикл. Живёт кэш в
+    /// потоке отрисовки; нативные вершины прежнего снимка освобождает сборщик.
+    /// </remarks>
+    private sealed class CardVertices
+    {
+        private SKColor _fill;
+        private double _zoom = double.NaN;
+        private double _accentHeight;
+        private double _selectedThickness;
+        private SKColor _stroke;
+        private SKColor _selected;
+        private SKColor[] _palette = [];
+
+        public SKVertices? Fills { get; private set; }
+
+        public SKVertices? Details { get; private set; }
+
+        public void Update(
+            Snapshot snapshot, double zoom, double accentHeight, double selectedThickness,
+            SKColor fill, SKColor stroke, SKColor selected, SKColor[] palette)
+        {
+            var rects = snapshot.Grid.Rects;
+            if (Fills == null || fill != _fill)
+            {
+                _fill = fill;
+                var builder = new TriangleBuilder(rects.Length);
+                if (fill.Alpha > 0)
+                {
+                    foreach (var rect in rects)
+                        builder.Quad(rect, fill);
+                }
+
+                Fills = builder.Build();
+            }
+
+            if (Details != null && zoom == _zoom && accentHeight == _accentHeight && selectedThickness == _selectedThickness
+                && stroke == _stroke && selected == _selected && palette.AsSpan().SequenceEqual(_palette))
+            {
+                return;
+            }
+
+            (_zoom, _accentHeight, _selectedThickness, _stroke, _selected, _palette) =
+                (zoom, accentHeight, selectedThickness, stroke, selected, palette);
+
+            // Полоса ложится на заливку, рамка — поверх полосы, рамка выбора — поверх всех карточек.
+            var details = new TriangleBuilder(rects.Length * 2);
+            var pixel = 1 / zoom;
+            if (accentHeight > 0)
+            {
+                for (var i = 0; i < rects.Length; i++)
+                {
+                    if (snapshot.Accents[i] is var accent and >= 0)
+                        details.Quad(rects[i].WithHeight(BandHeight(rects[i], accentHeight, zoom)), palette[accent]);
+                }
+            }
+
+            if (stroke.Alpha > 0)
+            {
+                foreach (var rect in rects)
+                {
+                    if (IsOutlined(rect, zoom))
+                        details.Frame(rect, pixel, stroke);
+                }
+            }
+
+            if (selected.Alpha > 0 && snapshot.SelectedCount > 0)
+            {
+                for (var i = 0; i < rects.Length; i++)
+                {
+                    if (snapshot.Selected[i])
+                        details.Frame(rects[i], selectedThickness * pixel, selected);
+                }
+            }
+
+            Details = details.Build();
+        }
+
     }
 
     /// <summary>
     /// Кадр упрощённого вида: только видимые карточки, детализация по масштабу.
     /// </summary>
+    /// <remarks>
+    /// Холст Skia из аренды рисует все карточки двумя наборами вершин (ADR 0012); без аренды — прежним
+    /// путём, по примитиву и только видимые.
+    /// </remarks>
     private sealed class CardsOperation(
         Rect bounds, Snapshot snapshot, Matrix matrix, Rect world, double zoom, double accentHeight,
         IImmutableBrush? fill, IImmutableBrush? stroke, IImmutableBrush? selectedStroke, double selectedThickness)
         : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
+
+        /// <summary>
+        /// Все ли кисти холст из аренды нарисует.
+        /// </summary>
+        public bool CanPaint =>
+            SkiaCanvas.CanPaint(fill) && SkiaCanvas.CanPaint(stroke) && SkiaCanvas.CanPaint(selectedStroke)
+            && Array.TrueForAll(snapshot.Palette, SkiaCanvas.CanPaint);
 
         public bool HitTest(Point p) => false;
 
@@ -405,6 +524,61 @@ public sealed class SurfaceSimplifiedLayer : Control
         }
 
         public void Render(ImmediateDrawingContext context)
+        {
+            if (CanPaint)
+            {
+                using var lease = SkiaCanvas.TryLease(context);
+                if (lease != null)
+                {
+                    RenderSkia(lease.SkCanvas, lease.CurrentOpacity);
+                    return;
+                }
+            }
+
+            RenderImmediate(context);
+        }
+
+        /// <summary>
+        /// Путь Skia: два вызова на кадр — заливки и остальное, вершинами из кэша снимка.
+        /// </summary>
+        public bool RenderSkia(SKCanvas canvas, double opacity)
+        {
+            var vertices = snapshot.Skia ??= new CardVertices();
+            vertices.Update(
+                snapshot, zoom, accentHeight, selectedThickness, SkiaCanvas.Color(fill, 1), SkiaCanvas.Color(stroke, 1),
+                SkiaCanvas.Color(selectedStroke, 1), Array.ConvertAll(snapshot.Palette, brush => SkiaCanvas.Color(brush, 1)));
+
+            SkiaCanvas.Enter(canvas, bounds, matrix);
+            try
+            {
+                // Прозрачность контекста — слоем: цвета вершин собраны непрозрачными.
+                using var layer = opacity < 1 ? new SKPaint { Color = SKColors.White.WithAlpha((byte)Math.Round(255 * opacity)) } : null;
+                if (layer != null)
+                    canvas.SaveLayer(layer);
+
+                // Цвет — у вершин: краска без шейдера, и режим Dst оставляет их цвет как есть.
+                using var paint = new SKPaint { Color = SKColors.White };
+                if (vertices.Fills is { } fills)
+                    canvas.DrawVertices(fills, SKBlendMode.Dst, paint);
+
+                if (vertices.Details is { } details)
+                    canvas.DrawVertices(details, SKBlendMode.Dst, paint);
+
+                if (layer != null)
+                    canvas.Restore();
+            }
+            finally
+            {
+                canvas.Restore();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Запасной путь: по примитиву через контекст.
+        /// </summary>
+        private void RenderImmediate(ImmediateDrawingContext context)
         {
             var pixel = 1 / zoom;
             var pen = stroke != null ? new ImmutablePen(stroke, pixel) : null;

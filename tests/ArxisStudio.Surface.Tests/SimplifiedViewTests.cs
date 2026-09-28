@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
+using SkiaSharp;
 using Xunit;
 using ArxisStudio.Surface;
 
@@ -575,6 +576,96 @@ public class SimplifiedViewTests
         Assert.Equal(20, SurfaceSimplifiedLayer.BandHeight(card, 16, 0.05), 6);
         Assert.Equal(20, SurfaceSimplifiedLayer.BandHeight(card, 40, 0.4), 6);
         Assert.Equal(60, SurfaceSimplifiedLayer.BandHeight(card, 16, 0.01), 6);
+    }
+
+    /// <summary>
+    /// Рисует слой путём Skia на растровый холст размером со слой.
+    /// </summary>
+    private static SKBitmap RenderSkia(Stand stand)
+    {
+        var size = stand.Layer.Bounds.Size;
+        var bitmap = new SKBitmap((int)size.Width, (int)size.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
+        Assert.True(stand.Layer.RenderTo(canvas), "путь Skia отказался рисовать сплошными кистями");
+        canvas.Flush();
+        return bitmap;
+    }
+
+    [AvaloniaFact]
+    public void The_Skia_Path_Draws_The_Card_Its_Band_And_Leaves_The_Gaps()
+    {
+        // 0,4 у начала координат: элемент 0 — 40 × 24 пикселя в (0, 0), полоса 16 мира — 6,4 пикселя
+        // сверху, красная; между столбцами — пусто (ADR 0012).
+        var stand = Create(accentBinding: true);
+        stand.Zoom(0.4);
+        stand.Render();
+
+        using var bitmap = RenderSkia(stand);
+        Assert.Equal(SkiaCanvas.Color(stand.Layer.Fill!.ToImmutable(), 1), bitmap.GetPixel(20, 16));
+        Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(20, 3));
+        Assert.Equal(0, bitmap.GetPixel(50, 12).Alpha);
+    }
+
+    [AvaloniaFact]
+    public void The_Skia_Path_Outlines_By_Zoom_And_Frames_The_Selected_On_Top()
+    {
+        // 0,4: карточка 0 — (0, 0)…(40, 24), рамка в пиксель по краю — без сглаживания она ложится на
+        // одну сторону края, здесь столбец 40. Рамка выбора свёрнутой выбранной второго ряда — в два
+        // пикселя по обе стороны края, её цвета поверх обычной. 0,05: карточка 5 × 3 пикселя — мельче
+        // четырёх, рамки нет, край — заливка.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        using (var bitmap = RenderSkia(stand))
+        {
+            Assert.Equal(SkiaCanvas.Color(stand.Layer.Stroke!.ToImmutable(), 1), bitmap.GetPixel(40, 12));
+            Assert.Equal(SkiaCanvas.Color(stand.Layer.Fill!.ToImmutable(), 1), bitmap.GetPixel(37, 16));
+        }
+
+        stand.View.Selection.SelectAll();
+        stand.RunLayout();
+        stand.Render();
+        var collapsed = Enumerable.Range(20, 20).First(i => stand.Container(i) == null);
+        var right = (int)Math.Round((((collapsed % 20) * 150) + 100) * 0.4);
+        using (var bitmap = RenderSkia(stand))
+            Assert.Equal(SkiaCanvas.Color(stand.Layer.SelectedStroke!.ToImmutable(), 1), bitmap.GetPixel(right - 1, 52));
+
+        stand.View.Selection.Clear();
+        stand.Zoom(0.05);
+        stand.Render();
+        using (var bitmap = RenderSkia(stand))
+            Assert.Equal(SkiaCanvas.Color(stand.Layer.Fill!.ToImmutable(), 1), bitmap.GetPixel(4, 2));
+    }
+
+    [AvaloniaFact]
+    public void The_Skia_Path_Draws_Only_What_Is_Seen()
+    {
+        // Холст сдвинут: карточка у начала координат ушла за левый край, и на её месте на экране —
+        // другая, а не она; край окна обрезан.
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Pan(new Point(150, 100));
+        stand.Render();
+
+        using var bitmap = RenderSkia(stand);
+        var fill = SkiaCanvas.Color(stand.Layer.Fill!.ToImmutable(), 1);
+        Assert.Equal(fill, bitmap.GetPixel(20, 16));
+        Assert.Equal(0, bitmap.GetPixel(50, 12).Alpha);
+    }
+
+    [AvaloniaFact]
+    public void A_Brush_That_Is_Not_Solid_Keeps_The_Old_Path()
+    {
+        // Холст из аренды рисует сплошным цветом; градиент рисует прежний путь (ADR 0012).
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        stand.Layer.Fill = new LinearGradientBrush { GradientStops = { new GradientStop(Colors.Red, 0), new GradientStop(Colors.Blue, 1) } };
+
+        using var bitmap = new SKBitmap(10, 10);
+        using var canvas = new SKCanvas(bitmap);
+        Assert.False(stand.Layer.RenderTo(canvas));
     }
 
     [AvaloniaFact]

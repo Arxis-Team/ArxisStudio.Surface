@@ -6,6 +6,8 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
+using Avalonia.Media;
+using SkiaSharp;
 using Xunit;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.Editing;
@@ -196,6 +198,66 @@ public class SurfaceMinimapTests
 
         Assert.True(stand.Map.ContentRenders > content, "Новое соответствие карты обязано перерисовать содержимое.");
         Assert.Equal(rebuilt, stand.Map.ContentRebuilds);
+    }
+
+    [AvaloniaFact]
+    public void The_Skia_Path_Fills_The_Items_On_The_Map()
+    {
+        // Содержимое карты путём Skia (ADR 0012): центр элемента на карте залит его кистью, угол карты
+        // за полем — пуст.
+        var stand = Create();
+        var content = stand.Map.GetVisualChildren().OfType<MinimapContent>().Single();
+        using var bitmap = new SKBitmap((int)content.Bounds.Width, (int)content.Bounds.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            canvas.Clear(SKColors.Transparent);
+            Assert.True(content.RenderTo(canvas), "путь Skia отказался рисовать сплошными кистями");
+        }
+
+        var centre = stand.Map.WorldToMinimap(stand.CentreOf(0));
+        Assert.Equal(SkiaCanvas.Color(stand.Map.ItemFill!.ToImmutable(), 1), bitmap.GetPixel((int)centre.X, (int)centre.Y));
+        Assert.Equal(0, bitmap.GetPixel(0, 0).Alpha);
+    }
+
+    [AvaloniaFact]
+    public void The_Skia_Path_Rasterizes_Once_Per_Content_And_Mapping()
+    {
+        // Карту перерисовывают на каждом кадре панорамы, и кадр рисует готовую картинку. Соответствие
+        // карты меняется и от панорамы — видимое раздвигает её, — и картинка растеризуется заново,
+        // только когда масштаб ушёл на ступень в 2^(1/8), а не на каждом кадре (ADR 0012).
+        var stand = Create();
+        var content = stand.Map.GetVisualChildren().OfType<MinimapContent>().Single();
+        using var bitmap = new SKBitmap((int)content.Bounds.Width, (int)content.Bounds.Height);
+        using var canvas = new SKCanvas(bitmap);
+
+        Assert.True(content.RenderTo(canvas));
+        var first = content.PictureImage;
+        Assert.True(content.RenderTo(canvas));
+        Assert.Same(first, content.PictureImage);
+
+        var matrix = stand.Map.WorldToMinimap(new Point(1, 0)) - stand.Map.WorldToMinimap(default);
+        stand.View.ViewportLocation = new Point(1010, 1005);
+        stand.Window.CaptureRenderedFrame();
+        Assert.NotEqual(matrix, stand.Map.WorldToMinimap(new Point(1, 0)) - stand.Map.WorldToMinimap(default));
+        Assert.True(content.RenderTo(canvas));
+        Assert.Same(first, content.PictureImage);
+
+        stand.View.ViewportLocation = new Point(3000, 3000);
+        stand.Window.CaptureRenderedFrame();
+        Assert.True(content.RenderTo(canvas));
+        Assert.NotSame(first, content.PictureImage);
+    }
+
+    [AvaloniaFact]
+    public void The_Map_Content_Has_No_Composition_Bitmap_Cache()
+    {
+        // BitmapCache Avalonia 12.1.1 не обновляется, когда визуал записывает свою операцию заново, и
+        // карта в окне показывала первое собранное содержимое (ADR 0012). Безголовый стенд этого не видит —
+        // композитора у него нет, — поэтому держится само правило.
+        var stand = Create();
+        var content = stand.Map.GetVisualChildren().OfType<MinimapContent>().Single();
+
+        Assert.Null(content.CacheMode);
     }
 
     [AvaloniaFact]

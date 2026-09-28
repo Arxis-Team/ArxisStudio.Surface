@@ -8,4 +8,9 @@
         <PackageTags>avalonia;canvas;infinite-canvas;editor;zoom;pan;selection;ui</PackageTags>
     </PropertyGroup>
 
+    <ItemGroup>
+        <!-- Большие слои рисуют Skia напрямую, если она есть (ADR 0012). -->
+        <PackageReference Include="Avalonia.Skia" />
+    </ItemGroup>
+
 </Project>

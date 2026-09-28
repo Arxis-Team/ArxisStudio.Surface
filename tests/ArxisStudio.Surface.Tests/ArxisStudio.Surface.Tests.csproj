@@ -18,6 +18,8 @@
         <PackageReference Include="xunit.v3" />
         <PackageReference Include="xunit.runner.visualstudio" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <!-- Путь Skia слоёв проверяется растровым холстом: безголовая отрисовка Skia не даёт (ADR 0012). -->
+        <PackageReference Include="SkiaSharp.NativeAssets.Win32" />
     </ItemGroup>
 
     <ItemGroup>

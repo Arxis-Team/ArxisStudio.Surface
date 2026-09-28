@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Rendering.SceneGraph;
+using SkiaSharp;
 
 namespace ArxisStudio.Surface.Nodes;
 
@@ -24,7 +25,8 @@ namespace ArxisStudio.Surface.Nodes;
 /// Рисует слой своей операцией, а не геометрией (ADR 0011): композитор меряет границы каждой новой
 /// записи геометрии, и кривые десяти тысяч связей на каждом кадре панорамы стоили сотни миллисекунд.
 /// Операция берёт из сетки только видимые связи и рисует каждую ломаной, отрезков — по её длине на
-/// экране (<see cref="Polyline"/>); связь короче пикселя не рисуется.
+/// экране (<see cref="CurveSegments"/>); связь короче пикселя не рисуется. Холст Skia из аренды рисует их
+/// одним путём на перо (ADR 0012).
 /// </para>
 /// </remarks>
 internal sealed class SimplifiedLinkLayer : Control
@@ -124,7 +126,7 @@ internal sealed class SimplifiedLinkLayer : Control
         {
             var c = snapshot.Curves[i];
             visible++;
-            segments += Polyline.Segments(c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
+            segments += CurveSegments.Count(c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
         }
 
         return (visible, segments);
@@ -148,6 +150,22 @@ internal sealed class SimplifiedLinkLayer : Control
             Stroke?.ToImmutable(), SelectedStroke?.ToImmutable()));
 
         Draws++;
+    }
+
+    /// <summary>
+    /// Рисует кадр путём Skia на данный холст — тем, каким операция рисует из аренды; для тестов.
+    /// </summary>
+    /// <returns><see langword="false"/>, если рисовать нечего или кисть не сплошная.</returns>
+    internal bool RenderTo(SKCanvas canvas)
+    {
+        if (_editor is not { } editor || _snapshot is not { } snapshot)
+            return false;
+
+        var (world, zoom) = Viewport(editor, out var matrix);
+        var operation = new LinksOperation(
+            new Rect(Bounds.Size), snapshot, matrix, world, zoom, StrokeThickness,
+            Stroke?.ToImmutable(), SelectedStroke?.ToImmutable());
+        return operation.CanPaint && operation.RenderSkia(canvas, 1);
     }
 
     /// <summary>
@@ -313,6 +331,12 @@ internal sealed class SimplifiedLinkLayer : Control
     {
         public Rect Bounds => bounds;
 
+        /// <summary>
+        /// Все ли кисти холст из аренды нарисует.
+        /// </summary>
+        public bool CanPaint =>
+            SkiaCanvas.CanPaint(stroke) && SkiaCanvas.CanPaint(selectedStroke) && Array.TrueForAll(snapshot.Palette, SkiaCanvas.CanPaint);
+
         public bool HitTest(Point p) => false;
 
         public bool Equals(ICustomDrawOperation? other) => ReferenceEquals(this, other);
@@ -322,6 +346,79 @@ internal sealed class SimplifiedLinkLayer : Control
         }
 
         public void Render(ImmediateDrawingContext context)
+        {
+            if (CanPaint)
+            {
+                using var lease = SkiaCanvas.TryLease(context);
+                if (lease != null)
+                {
+                    RenderSkia(lease.SkCanvas, lease.CurrentOpacity);
+                    return;
+                }
+            }
+
+            RenderImmediate(context);
+        }
+
+        /// <summary>
+        /// Путь Skia: один путь на перо — тему, каждый цвет модели и выбор.
+        /// </summary>
+        public bool RenderSkia(SKCanvas canvas, double opacity)
+        {
+            // Номер пути: 0 — тема, 1 — выбор, дальше — палитра.
+            var paths = new SKPath?[snapshot.Palette.Length + 2];
+            try
+            {
+                foreach (var i in snapshot.Grid.Within(world))
+                {
+                    var index = snapshot.Strokes[i] switch
+                    {
+                        SelectedStrokeIndex => 1,
+                        ThemeStroke => 0,
+                        var p => p + 2
+                    };
+                    var c = snapshot.Curves[i];
+                    CurveSegments.Append(paths[index] ??= new SKPath(), c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
+                }
+
+                var width = thickness / zoom;
+                SkiaCanvas.Enter(canvas, bounds, matrix);
+                try
+                {
+                    Draw(canvas, paths[0], stroke, width, opacity);
+                    for (var p = 0; p < snapshot.Palette.Length; p++)
+                        Draw(canvas, paths[p + 2], snapshot.Palette[p], width, opacity);
+
+                    // Выбранные — поверх, чтобы соседний провод их не закрыл.
+                    Draw(canvas, paths[1], selectedStroke, width, opacity);
+                }
+                finally
+                {
+                    canvas.Restore();
+                }
+            }
+            finally
+            {
+                foreach (var path in paths)
+                    path?.Dispose();
+            }
+
+            return true;
+        }
+
+        private static void Draw(SKCanvas canvas, SKPath? path, IImmutableBrush? brush, double width, double opacity)
+        {
+            if (path == null || brush == null)
+                return;
+
+            using var paint = SkiaCanvas.Stroke(SkiaCanvas.Color(brush, opacity), width);
+            canvas.DrawPath(path, paint);
+        }
+
+        /// <summary>
+        /// Запасной путь: по отрезку через контекст.
+        /// </summary>
+        private void RenderImmediate(ImmediateDrawingContext context)
         {
             // Мир под трансформацией viewport: пиксель экрана — это 1 / zoom мировых единиц.
             var width = thickness / zoom;
@@ -357,6 +454,6 @@ internal sealed class SimplifiedLinkLayer : Control
         }
 
         private void Draw(ImmediateDrawingContext context, ImmutablePen pen, MinimapCurve c) =>
-            Polyline.Draw(context, pen, c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
+            CurveSegments.Draw(context, pen, c.Source, c.SourceControl, c.TargetControl, c.Target, zoom);
     }
 }
