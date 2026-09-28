@@ -35,6 +35,7 @@ internal sealed class AutomationChannel
     private readonly NodeEditor _editor;
     private readonly MainWindow _window;
     private readonly List<Dictionary<string, object?>> _events = new();
+    private PanBenchmark? _bench;
 
     private AutomationChannel(string directory, NodeEditor editor, MainWindow window)
     {
@@ -230,6 +231,37 @@ internal sealed class AutomationChannel
             case "redo":
                 return new() { ["returned"] = _window.History.Redo() };
 
+            case "panBench":
+            {
+                // Замер длится кадры, а канал отвечает сразу: результат — командой benchResult.
+                var step = new Vector(Real("dx") ?? 20, Real("dy") ?? 0);
+                _bench = PanBenchmark.Start(_window, _editor, n => _window.ZoomText.Text = $"кадр {n}", step, Number("frames", 120));
+                return new() { ["started"] = true };
+            }
+
+            case "show":
+            {
+                // Прячет и показывает слой по имени, чтобы замер назвал, кто платит за кадр (ADR 0011
+                // библиотеки).
+                var visible = !command.TryGetProperty("visible", out var flag) || flag.ValueKind != JsonValueKind.False;
+                var part = command.TryGetProperty("part", out var partElement) ? partElement.GetString() : null;
+                Avalonia.Visual? target = part switch
+                {
+                    "minimap" => _window.Minimap,
+                    "grid" => _editor.GetVisualDescendants().OfType<ArxisStudio.Surface.SurfaceGrid>().FirstOrDefault(),
+                    "cards" => _editor.GetVisualDescendants().OfType<ArxisStudio.Surface.SurfaceSimplifiedLayer>().FirstOrDefault(),
+                    "links" => _editor.GetVisualDescendants().FirstOrDefault(v => v.GetType().Name == "SimplifiedLinkLayer"),
+                    "editor" => _editor,
+                    _ => throw new ArgumentException($"Слой {part}: есть minimap, grid, cards, links, editor.")
+                };
+
+                target!.IsVisible = visible;
+                return new() { ["part"] = part, ["visible"] = visible };
+            }
+
+            case "benchResult":
+                return _bench?.Result is { } result ? new(result) : new() { ["done"] = false };
+
             case "selectAll":
             {
                 // Выбор хостом, как SelectedIndex: разворачивается только видимое (ADR 0010 библиотеки).
@@ -261,7 +293,7 @@ internal sealed class AutomationChannel
             }
 
             default:
-                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo, selectAll, theme.");
+                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo, selectAll, panBench, benchResult, show, theme.");
         }
     }
 
