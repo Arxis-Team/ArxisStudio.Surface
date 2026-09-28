@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -25,7 +26,7 @@ public partial class NodeEditor
     /// </remarks>
     private sealed class LinkMinimapLayer(NodeEditor editor) : IMinimapLayer
     {
-        public void Build(StreamGeometryContext context)
+        public void Build(List<MinimapCurve> curves)
         {
             var built = 0;
             foreach (var link in editor._recordByItem.Values)
@@ -34,9 +35,7 @@ public partial class NodeEditor
                     continue;
 
                 var g = link.Geometry;
-                context.BeginFigure(g.Source, isFilled: false);
-                context.CubicBezierTo(g.SourceControl, g.TargetControl, g.Target);
-                context.EndFigure(isClosed: false);
+                curves.Add(new MinimapCurve(g.Source, g.SourceControl, g.TargetControl, g.Target));
                 built++;
             }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -25,11 +26,12 @@ namespace ArxisStudio.Surface.Editing;
 /// под указателем.
 /// </para>
 /// <para>
-/// Содержимое — контейнеры и фигуры слоёв — собирается в одну геометрию в мировых координатах и
-/// рисуется одной трансформацией (ADR 0007). Пересобирается оно по сигналу поверхности «содержимое
+/// Содержимое — контейнеры и кривые слоёв — собирается в мировых координатах (ADR 0007) и рисуется
+/// отдельным визуалом с кэшем в картинку, своей операцией, а не геометрией (ADR 0011): панорама двигает
+/// только рамку видимой области, тоже отдельный визуал, и содержимое не записывается заново, пока не
+/// сменились оно само или соответствие карты. Пересобирается оно по сигналу поверхности «содержимое
 /// сменилось», а не после прохода раскладки окна, и во время непрерывных правок — не чаще раза в
-/// <see cref="RebuildInterval"/>; отложенное дособерёт таймер. Рамка видимой области рисуется на
-/// каждой перерисовке.
+/// <see cref="RebuildInterval"/>; отложенное дособерёт таймер.
 /// </para>
 /// </remarks>
 public class SurfaceMinimap : Control
@@ -82,19 +84,33 @@ public class SurfaceMinimap : Control
     private bool _dragging;
     private Vector _grab;
 
-    // Содержимое в мировых координатах: контейнеры и фигуры слоя выше. Пока оно устарело,
+    // Содержимое в мировых координатах: контейнеры и кривые слоя выше. Пока оно устарело,
     // пересборка назначена — кадром или таймером, — и новый сигнал её не назначает заново.
-    private StreamGeometry? _items;
-    private StreamGeometry? _layer;
+    private MinimapSnapshot? _snapshot;
     private IMinimapLayer? _layerSource;
+    private readonly MinimapContent _content = new();
+    private readonly MinimapFrame _frameView = new();
     private bool _contentStale = true;
     private long? _lastRebuild;
     private DispatcherTimer? _rebuildTimer;
 
+    // Пересчёт карты назначен на ближайший кадр.
+    private bool _refreshRequested;
+
     static SurfaceMinimap()
     {
-        AffectsRender<SurfaceMinimap>(BackgroundProperty, ItemFillProperty, ViewportStrokeProperty, ViewportFillProperty);
+        AffectsRender<SurfaceMinimap>(BackgroundProperty);
         ClipToBoundsProperty.OverrideDefaultValue<SurfaceMinimap>(true);
+    }
+
+    /// <summary>
+    /// Инициализирует новый экземпляр <see cref="SurfaceMinimap"/>.
+    /// </summary>
+    public SurfaceMinimap()
+    {
+        // Содержимое — снизу, рамка — поверх; нажатия принимает сама карта.
+        VisualChildren.Add(_content);
+        VisualChildren.Add(_frameView);
     }
 
     /// <summary>
@@ -143,9 +159,16 @@ public class SurfaceMinimap : Control
     }
 
     /// <summary>
-    /// Сколько раз миникарта рисовала себя — для тестов перерисовки.
+    /// Сколько раз миникарта рисовала себя, своё содержимое или рамку — для тестов перерисовки.
     /// </summary>
-    internal int RenderCount { get; private set; }
+    internal int RenderCount => _renders + _content.Renders + _frameView.Renders;
+
+    /// <summary>
+    /// Сколько раз содержимое записывалось заново — для тестов: панорама его не трогает.
+    /// </summary>
+    internal int ContentRenders => _content.Renders;
+
+    private int _renders;
 
     /// <summary>
     /// Сколько раз миникарта пересобирала содержимое — для тестов и стенда.
@@ -186,14 +209,41 @@ public class SurfaceMinimap : Control
     /// <inheritdoc />
     public override void Render(DrawingContext context)
     {
-        RenderCount++;
+        _renders++;
 
-        var bounds = new Rect(Bounds.Size);
-        if (Background is { } background)
-            context.DrawRectangle(background, null, bounds);
+        // Фон прозрачен, если его не задали: нажатия по карте принимает она сама, всей площадью.
+        context.DrawRectangle(Background ?? Brushes.Transparent, null, new Rect(Bounds.Size));
+    }
 
-        if (Editor is not { } editor || bounds.Width <= 0 || bounds.Height <= 0)
+    /// <summary>
+    /// Назначает пересчёт карты на ближайший кадр.
+    /// </summary>
+    /// <remarks>
+    /// Кадром анимации, а не отрисовкой: пересчёт отдаёт новое частям карты, и те просят перерисовки, а
+    /// внутри прохода отрисовки просить её нельзя. Сколько бы поводов ни пришло до кадра, пересчёт один.
+    /// </remarks>
+    private void RequestRefresh()
+    {
+        if (_refreshRequested || TopLevel.GetTopLevel(this) is not { } top)
             return;
+
+        _refreshRequested = true;
+        top.RequestAnimationFrame(_ => Refresh());
+    }
+
+    /// <summary>
+    /// Пересчитывает соответствие, дособирает содержимое, если пора, и отдаёт его частям карты.
+    /// </summary>
+    private void Refresh()
+    {
+        _refreshRequested = false;
+
+        if (_listening is not { } editor || Bounds.Width <= 0 || Bounds.Height <= 0)
+        {
+            _content.Show(null, Matrix.Identity, 1, null, null);
+            _frameView.Show(default, null, null);
+            return;
+        }
 
         if (!_dragging)
             UpdateMapping(editor);
@@ -201,20 +251,35 @@ public class SurfaceMinimap : Control
         if (_contentStale && UntilRebuild() <= TimeSpan.Zero)
             RebuildContent(editor);
 
-        // Содержимое лежит в мировых координатах и рисуется одной трансформацией; толщина обводки
-        // делится на масштаб, чтобы после трансформации остаться в одну точку.
-        using (context.PushTransform(WorldToMinimapMatrix()))
-        {
-            if (_items != null && ItemFill is { } fill)
-                context.DrawGeometry(fill, null, _items);
-
-            if (_layer != null && _layerSource?.FindStroke(this) is { } layerStroke)
-                context.DrawGeometry(null, new Pen(layerStroke, 1 / _scale), _layer);
-        }
-
+        // Содержимое записывается заново, только если сменилось оно само или соответствие карты, —
+        // панорама двигает одну рамку (ADR 0011).
+        _content.Show(_snapshot, WorldToMinimapMatrix(), _scale, ItemFill, _layerSource?.FindStroke(this));
         ViewportFrame = Map(VisibleWorld(editor));
-        var pen = ViewportStroke is { } stroke ? new Pen(stroke) : null;
-        context.DrawRectangle(ViewportFill, pen, ViewportFrame);
+        _frameView.Show(ViewportFrame, ViewportFill, ViewportStroke);
+    }
+
+    /// <inheritdoc />
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        _content.Measure(availableSize);
+        _frameView.Measure(availableSize);
+        return default;
+    }
+
+    /// <inheritdoc />
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        var rect = new Rect(finalSize);
+        _content.Arrange(rect);
+        _frameView.Arrange(rect);
+        return finalSize;
+    }
+
+    /// <inheritdoc />
+    protected override void OnSizeChanged(SizeChangedEventArgs e)
+    {
+        base.OnSizeChanged(e);
+        RequestRefresh();
     }
 
     /// <inheritdoc />
@@ -261,7 +326,7 @@ public class SurfaceMinimap : Control
         if (ReferenceEquals(e.Pointer.Captured, this))
             e.Pointer.Capture(null);
 
-        InvalidateVisual();
+        RequestRefresh();
     }
 
     /// <inheritdoc />
@@ -269,7 +334,7 @@ public class SurfaceMinimap : Control
     {
         base.OnPointerCaptureLost(e);
         _dragging = false;
-        InvalidateVisual();
+        RequestRefresh();
     }
 
     /// <inheritdoc />
@@ -299,7 +364,7 @@ public class SurfaceMinimap : Control
         if (_contentStale && _listening is { } editor)
             RebuildContent(editor);
 
-        InvalidateVisual();
+        RequestRefresh();
     }
 
     /// <inheritdoc />
@@ -309,6 +374,9 @@ public class SurfaceMinimap : Control
 
         if (change.Property == EditorProperty && this.IsAttachedToVisualTree())
             Listen(Editor);
+        else if (change.Property == ItemFillProperty || change.Property == ViewportStrokeProperty
+                 || change.Property == ViewportFillProperty)
+            RequestRefresh();
     }
 
     /// <summary>
@@ -330,8 +398,7 @@ public class SurfaceMinimap : Control
         // Новый редактор — новое содержимое, и собирается оно сразу, без прореживания.
         _listening = editor;
         _rebuildTimer?.Stop();
-        _items = null;
-        _layer = null;
+        _snapshot = null;
         _layerSource = null;
         _contentStale = true;
         _lastRebuild = null;
@@ -344,7 +411,7 @@ public class SurfaceMinimap : Control
                 editor.GetObservable(SurfaceView.ViewportZoomProperty).Subscribe(new Invalidator<double>(this)));
         }
 
-        InvalidateVisual();
+        RequestRefresh();
     }
 
     private void OnEditorContentChanged(object? sender, EventArgs e)
@@ -358,7 +425,7 @@ public class SurfaceMinimap : Control
         var wait = UntilRebuild();
         if (wait <= TimeSpan.Zero)
         {
-            InvalidateVisual();
+            RequestRefresh();
             return;
         }
 
@@ -379,46 +446,24 @@ public class SurfaceMinimap : Control
         _lastRebuild is { } last ? RebuildInterval - Stopwatch.GetElapsedTime(last, Clock()) : TimeSpan.Zero;
 
     /// <summary>
-    /// Собирает контейнеры и фигуры слоя выше в геометрию мировых координат.
+    /// Собирает контейнеры и кривые слоя выше в снимок мировых координат.
     /// </summary>
     private void RebuildContent(SurfaceView editor)
     {
-        // Прямоугольники обходятся в одну сторону, и правило NonZero закрашивает их объединение:
-        // по умолчанию EvenOdd, и перекрытие двух контейнеров вышло бы дырой.
-        var items = new StreamGeometry();
+        var items = new List<Rect>();
         var bounds = default(Rect);
-        var any = false;
-        using (var context = items.Open())
+        foreach (var rect in editor.EnumerateItemBounds())
         {
-            context.SetFillRule(FillRule.NonZero);
-            foreach (var rect in editor.EnumerateItemBounds())
-            {
-                context.BeginFigure(rect.TopLeft, isFilled: true);
-                context.LineTo(rect.TopRight);
-                context.LineTo(rect.BottomRight);
-                context.LineTo(rect.BottomLeft);
-                context.EndFigure(isClosed: true);
-                bounds = any ? bounds.Union(rect) : rect;
-                any = true;
-            }
+            bounds = items.Count > 0 ? bounds.Union(rect) : rect;
+            items.Add(rect);
         }
 
-        _items = items;
         ContentBounds = bounds;
 
+        var curves = new List<MinimapCurve>();
         _layerSource = editor.GetService<IMinimapLayer>();
-        if (_layerSource is { } source)
-        {
-            var layer = new StreamGeometry();
-            using (var context = layer.Open())
-                source.Build(context);
-
-            _layer = layer;
-        }
-        else
-        {
-            _layer = null;
-        }
+        _layerSource?.Build(curves);
+        _snapshot = new MinimapSnapshot(items.ToArray(), curves.ToArray());
 
         _contentStale = false;
         _lastRebuild = Clock();
@@ -461,7 +506,7 @@ public class SurfaceMinimap : Control
         {
         }
 
-        public void OnNext(T value) => minimap.InvalidateVisual();
+        public void OnNext(T value) => minimap.RequestRefresh();
     }
 
     private sealed class Subscriptions(params IDisposable[] items) : IDisposable

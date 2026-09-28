@@ -227,8 +227,7 @@ public class NodeVirtualizationTests
         Assert.Equal(new[] { far }, crossing);
 
         var layer = stand.Editor.GetService<ArxisStudio.Surface.Editing.IMinimapLayer>()!;
-        using (var context = new Avalonia.Media.StreamGeometry().Open())
-            layer.Build(context);
+        layer.Build(new List<ArxisStudio.Surface.Editing.MinimapCurve>());
 
         Assert.Equal(3, stand.Editor.LinksOnMinimap);
     }

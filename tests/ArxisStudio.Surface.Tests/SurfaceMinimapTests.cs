@@ -159,6 +159,46 @@ public class SurfaceMinimapTests
     }
 
     [AvaloniaFact]
+    public void Panning_Inside_The_Content_Moves_Only_The_Frame()
+    {
+        // Видимая область внутри занятого: соответствие карты стоит, и содержимое, кэшированное в
+        // картинку, не записывается заново (ADR 0011) — едет одна рамка.
+        var stand = Create();
+        stand.Item(1).Location = new Point(0, 0);
+        stand.Item(1).Width = 3000;
+        stand.Item(1).Height = 3000;
+        stand.Clock.PassInterval();
+        stand.Render();
+        var content = stand.Map.ContentRenders;
+        var frame = stand.Map.ViewportFrame;
+        var drawn = stand.Map.RenderCount;
+
+        stand.View.ViewportLocation = new Point(1100, 1050);
+        stand.Window.CaptureRenderedFrame();
+
+        Assert.True(stand.Map.RenderCount > drawn, "Сдвиг видимой области обязан перерисовать рамку.");
+        Assert.Equal(content, stand.Map.ContentRenders);
+        Assert.Equal(frame.Position + (stand.Map.WorldToMinimap(new Point(100, 50)) - stand.Map.WorldToMinimap(default)),
+            stand.Map.ViewportFrame.Position);
+    }
+
+    [AvaloniaFact]
+    public void A_Pan_That_Widens_The_Map_Redraws_Its_Content()
+    {
+        // Видимая область за краем занятого: карта раздвигается, и готовое содержимое ложится в
+        // другом масштабе — его записывают заново, но не пересобирают.
+        var stand = Create();
+        var content = stand.Map.ContentRenders;
+        var rebuilt = stand.Map.ContentRebuilds;
+
+        stand.View.ViewportLocation = new Point(2000, 2000);
+        stand.Window.CaptureRenderedFrame();
+
+        Assert.True(stand.Map.ContentRenders > content, "Новое соответствие карты обязано перерисовать содержимое.");
+        Assert.Equal(rebuilt, stand.Map.ContentRebuilds);
+    }
+
+    [AvaloniaFact]
     public void A_Map_Given_Its_Surface_Later_Follows_It()
     {
         var stand = Create();
@@ -180,13 +220,13 @@ public class SurfaceMinimapTests
     public void A_Move_After_A_Quiet_Interval_Is_Drawn_At_Once()
     {
         var stand = Create();
-        var drawn = stand.Map.RenderCount;
+        var drawn = stand.Map.ContentRenders;
         stand.Clock.PassInterval();
 
         stand.Item(0).Location = new Point(150, 400);
         stand.Render();
 
-        Assert.True(stand.Map.RenderCount > drawn, "Сдвиг элемента обязан перерисовать карту.");
+        Assert.True(stand.Map.ContentRenders > drawn, "Сдвиг элемента обязан перерисовать содержимое карты.");
         Assert.Equal(new Rect(150, 100, 250, 360), stand.Map.ContentBounds);
     }
 

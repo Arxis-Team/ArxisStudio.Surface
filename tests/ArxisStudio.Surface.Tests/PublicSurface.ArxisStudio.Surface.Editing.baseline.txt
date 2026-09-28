@@ -124,6 +124,8 @@ class ArxisStudio.Surface.Editing.SurfaceMinimap : Control
     avalonia ViewportFillProperty -> ViewportFill : IBrush (styled) = null
     avalonia ViewportStrokeProperty -> ViewportStroke : IBrush (styled) = null
     ctor .ctor()
+    method Size ArrangeOverride(Size)
+    method Size MeasureOverride(Size)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
@@ -131,6 +133,7 @@ class ArxisStudio.Surface.Editing.SurfaceMinimap : Control
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    method Void OnSizeChanged(SizeChangedEventArgs)
     method Void Render(DrawingContext)
     property IBrush Background { get; set; }
     property IBrush ItemFill { get; set; }
