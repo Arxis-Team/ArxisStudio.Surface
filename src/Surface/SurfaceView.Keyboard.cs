@@ -210,8 +210,9 @@ public partial class SurfaceView
 
     private bool TryNudgeSelection(Key key, KeyModifiers modifiers)
     {
+        // Выбор — индексный слой: выбранное бывает и без контейнеров (ADR 0010).
         var targets = SelectedTargets;
-        if (targets.Count == 0)
+        if (targets.Count == 0 && Selection.Count == 0)
             return false;
 
         var step = KeyboardStep(modifiers);
@@ -240,6 +241,9 @@ public partial class SurfaceView
 
             SetTargetPosition(target, GetTargetPosition(target) + filtered);
         }
+
+        // Выбранные без контейнера едут записью в модель; политик у них нет — они живут на контейнере.
+        MoveCollapsedSelection(delta);
 
         CommitEdit();
         RefreshSelectionOverlay();

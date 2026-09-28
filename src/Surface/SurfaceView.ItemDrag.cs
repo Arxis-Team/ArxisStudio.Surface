@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using ArxisStudio.Surface.States;
 
@@ -7,6 +8,11 @@ namespace ArxisStudio.Surface;
 // Часть SurfaceView; общее описание типа — в SurfaceView.cs.
 public partial class SurfaceView
 {
+    // Жест держит развёрнутое: операция помнит контейнеры выбранных, а выбранное больше не закреплено
+    // (ADR 0010) — ушедший из окна посреди жеста контейнер достался бы другому элементу, и жест двигал
+    // бы его.
+    private IDisposable? _dragRealizationHold;
+
     /// <summary>
     /// Запрещает перетаскивать текущее выделение, хотя каждый его элемент двигать можно.
     /// </summary>
@@ -45,6 +51,8 @@ public partial class SurfaceView
             return;
 
         BeginEdit(SurfaceEditKind.Move);
+        _dragRealizationHold?.Dispose();
+        _dragRealizationHold = HoldRealization();
         _groupDragOperation = GroupDragOperation.TryCreate(this, sourceContainer, sourceTarget);
     }
 
@@ -81,10 +89,9 @@ public partial class SurfaceView
             return;
         }
 
-        foreach (var item in items)
+        foreach (var container in EnumerateSelectedContainers())
         {
-            var container = ContainerFromItem(item) as SurfaceItem ?? item as SurfaceItem;
-            if (container == null || !container.IsDraggable || ReferenceEquals(container, source))
+            if (!container.IsDraggable || ReferenceEquals(container, source))
                 continue;
 
             var target = ResolveInteractionTarget(container);
@@ -100,6 +107,8 @@ public partial class SurfaceView
         _groupDragOperation?.Complete(this);
         _groupDragOperation = null;
         CommitEdit();
+        _dragRealizationHold?.Dispose();
+        _dragRealizationHold = null;
         e.Handled = true;
     }
 }

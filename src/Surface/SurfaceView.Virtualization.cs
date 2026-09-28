@@ -297,6 +297,77 @@ public partial class SurfaceView
     }
 
     /// <summary>
+    /// Выбранные элементы без контейнера: индекс, элемент и прямоугольник в мировых координатах.
+    /// </summary>
+    internal List<CollapsedSelected> CollapsedSelection()
+    {
+        var result = new List<CollapsedSelected>();
+        if (ItemsPanelRoot is not VirtualizingSurfacePanel { IsVirtualizing: true } panel)
+            return result;
+
+        foreach (var index in Selection.SelectedIndexes)
+        {
+            if (ContainerFromIndex(index) == null && panel.TryGetCollapsedBounds(index, out var bounds))
+                result.Add(new CollapsedSelected(index, ItemsView[index], bounds));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Двигает выбранный элемент без контейнера записью в модель и пишет сдвиг в открытую единицу
+    /// правки (ADR 0010).
+    /// </summary>
+    /// <returns><see langword="false"/>, если модель записи не приняла: привязка положения односторонняя.</returns>
+    internal bool MoveCollapsed(CollapsedSelected selected, Point location)
+    {
+        if (ItemsPanelRoot is not VirtualizingSurfacePanel panel || !panel.TryMoveCollapsed(selected.Index, location))
+            return false;
+
+        if (selected.Item != null && !_suppressEditRecording)
+            _activeEdit?.RecordItemPosition(selected.Item, selected.Bounds.Position, location);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Разворачивает выбранный элемент, чья модель не приняла сдвиг, — он поедет прежним путём, швом
+    /// записи контейнера.
+    /// </summary>
+    /// <returns>Target взаимодействия контейнера или <see langword="null"/>.</returns>
+    internal Control? RealizeForMove(CollapsedSelected selected) =>
+        (ItemsPanelRoot as VirtualizingSurfacePanel)?.RealizeNow(selected.Index) is SurfaceItem container
+            ? ResolveInteractionTarget(container)
+            : null;
+
+    /// <summary>
+    /// Ставит свёрнутый элемент в положение записью в модель — для отмены и повтора сдвига, который не
+    /// разворачивает элемент (ADR 0010).
+    /// </summary>
+    /// <returns><see langword="false"/>, если элемент развёрнут, его нет или модель записи не приняла.</returns>
+    internal bool TryMoveCollapsedItem(object? item, Point location)
+    {
+        if (ItemsPanelRoot is not VirtualizingSurfacePanel panel)
+            return false;
+
+        var index = panel.CollapsedIndexOf(item);
+        return index >= 0 && panel.TryMoveCollapsed(index, location);
+    }
+
+    /// <summary>
+    /// Сдвигает выбранные без контейнера на дельту — стрелками; не принявших запись разворачивает.
+    /// </summary>
+    private void MoveCollapsedSelection(Vector delta)
+    {
+        foreach (var selected in CollapsedSelection())
+        {
+            var location = selected.Bounds.Position + delta;
+            if (!MoveCollapsed(selected, location) && RealizeForMove(selected) is { } target)
+                SetTargetPosition(target, location);
+        }
+    }
+
+    /// <summary>
     /// Публикует снимок выделения без события: сменилось только развёрнутое.
     /// </summary>
     private void PublishRealizedSelection()
@@ -373,6 +444,14 @@ public partial class SurfaceView
 
         return false;
     }
+
+    /// <summary>
+    /// Выбранный элемент без контейнера.
+    /// </summary>
+    /// <param name="Index">Индекс в коллекции.</param>
+    /// <param name="Item">Элемент.</param>
+    /// <param name="Bounds">Прямоугольник в мировых координатах на момент чтения.</param>
+    internal readonly record struct CollapsedSelected(int Index, object? Item, Rect Bounds);
 
     /// <summary>
     /// Смена контейнеров панелью: закрытие последней публикует развёрнутое выбранное.

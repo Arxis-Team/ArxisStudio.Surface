@@ -60,6 +60,36 @@ internal sealed class PointBindingReader : BindingReader
 }
 
 /// <summary>
+/// Пишет положение в модель той же привязкой в обратную сторону — как её записал бы
+/// <see cref="SurfaceItem.Location"/>, двусторонний по умолчанию.
+/// </summary>
+/// <remarks>
+/// ADR 0010: так двигается выбранный элемент без контейнера. Привязка, которая в модель не пишет, —
+/// односторонняя или с источником только для чтения, — запись не примет, и проверяет это тот, кто
+/// пишет, чтением.
+/// </remarks>
+internal sealed class PointBindingWriter : BindingReader
+{
+    private static readonly StyledProperty<Point> ValueProperty =
+        AvaloniaProperty.Register<PointBindingWriter, Point>("Value", defaultBindingMode: BindingMode.TwoWay);
+
+    /// <summary>
+    /// Инициализирует писатель привязкой.
+    /// </summary>
+    public PointBindingWriter(BindingBase binding)
+        : base(binding) => Bind(ValueProperty, binding);
+
+    /// <summary>
+    /// Пишет значение в модель, как его записал бы контрол с этим контекстом данных.
+    /// </summary>
+    public void Write(object? source, Point value)
+    {
+        DataContext = source;
+        SetCurrentValue(ValueProperty, value);
+    }
+}
+
+/// <summary>
 /// Читает объект — как его дала бы привязка свойству типа <see cref="object"/>.
 /// </summary>
 internal sealed class ObjectBindingReader : BindingReader

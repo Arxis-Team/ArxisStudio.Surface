@@ -33,6 +33,10 @@ internal sealed class SurfaceEditScope
     private readonly Dictionary<Control, Entry> _entries = new();
     private readonly List<Control> _order = new();
 
+    // Элементы, двигавшиеся без контейнера (ADR 0010): положение до жеста и заданное.
+    private readonly Dictionary<object, (Point Before, Point After)> _items = new(ReferenceEqualityComparer.Instance);
+    private readonly List<object> _itemOrder = new();
+
     public SurfaceEditScope(SurfaceEditKind kind) => Kind = kind;
 
     public SurfaceEditKind Kind { get; }
@@ -47,6 +51,21 @@ internal sealed class SurfaceEditScope
 
     public void RecordZIndex(SurfaceView view, Control target, int zIndex)
         => Touch(view, target).ZIndex = zIndex;
+
+    /// <summary>
+    /// Записывает положение элемента без контейнера; прежняя рамка снимается на первом касании.
+    /// </summary>
+    public void RecordItemPosition(object item, Point before, Point position)
+    {
+        if (_items.TryGetValue(item, out var entry))
+        {
+            _items[item] = (entry.Before, position);
+            return;
+        }
+
+        _items[item] = (before, position);
+        _itemOrder.Add(item);
+    }
 
     public void RecordFacet(SurfaceView view, IEditFacet facet, Control target, object? value)
     {
@@ -106,6 +125,22 @@ internal sealed class SurfaceEditScope
             change.RememberItem(view);
 
         return changes;
+    }
+
+    /// <summary>
+    /// Собирает сдвиги элементов без контейнера, отбрасывая вернувшиеся к исходному.
+    /// </summary>
+    public IReadOnlyList<ItemMoveChange> BuildItemChanges()
+    {
+        List<ItemMoveChange>? changes = null;
+        foreach (var item in _itemOrder)
+        {
+            var (before, after) = _items[item];
+            if (Math.Abs(before.X - after.X) >= Tolerance || Math.Abs(before.Y - after.Y) >= Tolerance)
+                (changes ??= new List<ItemMoveChange>()).Add(new ItemMoveChange(item, before, after));
+        }
+
+        return changes ?? (IReadOnlyList<ItemMoveChange>)Array.Empty<ItemMoveChange>();
     }
 
     private Entry Touch(SurfaceView view, Control target)

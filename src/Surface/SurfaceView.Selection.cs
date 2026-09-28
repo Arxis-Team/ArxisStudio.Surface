@@ -843,7 +843,7 @@ public partial class SurfaceView
     /// По индексам, а не по <c>SelectedItems</c>: поиск контейнера по элементу проходит коллекцию,
     /// и снимок большого выбора стоил бы квадрат его размера на каждом кадре жеста (ADR 0010).
     /// </remarks>
-    private protected IEnumerable<SurfaceItem> EnumerateSelectedContainers()
+    internal IEnumerable<SurfaceItem> EnumerateSelectedContainers()
     {
         foreach (var index in Selection.SelectedIndexes)
         {

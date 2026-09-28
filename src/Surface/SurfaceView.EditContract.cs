@@ -231,6 +231,24 @@ public partial class SurfaceView
     /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="change"/> равен <see langword="null"/>.</exception>
     public void Reapply(TargetChange change) => Apply(change, revert: false);
 
+    /// <summary>
+    /// Отменяет сдвиг элемента, у которого в жесте не было контейнера (ADR 0010).
+    /// </summary>
+    /// <param name="change">Сдвиг из <see cref="SurfaceEditCompletedEventArgs.ItemChanges"/>.</param>
+    /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="change"/> равен <see langword="null"/>.</exception>
+    /// <remarks>
+    /// Свёрнутому элементу положение пишется в модель, и он не разворачивается; развёрнутому — в
+    /// контейнер.
+    /// </remarks>
+    public void RevertMove(ItemMoveChange change) => (change ?? throw new ArgumentNullException(nameof(change))).ApplyTo(this, revert: true);
+
+    /// <summary>
+    /// Повторяет отменённый сдвиг элемента, у которого в жесте не было контейнера (ADR 0010).
+    /// </summary>
+    /// <param name="change">Сдвиг из <see cref="SurfaceEditCompletedEventArgs.ItemChanges"/>.</param>
+    /// <exception cref="ArgumentNullException">Выбрасывается, если <paramref name="change"/> равен <see langword="null"/>.</exception>
+    public void ReapplyMove(ItemMoveChange change) => (change ?? throw new ArgumentNullException(nameof(change))).ApplyTo(this, revert: false);
+
     private void Apply(TargetChange change, bool revert)
     {
         if (change == null)
@@ -363,10 +381,11 @@ public partial class SurfaceView
             return false;
 
         var changes = scope.BuildChanges(this);
-        if (changes.Count == 0)
+        var itemChanges = scope.BuildItemChanges();
+        if (changes.Count == 0 && itemChanges.Count == 0)
             return false;
 
-        EditCompleted?.Invoke(this, new SurfaceEditCompletedEventArgs(scope.Kind, changes));
+        EditCompleted?.Invoke(this, new SurfaceEditCompletedEventArgs(scope.Kind, changes, itemChanges));
         return true;
     }
 

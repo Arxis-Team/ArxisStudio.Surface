@@ -28,6 +28,11 @@ interface ArxisStudio.Surface.ISurfaceContextActionProvider
     method ValueTask<IReadOnlyList<SurfaceContextAction>> GetActionsAsync(SurfaceView, SurfaceContextRequest, CancellationToken)
 interface ArxisStudio.Surface.ISurfaceContextPresenter
     method Boolean TryShow(SurfaceView, SurfaceContextRequest, IReadOnlyList<SurfaceContextAction>)
+sealed class ArxisStudio.Surface.ItemMoveChange
+    ctor .ctor(Object, Point, Point)
+    property Object Item { get; }
+    property Point NewLocation { get; }
+    property Point OldLocation { get; }
 enum ArxisStudio.Surface.MovePolicy
     value Both = 3
     value None = 0
@@ -127,6 +132,8 @@ sealed class ArxisStudio.Surface.SurfaceDeleteRequestedEventArgs : EventArgs
     property IReadOnlyList<SurfaceSelectionTarget> Targets { get; }
 sealed class ArxisStudio.Surface.SurfaceEditCompletedEventArgs : EventArgs
     ctor .ctor(SurfaceEditKind, IReadOnlyList<TargetChange>)
+    ctor .ctor(SurfaceEditKind, IReadOnlyList<TargetChange>, IReadOnlyList<ItemMoveChange>)
+    property IReadOnlyList<ItemMoveChange> ItemChanges { get; }
     property IReadOnlyList<TargetChange> Changes { get; }
     property SurfaceEditKind Kind { get; }
 enum ArxisStudio.Surface.SurfaceEditKind
@@ -384,7 +391,9 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void PrepareContainerForItemOverride(Control, Object, Int32)
     method Void Reapply(TargetChange)
+    method Void ReapplyMove(ItemMoveChange)
     method Void Revert(TargetChange)
+    method Void RevertMove(ItemMoveChange)
     method Void ZoomAt(Double, Point)
     property BindingBase ItemAccentBinding { get; set; }
     property BindingBase ItemLocationBinding { get; set; }
@@ -419,6 +428,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
 abstract class ArxisStudio.Surface.TargetChange
     ctor .ctor(Control)
     property Control Target { get; }
+    property Object Item { get; }
 class ArxisStudio.Surface.VirtualizingSurfacePanel : VirtualizingPanel
     avalonia ExtentProperty -> Extent : Rect (styled) = 0, 0, 0, 0
     avalonia RealizationMarginProperty -> RealizationMargin : Double (styled) = 200

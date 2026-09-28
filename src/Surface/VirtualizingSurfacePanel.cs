@@ -83,6 +83,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
     private SurfaceView? _view;
     private PointBindingReader? _reader;
+    private PointBindingWriter? _writer;
     private ObjectBindingReader? _accentReader;
     private Rect _extent;
     private bool _extentStale = true;
@@ -247,6 +248,79 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             if (!_realized.ContainsKey(i) && bounds.Intersects(BoundsOf(_slots[i])))
                 RealizeNow(i);
         }
+    }
+
+    /// <summary>
+    /// Прямоугольник свёрнутого элемента в мировых координатах.
+    /// </summary>
+    /// <returns><see langword="false"/>, если элемент развёрнут, индекса нет или панель не виртуализирует.</returns>
+    internal bool TryGetCollapsedBounds(int index, out Rect bounds)
+    {
+        bounds = default;
+        if (!IsVirtualizing || _realized.ContainsKey(index))
+            return false;
+
+        SyncSlots(Items);
+        if (index < 0 || index >= _slots.Count)
+            return false;
+
+        bounds = BoundsOf(_slots[index]);
+        return true;
+    }
+
+    /// <summary>
+    /// Индекс свёрнутого элемента или <c>-1</c>, если он развёрнут или его нет.
+    /// </summary>
+    internal int CollapsedIndexOf(object? item)
+    {
+        if (item == null || !IsVirtualizing)
+            return -1;
+
+        SyncSlots(Items);
+        var index = IndexOfItem(item);
+        return index >= 0 && !_realized.ContainsKey(index) ? index : -1;
+    }
+
+    /// <summary>
+    /// Двигает свёрнутый элемент: пишет положение в модель привязкой положения в обратную сторону
+    /// (ADR 0010).
+    /// </summary>
+    /// <remarks>
+    /// Модель, изменившаяся на записи, сообщит о себе и сама, но панель ставит ячейку сразу: модель без
+    /// <see cref="INotifyPropertyChanged"/> не сообщит ничего, а держащие на элементе своё — концы
+    /// связей — узнают о сдвиге в том же кадре.
+    /// </remarks>
+    /// <returns>
+    /// <see langword="false"/>, если модель записи не приняла — привязка односторонняя, — или элемент
+    /// развёрнут; положение тогда не меняется.
+    /// </returns>
+    internal bool TryMoveCollapsed(int index, Point location)
+    {
+        if (!IsVirtualizing || _realized.ContainsKey(index) || Writer() is not { } writer || Reader() is not { } reader)
+            return false;
+
+        var items = Items;
+        SyncSlots(items);
+        if (index < 0 || index >= _slots.Count)
+            return false;
+
+        var item = items[index];
+        writer.Write(item, location);
+        writer.Release();
+        var written = Normalize(reader.Read(item));
+        reader.Release();
+
+        if (Math.Abs(written.X - location.X) > 0.01 || Math.Abs(written.Y - location.Y) > 0.01)
+            return false;
+
+        if (_slots[index].Location != written)
+        {
+            ChangeSlot(index, _slots[index] with { Location = written });
+            _view?.OnContentChanged();
+            _view?.OnItemGeometryChanged(item);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -418,6 +492,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         _extentStale = true;
         _indexByItem = null;
         _reader = null;
+        _writer = null;
 
         _view = ItemsControl as SurfaceView;
         if (ItemsControl != null)
@@ -535,6 +610,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             _slots.Clear();
             _changed.Clear();
             _reader = null;
+            _writer = null;
             _slotsStale = true;
             InvalidateMeasure();
         }
@@ -987,6 +1063,17 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             ChangeSlot(i, _slots[i] with { Accent = ReadAccent(accents, items[i]) });
 
         accents?.Release();
+    }
+
+    private PointBindingWriter? Writer()
+    {
+        if (_view?.ItemLocationBinding is not { } binding)
+            return null;
+
+        if (_writer == null || !ReferenceEquals(_writer.Binding, binding))
+            _writer = new PointBindingWriter(binding);
+
+        return _writer;
     }
 
     private PointBindingReader? Reader()

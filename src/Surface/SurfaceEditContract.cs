@@ -66,14 +66,21 @@ public abstract class TargetChange
     /// <remarks>
     /// У виртуализирующей поверхности контейнер элемента живёт, пока элемент виден: к отмене он может
     /// лежать в пуле или стоять на другом элементе. Отмена и повтор поэтому ищут контейнер по элементу,
-    /// которому принадлежал этот (ADR 0007), а свойство остаётся тем контролом, что менялся.
+    /// которому принадлежал этот (ADR 0007), а свойство остаётся тем контролом, что менялся. Сдвиг
+    /// элемента, у которого контейнера в жесте не было, описывает <see cref="ItemMoveChange"/>
+    /// (ADR 0010).
     /// </remarks>
     public Control Target { get; }
 
     /// <summary>
-    /// Элемент коллекции, чьим контейнером был <see cref="Target"/>, если он контейнер верхнего уровня.
+    /// Получает элемент коллекции, чьим контейнером был <see cref="Target"/>, если он контейнер
+    /// верхнего уровня.
     /// </summary>
-    internal object? Item { get; private set; }
+    /// <remarks>
+    /// <see langword="null"/> у изменения вложенного контрола — элемента у него нет — и у элемента,
+    /// который сам <see langword="null"/>.
+    /// </remarks>
+    public object? Item { get; private set; }
 
     /// <summary>
     /// Запомнен ли элемент: он сам бывает <see langword="null"/>.
@@ -225,8 +232,68 @@ public sealed class GeometryChange : TargetChange
     {
         // Размер, которого правка не меняла, не пишется: сдвиг несёт его в обеих рамках, и отмена
         // закрепила бы контейнер, размер которого задаёт содержимое, — узел графа переставал расти.
+        var bounds = revert ? OldBounds : NewBounds;
+        var size = OldBounds.Size != NewBounds.Size;
+
+        // Сдвиг свёрнутого элемента пишется в модель, а не разворачивает его (ADR 0010): отмена сдвига
+        // десяти тысяч узлов развернула бы все.
+        if (!size && HasItem && view.TryMoveCollapsedItem(Item, bounds.Position))
+            return;
+
         if (ResolveTarget(view) is { } target)
-            view.ApplyGeometryCore(target, revert ? OldBounds : NewBounds, size: OldBounds.Size != NewBounds.Size);
+            view.ApplyGeometryCore(target, bounds, size);
+    }
+}
+
+/// <summary>
+/// Описывает сдвиг элемента, у которого в жесте не было контейнера.
+/// </summary>
+/// <remarks>
+/// ADR 0010. Выбранный элемент за окном двигается записью в модель привязкой положения, без контрола,
+/// а <see cref="TargetChange"/> всегда называет контрол. Поэтому такие сдвиги идут отдельным списком —
+/// <see cref="SurfaceEditCompletedEventArgs.ItemChanges"/>. Отмена и повтор —
+/// <see cref="SurfaceView.RevertMove"/> и <see cref="SurfaceView.ReapplyMove"/>:
+/// свёрнутому они пишут модель, развёрнутому — контейнер.
+/// </remarks>
+public sealed class ItemMoveChange
+{
+    /// <summary>
+    /// Инициализирует новый экземпляр <see cref="ItemMoveChange"/>.
+    /// </summary>
+    /// <param name="item">Сдвинутый элемент коллекции.</param>
+    /// <param name="oldLocation">Положение до сдвига, в мировых координатах.</param>
+    /// <param name="newLocation">Положение после сдвига, в мировых координатах.</param>
+    public ItemMoveChange(object? item, Point oldLocation, Point newLocation)
+    {
+        Item = item;
+        OldLocation = oldLocation;
+        NewLocation = newLocation;
+    }
+
+    /// <summary>
+    /// Получает сдвинутый элемент коллекции.
+    /// </summary>
+    public object? Item { get; }
+
+    /// <summary>
+    /// Получает положение до сдвига.
+    /// </summary>
+    public Point OldLocation { get; }
+
+    /// <summary>
+    /// Получает положение после сдвига.
+    /// </summary>
+    public Point NewLocation { get; }
+
+    internal void ApplyTo(SurfaceView view, bool revert)
+    {
+        var location = revert ? OldLocation : NewLocation;
+        if (view.TryMoveCollapsedItem(Item, location))
+            return;
+
+        // Элемент развёрнут или модель записи не приняла — контейнером, как сдвиг развёрнутого.
+        if (view.RealizeItem(Item) is SurfaceItem container)
+            view.ApplyGeometryCore(view.ResolveInteractionTarget(container), new Rect(location, default(Size)), size: false);
     }
 }
 
@@ -250,10 +317,34 @@ public sealed class SurfaceEditCompletedEventArgs : EventArgs
     /// <param name="kind">Вид изменения.</param>
     /// <param name="changes">Изменения геометрии, вошедшие в единицу редактирования.</param>
     public SurfaceEditCompletedEventArgs(SurfaceEditKind kind, IReadOnlyList<TargetChange> changes)
+        : this(kind, changes, Array.Empty<ItemMoveChange>())
+    {
+    }
+
+    /// <summary>
+    /// Инициализирует новый экземпляр со сдвигами элементов без контейнера.
+    /// </summary>
+    /// <param name="kind">Вид изменения.</param>
+    /// <param name="changes">Изменения контролов, вошедшие в единицу редактирования.</param>
+    /// <param name="itemChanges">Сдвиги элементов без контейнера (ADR 0010).</param>
+    public SurfaceEditCompletedEventArgs(
+        SurfaceEditKind kind,
+        IReadOnlyList<TargetChange> changes,
+        IReadOnlyList<ItemMoveChange> itemChanges)
     {
         Kind = kind;
         Changes = changes ?? throw new ArgumentNullException(nameof(changes));
+        ItemChanges = itemChanges ?? throw new ArgumentNullException(nameof(itemChanges));
     }
+
+    /// <summary>
+    /// Получает сдвиги элементов, у которых в жесте не было контейнера.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0010: выбранный элемент за окном двигается записью в модель. Пуст, пока выбор развёрнут
+    /// целиком; <see cref="SurfaceHistory"/> отменяет эти сдвиги вместе с <see cref="Changes"/>.
+    /// </remarks>
+    public IReadOnlyList<ItemMoveChange> ItemChanges { get; }
 
     /// <summary>
     /// Получает вид изменения.

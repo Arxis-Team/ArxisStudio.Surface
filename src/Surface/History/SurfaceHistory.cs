@@ -158,7 +158,7 @@ public sealed class SurfaceHistory : IDisposable
     }
 
     private void OnEditCompleted(object? sender, SurfaceEditCompletedEventArgs e)
-        => Push(new EditTransaction(_view, e.Changes));
+        => Push(new EditTransaction(_view, e.Changes, e.ItemChanges));
 
     // Нажатие забирается, только если история действительно что-то сделала: иначе
     // сочетание уходит дальше, как у поверхности без подписчика.
@@ -185,15 +185,20 @@ public sealed class SurfaceHistory : IDisposable
     {
         private readonly SurfaceView _view;
         private readonly IReadOnlyList<TargetChange> _changes;
+        private readonly IReadOnlyList<ItemMoveChange> _itemChanges;
 
-        public EditTransaction(SurfaceView view, IReadOnlyList<TargetChange> changes)
+        public EditTransaction(SurfaceView view, IReadOnlyList<TargetChange> changes, IReadOnlyList<ItemMoveChange> itemChanges)
         {
             _view = view;
             _changes = changes;
+            _itemChanges = itemChanges;
         }
 
         public void Revert()
         {
+            for (var i = _itemChanges.Count - 1; i >= 0; i--)
+                _view.RevertMove(_itemChanges[i]);
+
             for (var i = _changes.Count - 1; i >= 0; i--)
                 _view.Revert(_changes[i]);
         }
@@ -202,6 +207,9 @@ public sealed class SurfaceHistory : IDisposable
         {
             for (var i = 0; i < _changes.Count; i++)
                 _view.Reapply(_changes[i]);
+
+            for (var i = 0; i < _itemChanges.Count; i++)
+                _view.ReapplyMove(_itemChanges[i]);
         }
     }
 }

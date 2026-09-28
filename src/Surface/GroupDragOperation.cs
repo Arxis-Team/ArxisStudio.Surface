@@ -7,19 +7,24 @@ namespace ArxisStudio.Surface;
 internal sealed class GroupDragOperation
     : IInteractionOperation
 {
-    private readonly IReadOnlyList<GroupDragTarget> _targets;
+    private readonly List<GroupDragTarget> _targets;
+
+    // Выбранные без контейнера (ADR 0010): едут записью в модель от положения на входе в жест.
+    private readonly List<SurfaceView.CollapsedSelected> _collapsed;
     private Vector _accumulatedDelta;
 
     private GroupDragOperation(
         SurfaceItem sourceContainer,
         Control sourceTarget,
-        IReadOnlyList<GroupDragTarget> targets,
+        List<GroupDragTarget> targets,
+        List<SurfaceView.CollapsedSelected> collapsed,
         Rect frame,
         Vector frameOffset)
     {
         SourceContainer = sourceContainer;
         SourceTarget = sourceTarget;
         _targets = targets;
+        _collapsed = collapsed;
         _accumulatedDelta = Vector.Zero;
         Frame = frame;
         FrameOffset = frameOffset;
@@ -54,13 +59,9 @@ internal sealed class GroupDragOperation
         if (items == null || items.Count == 0)
             return null;
 
-        foreach (var item in items)
+        foreach (var container in editor.EnumerateSelectedContainers())
         {
-            var container = editor.ContainerFromItem(item) as SurfaceItem;
-            if (container == null && item is SurfaceItem directItem)
-                container = directItem;
-
-            if (container == null || !container.IsDraggable)
+            if (!container.IsDraggable)
                 continue;
 
             foreach (var target in editor.ResolveSelectionTargets(container))
@@ -74,7 +75,8 @@ internal sealed class GroupDragOperation
             }
         }
 
-        if (targets.Count == 0)
+        var collapsed = editor.CollapsedSelection();
+        if (targets.Count == 0 && collapsed.Count == 0)
             return null;
 
         if (!editor.Geometry.TryGetBounds(sourceTarget, out var frame))
@@ -87,7 +89,10 @@ internal sealed class GroupDragOperation
                 frame = frame.Union(bounds);
         }
 
-        return new GroupDragOperation(sourceContainer, sourceTarget, targets, frame, frame.Position - sourceOrigin);
+        foreach (var selected in collapsed)
+            frame = frame.Union(selected.Bounds);
+
+        return new GroupDragOperation(sourceContainer, sourceTarget, targets, collapsed, frame, frame.Position - sourceOrigin);
     }
 
     public bool CanHandle(SurfaceItem sourceContainer)
@@ -104,6 +109,23 @@ internal sealed class GroupDragOperation
             var snapshot = _targets[i];
             var filteredDelta = editor.ApplyMovePolicy(snapshot.Target, _accumulatedDelta);
             editor.SetTargetPosition(snapshot.Target, snapshot.InitialPosition + filteredDelta);
+        }
+
+        // Политик у свёрнутого нет — они живут на контейнере. Модель, не принявшая сдвиг, отдаёт
+        // элемент прежнему пути: он разворачивается и едет контейнером до конца жеста.
+        for (var i = _collapsed.Count - 1; i >= 0; i--)
+        {
+            var selected = _collapsed[i];
+            var location = selected.Bounds.Position + _accumulatedDelta;
+            if (editor.MoveCollapsed(selected, location))
+                continue;
+
+            _collapsed.RemoveAt(i);
+            if (editor.RealizeForMove(selected) is not { } target)
+                continue;
+
+            _targets.Add(new GroupDragTarget(target, selected.Bounds.Position));
+            editor.SetTargetPosition(target, location);
         }
     }
 
