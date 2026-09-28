@@ -175,10 +175,12 @@ public partial class MainWindow : Window
     /// </remarks>
     private void OnDeleteRequested(object? sender, SurfaceDeleteRequestedEventArgs e)
     {
-        var nodes = new List<GraphNode>();
-        foreach (var target in e.Targets)
+        // Весь выбор — элементами: выбранный узел за окном остаётся выбранным без контейнера (ADR 0010
+        // библиотеки), и в Targets его нет.
+        var nodes = new HashSet<GraphNode>();
+        foreach (var item in e.Items)
         {
-            if (Editor.ItemFromContainer(target.Container) is GraphNode model && !nodes.Contains(model))
+            if (item is GraphNode model)
                 nodes.Add(model);
         }
 
@@ -223,6 +225,6 @@ public partial class MainWindow : Window
             return;
 
         StatusText.Text = $"Узлов {_document.Nodes.Count}, связей {_document.Links.Count} · выбрано узлов "
-            + $"{Editor.SelectedTargets.Count}, связей {Editor.SelectedLinks.Count}";
+            + $"{Editor.Selection.Count}, связей {Editor.SelectedLinks.Count}";
     }
 }

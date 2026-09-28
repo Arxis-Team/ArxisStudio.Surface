@@ -36,12 +36,15 @@ internal sealed class ListEdit<T> : ISurfaceChange
     /// </summary>
     public static ListEdit<T> Remove(IList<T> list, IEnumerable<T> items)
     {
-        var removed = items
-            .Select(item => (Index: list.IndexOf(item), Item: item))
-            .Where(entry => entry.Index >= 0)
-            .Distinct()
-            .OrderBy(entry => entry.Index)
-            .ToList();
+        // Одним проходом по коллекции: поиск места каждого удаляемого проходил бы её на каждом, и
+        // удаление всего графа стоило бы квадрат его размера.
+        var doomed = new HashSet<T>(items);
+        var removed = new List<(int Index, T Item)>(doomed.Count);
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (doomed.Contains(list[i]))
+                removed.Add((i, list[i]));
+        }
 
         var edit = new ListEdit<T>(list, removed, []);
         edit.Reapply();

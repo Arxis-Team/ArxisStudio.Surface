@@ -94,12 +94,14 @@ internal sealed class AutomationChannel
         });
         _editor.DeleteRequested += (_, e) => Record("DeleteRequested", new()
         {
-            ["nodes"] = e.Targets.Select(t => Name(_editor.ItemFromContainer(t.Container))).ToList()
+            ["nodes"] = e.Items.Count,
+            ["realizedTargets"] = e.Targets.Count
         });
         _editor.EditCompleted += (_, e) => Record("EditCompleted", new()
         {
             ["kind"] = e.Kind.ToString(),
-            ["targets"] = e.Changes.Select(c => Name(_editor.ItemFromContainer(c.Target))).ToList()
+            ["changes"] = e.Changes.Count,
+            ["itemChanges"] = e.ItemChanges.Count
         });
 
         // Опрос, а не FileSystemWatcher: команда обязана исполниться на UI-потоке, и таймер
@@ -228,6 +230,20 @@ internal sealed class AutomationChannel
             case "redo":
                 return new() { ["returned"] = _window.History.Redo() };
 
+            case "selectAll":
+            {
+                // Выбор хостом, как SelectedIndex: разворачивается только видимое (ADR 0010 библиотеки).
+                var watch = Stopwatch.StartNew();
+                _editor.Selection.SelectAll();
+                _window.UpdateLayout();
+                watch.Stop();
+
+                var response = Realization();
+                response["selected"] = _editor.Selection.Count;
+                response["selectMs"] = Math.Round(watch.Elapsed.TotalMilliseconds);
+                return response;
+            }
+
             case "theme":
             {
                 // Демо стартует в тёмной теме; оформление библиотеки проверяют в обеих.
@@ -245,7 +261,7 @@ internal sealed class AutomationChannel
             }
 
             default:
-                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo, theme.");
+                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo, selectAll, theme.");
         }
     }
 
