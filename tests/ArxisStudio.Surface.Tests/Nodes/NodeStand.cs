@@ -95,8 +95,8 @@ internal sealed class NodeStand
             LinkSourceBinding = new Binding(nameof(LinkData.From)),
             LinkTargetBinding = new Binding(nameof(LinkData.To))
         };
+        // Направляющих у редактора узлов по умолчанию нет — стенд их не трогает.
         editor.InteractionOptions.IsSnapToGridEnabled = snap;
-        editor.InteractionOptions.IsSnapToGuidesEnabled = snap;
 
         var window = new Window { Width = 800, Height = 600, Content = editor };
         var stand = new NodeStand(window, editor);

@@ -70,6 +70,21 @@ public class NodeEditorTests
     }
 
     [AvaloniaFact]
+    public void A_Dragged_Node_Is_Not_Pulled_To_Its_Neighbour()
+    {
+        // Направляющие выравнивания и интервалы — инструмент макета: у редактора узлов их нет, и узел,
+        // брошенный в трёх пикселях от края соседа, остаётся где брошен. Хост включает их сам.
+        var stand = NodeStand.Create([new Point(100, 100), new Point(140, 300)]);
+
+        stand.Drag(stand.CentreOf(0), new Vector(37, 0));
+
+        Assert.Equal(new Point(137, 100), stand.Node(0).Location);
+        Assert.False(stand.Editor.InteractionOptions.IsSnapToGuidesEnabled);
+        Assert.False(stand.Editor.InteractionOptions.IsEqualSpacingEnabled);
+        Assert.True(new NodeEditor().InteractionOptions.IsSnapToGridEnabled, "привязка к сетке у узлов остаётся");
+    }
+
+    [AvaloniaFact]
     public void The_Nodes_Theme_Names_Only_Its_Own_Or_Lower_Keys()
     {
         // Тема слоя вправе называть ключи своего слоя и тех, что ниже, — ядра и инструментов, —

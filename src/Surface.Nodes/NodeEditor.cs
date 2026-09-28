@@ -32,9 +32,13 @@ public partial class NodeEditor : SurfaceView
     /// </summary>
     public NodeEditor()
     {
-        // Привязка к сетке и выравнивание по соседям — та же служба, что у дизайнера интерфейса.
-        // Соседей-узлы она собирает сама; своих, кроме них, у редактора узлов нет.
+        // Привязка к сетке — та же служба, что у дизайнера интерфейса. Направляющие выравнивания и
+        // равные интервалы — инструмент макета, а не графа: узлы по краям соседей не выравнивают, и
+        // линии через холст на каждом перетаскивании только мешают. Хост, которому они нужны, включает
+        // их в InteractionOptions — соседей-узлы служба соберёт сама.
         AddService(new SnapService(this, static () => Array.Empty<Rect>()));
+        InteractionOptions.IsSnapToGuidesEnabled = false;
+        InteractionOptions.IsEqualSpacingEnabled = false;
 
         // Миникарта инструментов рисует контейнеры сама, а связи ей отдаёт этот слой.
         AddService(new LinkMinimapLayer(this));
