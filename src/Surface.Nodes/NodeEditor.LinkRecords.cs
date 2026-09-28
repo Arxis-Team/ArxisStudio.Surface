@@ -27,6 +27,7 @@ public partial class NodeEditor
     private INotifyCollectionChanged? _watchedLinks;
     private ObjectBindingReader? _sourceReader;
     private ObjectBindingReader? _targetReader;
+    private ObjectBindingReader? _strokeReader;
     private LinkPanel? _linkPanel;
 
     // Толщина линии связи без контрола — последняя, что показал контрол: запас рамки на неё.
@@ -208,6 +209,22 @@ public partial class NodeEditor
                 ReadEnds(record);
                 Rekey(record);
             }
+        }
+        else if (change.Property == LinkStrokeBindingProperty)
+        {
+            // Цвет — только в записи: концы и смежность не меняются, пересчёт кривой не нужен.
+            _strokeReader = null;
+            foreach (var record in _recordByItem.Values)
+            {
+                if (record.Own != null)
+                    continue;
+
+                record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item));
+                record.Control?.Sync();
+            }
+
+            ReleaseReaders();
+            OnSimplifiedLinksChanged();
         }
         else if (change.Property == ItemHeaderBindingProperty)
         {
@@ -456,6 +473,7 @@ public partial class NodeEditor
 
         record.Source = Read(ref _sourceReader, LinkSourceBinding, record.Item);
         record.Target = Read(ref _targetReader, LinkTargetBinding, record.Item);
+        record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item));
     }
 
     private static object? Read(ref ObjectBindingReader? reader, BindingBase? binding, object item)
@@ -480,6 +498,7 @@ public partial class NodeEditor
     {
         _sourceReader?.Release();
         _targetReader?.Release();
+        _strokeReader?.Release();
         _portNodeReader?.Release();
     }
 

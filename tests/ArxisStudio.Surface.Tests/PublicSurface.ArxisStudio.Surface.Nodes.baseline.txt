@@ -53,6 +53,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia LinkCutModifiersProperty -> LinkCutModifiers : KeyModifiers (styled) = Alt
     avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
+    avalonia LinkStrokeBindingProperty -> LinkStrokeBinding : BindingBase (styled) = null
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
     avalonia LinksProperty -> Links : IEnumerable (styled) = null
     avalonia PortCaptureRadiusProperty -> PortCaptureRadius : Double (styled) = 12
@@ -77,6 +78,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     method Void PrepareContainerForItemOverride(Control, Object, Int32)
     property BindingBase ItemHeaderBinding { get; set; }
     property BindingBase LinkSourceBinding { get; set; }
+    property BindingBase LinkStrokeBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
     property BindingBase PortNodeBinding { get; set; }
     property Double LinkHitTolerance { get; set; }

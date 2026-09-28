@@ -30,6 +30,12 @@ public partial class NodeEditor
     public static readonly StyledProperty<BindingBase?> LinkTargetBindingProperty =
         AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkTargetBinding));
 
+    /// <summary>
+    /// Идентификатор свойства привязки цвета провода.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> LinkStrokeBindingProperty =
+        AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkStrokeBinding));
+
     // Связи по ключу любого из концов: сдвиг порта пересчитывает ровно их, а не все.
     private readonly Dictionary<object, List<LinkRecord>> _linksByKey = new();
 
@@ -64,6 +70,25 @@ public partial class NodeEditor
     {
         get => GetValue(LinkSourceBindingProperty);
         set => SetValue(LinkSourceBindingProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает привязку, дающую проводу цвет из его элемента — например, по типу данных,
+    /// как в Blueprint.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0009. Значение — кисть или цвет; иное, как и <see langword="null"/>, оставляет цвет темы.
+    /// Применяется с элементом коллекции связей в качестве контекста данных, перечитывается по
+    /// <c>INotifyPropertyChanged</c> модели и держится в записи связи, поэтому упрощённый вид рисует
+    /// провода теми же цветами. Цвет модели — обычное состояние провода: выбор, наведение и разрез красят
+    /// его цветом темы. Готовую <see cref="Link"/> из коллекции хост красит сам.
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(Links))]
+    public BindingBase? LinkStrokeBinding
+    {
+        get => GetValue(LinkStrokeBindingProperty);
+        set => SetValue(LinkStrokeBindingProperty, value);
     }
 
     /// <summary>

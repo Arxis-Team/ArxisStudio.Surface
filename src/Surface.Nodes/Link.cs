@@ -220,6 +220,18 @@ public class Link : Control
     /// <summary>
     /// Переносит на контрол то, что сейчас в записи: концы, видимость, состояния.
     /// </summary>
+    /// <summary>
+    /// Кисть, которой провод рисуется сейчас.
+    /// </summary>
+    /// <remarks>
+    /// Цвет модели (<see cref="NodeEditor.LinkStrokeBinding"/>) — обычное состояние провода; выбор,
+    /// наведение и разрез красят его цветом темы: обратная связь жеста важнее цвета типа (ADR 0009).
+    /// </remarks>
+    internal IBrush? EffectiveStroke =>
+        IsSelected || PseudoClasses.Contains(":highlighted") || PseudoClasses.Contains(":cutting")
+            ? Stroke
+            : Record?.Stroke ?? Stroke;
+
     internal void Sync()
     {
         if (Record is not { } record)
@@ -265,7 +277,7 @@ public class Link : Control
     /// <inheritdoc />
     public override void Render(DrawingContext context)
     {
-        if (Record is not { IsResolved: true } record || Stroke is not { } stroke)
+        if (Record is not { IsResolved: true } record || EffectiveStroke is not { } stroke)
             return;
 
         // Связь стоит в своём прямоугольнике, а кривая посчитана в мировых координатах, поэтому

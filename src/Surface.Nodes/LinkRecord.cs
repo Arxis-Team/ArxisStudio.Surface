@@ -74,6 +74,11 @@ internal sealed class LinkRecord
     public Rect WorldBounds { get; set; }
 
     /// <summary>
+    /// Цвет провода из модели (<see cref="NodeEditor.LinkStrokeBinding"/>); без него — цвет темы.
+    /// </summary>
+    public Avalonia.Media.IBrush? Stroke { get; set; }
+
+    /// <summary>
     /// Выбрана ли связь.
     /// </summary>
     public bool IsSelected { get; set; }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -31,6 +32,7 @@ internal sealed class SimplifiedLinkLayer : Control
     private NodeEditor? _editor;
     private StreamGeometry? _links;
     private StreamGeometry? _selected;
+    private List<(IBrush Brush, StreamGeometry Geometry)>? _colored;
     private bool _stale = true;
 
     static SimplifiedLinkLayer()
@@ -76,6 +78,11 @@ internal sealed class SimplifiedLinkLayer : Control
     internal int SelectedLinks { get; private set; }
 
     /// <summary>
+    /// Сколько разных цветов модели у проводов последней сборки — для тестов.
+    /// </summary>
+    internal int StrokeGroups => _colored?.Count ?? 0;
+
+    /// <summary>
     /// Сколько раз связи собирались заново — для тестов и стенда.
     /// </summary>
     internal int Rebuilds { get; private set; }
@@ -100,6 +107,12 @@ internal sealed class SimplifiedLinkLayer : Control
         {
             if (_links != null && Stroke is { } stroke)
                 context.DrawGeometry(null, new Pen(stroke, thickness), _links);
+
+            if (_colored != null)
+            {
+                foreach (var (brush, geometry) in _colored)
+                    context.DrawGeometry(null, new Pen(brush, thickness), geometry);
+            }
 
             if (_selected != null && SelectedStroke is { } selected)
                 context.DrawGeometry(null, new Pen(selected, thickness), _selected);
@@ -168,6 +181,7 @@ internal sealed class SimplifiedLinkLayer : Control
     {
         _links = null;
         _selected = null;
+        _colored = null;
         _stale = true;
     }
 
@@ -176,8 +190,11 @@ internal sealed class SimplifiedLinkLayer : Control
         _stale = false;
         Rebuilds++;
 
+        // Провода без цвета модели — одной геометрией кистью темы, с цветом — по геометрии на кисть,
+        // выбранные — своей, цветом выбора.
         var links = new StreamGeometry();
         var selected = new StreamGeometry();
+        Dictionary<IBrush, (StreamGeometry Geometry, StreamGeometryContext Context)>? colored = null;
         var (count, selectedCount) = (0, 0);
         using (var linksContext = links.Open())
         using (var selectedContext = selected.Open())
@@ -187,21 +204,53 @@ internal sealed class SimplifiedLinkLayer : Control
                 if (record.Control != null || !record.IsResolved)
                     continue;
 
-                var context = record.IsSelected ? selectedContext : linksContext;
+                StreamGeometryContext context;
+                if (record.IsSelected)
+                {
+                    context = selectedContext;
+                    selectedCount++;
+                }
+                else
+                {
+                    count++;
+                    if (record.Stroke is { } brush)
+                    {
+                        colored ??= new Dictionary<IBrush, (StreamGeometry, StreamGeometryContext)>(ReferenceEqualityComparer.Instance);
+                        if (!colored.TryGetValue(brush, out var group))
+                        {
+                            var geometry = new StreamGeometry();
+                            colored[brush] = group = (geometry, geometry.Open());
+                        }
+
+                        context = group.Context;
+                    }
+                    else
+                    {
+                        context = linksContext;
+                    }
+                }
+
                 var g = record.Geometry;
                 context.BeginFigure(g.Source, isFilled: false);
                 context.CubicBezierTo(g.SourceControl, g.TargetControl, g.Target);
                 context.EndFigure(isClosed: false);
-
-                if (record.IsSelected)
-                    selectedCount++;
-                else
-                    count++;
             }
         }
 
-        _links = count > 0 ? links : null;
+        List<(IBrush, StreamGeometry)>? groups = null;
+        if (colored != null)
+        {
+            groups = new List<(IBrush, StreamGeometry)>(colored.Count);
+            foreach (var (brush, group) in colored)
+            {
+                group.Context.Dispose();
+                groups.Add((brush, group.Geometry));
+            }
+        }
+
+        _links = links;
         _selected = selectedCount > 0 ? selected : null;
+        _colored = groups;
         Links = count;
         SelectedLinks = selectedCount;
     }
