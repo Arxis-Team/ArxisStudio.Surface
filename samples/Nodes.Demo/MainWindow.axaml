@@ -13,6 +13,7 @@
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
                 <TextBlock x:Name="ZoomText" VerticalAlignment="Center" Opacity="0.7" />
                 <Button x:Name="LargeGraphButton" Content="10 000 узлов" Click="OnLargeGraphClick" />
+                <Button x:Name="FitButton" Content="Показать всё" Click="OnFitClick" />
                 <Button x:Name="UndoButton" Content="Отменить" Click="OnUndoClick" />
                 <Button x:Name="RedoButton" Content="Повторить" Click="OnRedoClick" />
             </StackPanel>
@@ -30,11 +31,16 @@
                 размер — измеренный при показе, а до первого показа — EstimatedItemSize, размер узла с
                 двумя входами и выходом в теме библиотеки: такие строит «10 000 узлов». PortNodeBinding
                 называет узел порта, и связь к ни разу не показанному узлу рисуется оценкой по его краю.
+                Ниже 50 % узлы рисуются карточками без контейнеров (ADR 0008): полоса заголовка — цвет
+                вида узла из ItemAccentBinding, а MinZoom опущен, чтобы граф на 10 000 узлов вошёл
+                в окно целиком.
                 Шаблоны узлов — по типу данных: перевалка первой, она тоже GraphNode.
             -->
             <surface:NodeEditor x:Name="Editor"
                                 ItemsSource="{Binding Nodes}"
                                 ItemLocationBinding="{Binding Location}"
+                                ItemAccentBinding="{Binding Accent}"
+                                MinZoom="0.02"
                                 EstimatedItemSize="178,75"
                                 Links="{Binding Links}"
                                 LinkSourceBinding="{Binding From}"

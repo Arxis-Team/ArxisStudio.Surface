@@ -182,6 +182,13 @@ internal sealed class AutomationChannel
             case "realization":
                 return Realization();
 
+            case "fit":
+            {
+                _window.FitAll();
+                _window.UpdateLayout();
+                return Realization();
+            }
+
             case "selectLink":
             {
                 var links = _window.Document.Links;
@@ -221,7 +228,7 @@ internal sealed class AutomationChannel
                 return new() { ["returned"] = _window.History.Redo() };
 
             default:
-                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, selectLink, clearLinkSelection, events, viewport, undo, redo.");
+                throw new ArgumentException($"Неизвестная команда: {name}. Есть: state, generate, realization, fit, selectLink, clearLinkSelection, events, viewport, undo, redo.");
         }
     }
 
@@ -324,6 +331,7 @@ internal sealed class AutomationChannel
             ["realizedNodes"] = _editor.GetRealizedContainers().Count(),
             ["realizedLinks"] = links.Count,
             ["visibleLinks"] = links.Count(link => link.IsVisible),
+            ["isSimplified"] = _editor.IsSimplified,
             ["viewport"] = new { zoom = _editor.ViewportZoom, location = PointOf(_editor.ViewportLocation) },
             ["managedMb"] = Math.Round(GC.GetTotalMemory(forceFullCollection: true) / 1048576.0, 1)
         };

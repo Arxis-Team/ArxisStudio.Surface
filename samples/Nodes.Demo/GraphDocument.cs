@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Media;
 
 namespace Nodes.Demo;
 
@@ -48,11 +49,11 @@ public sealed class GraphDocument
     {
         var document = new GraphDocument();
 
-        var image = document.Add("Изображение", new Point(60, 80), inputs: [], outputs: ["Цвет", "Альфа"]);
-        var number = document.Add("Число", new Point(60, 300), inputs: [], outputs: ["Значение"]);
-        var blur = document.Add("Размытие", new Point(360, 60), inputs: ["Цвет", "Радиус"], outputs: ["Цвет"]);
-        var mix = document.Add("Смешивание", new Point(660, 150), inputs: ["A", "B", "Доля"], outputs: ["Цвет"]);
-        var output = document.Add("Вывод", new Point(960, 190), inputs: ["Цвет"], outputs: []);
+        var image = document.Add("Изображение", new Point(60, 80), inputs: [], outputs: ["Цвет", "Альфа"], NodeKinds.Source);
+        var number = document.Add("Число", new Point(60, 300), inputs: [], outputs: ["Значение"], NodeKinds.Source);
+        var blur = document.Add("Размытие", new Point(360, 60), inputs: ["Цвет", "Радиус"], outputs: ["Цвет"], NodeKinds.Filter);
+        var mix = document.Add("Смешивание", new Point(660, 150), inputs: ["A", "B", "Доля"], outputs: ["Цвет"], NodeKinds.Blend);
+        var output = document.Add("Вывод", new Point(960, 190), inputs: ["Цвет"], outputs: [], NodeKinds.Output);
 
         document.Links.Add(new GraphLink(image.Outputs[0], blur.Inputs[0]));
         document.Links.Add(new GraphLink(number.Outputs[0], blur.Inputs[1]));
@@ -81,7 +82,10 @@ public sealed class GraphDocument
         for (var i = 0; i < count; i++)
         {
             var (row, column) = Math.DivRem(i, columns);
-            nodes.Add(new GraphNode($"Узел {i}", new Point(column * GridStep.X, row * GridStep.Y), ["A", "B"], ["Выход"]));
+            nodes.Add(new GraphNode($"Узел {i}", new Point(column * GridStep.X, row * GridStep.Y), ["A", "B"], ["Выход"])
+            {
+                Accent = NodeKinds.All[(row + column) % NodeKinds.All.Length]
+            });
         }
 
         for (var i = 0; i < count; i++)
@@ -98,12 +102,31 @@ public sealed class GraphDocument
         return document;
     }
 
-    private GraphNode Add(string title, Point location, string[] inputs, string[] outputs)
+    private GraphNode Add(string title, Point location, string[] inputs, string[] outputs, Color accent)
     {
-        var node = new GraphNode(title, location, inputs, outputs);
+        var node = new GraphNode(title, location, inputs, outputs) { Accent = accent };
         Nodes.Add(node);
         return node;
     }
+}
+
+/// <summary>
+/// Цвета видов узла — данные графа, как категории узлов в Blueprint: ими окрашена полоса заголовка
+/// упрощённой карточки (ADR 0008 библиотеки).
+/// </summary>
+public static class NodeKinds
+{
+    public static readonly Color Source = Color.Parse("#4F81BD");
+
+    public static readonly Color Filter = Color.Parse("#9BBB59");
+
+    public static readonly Color Blend = Color.Parse("#F79646");
+
+    public static readonly Color Output = Color.Parse("#C0504D");
+
+    public static readonly Color Utility = Color.Parse("#8064A2");
+
+    public static readonly Color[] All = [Source, Filter, Blend, Output, Utility];
 }
 
 /// <summary>
@@ -146,6 +169,11 @@ public class GraphNode : INotifyPropertyChanged
     public IReadOnlyList<GraphPort> Inputs { get; }
 
     public IReadOnlyList<GraphPort> Outputs { get; }
+
+    /// <summary>
+    /// Цвет вида узла: полоса заголовка его карточки в упрощённом виде. У перевалки — нет.
+    /// </summary>
+    public Color? Accent { get; init; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

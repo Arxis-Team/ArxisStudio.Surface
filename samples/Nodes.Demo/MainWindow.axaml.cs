@@ -197,6 +197,18 @@ public partial class MainWindow : Window
 
     private void OnLargeGraphClick(object? sender, RoutedEventArgs e) => Load(GraphDocument.CreateGrid(10_000));
 
+    private void OnFitClick(object? sender, RoutedEventArgs e) => FitAll();
+
+    /// <summary>
+    /// Показывает граф целиком. На большом графе это ниже порога упрощённого вида: узлы рисуются
+    /// карточками, и контейнеров нет ни у одного (ADR 0008).
+    /// </summary>
+    internal void FitAll()
+    {
+        if (Editor.ItemsExtent is { Width: > 0, Height: > 0 } extent)
+            Editor.FitToView(extent);
+    }
+
     private void OnUndoClick(object? sender, RoutedEventArgs e) => _history.Undo();
 
     private void OnRedoClick(object? sender, RoutedEventArgs e) => _history.Redo();
