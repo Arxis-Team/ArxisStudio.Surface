@@ -274,6 +274,31 @@ public partial class SurfaceView : SelectingItemsControl
     }
 
     /// <summary>
+    /// Идентификатор свойства привязки полосы заголовка элемента в упрощённом виде.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> ItemAccentBindingProperty =
+        AvaloniaProperty.Register<SurfaceView, BindingBase?>(nameof(ItemAccentBinding));
+
+    /// <summary>
+    /// Получает или задает привязку, дающую цвет полосы заголовка элемента в упрощённом виде.
+    /// </summary>
+    /// <remarks>
+    /// ADR 0008. Ниже <see cref="SimplifiedZoom"/> элемент без контейнера рисуется карточкой, и эта
+    /// привязка красит её верхнюю полосу — как заголовок узла в Blueprint. Применяется с элементом
+    /// коллекции в качестве контекста данных, тем же приёмом, что <see cref="ItemLocationBinding"/>:
+    /// <c>ItemAccentBinding="{Binding Category.Color}"</c>. Значение — кисть или цвет; иное, как и
+    /// <see langword="null"/>, полосы не даёт. Читается без контейнера, когда панель читает положение
+    /// элемента, и заново — по <c>INotifyPropertyChanged</c> свёрнутого элемента и при сворачивании.
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(ItemsSource))]
+    public BindingBase? ItemAccentBinding
+    {
+        get => GetValue(ItemAccentBindingProperty);
+        set => SetValue(ItemAccentBindingProperty, value);
+    }
+
+    /// <summary>
     /// Идентификатор свойства предполагаемого размера элемента.
     /// </summary>
     public static readonly StyledProperty<Size> EstimatedItemSizeProperty =

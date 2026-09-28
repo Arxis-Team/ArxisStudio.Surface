@@ -45,7 +45,8 @@
                             <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
                                                             IsHitTestVisible="False"
                                                             Fill="{DynamicResource NodeEditor.Node.Background}"
-                                                            Stroke="{DynamicResource NodeEditor.Node.BorderBrush}" />
+                                                            Stroke="{DynamicResource NodeEditor.Node.BorderBrush}"
+                                                            AccentHeight="{DynamicResource NodeEditor.Simplified.AccentHeight}" />
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>

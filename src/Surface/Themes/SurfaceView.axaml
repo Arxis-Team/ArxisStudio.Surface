@@ -33,7 +33,8 @@
                             <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
                                                             IsHitTestVisible="False"
                                                             Fill="{DynamicResource Surface.Simplified.ItemFill}"
-                                                            Stroke="{DynamicResource Surface.Simplified.ItemStroke}" />
+                                                            Stroke="{DynamicResource Surface.Simplified.ItemStroke}"
+                                                            AccentHeight="{DynamicResource Surface.Simplified.AccentHeight}" />
                             <ItemsPresenter Name="PART_ItemsPresenter">
                                 <ItemsPresenter.ItemsPanel>
                                     <ItemsPanelTemplate>

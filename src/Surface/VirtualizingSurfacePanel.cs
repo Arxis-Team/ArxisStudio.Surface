@@ -5,6 +5,8 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
 
@@ -81,6 +83,8 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
 
     private SurfaceView? _view;
     private PointBindingReader? _reader;
+    private ObjectBindingReader? _accentReader;
+    private readonly Dictionary<Color, IBrush> _accentBrushes = new();
     private Rect _extent;
     private bool _extentStale = true;
     private bool _slotsStale = true;
@@ -509,6 +513,11 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             _slotsStale = true;
             InvalidateMeasure();
         }
+        else if (e.Property == SurfaceView.ItemAccentBindingProperty)
+        {
+            // Другая полоса у всех: читается заново, контейнеры не трогаются.
+            RereadAccents();
+        }
         else if (e.Property == SurfaceView.EstimatedItemSizeProperty)
         {
             // Размер тех, кто ни разу не показывался, — а с ним их прямоугольники у всех, кто их читает.
@@ -580,6 +589,7 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             return;
 
         var reader = Reader();
+        var accents = AccentReader();
         List<object>? moved = null;
         for (var i = 0; i < items.Count; i++)
         {
@@ -587,12 +597,13 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
                 continue;
 
             var before = _slots[i].Location;
-            ChangeSlot(i, _slots[i] with { Location = Normalize(reader?.Read(item) ?? default) });
+            ChangeSlot(i, _slots[i] with { Location = Normalize(reader?.Read(item) ?? default), Accent = ReadAccent(accents, item) });
             if (_slots[i].Location != before)
                 (moved ??= new List<object>()).Add(item);
         }
 
         reader?.Release();
+        accents?.Release();
         _changed.Clear();
         if (moved == null)
             return;
@@ -613,18 +624,21 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         _slots.Clear();
 
         var reader = Reader();
+        var accents = AccentReader();
         for (var i = 0; i < items.Count; i++)
         {
+            var accent = ReadAccent(accents, items[i]);
             if (_realized.TryGetValue(i, out var container))
-                _slots.Add(new Slot(LocationOf(container), container.DesiredSize, container.IsMeasureValid));
+                _slots.Add(new Slot(LocationOf(container), container.DesiredSize, container.IsMeasureValid, accent));
             else
-                _slots.Add(new Slot(Normalize(reader?.Read(items[i]) ?? default), default, false));
+                _slots.Add(new Slot(Normalize(reader?.Read(items[i]) ?? default), default, false, accent));
 
             if (reader != null)
                 Track(items[i]);
         }
 
         reader?.Release();
+        accents?.Release();
         OnCollapsedChanged();
 
         // Прочитано всё заново: каждый, кто держит на геометрии своё, перечитывает его.
@@ -636,15 +650,17 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
         Shift(index, count);
 
         var reader = Reader();
+        var accents = AccentReader();
         for (var k = 0; k < count; k++)
         {
             var item = items[index + k];
-            _slots.Insert(index + k, new Slot(Normalize(reader?.Read(item) ?? default), default, false));
+            _slots.Insert(index + k, new Slot(Normalize(reader?.Read(item) ?? default), default, false, ReadAccent(accents, item)));
             if (reader != null)
                 Track(item);
         }
 
         reader?.Release();
+        accents?.Release();
     }
 
     private void RemoveItems(int index, System.Collections.IList removed)
@@ -738,6 +754,14 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
             return;
 
         SyncSlot(index, container);
+
+        // Правку полосы, пока элемент был развёрнут, панель не слушала: карточке нужна нынешняя.
+        if (AccentReader() is { } accents)
+        {
+            _slots[index] = _slots[index] with { Accent = ReadAccent(accents, Items[index]) };
+            accents.Release();
+        }
+
         RemoveContainer(index, container);
     }
 
@@ -856,17 +880,19 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     /// </summary>
     private void ChangeSlot(int index, Slot next)
     {
-        var before = BoundsOf(_slots[index]);
-        _slots[index] = next;
-        var after = BoundsOf(next);
-        if (before == after)
+        var previous = _slots[index];
+        if (previous == next)
             return;
+
+        _slots[index] = next;
 
         // Развёрнутый рисует себя сам; карточки меняются только от свёрнутого.
         if (!_realized.ContainsKey(index))
             OnCollapsedChanged();
 
-        if (_extentStale)
+        var before = BoundsOf(previous);
+        var after = BoundsOf(next);
+        if (_extentStale || before == after)
             return;
 
         if (!HasArea(_extent) || (HasArea(before) && TouchesEdge(before, _extent)))
@@ -905,6 +931,49 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     {
         var size = slot.IsMeasured ? slot.Size : IsVirtualizing ? _view!.EstimatedItemSize : default;
         return new Rect(slot.Location, size);
+    }
+
+    private ObjectBindingReader? AccentReader()
+    {
+        if (_view?.ItemAccentBinding is not { } binding)
+            return null;
+
+        if (_accentReader == null || !ReferenceEquals(_accentReader.Binding, binding))
+            _accentReader = new ObjectBindingReader(binding);
+
+        return _accentReader;
+    }
+
+    /// <summary>
+    /// Полоса элемента: кисть как есть, цвет — кистью, одной на цвет; иное полосы не даёт.
+    /// </summary>
+    private IBrush? ReadAccent(ObjectBindingReader? reader, object? item)
+    {
+        switch (reader?.Read(item))
+        {
+            case IBrush brush:
+                return brush;
+            case Color color:
+                if (!_accentBrushes.TryGetValue(color, out var cached))
+                    _accentBrushes[color] = cached = new ImmutableSolidColorBrush(color);
+
+                return cached;
+            default:
+                return null;
+        }
+    }
+
+    private void RereadAccents()
+    {
+        var items = Items;
+        if (_slotsStale || _slots.Count != items.Count)
+            return;
+
+        var accents = AccentReader();
+        for (var i = 0; i < items.Count; i++)
+            ChangeSlot(i, _slots[i] with { Accent = ReadAccent(accents, items[i]) });
+
+        accents?.Release();
     }
 
     private PointBindingReader? Reader()
@@ -969,7 +1038,8 @@ public partial class VirtualizingSurfacePanel : VirtualizingPanel
     /// <param name="Location">Положение в мировых координатах.</param>
     /// <param name="Size">Измеренный размер; до первой меры не значит ничего.</param>
     /// <param name="IsMeasured">Мерялся ли контейнер элемента хоть раз.</param>
-    private readonly record struct Slot(Point Location, Size Size, bool IsMeasured);
+    /// <param name="Accent">Полоса заголовка в упрощённом виде (ADR 0008).</param>
+    private readonly record struct Slot(Point Location, Size Size, bool IsMeasured, IBrush? Accent = null);
 
     /// <summary>
     /// Слушает модели слабо: коллекция хоста живёт дольше панели, и обычная подписка держала бы её.

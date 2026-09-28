@@ -7,6 +7,8 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
 using Xunit;
 using ArxisStudio.Surface;
@@ -29,11 +31,18 @@ public class SimplifiedViewTests
     private sealed class Card(Point location) : INotifyPropertyChanged
     {
         private Point _location = location;
+        private object? _accent;
 
         public Point Location
         {
             get => _location;
             set => Set(ref _location, value);
+        }
+
+        public object? Accent
+        {
+            get => _accent;
+            set => Set(ref _accent, value);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -80,16 +89,30 @@ public class SimplifiedViewTests
         }
     }
 
-    private static Stand Create(int columns = 20, int rows = 20)
+    /// <summary>
+    /// Кисть, которой красятся полосы каждого третьего элемента начиная со второго; каждый третий
+    /// начиная с первого красится цветом, у остальных полосы нет.
+    /// </summary>
+    private static readonly IBrush Blue = new ImmutableSolidColorBrush(Colors.Blue);
+
+    private static object? AccentOf(int index) => (index % 3) switch
+    {
+        0 => Colors.Red,
+        1 => Blue,
+        _ => null
+    };
+
+    private static Stand Create(int columns = 20, int rows = 20, bool accentBinding = false)
     {
         var items = new ObservableCollection<object>();
         for (var i = 0; i < columns * rows; i++)
-            items.Add(new Card(new Point(i % columns * 150, i / columns * 100)));
+            items.Add(new Card(new Point(i % columns * 150, i / columns * 100)) { Accent = AccentOf(i) });
 
         var view = new SurfaceView
         {
             ItemsSource = items,
             ItemLocationBinding = new Binding(nameof(Card.Location)),
+            ItemAccentBinding = accentBinding ? new Binding(nameof(Card.Accent)) : null,
             EstimatedItemSize = ItemSize,
             ItemTemplate = new FuncDataTemplate<Card>((_, _) => new Border { Width = ItemSize.Width, Height = ItemSize.Height })
         };
@@ -247,6 +270,76 @@ public class SimplifiedViewTests
         stand.RunLayout();
         stand.Render();
         Assert.Equal(stand.Items.Count - 1, stand.Layer.Cards);
+    }
+
+    [AvaloniaFact]
+    public void An_Accent_Band_Comes_From_A_Brush_Or_A_Color()
+    {
+        // Кисть — как есть, цвет — кистью, одной на цвет; у элемента без значения полосы нет. Полосы
+        // идут по геометрии на кисть, и высота полосы — свойство слоя.
+        var stand = Create(accentBinding: true);
+        stand.Zoom(0.4);
+        stand.Render();
+
+        var withAccent = Enumerable.Range(0, stand.Items.Count).Count(i => AccentOf(i) != null);
+        Assert.Equal(withAccent, stand.Layer.Bands);
+        Assert.Equal(2, stand.Layer.AccentGroups);
+
+        var rebuilds = stand.Layer.Rebuilds;
+        stand.Layer.AccentHeight = 8;
+        stand.Render();
+        Assert.Equal(rebuilds + 1, stand.Layer.Rebuilds);
+    }
+
+    [AvaloniaFact]
+    public void A_Collapsed_Model_Changing_Its_Accent_Repaints_Its_Band()
+    {
+        var stand = Create(accentBinding: true);
+        stand.Zoom(0.4);
+        stand.Render();
+        var bands = stand.Layer.Bands;
+
+        ((Card)stand.Items[2]).Accent = Colors.Green;
+        stand.RunLayout();
+        stand.Render();
+
+        Assert.Equal(bands + 1, stand.Layer.Bands);
+        Assert.Equal(3, stand.Layer.AccentGroups);
+    }
+
+    [AvaloniaFact]
+    public void An_Accent_Changed_While_Realized_Comes_Back_With_The_Card()
+    {
+        // Модель развёрнутого панель не слушает — положение ему переносит привязка; полосу она
+        // перечитывает, когда элемент сворачивается.
+        var stand = Create(accentBinding: true);
+        stand.Zoom(0.4);
+        stand.View.Selection.Select(2);
+        stand.RunLayout();
+
+        ((Card)stand.Items[2]).Accent = Colors.Green;
+        stand.RunLayout();
+        stand.View.Selection.Clear();
+        stand.RunLayout();
+        stand.Render();
+
+        Assert.Null(stand.Container(2));
+        Assert.Equal(3, stand.Layer.AccentGroups);
+    }
+
+    [AvaloniaFact]
+    public void Without_The_Binding_There_Are_No_Bands_Until_It_Is_Set()
+    {
+        var stand = Create();
+        stand.Zoom(0.4);
+        stand.Render();
+        Assert.Equal(0, stand.Layer.Bands);
+
+        stand.View.ItemAccentBinding = new Binding(nameof(Card.Accent));
+        stand.RunLayout();
+        stand.Render();
+
+        Assert.Equal(Enumerable.Range(0, stand.Items.Count).Count(i => AccentOf(i) != null), stand.Layer.Bands);
     }
 
     [AvaloniaFact]

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Media;
 
 namespace ArxisStudio.Surface;
 
@@ -9,21 +10,23 @@ namespace ArxisStudio.Surface;
 public partial class VirtualizingSurfacePanel
 {
     /// <summary>
-    /// Прямоугольники свёрнутых элементов в мировых координатах; без площади — не отдаются.
+    /// Свёрнутые элементы: прямоугольник в мировых координатах и полоса заголовка; без площади — не
+    /// отдаются.
     /// </summary>
     /// <remarks>
     /// Развёрнутые рисуют себя сами и сюда не входят.
     /// </remarks>
-    internal IEnumerable<Rect> EnumerateCollapsedBounds()
+    internal IEnumerable<(Rect Bounds, IBrush? Accent)> EnumerateCollapsed()
     {
         for (var i = 0; i < _slots.Count; i++)
         {
             if (_realized.ContainsKey(i))
                 continue;
 
-            var bounds = BoundsOf(_slots[i]);
+            var slot = _slots[i];
+            var bounds = BoundsOf(slot);
             if (bounds.Width > 0 && bounds.Height > 0)
-                yield return bounds;
+                yield return (bounds, slot.Accent);
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -34,8 +35,15 @@ public sealed class SurfaceSimplifiedLayer : Control
     public static readonly StyledProperty<IBrush?> StrokeProperty =
         AvaloniaProperty.Register<SurfaceSimplifiedLayer, IBrush?>(nameof(Stroke));
 
+    /// <summary>
+    /// Идентификатор свойства <see cref="AccentHeight"/>.
+    /// </summary>
+    public static readonly StyledProperty<double> AccentHeightProperty =
+        AvaloniaProperty.Register<SurfaceSimplifiedLayer, double>(nameof(AccentHeight), 16);
+
     private SurfaceView? _view;
     private StreamGeometry? _cards;
+    private List<(IBrush Brush, StreamGeometry Geometry)>? _bands;
     private bool _stale = true;
 
     static SurfaceSimplifiedLayer()
@@ -64,6 +72,29 @@ public sealed class SurfaceSimplifiedLayer : Control
         get => GetValue(StrokeProperty);
         set => SetValue(StrokeProperty, value);
     }
+
+    /// <summary>
+    /// Получает или задает высоту полосы заголовка в мировых единицах.
+    /// </summary>
+    /// <remarks>
+    /// Цвет полосы даёт <see cref="SurfaceView.ItemAccentBinding"/>. Выше трети карточки полоса не
+    /// бывает: у маленького элемента она иначе закрыла бы его целиком.
+    /// </remarks>
+    public double AccentHeight
+    {
+        get => GetValue(AccentHeightProperty);
+        set => SetValue(AccentHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Сколько полос в последней сборке — для тестов.
+    /// </summary>
+    internal int Bands { get; private set; }
+
+    /// <summary>
+    /// Сколько разных кистей у полос последней сборки — для тестов.
+    /// </summary>
+    internal int AccentGroups => _bands?.Count ?? 0;
 
     /// <summary>
     /// Сколько карточек в последней сборке — для тестов и стенда.
@@ -111,8 +142,34 @@ public sealed class SurfaceSimplifiedLayer : Control
         // Слой лежит под трансформацией viewport: пиксель экрана — это 1 / zoom мировых единиц.
         StrokeThickness = 1 / Math.Max(view.ViewportZoom, 0.0001);
         var pen = Stroke is { } stroke ? new Pen(stroke, StrokeThickness) : null;
-        context.DrawGeometry(Fill, pen, _cards);
+        if (_bands == null)
+        {
+            context.DrawGeometry(Fill, pen, _cards);
+        }
+        else
+        {
+            // Полоса ложится на заливку, а рамка — поверх полосы.
+            context.DrawGeometry(Fill, null, _cards);
+            foreach (var (brush, geometry) in _bands)
+                context.DrawGeometry(brush, null, geometry);
+
+            if (pen != null)
+                context.DrawGeometry(null, pen, _cards);
+        }
+
         Draws++;
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == AccentHeightProperty)
+        {
+            _stale = true;
+            InvalidateVisual();
+        }
     }
 
     /// <inheritdoc />
@@ -139,6 +196,7 @@ public sealed class SurfaceSimplifiedLayer : Control
 
         _view = view;
         _cards = null;
+        _bands = null;
         _stale = true;
 
         if (_view != null)
@@ -163,6 +221,7 @@ public sealed class SurfaceSimplifiedLayer : Control
         {
             // Над порогом геометрия не нужна и не держится: на большом холсте это тысячи фигур.
             _cards = null;
+            _bands = null;
             _stale = true;
             InvalidateVisual();
         }
@@ -179,24 +238,60 @@ public sealed class SurfaceSimplifiedLayer : Control
         Rebuilds++;
 
         // Прямоугольники обходятся в одну сторону, и правило NonZero закрашивает их объединение: по
-        // умолчанию EvenOdd, и перекрытие двух карточек вышло бы дырой.
+        // умолчанию EvenOdd, и перекрытие двух карточек вышло бы дырой. Полосы — по геометрии на
+        // кисть: их немного, а рисуются они одним вызовом на кисть.
         var cards = new StreamGeometry();
+        Dictionary<IBrush, (StreamGeometry Geometry, StreamGeometryContext Context)>? bands = null;
         var count = 0;
+        var bandCount = 0;
         using (var context = cards.Open())
         {
             context.SetFillRule(FillRule.NonZero);
-            foreach (var bounds in panel.EnumerateCollapsedBounds())
+            foreach (var (bounds, accent) in panel.EnumerateCollapsed())
             {
-                context.BeginFigure(bounds.TopLeft, isFilled: true);
-                context.LineTo(bounds.TopRight);
-                context.LineTo(bounds.BottomRight);
-                context.LineTo(bounds.BottomLeft);
-                context.EndFigure(isClosed: true);
+                AddRectangle(context, bounds);
                 count++;
+
+                if (accent == null || AccentHeight <= 0)
+                    continue;
+
+                bands ??= new Dictionary<IBrush, (StreamGeometry, StreamGeometryContext)>(ReferenceEqualityComparer.Instance);
+                if (!bands.TryGetValue(accent, out var band))
+                {
+                    var geometry = new StreamGeometry();
+                    band = (geometry, geometry.Open());
+                    band.Context.SetFillRule(FillRule.NonZero);
+                    bands[accent] = band;
+                }
+
+                AddRectangle(band.Context, bounds.WithHeight(Math.Min(AccentHeight, bounds.Height / 3)));
+                bandCount++;
+            }
+        }
+
+        List<(IBrush, StreamGeometry)>? built = null;
+        if (bands != null)
+        {
+            built = new List<(IBrush, StreamGeometry)>(bands.Count);
+            foreach (var (brush, band) in bands)
+            {
+                band.Context.Dispose();
+                built.Add((brush, band.Geometry));
             }
         }
 
         _cards = count > 0 ? cards : null;
+        _bands = built;
         Cards = count;
+        Bands = bandCount;
+    }
+
+    private static void AddRectangle(StreamGeometryContext context, Rect bounds)
+    {
+        context.BeginFigure(bounds.TopLeft, isFilled: true);
+        context.LineTo(bounds.TopRight);
+        context.LineTo(bounds.BottomRight);
+        context.LineTo(bounds.BottomLeft);
+        context.EndFigure(isClosed: true);
     }
 }

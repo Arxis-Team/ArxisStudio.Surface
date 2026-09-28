@@ -306,12 +306,15 @@ sealed class ArxisStudio.Surface.SurfaceSelectionTarget
     property SurfaceItem Container { get; }
     property SurfaceSelectionScope Scope { get; }
 sealed class ArxisStudio.Surface.SurfaceSimplifiedLayer : Control
+    avalonia AccentHeightProperty -> AccentHeight : Double (styled) = 16
     avalonia FillProperty -> Fill : IBrush (styled) = null
     avalonia StrokeProperty -> Stroke : IBrush (styled) = null
     ctor .ctor()
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void Render(DrawingContext)
+    property Double AccentHeight { get; set; }
     property IBrush Fill { get; set; }
     property IBrush Stroke { get; set; }
 class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
@@ -324,6 +327,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia InteractionOptionsProperty -> InteractionOptions : SurfaceInteractionOptions (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
     avalonia IsSimplifiedProperty -> IsSimplified : Boolean (direct)
+    avalonia ItemAccentBindingProperty -> ItemAccentBinding : BindingBase (styled) = null
     avalonia ItemLocationBindingProperty -> ItemLocationBinding : BindingBase (styled) = null
     avalonia ItemsExtentProperty -> ItemsExtent : Rect (direct)
     avalonia MarqueeScopeProperty -> MarqueeScope : SurfaceItem (direct)
@@ -380,6 +384,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void Reapply(TargetChange)
     method Void Revert(TargetChange)
     method Void ZoomAt(Double, Point)
+    property BindingBase ItemAccentBinding { get; set; }
     property BindingBase ItemLocationBinding { get; set; }
     property Boolean IsSelecting { get; set; }
     property Boolean IsSimplified { get; }
