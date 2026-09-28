@@ -85,12 +85,36 @@ public partial class NodeEditor
         record.IsResolved = resolved;
 
         if (record.Control is { } control)
+        {
             control.Sync();
-        else if (_linkPanel != null && (!IsLinkVirtualizing || (resolved && LinkWindows().Realize.Intersects(record.WorldBounds))))
-            _linkPanel.InvalidateMeasure();
+        }
+        else
+        {
+            if (_linkPanel != null && (!IsLinkVirtualizing || (resolved && WantsControl(record, LinkWindows().Realize))))
+                _linkPanel.InvalidateMeasure();
+
+            OnSimplifiedLinksChanged();
+        }
 
         OnContentChanged();
     }
+
+    /// <summary>
+    /// Возникает, когда сменилось то, что рисует слой упрощённых связей: запись без контрола, состав
+    /// развёрнутых или выбор (ADR 0008).
+    /// </summary>
+    internal event EventHandler? SimplifiedLinksChanged;
+
+    private void OnSimplifiedLinksChanged() => SimplifiedLinksChanged?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// Положен ли связи контрол, кроме закрепления: ниже порога упрощённого вида — если на её конце
+    /// живой порт, то есть узел развёрнут и его связи рисуются вживую; выше — если она в окне.
+    /// </summary>
+    private bool WantsControl(LinkRecord record, Rect window) =>
+        IsSimplified
+            ? (record.Source != null && Ports.Find(record.Source) != null) || (record.Target != null && Ports.Find(record.Target) != null)
+            : window.Intersects(record.WorldBounds);
 
     /// <summary>
     /// Ставит на панель контролы связей, которым они положены, и снимает остальные.
@@ -103,7 +127,7 @@ public partial class NodeEditor
     internal void RealizeLinks(LinkPanel panel)
     {
         var virtualizing = IsLinkVirtualizing;
-        var (realize, keep) = virtualizing ? LinkWindows() : default;
+        var (realize, keep) = virtualizing && !IsSimplified ? LinkWindows() : default;
 
         foreach (var record in _recordByItem.Values.ToArray())
         {
@@ -118,10 +142,10 @@ public partial class NodeEditor
             var pinned = record.IsHighlighted || record.IsCutting || record.IsDetaching;
             if (record.Control == null)
             {
-                if (pinned || (record.IsResolved && realize.Intersects(record.WorldBounds)))
+                if (pinned || (record.IsResolved && WantsControl(record, realize)))
                     Realize(record, panel);
             }
-            else if (!pinned && !IsRealizationHeld && !(record.IsResolved && keep.Intersects(record.WorldBounds)))
+            else if (!pinned && !IsRealizationHeld && !(record.IsResolved && WantsControl(record, keep)))
             {
                 Unrealize(record, panel);
             }
@@ -190,14 +214,17 @@ public partial class NodeEditor
             _portNodeReader = null;
             RefreshAllLinks();
         }
-        else if (change.Property == ItemLocationBindingProperty)
+        else if (change.Property == ItemLocationBindingProperty || change.Property == IsSimplifiedProperty)
         {
-            // Виртуализация связей идёт вместе с узлами: включилась или выключилась — пересобрать.
+            // Виртуализация связей идёт вместе с узлами: включилась, выключилась или сменила окно на
+            // живые порты упрощённого вида — пересобрать.
             _linkPanel?.InvalidateMeasure();
         }
         else if (IsLinkVirtualizing
+                 && !IsSimplified
                  && (change.Property == ViewportLocationProperty || change.Property == ViewportZoomProperty || change.Property == BoundsProperty))
         {
+            // В упрощённом виде окна нет: контролы связей от панорамы не зависят.
             _linkPanel?.InvalidateMeasure();
         }
     }
@@ -251,6 +278,7 @@ public partial class NodeEditor
         record.Control = link;
         link.Show(this, record);
         panel.Children.Add(link);
+        OnSimplifiedLinksChanged();
     }
 
     private Link CreateLink()
@@ -269,6 +297,8 @@ public partial class NodeEditor
         link.Hide();
         if (record.Own == null)
             _linkPool.Push(link);
+
+        OnSimplifiedLinksChanged();
     }
 
     private void WatchLinks(IEnumerable? links)
@@ -390,6 +420,7 @@ public partial class NodeEditor
             Unrealize(record, _linkPanel);
 
         OnLinkRemoved(record);
+        OnSimplifiedLinksChanged();
         OnContentChanged();
     }
 

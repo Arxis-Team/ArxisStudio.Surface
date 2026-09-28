@@ -35,6 +35,11 @@
                                 IsHitTestVisible="False"
                                 RenderTransform="{TemplateBinding ViewportTransform}"
                                 RenderTransformOrigin="0,0">
+                            <!-- Связи без контролов в упрощённом виде — под развёрнутыми (ADR 0008). -->
+                            <nodes:SimplifiedLinkLayer Name="PART_SimplifiedLinks"
+                                                       Stroke="{DynamicResource NodeEditor.Link.Stroke}"
+                                                       SelectedStroke="{DynamicResource NodeEditor.Link.SelectedStroke}"
+                                                       StrokeThickness="{DynamicResource NodeEditor.Simplified.LinkThickness}" />
                             <nodes:LinkPanel Name="PART_LinkPanel" />
                         </Canvas>
 

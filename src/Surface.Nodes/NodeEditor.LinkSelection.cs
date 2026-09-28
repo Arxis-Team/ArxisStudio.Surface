@@ -190,7 +190,10 @@ public partial class NodeEditor
     private void SetLinkSelected(LinkRecord link, bool value)
     {
         link.IsSelected = value;
-        link.Control?.Sync();
+        if (link.Control is { } control)
+            control.Sync();
+        else
+            OnSimplifiedLinksChanged();
     }
 
     /// <inheritdoc />
@@ -273,7 +276,9 @@ public partial class NodeEditor
         if (CurrentState is not EditorIdleState || IsOverNode(e.Source))
             return null;
 
-        return HitTestLink(GetWorldPosition(e.GetPosition(this)));
+        // Карточка упрощённого вида лежит поверх связи, как узел: связь под ней не берётся.
+        var world = GetWorldPosition(e.GetPosition(this));
+        return IsOverSimplifiedItem(world) ? null : HitTestLink(world);
     }
 
     private static bool IsOverNode(object? source) =>

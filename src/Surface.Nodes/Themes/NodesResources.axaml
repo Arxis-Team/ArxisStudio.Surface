@@ -64,4 +64,7 @@
     <!-- Полоса заголовка упрощённого узла — высотой в строку заголовка карточки (ADR 0008). -->
     <x:Double x:Key="NodeEditor.Simplified.AccentHeight">24</x:Double>
 
+    <!-- Толщина связи упрощённого вида, в пикселях экрана: тысячи связей толще сливаются. -->
+    <x:Double x:Key="NodeEditor.Simplified.LinkThickness">1</x:Double>
+
 </ResourceDictionary>

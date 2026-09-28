@@ -32,6 +32,21 @@ public partial class VirtualizingSurfacePanel
     }
 
     /// <summary>
+    /// Лежит ли под точкой свёрнутый элемент.
+    /// </summary>
+    internal bool IsCollapsedAt(Point world)
+    {
+        SyncSlots(Items);
+        for (var i = 0; i < _slots.Count; i++)
+        {
+            if (!_realized.ContainsKey(i) && BoundsOf(_slots[i]).Contains(world))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Разворачивает верхний свёрнутый элемент под точкой — для нажатия в упрощённом виде.
     /// </summary>
     /// <remarks>

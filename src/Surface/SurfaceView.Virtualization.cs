@@ -180,6 +180,13 @@ public partial class SurfaceView
             item.CurrentState.OnPointerPressed(e);
     }
 
+    /// <summary>
+    /// Лежит ли под точкой карточка упрощённого вида — для слоёв выше, которым элемент без контейнера
+    /// закрывает своё, как узел закрывает связь под ним.
+    /// </summary>
+    internal bool IsOverSimplifiedItem(Point world) =>
+        IsSimplified && ItemsPanelRoot is VirtualizingSurfacePanel panel && panel.IsCollapsedAt(world);
+
     private void SetPressedItem(object? item, VirtualizingSurfacePanel panel)
     {
         if (ReferenceEquals(_pressedItem, item))

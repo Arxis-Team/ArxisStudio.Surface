@@ -220,6 +220,11 @@ public partial class NodeEditor
     {
         UpdateConnected(key);
         RefreshLinksAt(key);
+
+        // Ниже порога упрощённого вида контрол связи держит живой порт на её конце: пришёл порт —
+        // связь разворачивается, ушёл — сворачивается.
+        if (IsSimplified)
+            _linkPanel?.InvalidateMeasure();
     }
 
     private void UpdateConnected(object? key)
