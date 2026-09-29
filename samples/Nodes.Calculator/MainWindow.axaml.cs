@@ -74,6 +74,7 @@ public partial class MainWindow : Window
     private int _next;
     private bool _refreshQueued;
     private bool _fitPending;
+    private bool _previewAfterPlay;
     private (TextBox Box, string Before)? _editing;
 
     public MainWindow()
@@ -163,8 +164,14 @@ public partial class MainWindow : Window
         if (_refreshQueued)
             return;
 
+        // Проход, который уже сделали напрямую («Играть» считает перед прогоном), второй раз не идёт:
+        // иначе он пришёлся бы на прогон и вернул бы живой счёт после него.
         _refreshQueued = true;
-        Dispatcher.UIThread.Post(Refresh, DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_refreshQueued)
+                Refresh();
+        }, DispatcherPriority.Background);
     }
 
     private void Refresh()
@@ -174,8 +181,17 @@ public partial class MainWindow : Window
             return;
 
         _document.Retype();
-        Evaluator.Preview(_document);
         UpdateChrome();
+
+        // Пока идёт прогон, пузыри показывают его значения; правка во время прогона пересчитается,
+        // когда он кончится. Кончившийся прогон оставляет свои значения до следующей правки.
+        if (_player.IsEnabled)
+        {
+            _previewAfterPlay = true;
+            return;
+        }
+
+        Evaluator.Preview(_document);
         FitIfPending();
     }
 
@@ -606,7 +622,14 @@ public partial class MainWindow : Window
     private void Apply(TraceEvent step)
     {
         if (step.Link is { } link)
+        {
             Pulse(link);
+
+            // Значение, пришедшее по проводу, — на пузырь его выхода: индекс цикла растёт на глазах,
+            // а не стоит на первом, как в живом счёте. У излома пузыря нет.
+            if (step.Value is { } value && link.From.Node is not RerouteNode)
+                link.From.Display = Values.Format(value);
+        }
 
         if (step.Print is not { } print)
             return;
@@ -627,6 +650,12 @@ public partial class MainWindow : Window
         _trace = null;
         if (log)
             Log("LogPlayLevel: Остановлено", MutedBrush);
+
+        if (_previewAfterPlay)
+        {
+            _previewAfterPlay = false;
+            QueueRefresh();
+        }
 
         UpdateChrome();
     }

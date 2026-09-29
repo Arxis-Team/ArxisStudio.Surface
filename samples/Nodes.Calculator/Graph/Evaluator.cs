@@ -8,7 +8,13 @@ public sealed record PrintMessage(string Text, bool ToScreen, bool ToLog, double
 /// <summary>
 /// Шаг прогона: в миг <see cref="Moment"/> сработал провод <see cref="Link"/> или узел вывел строку.
 /// </summary>
-public sealed record TraceEvent(int Moment, CalcLink? Link, PrintMessage? Print);
+/// <remarks>
+/// Провод данных несёт <see cref="Value"/> — значение своего выхода в этот миг. Живой счёт знает только
+/// переменные по умолчанию и первый индекс цикла, а прогон — индекс каждого прохода и переменную после
+/// «Задать»: проигрывание ставит это значение на выход, как отладка Blueprint показывает текущее значение
+/// пина.
+/// </remarks>
+public sealed record TraceEvent(int Moment, CalcLink? Link, PrintMessage? Print, object? Value = null);
 
 /// <summary>
 /// Прогон «Играть»: шаги по порядку и ошибка, если выполнение остановлено.
@@ -172,8 +178,10 @@ public sealed class Evaluator
         if (_document.LinkInto(input) is not { } link)
             return input.Literal;
 
-        Record(link);
+        // Сначала счёт, потом запись: провод несёт значение, которое по нему пришло. Провода глубже по
+        // цепочке записываются раньше, но в тот же миг — проигрывание ставит их вместе.
         var value = OutputValue(link.From);
+        Record(link, value);
         return input.Type == PinType.Wildcard ? value : Values.Coerce(value, input.Type);
     }
 
@@ -220,12 +228,13 @@ public sealed class Evaluator
     }
 
     /// <summary>
-    /// Провод сработал в этот миг — один раз, сколько бы узлов его ни спросило.
+    /// Провод сработал в этот миг — один раз, сколько бы узлов его ни спросило; у провода данных — со
+    /// значением.
     /// </summary>
-    private void Record(CalcLink link)
+    private void Record(CalcLink link, object? value = null)
     {
         if (_running && _readNow.Add(link))
-            _trace.Add(new TraceEvent(_moment, link, null));
+            _trace.Add(new TraceEvent(_moment, link, null, value));
     }
 
     private sealed class LoopLimitException(CalcNode node) : Exception
