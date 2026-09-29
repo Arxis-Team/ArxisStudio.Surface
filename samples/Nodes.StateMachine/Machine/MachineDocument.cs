@@ -52,6 +52,47 @@ public sealed class MachineDocument
     }
 
     /// <summary>
+    /// Что уйдёт вместе с этими связями: узлы перенаправления, оставшиеся без входа или без выхода, и
+    /// их прочие связи.
+    /// </summary>
+    /// <remarks>
+    /// Провод через узлы перенаправления — один провод: сняли его кусок — уходит он целиком, и
+    /// повисшего кольца на холсте не остаётся. Цепочка проходится до конца; узел перенаправления с
+    /// живым входом и живым выходом остаётся — у разветвления уходит только снятая ветка.
+    /// </remarks>
+    /// <param name="links">Связи, которые снимают.</param>
+    /// <param name="nodes">Узлы, которые снимают вместе с ними.</param>
+    /// <returns>Все связи к снятию — и данные, и потянутые — и узлы перенаправления сверх данных.</returns>
+    public (List<FlowLink> Links, List<MachineNode> Knots) Stranded(IEnumerable<FlowLink> links, IEnumerable<MachineNode> nodes)
+    {
+        var gone = links.ToHashSet();
+        var goneNodes = nodes.ToHashSet();
+        var knots = new List<MachineNode>();
+        var queue = new Queue<RerouteNode>(gone.SelectMany(l => new[] { l.From.Node, l.To.Node }).OfType<RerouteNode>());
+
+        while (queue.TryDequeue(out var knot))
+        {
+            if (goneNodes.Contains(knot))
+                continue;
+
+            var live = Links.Where(l => !gone.Contains(l) && (ReferenceEquals(l.From.Node, knot) || ReferenceEquals(l.To.Node, knot))).ToList();
+            if (live.Any(l => ReferenceEquals(l.To.Node, knot)) && live.Any(l => ReferenceEquals(l.From.Node, knot)))
+                continue;
+
+            goneNodes.Add(knot);
+            knots.Add(knot);
+            foreach (var link in live)
+            {
+                gone.Add(link);
+                if ((ReferenceEquals(link.From.Node, knot) ? link.To.Node : link.From.Node) is RerouteNode next)
+                    queue.Enqueue(next);
+            }
+        }
+
+        return (Links.Where(gone.Contains).ToList(), knots);
+    }
+
+    /// <summary>
     /// Куда ведёт выход: через узлы перенаправления до первого узла, который не узел перенаправления.
     /// </summary>
     /// <param name="output">Выход, с которого начать.</param>

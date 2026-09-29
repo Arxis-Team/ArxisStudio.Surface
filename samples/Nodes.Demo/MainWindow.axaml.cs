@@ -121,13 +121,19 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Снимает связи, а с ними — узлы перенаправления, оставшиеся без входа или без выхода, одной записью
+    /// истории.
+    /// </summary>
     private void OnLinkDeleteRequested(object? sender, LinkDeleteRequestedEventArgs e)
     {
-        var edit = ListEdit<GraphLink>.Remove(Document.Links, e.Links.OfType<GraphLink>());
-        if (edit.IsEmpty)
+        var (links, knots) = Document.Stranded(e.Links.OfType<GraphLink>(), []);
+        var linkEdit = ListEdit<GraphLink>.Remove(Document.Links, links);
+        if (linkEdit.IsEmpty)
             return;
 
-        _history.Push(edit);
+        var nodeEdit = ListEdit<GraphNode>.Remove(Document.Nodes, knots);
+        _history.Push(nodeEdit.IsEmpty ? linkEdit : new CompositeChange(linkEdit, nodeEdit));
         e.Handled = true;
     }
 
@@ -167,7 +173,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Удаляет выбранные узлы вместе с их связями — одной записью истории.
+    /// Удаляет выбранные узлы вместе с их связями и повисшими на них узлами перенаправления — одной
+    /// записью истории.
     /// </summary>
     /// <remarks>
     /// Положение забирать у контейнера не нужно: привязка уже держит его в модели, и отмена удаления
@@ -187,7 +194,9 @@ public partial class MainWindow : Window
         if (nodes.Count == 0)
             return;
 
-        var links = Document.Links.Where(l => nodes.Contains(l.From.Node) || nodes.Contains(l.To.Node)).ToList();
+        var touching = Document.Links.Where(l => nodes.Contains(l.From.Node) || nodes.Contains(l.To.Node));
+        var (links, knots) = Document.Stranded(touching, nodes);
+        nodes.UnionWith(knots);
         var linkEdit = ListEdit<GraphLink>.Remove(Document.Links, links);
         var nodeEdit = ListEdit<GraphNode>.Remove(Document.Nodes, nodes);
 

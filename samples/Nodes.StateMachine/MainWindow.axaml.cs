@@ -149,7 +149,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Удаляет узлы вместе с их связями — одной записью истории.
+    /// Удаляет узлы вместе с их связями и повисшими на них узлами перенаправления — одной записью истории.
     /// </summary>
     internal void RemoveNodes(IEnumerable<MachineNode> nodes)
     {
@@ -157,7 +157,9 @@ public partial class MainWindow : Window
         if (doomed.Count == 0)
             return;
 
-        var links = _document.Links.Where(l => doomed.Contains(l.From.Node) || doomed.Contains(l.To.Node)).ToList();
+        var touching = _document.Links.Where(l => doomed.Contains(l.From.Node) || doomed.Contains(l.To.Node));
+        var (links, knots) = _document.Stranded(touching, doomed);
+        doomed.UnionWith(knots);
         var linkEdit = ListEdit<FlowLink>.Remove(_document.Links, links);
         var nodeEdit = ListEdit<MachineNode>.Remove(_document.Nodes, doomed);
         _history.Push(new CompositeChange(linkEdit, nodeEdit));
@@ -209,13 +211,19 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Снимает провода, а с ними — узлы перенаправления, оставшиеся без входа или без выхода, одной
+    /// записью истории.
+    /// </summary>
     private void OnLinkDeleteRequested(object? sender, LinkDeleteRequestedEventArgs e)
     {
-        var edit = ListEdit<FlowLink>.Remove(_document.Links, e.Links.OfType<FlowLink>());
-        if (edit.IsEmpty)
+        var (links, knots) = _document.Stranded(e.Links.OfType<FlowLink>(), []);
+        var linkEdit = ListEdit<FlowLink>.Remove(_document.Links, links);
+        if (linkEdit.IsEmpty)
             return;
 
-        _history.Push(edit);
+        var nodeEdit = ListEdit<MachineNode>.Remove(_document.Nodes, knots);
+        _history.Push(nodeEdit.IsEmpty ? linkEdit : new CompositeChange(linkEdit, nodeEdit));
         e.Handled = true;
     }
 
