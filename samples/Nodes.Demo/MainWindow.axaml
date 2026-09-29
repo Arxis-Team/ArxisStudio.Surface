@@ -59,7 +59,7 @@
                                 LinkTargetBinding="{Binding To}"
                                 LinkStrokeBinding="{Binding Color}"
                                 LinkMarkerBinding="{Binding Marker}"
-                                LinkThicknessBinding="{Binding Thickness}"
+                                LinkRoleBinding="{Binding Role}"
                                 PortNodeBinding="{Binding Node, DataType={x:Type demo:GraphPort}}">
                 <surface:NodeEditor.DataTemplates>
                     <DataTemplate x:DataType="demo:RerouteNode">
@@ -77,7 +77,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="demo:GraphPort">
                                             <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}"
-                                                          PinShape="{Binding Shape}" PinBrush="{Binding Brush}" />
+                                                          PinRole="{Binding Role}" PinBrush="{Binding Brush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -85,7 +85,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="demo:GraphPort">
                                             <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}"
-                                                          PinShape="{Binding Shape}" PinBrush="{Binding Brush}" />
+                                                          PinRole="{Binding Role}" PinBrush="{Binding Brush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

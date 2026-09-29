@@ -25,12 +25,11 @@
             <Setter Property="BorderThickness" Value="2" />
         </Style>
         <!--
-            Порты машины — поток управления, как пины выполнения Blueprint (ADR 0016 библиотеки): вид
-            задан стилем по классу порта, а не привязкой к модели — оба пути равноправны.
+            Порты машины — поток управления, то есть выполнение (ADR 0017 библиотеки): роль задана стилем по
+            классу порта, а не привязкой к модели, — оба пути равноправны. Пятиугольник и цвет даёт тема.
         -->
         <Style Selector="surface|Port.flow">
-            <Setter Property="PinShape" Value="Execution" />
-            <Setter Property="PinBrush" Value="#E6E8EB" />
+            <Setter Property="PinRole" Value="Execution" />
         </Style>
         <Style Selector="TextBlock.run">
             <Setter Property="Foreground" Value="#FFB300" />
@@ -122,7 +121,7 @@
                                 Links="{Binding Links}"
                                 LinkSourceBinding="{Binding From}"
                                 LinkTargetBinding="{Binding To}"
-                                LinkStrokeBinding="{Binding Color}"
+                                LinkRoleBinding="{Binding Role}"
                                 PortNodeBinding="{Binding Node, DataType={x:Type machine:FlowPort}}">
                 <!-- Шаблоны — от частного к общему: узел перенаправления, переход и состояние — тоже MachineNode. -->
                 <surface:NodeEditor.DataTemplates>

@@ -240,7 +240,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void OnLinkFired(GraphLink link)
     {
-        if (link.Color is not { } color)
+        if ((link.Color ?? RoleColor(link.Role)) is not { } color)
         {
             Editor.PulseLink(link);
             return;
@@ -255,6 +255,23 @@ public partial class MainWindow : Window
         Editor.PulseLink(link, pulse);
 
         static byte Lighten(byte channel) => (byte)(channel + ((255 - channel) * 0.6));
+    }
+
+    /// <summary>
+    /// Цвет провода роли — из темы редактора, тем же ключом, что берёт сам редактор.
+    /// </summary>
+    private Color? RoleColor(PinRole role)
+    {
+        var key = role switch
+        {
+            PinRole.Execution => "NodeEditor.Link.Execution.Stroke",
+            PinRole.Delegate => "NodeEditor.Link.Delegate.Stroke",
+            _ => null
+        };
+
+        return key != null && Editor.TryFindResource(key, ActualThemeVariant, out var value) && value is ISolidColorBrush brush
+            ? brush.Color
+            : null;
     }
 
     /// <summary>

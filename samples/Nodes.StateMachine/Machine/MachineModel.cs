@@ -1,3 +1,4 @@
+using ArxisStudio.Surface.Nodes;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia;
@@ -352,22 +353,20 @@ public sealed class FlowPort(MachineNode node, string name, bool isInput)
 /// Связь потока управления: из выхода <see cref="From"/> во вход <see cref="To"/>.
 /// </summary>
 /// <remarks>
-/// Цвет провода — модели: редактор берёт его привязкой <c>LinkStrokeBinding</c>. Вспышку сработавшего
-/// провода рисует редактор — импульсом (<c>NodeEditor.PulseLink</c>, ADR 0014 библиотеки), модель о ней
-/// не знает.
+/// Провод потока управления — провод выполнения: его цвет и толщину даёт тема редактора по роли
+/// (<c>LinkRoleBinding</c>, ADR 0017 библиотеки). Вспышку сработавшего провода рисует редактор —
+/// импульсом (<c>NodeEditor.PulseLink</c>, ADR 0014 библиотеки), модель о ней не знает.
 /// </remarks>
 public sealed class FlowLink(FlowPort from, FlowPort to) : Observable
 {
-    /// <summary>
-    /// Провод потока — светлый, как провода исполнения в Blueprint.
-    /// </summary>
-    public static readonly Color Idle = Color.Parse("#C9CED6");
-
     public FlowPort From { get; } = from;
 
     public FlowPort To { get; } = to;
 
-    public Color Color => Idle;
+    /// <summary>
+    /// Роль провода: поток управления машины — выполнение, как провода Exec в Blueprint.
+    /// </summary>
+    public PinRole Role => PinRole.Execution;
 
     public override string ToString() => $"{From} → {To}";
 }

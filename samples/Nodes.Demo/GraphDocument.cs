@@ -77,22 +77,23 @@ public sealed class GraphDocument
     /// <remarks>
     /// Направления проверяет сам редактор; здесь — правила графа, как в Blueprint (ADR 0016 библиотеки):
     /// в свой же узел нельзя; выполнение соединяется только с выполнением, данные — с данными, узел
-    /// перенаправления — с любым; из выхода выполнения — одна связь, во вход выполнения — сколько угодно;
-    /// во вход данных — одна. Связь, что перецепляет свой конец, в правилах не считается: её концы
-    /// заняты ею же.
+    /// перенаправления — с любым; делегат — только с делегатом; из выхода выполнения — одна связь, во
+    /// вход выполнения — сколько угодно; во вход данных и делегата — одна, из выхода делегата — сколько
+    /// угодно: одно событие подписывают на многих. Связь, что перецепляет свой конец, в правилах не
+    /// считается: её концы заняты ею же.
     /// </remarks>
     public bool CanConnect(GraphPort source, GraphPort target, GraphLink? moving)
     {
         if (ReferenceEquals(source.Node, target.Node))
             return false;
 
-        var kind = source.Kind is PortKind.Any ? target.Kind : source.Kind;
-        var other = target.Kind is PortKind.Any ? source.Kind : target.Kind;
-        if (kind is not PortKind.Any && other is not PortKind.Any && (kind is PortKind.Execution) != (other is PortKind.Execution))
+        var role = source.Kind is PortKind.Any ? target.Role : source.Role;
+        var other = target.Kind is PortKind.Any ? source.Role : target.Role;
+        if (source.Kind is not PortKind.Any && target.Kind is not PortKind.Any && role != other)
             return false;
 
         var others = Links.Where(link => !ReferenceEquals(link, moving)).ToList();
-        if (kind is PortKind.Execution)
+        if (role is PinRole.Execution)
             return !others.Any(link => ReferenceEquals(link.From, source));
 
         return !others.Any(link => ReferenceEquals(link.To, target));
@@ -113,12 +114,23 @@ public sealed class GraphDocument
         var mix = document.Add("Смешивание", new Point(660, 150), inputs: [Color("A"), Color("B"), Number("Доля")], outputs: [Color("Цвет")], NodeKinds.Blend);
         var output = document.Add("Вывод", new Point(960, 190), inputs: [Execution(), Color("Цвет")], outputs: [Execution()], NodeKinds.Output);
 
-        // Поток выполнения, как в Blueprint: событие запускает «Вывод», тот — «Журнал». Узлы данных
-        // выше пинов выполнения не имеют: их значения считаются, когда до «Вывода» доходит выполнение.
-        var tick = document.Add("Каждый кадр", new Point(660, -20), inputs: [], outputs: [Execution()], NodeKinds.Event);
-        var log = document.Add("Журнал", new Point(1260, 190), inputs: [Execution(), Color("Цвет")], outputs: [], NodeKinds.Utility);
+        // Поток выполнения, как в Blueprint: событие запускает «Вывод». Узлы данных пинов выполнения не
+        // имеют: их значения считаются, когда до «Вывода» доходит выполнение.
+        var tick = document.Add("Каждый кадр", new Point(660, 10), inputs: [], outputs: [Execution()], NodeKinds.Event);
         document.Links.Add(new GraphLink(tick.Outputs[0], output.Inputs[0]));
-        document.Links.Add(new GraphLink(output.Outputs[0], log.Inputs[0]));
+
+        // Наблюдатель, как Event Dispatcher Blueprint: «Вывод» вызывает «Готово», ничего не зная о
+        // подписчиках; на старте событие «По «Готово»» отдаёт себя делегатом в «Подписаться», а когда
+        // «Готово» вызвано, оно запускает «Журнал».
+        var call = document.Add("Вызвать «Готово»", new Point(1260, 190), inputs: [Execution()], outputs: [Execution()], NodeKinds.Utility);
+        var begin = document.Add("Начало", new Point(60, 460), inputs: [], outputs: [Execution()], NodeKinds.Event);
+        var bind = document.Add("Подписаться на «Готово»", new Point(360, 460), inputs: [Execution(), Delegate("Событие")], outputs: [Execution()], NodeKinds.Utility);
+        var ready = document.Add("По «Готово»", new Point(60, 620), inputs: [], outputs: [Delegate(string.Empty), Execution()], NodeKinds.Event);
+        var log = document.Add("Журнал", new Point(960, 560), inputs: [Execution(), Color("Цвет")], outputs: [], NodeKinds.Utility);
+        document.Links.Add(new GraphLink(output.Outputs[0], call.Inputs[0]));
+        document.Links.Add(new GraphLink(begin.Outputs[0], bind.Inputs[0]));
+        document.Links.Add(new GraphLink(ready.Outputs[0], bind.Inputs[1]));
+        document.Links.Add(new GraphLink(ready.Outputs[1], log.Inputs[0]));
 
         document.Links.Add(new GraphLink(image.Outputs[0], blur.Inputs[0]));
         document.Links.Add(new GraphLink(number.Outputs[0], blur.Inputs[1]));
@@ -181,6 +193,8 @@ public sealed class GraphDocument
     private static GraphPortSpec Number(string name) => new(name, PortKind.Number);
 
     private static GraphPortSpec Execution() => new(string.Empty, PortKind.Execution);
+
+    private static GraphPortSpec Delegate(string name) => new(name, PortKind.Delegate);
 }
 
 /// <summary>
@@ -228,7 +242,13 @@ public enum PortKind
     /// <summary>
     /// Выполнение: не значение, а порядок — «когда», а не «что», как Exec-пины Blueprint.
     /// </summary>
-    Execution
+    Execution,
+
+    /// <summary>
+    /// Делегат: ссылка на событие, переданная как значение, чтобы вызвать его позже, — как красные пины
+    /// Event Dispatcher в Blueprint.
+    /// </summary>
+    Delegate
 }
 
 /// <summary>
@@ -245,16 +265,6 @@ public static class PortKinds
     public static readonly Color NumberWire = Color.Parse("#2BA8A8");
 
     /// <summary>
-    /// Провод выполнения — белый и толще проводов данных, как в Blueprint.
-    /// </summary>
-    public static readonly Color ExecutionWire = Color.Parse("#F2F2F2");
-
-    /// <summary>
-    /// Толщина провода выполнения в мировых единицах; провода данных — толщиной темы.
-    /// </summary>
-    public const double ExecutionThickness = 3.5;
-
-    /// <summary>
     /// Маркер провода цвета — стрелка посередине. Кисти нет: маркер берёт цвет провода.
     /// </summary>
     public static readonly LinkMarker ColorMarker = new() { Shape = LinkShape.Arrow };
@@ -268,8 +278,18 @@ public static class PortKinds
     {
         PortKind.Color => ColorWire,
         PortKind.Number => NumberWire,
-        PortKind.Execution => ExecutionWire,
         _ => null
+    };
+
+    /// <summary>
+    /// Роль пина и провода (ADR 0017 библиотеки): вид выполнения и делегата даёт тема редактора, цвет
+    /// данных — эта модель.
+    /// </summary>
+    public static PinRole RoleOf(PortKind kind) => kind switch
+    {
+        PortKind.Execution => PinRole.Execution,
+        PortKind.Delegate => PinRole.Delegate,
+        _ => PinRole.Data
     };
 
     public static LinkMarker? MarkerOf(PortKind kind) => kind switch
@@ -357,12 +377,13 @@ public sealed class GraphPort(GraphNode node, string name, bool isInput, PortKin
     public PortKind Kind { get; } = kind;
 
     /// <summary>
-    /// Форма штырька: у выполнения — пятиугольник, у данных — круг (ADR 0016 библиотеки).
+    /// Роль пина: форму и цвет выполнения и делегата даёт тема редактора.
     /// </summary>
-    public PortShape Shape => Kind is PortKind.Execution ? PortShape.Execution : PortShape.Circle;
+    public PinRole Role => PortKinds.RoleOf(Kind);
 
     /// <summary>
-    /// Цвет штырька — цвет его типа; у узла перенаправления — тема.
+    /// Цвет штырька данных — цвет его типа; у выполнения, делегата и узла перенаправления значения нет, и
+    /// порт берёт вид роли или темы.
     /// </summary>
     public IBrush? Brush => PortKinds.ColorOf(Kind) is { } color ? PortBrushes.Of(color) : null;
 
@@ -403,9 +424,10 @@ public sealed record GraphLink(GraphPort From, GraphPort To)
     public LinkMarker? Marker => PortKinds.MarkerOf(To.Kind is PortKind.Any ? From.Kind : To.Kind);
 
     /// <summary>
-    /// Толщина провода: выполнение толще данных; редактор берёт её привязкой <c>LinkThicknessBinding</c>.
+    /// Роль провода — по типу, как цвет: цвет и толщину выполнения и делегата даёт тема редактора
+    /// привязкой <c>LinkRoleBinding</c>.
     /// </summary>
-    public double? Thickness => (To.Kind is PortKind.Any ? From.Kind : To.Kind) is PortKind.Execution ? PortKinds.ExecutionThickness : null;
+    public PinRole Role => PortKinds.RoleOf(To.Kind is PortKind.Any ? From.Kind : To.Kind);
 
     public override string ToString() => $"{From} → {To}";
 }
