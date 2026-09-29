@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ArxisStudio.Surface.Nodes;
 using Avalonia;
 using Avalonia.Media;
 
@@ -207,10 +208,27 @@ public static class PortKinds
 
     public static readonly Color NumberWire = Color.Parse("#2BA8A8");
 
+    /// <summary>
+    /// Маркер провода цвета — стрелка посередине. Кисти нет: маркер берёт цвет провода.
+    /// </summary>
+    public static readonly LinkMarker ColorMarker = new() { Shape = LinkShape.Arrow };
+
+    /// <summary>
+    /// Маркер провода числа — шевроны через 90 единиц: числовой провод отличим и без цвета.
+    /// </summary>
+    public static readonly LinkMarker NumberMarker = new() { Shape = LinkShape.Chevron, Spacing = 90, Size = 12 };
+
     public static Color? ColorOf(PortKind kind) => kind switch
     {
         PortKind.Color => ColorWire,
         PortKind.Number => NumberWire,
+        _ => null
+    };
+
+    public static LinkMarker? MarkerOf(PortKind kind) => kind switch
+    {
+        PortKind.Color => ColorMarker,
+        PortKind.Number => NumberMarker,
         _ => null
     };
 }
@@ -304,6 +322,12 @@ public sealed record GraphLink(GraphPort From, GraphPort To)
     /// привязкой <c>LinkStrokeBinding</c> в обоих видах (ADR 0009 библиотеки).
     /// </summary>
     public Color? Color => PortKinds.ColorOf(To.Kind) ?? PortKinds.ColorOf(From.Kind);
+
+    /// <summary>
+    /// Маркер — по тому же типу, что и цвет; редактор берёт его привязкой <c>LinkMarkerBinding</c>
+    /// (ADR 0014 библиотеки).
+    /// </summary>
+    public LinkMarker? Marker => PortKinds.MarkerOf(To.Kind is PortKind.Any ? From.Kind : To.Kind);
 
     public override string ToString() => $"{From} → {To}";
 }

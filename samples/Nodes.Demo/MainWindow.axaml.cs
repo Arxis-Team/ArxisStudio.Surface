@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ArxisStudio.Surface;
@@ -19,6 +20,8 @@ namespace Nodes.Demo;
 public partial class MainWindow : Window
 {
     private readonly SurfaceHistory _history;
+    private readonly GraphEvaluation _evaluation = new();
+    private readonly Dictionary<Color, LinkPulse> _pulses = new();
     private GraphDocument? _document;
 
     public MainWindow()
@@ -41,6 +44,8 @@ public partial class MainWindow : Window
         Editor.LinkSplitRequested += OnLinkSplitRequested;
         Editor.DeleteRequested += OnDeleteRequested;
         Editor.SurfaceSelectionChanged += (_, _) => UpdateChrome();
+        _evaluation.LinkFired += OnLinkFired;
+        _evaluation.Finished += OnEvaluationFinished;
         Editor.PropertyChanged += (_, e) =>
         {
             if (e.Property == SurfaceView.ViewportZoomProperty || e.Property == NodeEditor.SelectedLinksProperty)
@@ -61,6 +66,8 @@ public partial class MainWindow : Window
     /// </remarks>
     internal void Load(GraphDocument document)
     {
+        _evaluation.Stop();
+        Editor.ClearLinkPulses();
         DataContext = document;
         _history.Clear();
     }
@@ -208,6 +215,59 @@ public partial class MainWindow : Window
 
     private void OnLargeGraphClick(object? sender, RoutedEventArgs e) => Load(GraphDocument.CreateGrid(10_000));
 
+    // --- Волна вычисления и импульсы (ADR 0014 библиотеки) -------------------------------------------
+
+    private void OnEvaluateClick(object? sender, RoutedEventArgs e)
+    {
+        if (_evaluation.IsRunning)
+        {
+            RepeatBox.IsChecked = false;
+            _evaluation.Stop();
+            Editor.ClearLinkPulses();
+        }
+        else
+        {
+            _evaluation.Start(Document);
+        }
+
+        UpdateChrome();
+    }
+
+    /// <summary>
+    /// Сработавшая связь — импульс цвета своего типа: свечение — цвет провода, пузыри — он же, осветлённый
+    /// к белому: того же цвета, что свечение, они в нём тонут. Вид импульса один на цвет — объект читается
+    /// на каждом кадре и не меняется.
+    /// </summary>
+    private void OnLinkFired(GraphLink link)
+    {
+        if (link.Color is not { } color)
+        {
+            Editor.PulseLink(link);
+            return;
+        }
+
+        if (!_pulses.TryGetValue(color, out var pulse))
+        {
+            var bubble = Color.FromRgb(Lighten(color.R), Lighten(color.G), Lighten(color.B));
+            _pulses[color] = pulse = new LinkPulse { Brush = new SolidColorBrush(bubble), GlowBrush = new SolidColorBrush(color) };
+        }
+
+        Editor.PulseLink(link, pulse);
+
+        static byte Lighten(byte channel) => (byte)(channel + ((255 - channel) * 0.6));
+    }
+
+    /// <summary>
+    /// «Повторять» запускает волну снова, как Event Tick: провода горят, пока граф считается.
+    /// </summary>
+    private void OnEvaluationFinished()
+    {
+        if (RepeatBox.IsChecked == true && _document != null)
+            _evaluation.Start(_document);
+
+        UpdateChrome();
+    }
+
     private void OnFitClick(object? sender, RoutedEventArgs e) => FitAll();
 
     /// <summary>
@@ -228,12 +288,15 @@ public partial class MainWindow : Window
     {
         UndoButton.IsEnabled = _history.CanUndo;
         RedoButton.IsEnabled = _history.CanRedo;
+        EvaluateButton.Content = _evaluation.IsRunning ? "■ Стоп" : "▶ Вычислить";
         ZoomText.Text = $"{Editor.ViewportZoom:P0}";
 
         if (_document == null)
             return;
 
         StatusText.Text = $"Узлов {_document.Nodes.Count}, связей {_document.Links.Count} · выбрано узлов "
-            + $"{Editor.Selection.Count}, связей {Editor.SelectedLinks.Count}";
+            + $"{Editor.Selection.Count}, связей {Editor.SelectedLinks.Count}"
+            + (_evaluation.IsRunning ? $" · волна {_evaluation.Duration.TotalSeconds:0.0} с" : "")
+            + (_evaluation.Skipped > 0 ? $" · в кольцах {_evaluation.Skipped} связей не считаются" : "");
     }
 }
