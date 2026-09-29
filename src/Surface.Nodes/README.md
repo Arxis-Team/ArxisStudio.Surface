@@ -208,6 +208,49 @@ editor.LinkSplitRequested += (_, e) =>
 или без выхода после снятия связей — снимает хост: оба примера уносят его вместе с проводом одной записью
 истории.
 
+## Поток по проводам: импульсы и маркеры
+
+Как отладка Blueprint (ADR 0014): сработавший провод вспыхивает, и по нему от выхода ко входу бегут
+пузыри. Импульс зажигает хост одним вызовом, а гаснет он сам; повтор по горящему проводу продлевает его,
+не сбивая бег.
+
+```csharp
+runner.Fired += path =>
+{
+    foreach (var link in path)
+        editor.PulseLink(link);                      // вид — LinkPulse редактора или тема
+};
+editor.PulseLink(link, new LinkPulse { Shape = LinkShape.Arrow, Speed = 300, GlowThickness = 0 });
+editor.ClearLinkPulses();                            // остановили отладку — погасить всё
+```
+
+Маркер — стрелка или другая фигура на проводе: всем сразу или каждой связи по модели.
+
+```xml
+<surface:NodeEditor LinkMarkerBinding="{Binding Marker}"
+                    IsLinkPulseEnabled="{Binding Settings.ShowPulses}"
+                    AreLinkMarkersVisible="{Binding Settings.ShowMarkers}">
+    <surface:NodeEditor.LinkMarker>
+        <surface:LinkMarker Shape="Chevron" Size="12" Spacing="80" />
+    </surface:NodeEditor.LinkMarker>
+</surface:NodeEditor>
+```
+
+| API | Что делает |
+|---|---|
+| `PulseLink(link, pulse?)` / `ClearLinkPulses()` | зажечь импульс по проводу / погасить все |
+| `IsLinkPulseEnabled` | выключатель импульсов: выключенный гасит горящие и не зажигает новые |
+| `LinkPulse` | вид импульса по умолчанию: `Shape`, `Geometry`, `Size`, `Speed` (192), `Spacing` (64), `Lifetime` (1 с), `FadeIn`, `FadeOut`, `Brush`, `GlowBrush`, `GlowThickness` |
+| `LinkMarker` / `LinkMarkerBinding` | маркер всех проводов / свой у каждой связи; `null` из привязки — без маркера |
+| `AreLinkMarkersVisible` | выключатель маркеров, настройку не трогает |
+| `LinkMarker` (класс) | `Shape`, `Geometry`, `Size` (14), `Spacing` (0 — один), `Position` (0,5), `Brush`, `MinScreenSize` (4) |
+| `LinkShape` | `Circle`, `Arrow`, `Chevron`, `Diamond`, `Square`, `Custom` — своя геометрия в квадрате −1…1 остриём по X |
+
+Вид по умолчанию — ключи темы: `NodeEditor.LinkPulse.Brush`, `.GlowBrush`, `.Size`, `.GlowThickness`,
+`.GlowOpacity`, `NodeEditor.LinkMarker.Brush`. Размеры — в мировых единицах, как у провода. Импульсы и
+маркеры видны и в упрощённом виде: слой рисует по записям связей, а не по их контролам. Кадры
+анимации слой просит, только пока горит импульс.
+
 ## Миникарта
 
 `SurfaceMinimap` из инструментов работает с редактором узлов как с любой поверхностью, а редактор
@@ -304,6 +347,8 @@ editor.LinkSplitRequested += (_, e) =>
 | `NodeEditor.PendingLink.Stroke` | протягиваемая связь |
 | `NodeEditor.Cut.Stroke`, `NodeEditor.Cut.Thickness` | отрезок разреза |
 | `NodeEditor.Reroute.Size`, `…RingThickness`, `…SelectedRingThickness` | узел перенаправления |
+| `NodeEditor.LinkPulse.Brush`, `…GlowBrush`, `…Size`, `…GlowThickness`, `…GlowOpacity` | импульс по проводу |
+| `NodeEditor.LinkMarker.Brush` | маркер провода без цвета модели |
 | `NodeEditor.Simplified.LinkThickness` | упрощённый вид: толщина связи в пикселях экрана |
 
 Связи лежат в мировых координатах и масштабируются вместе с узлами; отрезок разреза рисуется своим

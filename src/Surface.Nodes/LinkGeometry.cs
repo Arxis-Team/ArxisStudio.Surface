@@ -43,6 +43,12 @@ internal readonly struct LinkGeometry
     public Point TargetControl { get; }
 
     /// <summary>
+    /// Ломаная кривой с накопленной длиной — для хода по длине провода, а не по параметру: параметр
+    /// кривой Безье идёт по ней неравномерно, и фигуры бежали бы то быстрее, то медленнее (ADR 0014).
+    /// </summary>
+    public LinkPath Path() => new(this);
+
+    /// <summary>
     /// Точка кривой при параметре от 0 (источник) до 1 (цель).
     /// </summary>
     public Point At(double t)

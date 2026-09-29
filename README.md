@@ -140,6 +140,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0011](docs/adr/0011-panning-costs-what-is-visible.md) | Панорама стоит видимого: слои — своей операцией по сетке ячеек, миникарта — картинкой, окно — шагом, запас — порциями |
 | [0012](docs/adr/0012-large-layers-draw-through-skia.md) | Большие слои рисуют Skia напрямую: карточки — треугольниками, связи — путём на перо, миникарта — своей картинкой; без Skia — прежний путь |
 | [0013](docs/adr/0013-the-reroute-node-faces-the-wire.md) | Узел перенаправления смотрит по проводу, как в Blueprint; повисший снимает хост; упрощённый вид узлов — ниже 30 % |
+| [0014](docs/adr/0014-the-wire-shows-the-flow.md) | Провод показывает поток, как отладка Blueprint: импульсы `PulseLink` и маркеры `LinkMarker`, каждые с выключателем |
 
 ## Лицензия
 

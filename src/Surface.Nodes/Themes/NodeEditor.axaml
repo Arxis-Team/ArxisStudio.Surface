@@ -49,6 +49,21 @@
                             <nodes:LinkPanel Name="PART_LinkPanel" />
                         </Canvas>
 
+                        <!--
+                            Поток по проводам (ADR 0014): маркеры направления и импульсы отладки — над
+                            связями обоих видов и под узлами, как пузыри на проводах Blueprint. Во весь
+                            размер и переводит мир в экран сам.
+                        -->
+                        <nodes:LinkFlowLayer Name="PART_LinkFlow"
+                                             IsHitTestVisible="False"
+                                             PulseBrush="{DynamicResource NodeEditor.LinkPulse.Brush}"
+                                             GlowBrush="{DynamicResource NodeEditor.LinkPulse.GlowBrush}"
+                                             PulseSize="{DynamicResource NodeEditor.LinkPulse.Size}"
+                                             GlowThickness="{DynamicResource NodeEditor.LinkPulse.GlowThickness}"
+                                             GlowOpacity="{DynamicResource NodeEditor.LinkPulse.GlowOpacity}"
+                                             MarkerBrush="{DynamicResource NodeEditor.LinkMarker.Brush}"
+                                             SelectedMarkerBrush="{DynamicResource NodeEditor.Link.SelectedStroke}" />
+
                         <surface:SurfaceSimplifiedLayer Name="PART_SimplifiedLayer"
                                                         IsHitTestVisible="False"
                                                         Fill="{DynamicResource NodeEditor.Node.Background}"

@@ -35,6 +35,35 @@ sealed class ArxisStudio.Surface.Nodes.LinkDeleteRequestedEventArgs : EventArgs
 enum ArxisStudio.Surface.Nodes.LinkEnd
     value Source = 0
     value Target = 1
+sealed class ArxisStudio.Surface.Nodes.LinkMarker
+    ctor .ctor()
+    property Double MinScreenSize { get; set; }
+    property Double Position { get; set; }
+    property Double Size { get; set; }
+    property Double Spacing { get; set; }
+    property Geometry Geometry { get; set; }
+    property IBrush Brush { get; set; }
+    property LinkShape Shape { get; set; }
+sealed class ArxisStudio.Surface.Nodes.LinkPulse
+    ctor .ctor()
+    property Double Spacing { get; set; }
+    property Double Speed { get; set; }
+    property Geometry Geometry { get; set; }
+    property IBrush Brush { get; set; }
+    property IBrush GlowBrush { get; set; }
+    property LinkShape Shape { get; set; }
+    property Nullable<Double> GlowThickness { get; set; }
+    property Nullable<Double> Size { get; set; }
+    property TimeSpan FadeIn { get; set; }
+    property TimeSpan FadeOut { get; set; }
+    property TimeSpan Lifetime { get; set; }
+enum ArxisStudio.Surface.Nodes.LinkShape
+    value Arrow = 1
+    value Chevron = 2
+    value Circle = 0
+    value Custom = 5
+    value Diamond = 3
+    value Square = 4
 sealed class ArxisStudio.Surface.Nodes.LinkSplitRequestedEventArgs : EventArgs
     ctor .ctor(Object, Point)
     property Boolean Handled { get; set; }
@@ -49,9 +78,14 @@ class ArxisStudio.Surface.Nodes.Node : SurfaceItem
     property IDataTemplate HeaderTemplate { get; set; }
     property Object Header { get; set; }
 class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
+    avalonia AreLinkMarkersVisibleProperty -> AreLinkMarkersVisible : Boolean (styled) = true
+    avalonia IsLinkPulseEnabledProperty -> IsLinkPulseEnabled : Boolean (styled) = true
     avalonia ItemHeaderBindingProperty -> ItemHeaderBinding : BindingBase (styled) = null
     avalonia LinkCutModifiersProperty -> LinkCutModifiers : KeyModifiers (styled) = Alt
     avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
+    avalonia LinkMarkerBindingProperty -> LinkMarkerBinding : BindingBase (styled) = null
+    avalonia LinkMarkerProperty -> LinkMarker : LinkMarker (styled) = null
+    avalonia LinkPulseProperty -> LinkPulse : LinkPulse (styled) = null
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
     avalonia LinkStrokeBindingProperty -> LinkStrokeBinding : BindingBase (styled) = null
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
@@ -66,9 +100,11 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     event EventHandler<LinkSplitRequestedEventArgs> LinkSplitRequested
     event EventHandler<ReconnectRequestedEventArgs> ReconnectRequested
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
+    method Boolean PulseLink(Object, LinkPulse)
     method Boolean SelectLink(Object, Boolean)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
     method Void ClearContainerForItemOverride(Control)
+    method Void ClearLinkPulses()
     method Void ClearLinkSelection()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnPointerExited(PointerEventArgs)
@@ -77,15 +113,20 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     method Void PrepareContainerForItemOverride(Control, Object, Int32)
     property BindingBase ItemHeaderBinding { get; set; }
+    property BindingBase LinkMarkerBinding { get; set; }
     property BindingBase LinkSourceBinding { get; set; }
     property BindingBase LinkStrokeBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
     property BindingBase PortNodeBinding { get; set; }
+    property Boolean AreLinkMarkersVisible { get; set; }
+    property Boolean IsLinkPulseEnabled { get; set; }
     property Double LinkHitTolerance { get; set; }
     property Double PortCaptureRadius { get; set; }
     property IEnumerable Links { get; set; }
     property IReadOnlyList<Object> SelectedLinks { get; }
     property KeyModifiers LinkCutModifiers { get; set; }
+    property LinkMarker LinkMarker { get; set; }
+    property LinkPulse LinkPulse { get; set; }
 static class ArxisStudio.Surface.Nodes.NodeEditorKeyCommands
     field String CancelLink = "nodes.cancelLink"
     field String ClearLinkSelection = "nodes.clearLinkSelection"

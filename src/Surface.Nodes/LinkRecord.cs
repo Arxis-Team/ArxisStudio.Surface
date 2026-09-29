@@ -63,10 +63,31 @@ internal sealed class LinkRecord
     /// </summary>
     public bool IsResolved { get; set; }
 
+    private LinkGeometry _geometry;
+    private LinkPath? _path;
+
     /// <summary>
     /// Кривая в мировых координатах.
     /// </summary>
-    public LinkGeometry Geometry { get; set; }
+    public LinkGeometry Geometry
+    {
+        get => _geometry;
+        set
+        {
+            _geometry = value;
+            _path = null;
+        }
+    }
+
+    /// <summary>
+    /// Кривая с накопленной длиной — считается при первом вопросе и живёт до смены кривой (ADR 0014).
+    /// </summary>
+    public LinkPath Path => _path ??= _geometry.Path();
+
+    /// <summary>
+    /// Маркер связи из модели (<see cref="NodeEditor.LinkMarkerBinding"/>).
+    /// </summary>
+    public LinkMarker? Marker { get; set; }
 
     /// <summary>
     /// Прямоугольник кривой на холсте с запасом на толщину линии.

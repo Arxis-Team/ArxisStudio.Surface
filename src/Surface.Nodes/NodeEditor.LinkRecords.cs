@@ -28,6 +28,7 @@ public partial class NodeEditor
     private ObjectBindingReader? _sourceReader;
     private ObjectBindingReader? _targetReader;
     private ObjectBindingReader? _strokeReader;
+    private ObjectBindingReader? _markerReader;
     private LinkPanel? _linkPanel;
 
     // Толщина линии связи без контрола — последняя, что показал контрол: запас рамки на неё.
@@ -140,6 +141,8 @@ public partial class NodeEditor
 
         if (moved || bent)
             OnContentChanged();
+
+        OnLinkFlowChanged();
 
         // Сдвинулся дальний конец — узел перенаправления на ближнем мог развернуться (ADR 0013).
         if (moved && _knotByKey.Count > 0)
@@ -398,6 +401,7 @@ public partial class NodeEditor
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        OnFlowPropertyChanged(change);
 
         if (change.Property == LinksProperty)
         {
@@ -428,6 +432,19 @@ public partial class NodeEditor
 
             ReleaseReaders();
             OnSimplifiedLinksChanged();
+            OnLinkFlowChanged();
+        }
+        else if (change.Property == LinkMarkerBindingProperty)
+        {
+            _markerReader = null;
+            foreach (var record in _recordByItem.Values)
+            {
+                if (record.Own == null)
+                    record.Marker = Read(ref _markerReader, LinkMarkerBinding, record.Item) as LinkMarker;
+            }
+
+            ReleaseReaders();
+            OnLinkFlowChanged();
         }
         else if (change.Property == ItemHeaderBindingProperty)
         {
@@ -501,6 +518,9 @@ public partial class NodeEditor
             control.Sync();
         else if (value && IsLinkVirtualizing)
             _linkPanel?.InvalidateMeasure();
+
+        // Маркер выбранной связи — цвета выбора.
+        OnLinkFlowChanged();
     }
 
     private double ThicknessOf(LinkRecord record) => record.Control?.StrokeThickness ?? _linkThickness;
@@ -672,6 +692,7 @@ public partial class NodeEditor
 
         OnLinkRemoved(record);
         OnSimplifiedLinksChanged();
+        OnLinkFlowChanged();
         OnContentChanged();
     }
 
@@ -700,6 +721,7 @@ public partial class NodeEditor
         record.Source = Read(ref _sourceReader, LinkSourceBinding, record.Item);
         record.Target = Read(ref _targetReader, LinkTargetBinding, record.Item);
         record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item));
+        record.Marker = Read(ref _markerReader, LinkMarkerBinding, record.Item) as LinkMarker;
     }
 
     private static object? Read(ref ObjectBindingReader? reader, BindingBase? binding, object item)
@@ -725,6 +747,7 @@ public partial class NodeEditor
         _sourceReader?.Release();
         _targetReader?.Release();
         _strokeReader?.Release();
+        _markerReader?.Release();
         _portNodeReader?.Release();
     }
 
