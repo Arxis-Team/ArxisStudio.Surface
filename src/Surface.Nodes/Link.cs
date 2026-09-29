@@ -75,6 +75,9 @@ public class Link : Control
     private bool _isSelected;
     private NodeEditor? _editor;
 
+    // Толщину поставила запись — из модели; снять её надо ровно тогда, когда поставили.
+    private bool _modelThickness;
+
     static Link()
     {
         AffectsRender<Link>(StrokeProperty, StrokeThicknessProperty);
@@ -211,6 +214,12 @@ public class Link : Control
 
         Record = null;
         _editor = null;
+        if (_modelThickness)
+        {
+            _modelThickness = false;
+            ClearValue(StrokeThicknessProperty);
+        }
+
         IsSelected = false;
         PseudoClasses.Set(":highlighted", false);
         PseudoClasses.Set(":cutting", false);
@@ -236,6 +245,18 @@ public class Link : Control
     {
         if (Record is not { } record)
             return;
+
+        if (record.Thickness is { } thickness)
+        {
+            _modelThickness = true;
+            if (StrokeThickness != thickness)
+                StrokeThickness = thickness;
+        }
+        else if (_modelThickness)
+        {
+            _modelThickness = false;
+            ClearValue(StrokeThicknessProperty);
+        }
 
         if (record.IsResolved)
         {

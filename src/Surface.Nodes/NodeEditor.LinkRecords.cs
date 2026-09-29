@@ -29,6 +29,7 @@ public partial class NodeEditor
     private ObjectBindingReader? _targetReader;
     private ObjectBindingReader? _strokeReader;
     private ObjectBindingReader? _markerReader;
+    private ObjectBindingReader? _thicknessReader;
     private LinkPanel? _linkPanel;
 
     // Толщина линии связи без контрола — последняя, что показал контрол: запас рамки на неё.
@@ -374,7 +375,10 @@ public partial class NodeEditor
     /// </summary>
     internal void OnLinkThicknessChanged(Link link)
     {
-        _linkThickness = link.StrokeThickness;
+        // Толщина из модели — толщина одной связи, а не темы: записям без контрола её не отдают.
+        if (link.Record is not { Thickness: not null })
+            _linkThickness = link.StrokeThickness;
+
         if (link.Record is not { IsResolved: true } record)
             return;
 
@@ -434,6 +438,21 @@ public partial class NodeEditor
             ReleaseReaders();
             OnSimplifiedLinksChanged();
             OnLinkFlowChanged();
+        }
+        else if (change.Property == LinkThicknessBindingProperty)
+        {
+            // Толщина меняет рамку связи: запас попадания и ячейки окна.
+            _thicknessReader = null;
+            foreach (var record in _recordByItem.Values.ToArray())
+            {
+                if (record.Own != null)
+                    continue;
+
+                record.Thickness = ThicknessFrom(Read(ref _thicknessReader, LinkThicknessBinding, record.Item));
+                RefreshLink(record);
+            }
+
+            ReleaseReaders();
         }
         else if (change.Property == LinkMarkerBindingProperty)
         {
@@ -524,7 +543,7 @@ public partial class NodeEditor
         OnLinkFlowChanged();
     }
 
-    private double ThicknessOf(LinkRecord record) => record.Control?.StrokeThickness ?? _linkThickness;
+    private double ThicknessOf(LinkRecord record) => record.Control?.StrokeThickness ?? record.Thickness ?? _linkThickness;
 
     private (Rect Visible, Rect Realize, Rect Keep) LinkWindows()
     {
@@ -723,7 +742,19 @@ public partial class NodeEditor
         record.Target = Read(ref _targetReader, LinkTargetBinding, record.Item);
         record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item));
         record.Marker = Read(ref _markerReader, LinkMarkerBinding, record.Item) as LinkMarker;
+        record.Thickness = ThicknessFrom(Read(ref _thicknessReader, LinkThicknessBinding, record.Item));
     }
+
+    /// <summary>
+    /// Толщина из значения модели: число — оно, иное — нет толщины модели.
+    /// </summary>
+    private static double? ThicknessFrom(object? value) => value switch
+    {
+        double d when d >= 0 && double.IsFinite(d) => d,
+        float f when f >= 0 && float.IsFinite(f) => f,
+        int i when i >= 0 => i,
+        _ => null
+    };
 
     private static object? Read(ref ObjectBindingReader? reader, BindingBase? binding, object item)
     {
@@ -749,6 +780,7 @@ public partial class NodeEditor
         _targetReader?.Release();
         _strokeReader?.Release();
         _markerReader?.Release();
+        _thicknessReader?.Release();
         _portNodeReader?.Release();
     }
 

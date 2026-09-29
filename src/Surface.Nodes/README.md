@@ -172,6 +172,37 @@ history.Push(new LinkAdded(graph.Links, link));   // ISurfaceChange: Revert/Reap
 делать: `NodeEditorKeyCommands.CancelLink` (`nodes.cancelLink`), `ClearLinkSelection`
 (`nodes.clearLinkSelection`), `DeleteLinks` (`nodes.deleteLinks`).
 
+## Пины и провода выполнения
+
+Как в Blueprint (ADR 0016): пины выполнения задают порядок, пины данных — значения. Смысл пина —
+правило графа хоста; библиотека даёт вид: форму и цвет штырька, толщину провода.
+
+```xml
+<surface:NodeEditor LinkThicknessBinding="{Binding Thickness}" ...>
+    <!-- привязкой к модели порта -->
+    <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}"
+                  PinShape="{Binding Shape}" PinBrush="{Binding Brush}" />
+</surface:NodeEditor>
+
+<!-- или стилем по классу порта -->
+<Style Selector="surface|Port.exec">
+    <Setter Property="PinShape" Value="Execution" />
+    <Setter Property="PinBrush" Value="White" />
+</Style>
+```
+
+| API | Что делает |
+| --- | --- |
+| `Port.PinShape` | `Circle`, `Execution` (пятиугольник остриём вправо), `Square`, `Diamond`, `Triangle`, `Custom` |
+| `Port.PinGeometry` | геометрия для `Custom`, вписывается в штырёк с сохранением пропорций |
+| `Port.PinBrush` | обводка пустого штырька и заливка подключённого; без неё — кисти темы |
+| `Port.PinData` | геометрия штырька для своей темы порта |
+| `NodeEditor.LinkThicknessBinding` | толщина провода из модели, в мировых единицах; без значения — `NodeEditor.Link.Thickness` |
+
+Правила — в `ConnectValidating`: выполнение только к выполнению, из выхода выполнения одна связь, во
+вход выполнения сколько угодно, во вход данных одна — так в Blueprint, но решает хост. Толщину берут
+контрол провода, его рамка и попадание; упрощённый слой и миникарта рисуют все провода одной толщиной.
+
 ## Кривая провода
 
 Провод — кубическая кривая с горизонтальными касательными: из выхода вправо, во вход слева. Длина
@@ -325,8 +356,9 @@ editor.ClearLinkPulses();                            // остановили о�
 | карточка и область заголовка | своя `ControlTheme` для `Node`: части `PART_Card`, `PART_Header`, `PART_HeaderPresenter`, `PART_ContentPresenter`, псевдоклассы `:header`, `:accent`, `:light-accent` |
 | вид заголовка | `Node.HeaderTemplate` — стилем узла |
 | тело узла | шаблон узла — `ItemTemplate` или `DataTemplates` |
-| порт | своя тема `Port`; связь приходит в центр части `PART_Pin`, а без неё — в середину края порта |
-| провод | своя тема `Link` или её ключи; цвет по модели — `LinkStrokeBinding` |
+| штырёк | `Port.PinShape`, `PinGeometry`, `PinBrush` — привязкой или стилем |
+| порт | своя тема `Port`; штырёк — `Path#PART_Pin` с `Data` = `PinData`; связь приходит в центр `PART_Pin`, а без неё — в середину края порта |
+| провод | своя тема `Link` или её ключи; цвет и толщина по модели — `LinkStrokeBinding`, `LinkThicknessBinding` |
 | цвета, толщины, отступы | ключи `NodeEditor.*` ниже |
 
 Заголовок с иконкой — модель целиком в заголовок и свой шаблон:
@@ -348,7 +380,7 @@ editor.ClearLinkPulses();                            // остановили о�
 </surface:NodeEditor>
 ```
 
-Псевдоклассы: `Port` — `:input`, `:output`, `:connected`, `:accepting`, `:refusing`; `Link` —
+Псевдоклассы: `Port` — `:input`, `:output`, `:connected`, `:accepting`, `:refusing`, `:pin-brush`; `Link` —
 `:selected`, `:highlighted`, `:detaching`, `:cutting`; `Node` — `:selected`, `:dragging`, `:reroute`,
 `:header` (есть заголовок или полоса), `:accent` (есть полоса), `:light-accent` (полоса светлая);
 `Reroute` — `:selected`.
@@ -438,5 +470,6 @@ editor.ClearLinkPulses();                            // остановили о�
 - Узел перенаправления, оставшийся без входа или выхода, редактор не удаляет: граф правит хост.
 
 Образцы: `samples/Nodes.Demo` — все запросы, узлы перенаправления, разрез, миникарта, 10 000 узлов,
-импульсы по волне вычисления и маркеры по типу провода привязкой; `samples/Nodes.StateMachine` —
-импульсы по сработавшему переходу, маркер редактора с выбором фигуры, контекстное меню.
+пины и провода выполнения рядом с пинами данных, импульсы по волне вычисления, маркеры по типу провода
+привязкой; `samples/Nodes.StateMachine` — пины выполнения стилем, импульсы по сработавшему переходу,
+маркер редактора с выбором фигуры, контекстное меню.

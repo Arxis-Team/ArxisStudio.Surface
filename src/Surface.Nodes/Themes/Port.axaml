@@ -4,7 +4,9 @@
 
     <!--
         Порт: штырёк и подпись. Штырёк — PART_Pin, его центр и есть конец связи. Вход держит
-        штырёк слева, выход — справа: связь идёт слева направо, из выходов во входы.
+        штырёк слева, выход — справа: связь идёт слева направо, из выходов во входы. Форма штырька —
+        PinData порта (PinShape или PinGeometry), вписанная с сохранением пропорций; цвет — кисти темы,
+        а с PinBrush (:pin-brush) — обводка пустого и заливка подключённого (ADR 0016).
     -->
     <ControlTheme x:Key="{x:Type nodes:Port}" TargetType="nodes:Port">
         <Setter Property="Background" Value="Transparent" />
@@ -13,14 +15,17 @@
             <ControlTemplate>
                 <Grid Background="{TemplateBinding Background}"
                       ColumnDefinitions="Auto,*,Auto">
-                    <Ellipse Name="PART_Pin"
-                             Width="{DynamicResource NodeEditor.Port.PinSize}"
-                             Height="{DynamicResource NodeEditor.Port.PinSize}"
-                             Margin="{DynamicResource NodeEditor.Port.PinMargin}"
-                             VerticalAlignment="Center"
-                             Fill="{DynamicResource NodeEditor.Port.PinFill}"
-                             Stroke="{DynamicResource NodeEditor.Port.PinStroke}"
-                             StrokeThickness="{DynamicResource NodeEditor.Port.PinStrokeThickness}" />
+                    <Path Name="PART_Pin"
+                          Data="{TemplateBinding PinData}"
+                          Stretch="Uniform"
+                          Width="{DynamicResource NodeEditor.Port.PinSize}"
+                          Height="{DynamicResource NodeEditor.Port.PinSize}"
+                          Margin="{DynamicResource NodeEditor.Port.PinMargin}"
+                          VerticalAlignment="Center"
+                          Fill="{DynamicResource NodeEditor.Port.PinFill}"
+                          Stroke="{DynamicResource NodeEditor.Port.PinStroke}"
+                          StrokeThickness="{DynamicResource NodeEditor.Port.PinStrokeThickness}"
+                          StrokeJoin="Round" />
                     <ContentPresenter Name="PART_ContentPresenter"
                                       Grid.Column="1"
                                       VerticalAlignment="Center"
@@ -30,20 +35,29 @@
             </ControlTemplate>
         </Setter>
 
-        <Style Selector="^:connected /template/ Ellipse#PART_Pin">
+        <Style Selector="^:connected /template/ Path#PART_Pin">
             <Setter Property="Fill" Value="{DynamicResource NodeEditor.Port.ConnectedFill}" />
         </Style>
 
+        <!-- Цвет хоста: обводка пустого штырька и заливка подключённого, как у пинов Blueprint. -->
+        <Style Selector="^:pin-brush /template/ Path#PART_Pin">
+            <Setter Property="Stroke" Value="{Binding PinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Style>
+
+        <Style Selector="^:pin-brush:connected /template/ Path#PART_Pin">
+            <Setter Property="Fill" Value="{Binding PinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Style>
+
         <!-- Протягиваемая связь над портом: примет ли он её — видно до отпускания. -->
-        <Style Selector="^:accepting /template/ Ellipse#PART_Pin">
+        <Style Selector="^:accepting /template/ Path#PART_Pin">
             <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Port.AcceptingStroke}" />
         </Style>
 
-        <Style Selector="^:refusing /template/ Ellipse#PART_Pin">
+        <Style Selector="^:refusing /template/ Path#PART_Pin">
             <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Port.RefusingStroke}" />
         </Style>
 
-        <Style Selector="^:output /template/ Ellipse#PART_Pin">
+        <Style Selector="^:output /template/ Path#PART_Pin">
             <Setter Property="Grid.Column" Value="2" />
         </Style>
 

@@ -36,6 +36,12 @@ public partial class NodeEditor
     public static readonly StyledProperty<BindingBase?> LinkStrokeBindingProperty =
         AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkStrokeBinding));
 
+    /// <summary>
+    /// Идентификатор свойства привязки толщины провода.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> LinkThicknessBindingProperty =
+        AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkThicknessBinding));
+
     // Связи по ключу любого из концов: сдвиг порта пересчитывает ровно их, а не все.
     private readonly Dictionary<object, List<LinkRecord>> _linksByKey = new();
 
@@ -89,6 +95,24 @@ public partial class NodeEditor
     {
         get => GetValue(LinkStrokeBindingProperty);
         set => SetValue(LinkStrokeBindingProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает привязку, дающую проводу толщину из его элемента, в мировых единицах, —
+    /// например, провод выполнения толще провода данных, как в Blueprint (ADR 0016).
+    /// </summary>
+    /// <remarks>
+    /// Значение — число; иное, как и <see langword="null"/>, оставляет толщину темы
+    /// (<c>NodeEditor.Link.Thickness</c>). Перечитывается по <c>INotifyPropertyChanged</c> модели, как цвет.
+    /// Толщину берут контрол связи, её рамка и попадание по ней; слой упрощённого вида и миникарта рисуют
+    /// все провода одной толщиной. Готовой <see cref="Link"/> из коллекции толщину ставит хост.
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(Links))]
+    public BindingBase? LinkThicknessBinding
+    {
+        get => GetValue(LinkThicknessBindingProperty);
+        set => SetValue(LinkThicknessBindingProperty, value);
     }
 
     /// <summary>

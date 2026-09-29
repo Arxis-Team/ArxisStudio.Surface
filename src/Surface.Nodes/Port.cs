@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface.Nodes;
@@ -18,6 +19,11 @@ namespace ArxisStudio.Surface.Nodes;
 /// <para>
 /// Конец связи — центр части шаблона <c>PART_Pin</c>, а без неё — середина края порта: левого у
 /// входа, правого у выхода.
+/// </para>
+/// <para>
+/// Вид штырька задаёт хост (ADR 0016): форму — <see cref="PinShape"/>, цвет — <see cref="PinBrush"/>. Так
+/// различают порты выполнения и данных, как в Blueprint: пятиугольник и круг, белый и цвет типа.
+/// Свойства — обычные стилевые: их ставят привязкой к модели порта или стилем по классу порта.
 /// </para>
 /// </remarks>
 public class Port : ContentControl
@@ -40,6 +46,31 @@ public class Port : ContentControl
     public static readonly DirectProperty<Port, bool> IsConnectedProperty =
         AvaloniaProperty.RegisterDirect<Port, bool>(nameof(IsConnected), o => o.IsConnected);
 
+    /// <summary>
+    /// Идентификатор свойства <see cref="PinShape"/>.
+    /// </summary>
+    public static readonly StyledProperty<PortShape> PinShapeProperty =
+        AvaloniaProperty.Register<Port, PortShape>(nameof(PinShape));
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="PinGeometry"/>.
+    /// </summary>
+    public static readonly StyledProperty<Geometry?> PinGeometryProperty =
+        AvaloniaProperty.Register<Port, Geometry?>(nameof(PinGeometry));
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="PinBrush"/>.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> PinBrushProperty =
+        AvaloniaProperty.Register<Port, IBrush?>(nameof(PinBrush));
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="PinData"/>.
+    /// </summary>
+    public static readonly DirectProperty<Port, Geometry> PinDataProperty =
+        AvaloniaProperty.RegisterDirect<Port, Geometry>(nameof(PinData), o => o.PinData);
+
+    private Geometry _pinData = Shapes.Circle;
     private NodeEditor? _editor;
     private Node? _node;
     private object? _registeredKey;
@@ -73,6 +104,48 @@ public class Port : ContentControl
     {
         get => GetValue(DataProperty);
         set => SetValue(DataProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает форму штырька. По умолчанию — круг.
+    /// </summary>
+    public PortShape PinShape
+    {
+        get => GetValue(PinShapeProperty);
+        set => SetValue(PinShapeProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает геометрию штырька для <see cref="PortShape.Custom"/>. Любой размер: шаблон
+    /// вписывает её в штырёк с сохранением пропорций.
+    /// </summary>
+    public Geometry? PinGeometry
+    {
+        get => GetValue(PinGeometryProperty);
+        set => SetValue(PinGeometryProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает цвет штырька: обводка пустого и заливка подключённого, как у пинов Blueprint.
+    /// Без значения — кисти темы <c>NodeEditor.Port.*</c>.
+    /// </summary>
+    /// <remarks>
+    /// Протягиваемая связь над портом по-прежнему красит обводку цветами согласия и отказа: обратная связь
+    /// жеста важнее цвета вида.
+    /// </remarks>
+    public IBrush? PinBrush
+    {
+        get => GetValue(PinBrushProperty);
+        set => SetValue(PinBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Получает геометрию штырька для шаблона: форма <see cref="PinShape"/> или <see cref="PinGeometry"/>.
+    /// </summary>
+    public Geometry PinData
+    {
+        get => _pinData;
+        private set => SetAndRaise(PinDataProperty, ref _pinData, value);
     }
 
     /// <summary>
@@ -251,6 +324,10 @@ public class Port : ContentControl
 
         if (change.Property == DirectionProperty)
             UpdateDirectionClasses();
+        else if (change.Property == PinShapeProperty || change.Property == PinGeometryProperty)
+            PinData = DataOf(PinShape, PinGeometry);
+        else if (change.Property == PinBrushProperty)
+            PseudoClasses.Set(":pin-brush", change.GetNewValue<IBrush?>() != null);
         else if (change.Property == DataProperty || change.Property == DataContextProperty)
             Rekey();
         else if (change.Property == BoundsProperty && _editor != null && _node != null)
@@ -276,6 +353,32 @@ public class Port : ContentControl
 
         if (key != null)
             _editor.Ports.Register(key, this);
+    }
+
+    private static Geometry DataOf(PortShape shape, Geometry? custom) => shape switch
+    {
+        PortShape.Execution => Shapes.Execution,
+        PortShape.Square => Shapes.Square,
+        PortShape.Diamond => Shapes.Diamond,
+        PortShape.Triangle => Shapes.Triangle,
+        PortShape.Custom when custom != null => custom,
+        _ => Shapes.Circle
+    };
+
+    /// <summary>
+    /// Формы в квадрате 10 × 10; шаблон вписывает их в штырёк с сохранением пропорций.
+    /// </summary>
+    /// <remarks>
+    /// Вложенный класс, а не поля <see cref="Port"/>: геометрия требует платформы отрисовки, а тип
+    /// порта грузят и без неё — слепок публичной поверхности читает умолчания его свойств.
+    /// </remarks>
+    private static class Shapes
+    {
+        public static readonly Geometry Circle = new EllipseGeometry(new Rect(0, 0, 10, 10));
+        public static readonly Geometry Execution = Geometry.Parse("M 0,0 L 6,0 L 10,5 L 6,10 L 0,10 Z");
+        public static readonly Geometry Square = Geometry.Parse("M 0.5,0.5 L 9.5,0.5 L 9.5,9.5 L 0.5,9.5 Z");
+        public static readonly Geometry Diamond = Geometry.Parse("M 5,0 L 10,5 L 5,10 L 0,5 Z");
+        public static readonly Geometry Triangle = Geometry.Parse("M 0,0 L 10,5 L 0,10 Z");
     }
 
     private void UpdateDirectionClasses()

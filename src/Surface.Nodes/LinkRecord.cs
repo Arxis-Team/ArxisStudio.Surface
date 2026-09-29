@@ -85,6 +85,11 @@ internal sealed class LinkRecord
     public LinkPath Path => _path ??= _geometry.Path();
 
     /// <summary>
+    /// Толщина провода из модели (<see cref="NodeEditor.LinkThicknessBinding"/>); без неё — толщина темы.
+    /// </summary>
+    public double? Thickness { get; set; }
+
+    /// <summary>
     /// Маркер связи из модели (<see cref="NodeEditor.LinkMarkerBinding"/>).
     /// </summary>
     public LinkMarker? Marker { get; set; }
