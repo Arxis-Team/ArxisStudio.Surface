@@ -25,6 +25,10 @@
             <SolidColorBrush x:Key="NodeEditor.LinkMarker.Brush" Color="#5C6577" />
             <SolidColorBrush x:Key="NodeEditor.LinkPulse.Brush" Color="#B35400" />
             <SolidColorBrush x:Key="NodeEditor.LinkPulse.GlowBrush" Color="#F59E0B" />
+            <SolidColorBrush x:Key="NodeEditor.Pin.Execution.Brush" Color="#3E4451" />
+            <SolidColorBrush x:Key="NodeEditor.Pin.Delegate.Brush" Color="#C62828" />
+            <SolidColorBrush x:Key="NodeEditor.Link.Execution.Stroke" Color="#3E4451" />
+            <SolidColorBrush x:Key="NodeEditor.Link.Delegate.Stroke" Color="#C62828" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -46,6 +50,10 @@
             <SolidColorBrush x:Key="NodeEditor.LinkMarker.Brush" Color="#A8B3C4" />
             <SolidColorBrush x:Key="NodeEditor.LinkPulse.Brush" Color="#FFE3A3" />
             <SolidColorBrush x:Key="NodeEditor.LinkPulse.GlowBrush" Color="#FFB300" />
+            <SolidColorBrush x:Key="NodeEditor.Pin.Execution.Brush" Color="#F2F2F2" />
+            <SolidColorBrush x:Key="NodeEditor.Pin.Delegate.Brush" Color="#E5484D" />
+            <SolidColorBrush x:Key="NodeEditor.Link.Execution.Stroke" Color="#F2F2F2" />
+            <SolidColorBrush x:Key="NodeEditor.Link.Delegate.Stroke" Color="#E5484D" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -59,6 +67,13 @@
     <Thickness x:Key="NodeEditor.Port.PinMargin">4,2</Thickness>
 
     <x:Double x:Key="NodeEditor.Link.Thickness">2</x:Double>
+
+    <!--
+        Роли провода (ADR 0017): выполнение толще данных, как в Blueprint; делегат — толщины данных, отличает
+        его цвет. Цвета ролей — в вариантах темы выше: светлый провод выполнения на светлом холсте не виден.
+    -->
+    <x:Double x:Key="NodeEditor.Link.Execution.Thickness">3.5</x:Double>
+    <x:Double x:Key="NodeEditor.Link.Delegate.Thickness">2</x:Double>
 
     <x:Double x:Key="NodeEditor.Cut.Thickness">1.5</x:Double>
 

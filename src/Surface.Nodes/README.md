@@ -172,36 +172,49 @@ history.Push(new LinkAdded(graph.Links, link));   // ISurfaceChange: Revert/Reap
 делать: `NodeEditorKeyCommands.CancelLink` (`nodes.cancelLink`), `ClearLinkSelection`
 (`nodes.clearLinkSelection`), `DeleteLinks` (`nodes.deleteLinks`).
 
-## Пины и провода выполнения
+## Роли пинов: данные, выполнение, делегат
 
-Как в Blueprint (ADR 0016): пины выполнения задают порядок, пины данных — значения. Смысл пина —
-правило графа хоста; библиотека даёт вид: форму и цвет штырька, толщину провода.
+Как в Blueprint (ADR 0016, 0017): данные — значения, выполнение — порядок узлов, делегат — событие,
+переданное как значение, чтобы вызвать его позже (Event Dispatcher). Какая у пина и провода роль,
+решает хост; базовый вид роли даёт тема:
+
+| Роль | Пин | Провод |
+| --- | --- | --- |
+| `Data` | тема порта | тема провода |
+| `Execution` | пятиугольник, `NodeEditor.Pin.Execution.Brush` | `NodeEditor.Link.Execution.Stroke`, `.Thickness` (3,5) |
+| `Delegate` | квадрат у выхода, круг у входа, `NodeEditor.Pin.Delegate.Brush` | `NodeEditor.Link.Delegate.Stroke`, `.Thickness` (2) |
 
 ```xml
-<surface:NodeEditor LinkThicknessBinding="{Binding Thickness}" ...>
-    <!-- привязкой к модели порта -->
+<surface:NodeEditor LinkRoleBinding="{Binding Role}" LinkStrokeBinding="{Binding Color}" ...>
+    <!-- роль и цвет данных — привязкой к модели порта -->
     <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}"
-                  PinShape="{Binding Shape}" PinBrush="{Binding Brush}" />
+                  PinRole="{Binding Role}" PinBrush="{Binding Brush}" />
 </surface:NodeEditor>
 
 <!-- или стилем по классу порта -->
-<Style Selector="surface|Port.exec">
-    <Setter Property="PinShape" Value="Execution" />
-    <Setter Property="PinBrush" Value="White" />
+<Style Selector="surface|Port.flow">
+    <Setter Property="PinRole" Value="Execution" />
 </Style>
 ```
 
+Вид складывается из трёх источников, сильнейший первым: значения хоста, роль, тема. `null` у хоста —
+«вид роли»: привязка `PinBrush`, дающая цвет только портам данных, не гасит роль у портов выполнения
+того же шаблона.
+
 | API | Что делает |
 | --- | --- |
-| `Port.PinShape` | `Circle`, `Execution` (пятиугольник остриём вправо), `Square`, `Diamond`, `Triangle`, `Custom` |
+| `Port.PinRole` | роль пина: `Data`, `Execution`, `Delegate` |
+| `Port.PinShape` | `Circle`, `Execution` (пятиугольник остриём вправо), `Square`, `Diamond`, `Triangle`, `Custom`; `null` — форма роли |
 | `Port.PinGeometry` | геометрия для `Custom`, вписывается в штырёк с сохранением пропорций |
-| `Port.PinBrush` | обводка пустого штырька и заливка подключённого; без неё — кисти темы |
-| `Port.PinData` | геометрия штырька для своей темы порта |
-| `NodeEditor.LinkThicknessBinding` | толщина провода из модели, в мировых единицах; без значения — `NodeEditor.Link.Thickness` |
+| `Port.PinBrush` | обводка пустого штырька и заливка подключённого; `null` — цвет роли, у данных кисти темы |
+| `Port.ActualPinShape`, `ActualPinBrush`, `PinData` | итог вида — для своей темы порта |
+| `NodeEditor.LinkRoleBinding` | роль провода из модели: цвет и толщина роли из темы |
+| `NodeEditor.LinkThicknessBinding` | толщина провода из модели, в мировых единицах; сильнее роли |
 
-Правила — в `ConnectValidating`: выполнение только к выполнению, из выхода выполнения одна связь, во
-вход выполнения сколько угодно, во вход данных одна — так в Blueprint, но решает хост. Толщину берут
-контрол провода, его рамка и попадание; упрощённый слой и миникарта рисуют все провода одной толщиной.
+Правил у роли нет: выполнение только к выполнению, делегат только к делегату, сколько связей из выхода
+и во вход — решает `ConnectValidating` хоста. Цвет и толщину провода держит запись связи: упрощённый
+вид, маркеры и импульсы видят цвет роли; смена варианта темы его перечитывает. Упрощённый слой и
+миникарта рисуют все провода одной толщиной.
 
 ## Кривая провода
 
@@ -356,9 +369,9 @@ editor.ClearLinkPulses();                            // остановили о�
 | карточка и область заголовка | своя `ControlTheme` для `Node`: части `PART_Card`, `PART_Header`, `PART_HeaderPresenter`, `PART_ContentPresenter`, псевдоклассы `:header`, `:accent`, `:light-accent` |
 | вид заголовка | `Node.HeaderTemplate` — стилем узла |
 | тело узла | шаблон узла — `ItemTemplate` или `DataTemplates` |
-| штырёк | `Port.PinShape`, `PinGeometry`, `PinBrush` — привязкой или стилем |
-| порт | своя тема `Port`; штырёк — `Path#PART_Pin` с `Data` = `PinData`; связь приходит в центр `PART_Pin`, а без неё — в середину края порта |
-| провод | своя тема `Link` или её ключи; цвет и толщина по модели — `LinkStrokeBinding`, `LinkThicknessBinding` |
+| штырёк | `Port.PinRole`, `PinShape`, `PinGeometry`, `PinBrush` — привязкой или стилем; ключи ролей `NodeEditor.Pin.*` |
+| порт | своя тема `Port`; штырёк — `Path#PART_Pin` с `Data` = `PinData`, цвет — `ActualPinBrush`; связь приходит в центр `PART_Pin`, а без неё — в середину края порта |
+| провод | своя тема `Link` или её ключи; роль, цвет и толщина по модели — `LinkRoleBinding`, `LinkStrokeBinding`, `LinkThicknessBinding` |
 | цвета, толщины, отступы | ключи `NodeEditor.*` ниже |
 
 Заголовок с иконкой — модель целиком в заголовок и свой шаблон:
@@ -395,6 +408,8 @@ editor.ClearLinkPulses();                            // остановили о�
 | `NodeEditor.Cut.Stroke`, `NodeEditor.Cut.Thickness` | отрезок разреза |
 | `NodeEditor.Reroute.Size`, `…RingThickness`, `…SelectedRingThickness` | узел перенаправления |
 | `NodeEditor.LinkPulse.Brush`, `…GlowBrush`, `…Size`, `…GlowThickness`, `…GlowOpacity` | импульс по проводу |
+| `NodeEditor.Pin.Execution.Brush`, `NodeEditor.Pin.Delegate.Brush` | пин роли выполнения и делегата |
+| `NodeEditor.Link.Execution.Stroke`, `…Thickness`, `NodeEditor.Link.Delegate.Stroke`, `…Thickness` | провод роли выполнения и делегата |
 | `NodeEditor.LinkMarker.Brush` | маркер провода без цвета модели |
 | `NodeEditor.Simplified.LinkThickness` | упрощённый вид: толщина связи в пикселях экрана |
 
@@ -470,6 +485,6 @@ editor.ClearLinkPulses();                            // остановили о�
 - Узел перенаправления, оставшийся без входа или выхода, редактор не удаляет: граф правит хост.
 
 Образцы: `samples/Nodes.Demo` — все запросы, узлы перенаправления, разрез, миникарта, 10 000 узлов,
-пины и провода выполнения рядом с пинами данных, импульсы по волне вычисления, маркеры по типу провода
-привязкой; `samples/Nodes.StateMachine` — пины выполнения стилем, импульсы по сработавшему переходу,
+роли выполнения и делегата (наблюдатель, как Event Dispatcher), импульсы по волне вычисления, маркеры по
+типу провода привязкой; `samples/Nodes.StateMachine` — роль выполнения стилем, импульсы по сработавшему переходу,
 маркер редактора с выбором фигуры, контекстное меню.

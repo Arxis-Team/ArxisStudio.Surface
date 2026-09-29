@@ -37,6 +37,12 @@ public partial class NodeEditor
         AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkStrokeBinding));
 
     /// <summary>
+    /// Идентификатор свойства привязки роли провода.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> LinkRoleBindingProperty =
+        AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkRoleBinding));
+
+    /// <summary>
     /// Идентификатор свойства привязки толщины провода.
     /// </summary>
     public static readonly StyledProperty<BindingBase?> LinkThicknessBindingProperty =
@@ -95,6 +101,24 @@ public partial class NodeEditor
     {
         get => GetValue(LinkStrokeBindingProperty);
         set => SetValue(LinkStrokeBindingProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает привязку, дающую проводу роль из его элемента — базовый вид выполнения или
+    /// делегата (ADR 0017).
+    /// </summary>
+    /// <remarks>
+    /// Значение — <see cref="PinRole"/>; иное — данные. Роль даёт проводу цвет и толщину из темы
+    /// (<c>NodeEditor.Link.Execution.*</c>, <c>NodeEditor.Link.Delegate.*</c>), и держит их запись связи:
+    /// упрощённый вид, маркеры и импульсы видят тот же цвет. <see cref="LinkStrokeBinding"/> и
+    /// <see cref="LinkThicknessBinding"/> со значением сильнее роли. Смена темы перечитывает цвета ролей.
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(Links))]
+    public BindingBase? LinkRoleBinding
+    {
+        get => GetValue(LinkRoleBindingProperty);
+        set => SetValue(LinkRoleBindingProperty, value);
     }
 
     /// <summary>

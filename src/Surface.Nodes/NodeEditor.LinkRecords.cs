@@ -5,7 +5,9 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Data;
+using Avalonia.Media;
 using Avalonia.Utilities;
 
 namespace ArxisStudio.Surface.Nodes;
@@ -30,6 +32,10 @@ public partial class NodeEditor
     private ObjectBindingReader? _strokeReader;
     private ObjectBindingReader? _markerReader;
     private ObjectBindingReader? _thicknessReader;
+    private ObjectBindingReader? _roleReader;
+
+    // Цвет и толщина каждой роли из темы — по варианту темы, перечитываются при его смене.
+    private (IBrush? Stroke, double? Thickness)[]? _roleLooks;
     private LinkPanel? _linkPanel;
 
     // Толщина линии связи без контрола — последняя, что показал контрол: запас рамки на неё.
@@ -422,37 +428,19 @@ public partial class NodeEditor
                 Rekey(record);
             }
         }
-        else if (change.Property == LinkStrokeBindingProperty)
+        else if (change.Property == LinkStrokeBindingProperty || change.Property == LinkThicknessBindingProperty
+                 || change.Property == LinkRoleBindingProperty)
         {
-            // Цвет — только в записи: концы и смежность не меняются, пересчёт кривой не нужен.
             _strokeReader = null;
-            foreach (var record in _recordByItem.Values)
-            {
-                if (record.Own != null)
-                    continue;
-
-                record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item));
-                record.Control?.Sync();
-            }
-
-            ReleaseReaders();
-            OnSimplifiedLinksChanged();
-            OnLinkFlowChanged();
-        }
-        else if (change.Property == LinkThicknessBindingProperty)
-        {
-            // Толщина меняет рамку связи: запас попадания и ячейки окна.
             _thicknessReader = null;
-            foreach (var record in _recordByItem.Values.ToArray())
-            {
-                if (record.Own != null)
-                    continue;
-
-                record.Thickness = ThicknessFrom(Read(ref _thicknessReader, LinkThicknessBinding, record.Item));
-                RefreshLink(record);
-            }
-
-            ReleaseReaders();
+            _roleReader = null;
+            RereadLooks();
+        }
+        else if (change.Property == ThemeVariantScope.ActualThemeVariantProperty)
+        {
+            // Цвета ролей — ресурсы темы: у светлой и тёмной они свои.
+            _roleLooks = null;
+            RereadLooks();
         }
         else if (change.Property == LinkMarkerBindingProperty)
         {
@@ -740,9 +728,61 @@ public partial class NodeEditor
 
         record.Source = Read(ref _sourceReader, LinkSourceBinding, record.Item);
         record.Target = Read(ref _targetReader, LinkTargetBinding, record.Item);
-        record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item));
         record.Marker = Read(ref _markerReader, LinkMarkerBinding, record.Item) as LinkMarker;
-        record.Thickness = ThicknessFrom(Read(ref _thicknessReader, LinkThicknessBinding, record.Item));
+        ReadLook(record);
+    }
+
+    /// <summary>
+    /// Читает вид провода: роль, цвет и толщину. Значение модели сильнее роли, роль — темы.
+    /// </summary>
+    private void ReadLook(LinkRecord record)
+    {
+        record.Role = Read(ref _roleReader, LinkRoleBinding, record.Item) is PinRole role ? role : PinRole.Data;
+        var look = RoleLook(record.Role);
+        record.Stroke = AccentBrushes.From(Read(ref _strokeReader, LinkStrokeBinding, record.Item)) ?? look.Stroke;
+        record.Thickness = ThicknessFrom(Read(ref _thicknessReader, LinkThicknessBinding, record.Item)) ?? look.Thickness;
+    }
+
+    /// <summary>
+    /// Перечитывает вид всех проводов: сменилась привязка вида или тема. Толщина меняет рамку связи — запас
+    /// попадания и ячейки окна, — поэтому связь пересчитывается целиком.
+    /// </summary>
+    private void RereadLooks()
+    {
+        foreach (var record in _recordByItem.Values.ToArray())
+        {
+            if (record.Own != null)
+                continue;
+
+            ReadLook(record);
+            RefreshLink(record);
+        }
+
+        ReleaseReaders();
+        OnSimplifiedLinksChanged();
+        OnLinkFlowChanged();
+    }
+
+    /// <summary>
+    /// Цвет и толщина роли из темы; у данных — ничего, их вид — тема провода.
+    /// </summary>
+    private (IBrush? Stroke, double? Thickness) RoleLook(PinRole role)
+    {
+        if (role == PinRole.Data)
+            return default;
+
+        _roleLooks ??= new (IBrush?, double?)[3];
+        var index = (int)role;
+        if (_roleLooks[index] == default)
+        {
+            var name = role == PinRole.Execution ? "Execution" : "Delegate";
+            var variant = ActualThemeVariant;
+            var stroke = this.TryFindResource($"NodeEditor.Link.{name}.Stroke", variant, out var s) ? s as IBrush : null;
+            var thickness = this.TryFindResource($"NodeEditor.Link.{name}.Thickness", variant, out var t) && t is double d ? d : (double?)null;
+            _roleLooks[index] = (stroke, thickness);
+        }
+
+        return _roleLooks[index];
     }
 
     /// <summary>
@@ -781,6 +821,7 @@ public partial class NodeEditor
         _strokeReader?.Release();
         _markerReader?.Release();
         _thicknessReader?.Release();
+        _roleReader?.Release();
         _portNodeReader?.Release();
     }
 

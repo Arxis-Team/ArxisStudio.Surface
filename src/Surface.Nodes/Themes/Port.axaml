@@ -6,7 +6,10 @@
         Порт: штырёк и подпись. Штырёк — PART_Pin, его центр и есть конец связи. Вход держит
         штырёк слева, выход — справа: связь идёт слева направо, из выходов во входы. Форма штырька —
         PinData порта (PinShape или PinGeometry), вписанная с сохранением пропорций; цвет — кисти темы,
-        а с PinBrush (:pin-brush) — обводка пустого и заливка подключённого (ADR 0016).
+        а с PinBrush (:pin-brush) — обводка пустого и заливка подключённого (ADR 0016). Роль пина
+        (PinRole) даёт базовый вид выполнения и делегата: тема ставит его во внутренние RolePinShape и
+        RolePinBrush, а порт берёт их там, где хост своих значений не задал (ActualPinShape, ActualPinBrush;
+        ADR 0017).
     -->
     <ControlTheme x:Key="{x:Type nodes:Port}" TargetType="nodes:Port">
         <Setter Property="Background" Value="Transparent" />
@@ -35,17 +38,31 @@
             </ControlTemplate>
         </Setter>
 
+        <!-- Роли пина, как в Blueprint: выполнение — светлый пятиугольник, делегат — красный квадрат у выхода и круг у входа. -->
+        <Style Selector="^[PinRole=Execution]">
+            <Setter Property="RolePinShape" Value="Execution" />
+            <Setter Property="RolePinBrush" Value="{DynamicResource NodeEditor.Pin.Execution.Brush}" />
+        </Style>
+
+        <Style Selector="^[PinRole=Delegate]">
+            <Setter Property="RolePinBrush" Value="{DynamicResource NodeEditor.Pin.Delegate.Brush}" />
+        </Style>
+
+        <Style Selector="^[PinRole=Delegate]:output">
+            <Setter Property="RolePinShape" Value="Square" />
+        </Style>
+
         <Style Selector="^:connected /template/ Path#PART_Pin">
             <Setter Property="Fill" Value="{DynamicResource NodeEditor.Port.ConnectedFill}" />
         </Style>
 
         <!-- Цвет хоста: обводка пустого штырька и заливка подключённого, как у пинов Blueprint. -->
         <Style Selector="^:pin-brush /template/ Path#PART_Pin">
-            <Setter Property="Stroke" Value="{Binding PinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+            <Setter Property="Stroke" Value="{Binding ActualPinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
         </Style>
 
         <Style Selector="^:pin-brush:connected /template/ Path#PART_Pin">
-            <Setter Property="Fill" Value="{Binding PinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+            <Setter Property="Fill" Value="{Binding ActualPinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
         </Style>
 
         <!-- Протягиваемая связь над портом: примет ли он её — видно до отпускания. -->

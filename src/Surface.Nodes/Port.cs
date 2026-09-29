@@ -21,9 +21,11 @@ namespace ArxisStudio.Surface.Nodes;
 /// входа, правого у выхода.
 /// </para>
 /// <para>
-/// Вид штырька задаёт хост (ADR 0016): форму — <see cref="PinShape"/>, цвет — <see cref="PinBrush"/>. Так
-/// различают порты выполнения и данных, как в Blueprint: пятиугольник и круг, белый и цвет типа.
-/// Свойства — обычные стилевые: их ставят привязкой к модели порта или стилем по классу порта.
+/// Вид штырька складывается из трёх источников, сильнейший первым: значения хоста —
+/// <see cref="PinShape"/>, <see cref="PinBrush"/> (ADR 0016), — вид роли <see cref="PinRole"/> из темы
+/// (ADR 0017) и вид порта темы. Итог — <see cref="ActualPinShape"/> и <see cref="ActualPinBrush"/>, по
+/// ним рисует шаблон. <see langword="null"/> у хоста значит «вид роли», а не «ничего»: привязка к модели
+/// порта, дающая цвет только портам данных, не гасит роль у портов выполнения.
 /// </para>
 /// </remarks>
 public class Port : ContentControl
@@ -47,10 +49,16 @@ public class Port : ContentControl
         AvaloniaProperty.RegisterDirect<Port, bool>(nameof(IsConnected), o => o.IsConnected);
 
     /// <summary>
+    /// Идентификатор свойства <see cref="PinRole"/>.
+    /// </summary>
+    public static readonly StyledProperty<PinRole> PinRoleProperty =
+        AvaloniaProperty.Register<Port, PinRole>(nameof(PinRole));
+
+    /// <summary>
     /// Идентификатор свойства <see cref="PinShape"/>.
     /// </summary>
-    public static readonly StyledProperty<PortShape> PinShapeProperty =
-        AvaloniaProperty.Register<Port, PortShape>(nameof(PinShape));
+    public static readonly StyledProperty<PortShape?> PinShapeProperty =
+        AvaloniaProperty.Register<Port, PortShape?>(nameof(PinShape));
 
     /// <summary>
     /// Идентификатор свойства <see cref="PinGeometry"/>.
@@ -70,7 +78,33 @@ public class Port : ContentControl
     public static readonly DirectProperty<Port, Geometry> PinDataProperty =
         AvaloniaProperty.RegisterDirect<Port, Geometry>(nameof(PinData), o => o.PinData);
 
+    /// <summary>
+    /// Идентификатор свойства <see cref="ActualPinShape"/>.
+    /// </summary>
+    public static readonly DirectProperty<Port, PortShape> ActualPinShapeProperty =
+        AvaloniaProperty.RegisterDirect<Port, PortShape>(nameof(ActualPinShape), o => o.ActualPinShape);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="ActualPinBrush"/>.
+    /// </summary>
+    public static readonly DirectProperty<Port, IBrush?> ActualPinBrushProperty =
+        AvaloniaProperty.RegisterDirect<Port, IBrush?>(nameof(ActualPinBrush), o => o.ActualPinBrush);
+
+    /// <summary>
+    /// Форма роли — её ставит тема стилем по <see cref="PinRole"/> (ADR 0017).
+    /// </summary>
+    internal static readonly StyledProperty<PortShape> RolePinShapeProperty =
+        AvaloniaProperty.Register<Port, PortShape>("RolePinShape");
+
+    /// <summary>
+    /// Цвет роли — его ставит тема стилем по <see cref="PinRole"/> из ключей <c>NodeEditor.Pin.*</c>.
+    /// </summary>
+    internal static readonly StyledProperty<IBrush?> RolePinBrushProperty =
+        AvaloniaProperty.Register<Port, IBrush?>("RolePinBrush");
+
     private Geometry _pinData = Shapes.Circle;
+    private PortShape _actualPinShape;
+    private IBrush? _actualPinBrush;
     private NodeEditor? _editor;
     private Node? _node;
     private object? _registeredKey;
@@ -107,9 +141,23 @@ public class Port : ContentControl
     }
 
     /// <summary>
-    /// Получает или задает форму штырька. По умолчанию — круг.
+    /// Получает или задает роль пина — какой базовый вид даёт ему тема (ADR 0017).
     /// </summary>
-    public PortShape PinShape
+    /// <remarks>
+    /// Выполнение — пятиугольник цвета <c>NodeEditor.Pin.Execution.Brush</c>, делегат — квадрат у выхода
+    /// и круг у входа цвета <c>NodeEditor.Pin.Delegate.Brush</c>, данные — вид темы порта. Заданные хостом
+    /// <see cref="PinShape"/> и <see cref="PinBrush"/> сильнее роли. Правил соединения у роли нет.
+    /// </remarks>
+    public PinRole PinRole
+    {
+        get => GetValue(PinRoleProperty);
+        set => SetValue(PinRoleProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает форму штырька. Без значения — форма роли, у данных круг.
+    /// </summary>
+    public PortShape? PinShape
     {
         get => GetValue(PinShapeProperty);
         set => SetValue(PinShapeProperty, value);
@@ -127,7 +175,7 @@ public class Port : ContentControl
 
     /// <summary>
     /// Получает или задает цвет штырька: обводка пустого и заливка подключённого, как у пинов Blueprint.
-    /// Без значения — кисти темы <c>NodeEditor.Port.*</c>.
+    /// Без значения — цвет роли, а у данных кисти темы <c>NodeEditor.Port.*</c>.
     /// </summary>
     /// <remarks>
     /// Протягиваемая связь над портом по-прежнему красит обводку цветами согласия и отказа: обратная связь
@@ -140,12 +188,49 @@ public class Port : ContentControl
     }
 
     /// <summary>
-    /// Получает геометрию штырька для шаблона: форма <see cref="PinShape"/> или <see cref="PinGeometry"/>.
+    /// Получает геометрию штырька для шаблона: форма <see cref="ActualPinShape"/> или
+    /// <see cref="PinGeometry"/>.
     /// </summary>
     public Geometry PinData
     {
         get => _pinData;
         private set => SetAndRaise(PinDataProperty, ref _pinData, value);
+    }
+
+    /// <summary>
+    /// Форма роли — для стилей темы.
+    /// </summary>
+    internal PortShape RolePinShape
+    {
+        get => GetValue(RolePinShapeProperty);
+        set => SetValue(RolePinShapeProperty, value);
+    }
+
+    /// <summary>
+    /// Цвет роли — для стилей темы.
+    /// </summary>
+    internal IBrush? RolePinBrush
+    {
+        get => GetValue(RolePinBrushProperty);
+        set => SetValue(RolePinBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Получает форму, которой штырёк нарисован: хоста, иначе роли.
+    /// </summary>
+    public PortShape ActualPinShape
+    {
+        get => _actualPinShape;
+        private set => SetAndRaise(ActualPinShapeProperty, ref _actualPinShape, value);
+    }
+
+    /// <summary>
+    /// Получает цвет, которым штырёк нарисован: хоста, иначе роли; <see langword="null"/> — кисти темы порта.
+    /// </summary>
+    public IBrush? ActualPinBrush
+    {
+        get => _actualPinBrush;
+        private set => SetAndRaise(ActualPinBrushProperty, ref _actualPinBrush, value);
     }
 
     /// <summary>
@@ -324,10 +409,17 @@ public class Port : ContentControl
 
         if (change.Property == DirectionProperty)
             UpdateDirectionClasses();
-        else if (change.Property == PinShapeProperty || change.Property == PinGeometryProperty)
-            PinData = DataOf(PinShape, PinGeometry);
-        else if (change.Property == PinBrushProperty)
-            PseudoClasses.Set(":pin-brush", change.GetNewValue<IBrush?>() != null);
+        else if (change.Property == PinShapeProperty || change.Property == RolePinShapeProperty
+                 || change.Property == PinGeometryProperty)
+        {
+            ActualPinShape = PinShape ?? GetValue(RolePinShapeProperty);
+            PinData = DataOf(ActualPinShape, PinGeometry);
+        }
+        else if (change.Property == PinBrushProperty || change.Property == RolePinBrushProperty)
+        {
+            ActualPinBrush = PinBrush ?? GetValue(RolePinBrushProperty);
+            PseudoClasses.Set(":pin-brush", ActualPinBrush != null);
+        }
         else if (change.Property == DataProperty || change.Property == DataContextProperty)
             Rekey();
         else if (change.Property == BoundsProperty && _editor != null && _node != null)

@@ -13,7 +13,7 @@
 | `ArxisStudio.Surface` | холст, viewport, сетка, контейнеры и виртуализация, выделение, жесты, клавиатура, контракт изменений, `SurfaceHistory`, упрощённый вид | Avalonia, Avalonia.Skia | [src/Surface](src/Surface/README.md) |
 | `ArxisStudio.Surface.Editing` | ручки изменения размера, привязка, направляющие и интервалы, линейки, блокировки, миникарта | ядро | [src/Surface.Editing](src/Surface.Editing/README.md) |
 | `ArxisStudio.Surface.UiDesigner` | `UiDesignerView`: вложенные контролы, стратегии размещения, перестановка, группы | ядро, инструменты | [src/Surface.UiDesigner](src/Surface.UiDesigner/README.md) |
-| `ArxisStudio.Surface.Nodes` | `NodeEditor`: узлы, порты, связи, узлы перенаправления, разрез, пины и провода выполнения, импульсы и маркеры на проводах | ядро, инструменты | [src/Surface.Nodes](src/Surface.Nodes/README.md) |
+| `ArxisStudio.Surface.Nodes` | `NodeEditor`: узлы, порты, связи, узлы перенаправления, разрез, роли пинов (данные, выполнение, делегат), импульсы и маркеры на проводах | ядро, инструменты | [src/Surface.Nodes](src/Surface.Nodes/README.md) |
 
 TFM библиотек — `net8.0` (минимальный у Avalonia 12), Avalonia 12.1.1, версия `0.x`. В NuGet не
 публикуется: подключается ссылкой на проект или локальным пакетом (`dotnet pack`).
@@ -57,7 +57,7 @@ xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
 
 ## Публичная поверхность
 
-88 публичных типов: 43 в ядре, 16 в инструментах, 11 в дизайнере интерфейса, 18 в редакторе узлов.
+89 публичных типов: 43 в ядре, 16 в инструментах, 11 в дизайнере интерфейса, 19 в редакторе узлов.
 Слепок каждой сборки — до члена и значения по умолчанию у `AvaloniaProperty` — лежит в
 `tests/ArxisStudio.Surface.Tests/PublicSurface.<сборка>.baseline.txt`; новый публичный член роняет
 `PublicSurfaceTests`, пока слепок не обновлён. Машины состояний, стратегии размещения, резолверы
@@ -91,7 +91,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | Образец | Что показывает | Проверка вживую |
 | --- | --- | --- |
 | `UiDesigner.Demo` | формы, вложенные контролы, группы, панель свойств, направляющие, отмена | канал `--automation <каталог>`, F12 (DevTools) в Debug |
-| `Nodes.Demo` | запросы графа, узлы перенаправления, разрез, миникарта, 10 000 узлов, пины выполнения и данных, импульсы по волне вычисления, маркеры по типу провода | канал `--automation <каталог>`, `panBench`, F12 в Debug |
+| `Nodes.Demo` | запросы графа, узлы перенаправления, разрез, миникарта, 10 000 узлов, роли пинов и пример наблюдателя на делегате, импульсы по волне вычисления, маркеры по типу провода | канал `--automation <каталог>`, `panBench`, F12 в Debug |
 | `Nodes.StateMachine` | запуск машины с показом как в Unreal, контекстное меню, импульсы по сработавшему переходу | F12 в Debug, MCP DevTools |
 
 ## Решения
@@ -114,6 +114,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0014](docs/adr/0014-the-wire-shows-the-flow.md) | Импульсы `PulseLink` и маркеры `LinkMarker` на проводах, у каждых свой выключатель |
 | [0015](docs/adr/0015-the-wire-bends-like-blueprint.md) | Касательная провода — по правилу и числам Blueprint, отдельно вперёд и назад; настройка — `LinkCurve` |
 | [0016](docs/adr/0016-execution-pins-are-the-hosts-kind.md) | Пины и провода выполнения: вид — форма и цвет штырька, толщина провода; смысл и правила — хоста |
+| [0017](docs/adr/0017-pin-roles-give-the-base-look.md) | Роли пинов — данные, выполнение, делегат: базовый вид из темы, хост сильнее роли, правил у роли нет |
 
 ## Лицензия
 

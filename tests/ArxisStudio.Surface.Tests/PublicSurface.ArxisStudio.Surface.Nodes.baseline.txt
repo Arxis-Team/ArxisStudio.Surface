@@ -97,6 +97,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia LinkMarkerBindingProperty -> LinkMarkerBinding : BindingBase (styled) = null
     avalonia LinkMarkerProperty -> LinkMarker : LinkMarker (styled) = null
     avalonia LinkPulseProperty -> LinkPulse : LinkPulse (styled) = null
+    avalonia LinkRoleBindingProperty -> LinkRoleBinding : BindingBase (styled) = null
     avalonia LinkSourceBindingProperty -> LinkSourceBinding : BindingBase (styled) = null
     avalonia LinkStrokeBindingProperty -> LinkStrokeBinding : BindingBase (styled) = null
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
@@ -126,6 +127,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     method Void PrepareContainerForItemOverride(Control, Object, Int32)
     property BindingBase ItemHeaderBinding { get; set; }
     property BindingBase LinkMarkerBinding { get; set; }
+    property BindingBase LinkRoleBinding { get; set; }
     property BindingBase LinkSourceBinding { get; set; }
     property BindingBase LinkStrokeBinding { get; set; }
     property BindingBase LinkTargetBinding { get; set; }
@@ -145,14 +147,21 @@ static class ArxisStudio.Surface.Nodes.NodeEditorKeyCommands
     field String CancelLink = "nodes.cancelLink"
     field String ClearLinkSelection = "nodes.clearLinkSelection"
     field String DeleteLinks = "nodes.deleteLinks"
+enum ArxisStudio.Surface.Nodes.PinRole
+    value Data = 0
+    value Delegate = 2
+    value Execution = 1
 class ArxisStudio.Surface.Nodes.Port : ContentControl
+    avalonia ActualPinBrushProperty -> ActualPinBrush : IBrush (direct)
+    avalonia ActualPinShapeProperty -> ActualPinShape : PortShape (direct)
     avalonia DataProperty -> Data : Object (styled) = null
     avalonia DirectionProperty -> Direction : PortDirection (styled) = Input
     avalonia IsConnectedProperty -> IsConnected : Boolean (direct)
     avalonia PinBrushProperty -> PinBrush : IBrush (styled) = null
     avalonia PinDataProperty -> PinData : Geometry (direct)
     avalonia PinGeometryProperty -> PinGeometry : Geometry (styled) = null
-    avalonia PinShapeProperty -> PinShape : PortShape (styled) = Circle
+    avalonia PinRoleProperty -> PinRole : PinRole (styled) = Data
+    avalonia PinShapeProperty -> PinShape : Nullable<PortShape> (styled) = null
     ctor .ctor()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
@@ -162,10 +171,13 @@ class ArxisStudio.Surface.Nodes.Port : ContentControl
     property Boolean IsConnected { get; }
     property Geometry PinData { get; }
     property Geometry PinGeometry { get; set; }
+    property IBrush ActualPinBrush { get; }
     property IBrush PinBrush { get; set; }
+    property Nullable<PortShape> PinShape { get; set; }
     property Object Data { get; set; }
+    property PinRole PinRole { get; set; }
     property PortDirection Direction { get; set; }
-    property PortShape PinShape { get; set; }
+    property PortShape ActualPinShape { get; }
 enum ArxisStudio.Surface.Nodes.PortDirection
     value Input = 0
     value Output = 1

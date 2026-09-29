@@ -85,7 +85,13 @@ internal sealed class LinkRecord
     public LinkPath Path => _path ??= _geometry.Path();
 
     /// <summary>
-    /// Толщина провода из модели (<see cref="NodeEditor.LinkThicknessBinding"/>); без неё — толщина темы.
+    /// Роль провода из модели (<see cref="NodeEditor.LinkRoleBinding"/>).
+    /// </summary>
+    public PinRole Role { get; set; }
+
+    /// <summary>
+    /// Толщина провода: из модели (<see cref="NodeEditor.LinkThicknessBinding"/>), иначе роли; без обеих —
+    /// толщина темы.
     /// </summary>
     public double? Thickness { get; set; }
 
@@ -106,7 +112,8 @@ internal sealed class LinkRecord
     public Rect? IndexedBounds { get; set; }
 
     /// <summary>
-    /// Цвет провода из модели (<see cref="NodeEditor.LinkStrokeBinding"/>); без него — цвет темы.
+    /// Цвет провода: из модели (<see cref="NodeEditor.LinkStrokeBinding"/>), иначе роли; без обоих — цвет
+    /// темы.
     /// </summary>
     public Avalonia.Media.IBrush? Stroke { get; set; }
 
