@@ -101,6 +101,7 @@ src/Surface.Nodes/        ArxisStudio.Surface.Nodes — редактор узл�
 tests/                    headless-тесты всех четырёх сборок
 samples/UiDesigner.Demo/  демо дизайнера интерфейса
 samples/Nodes.Demo/       демо редактора узлов
+samples/Nodes.StateMachine/ машина состояний на узлах: ведёт интерфейс Avalonia, запуск, меню
 docs/adr/                 архитектурные решения
 ```
 
@@ -111,6 +112,7 @@ dotnet build ArxisStudio.Surface.sln
 dotnet test tests/ArxisStudio.Surface.Tests
 dotnet run --project samples/UiDesigner.Demo
 dotnet run --project samples/Nodes.Demo
+dotnet run --project samples/Nodes.StateMachine
 dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 ```
 

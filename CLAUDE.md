@@ -9,6 +9,7 @@ dotnet build ArxisStudio.Surface.sln      # сборка решения
 dotnet test tests/ArxisStudio.Surface.Tests/ArxisStudio.Surface.Tests.csproj
 dotnet run --project samples/UiDesigner.Demo # запуск демо дизайнера интерфейса
 dotnet run --project samples/Nodes.Demo        # запуск демо редактора узлов
+dotnet run --project samples/Nodes.StateMachine # машина состояний на узлах, ведёт интерфейс Avalonia
 ```
 
 Один тест: `dotnet test --filter "FullyQualifiedName~SelectionTests.Click_On_Nested_Control_Selects_It_As_Nested_Target"`.
@@ -61,6 +62,7 @@ dotnet build src/Surface.UiDesigner/ArxisStudio.Surface.UiDesigner.csproj
 | `src/Surface.Nodes/ArxisStudio.Surface.Nodes.csproj` | `net8.0` | редактор узлов: `NodeEditor`, узлы, порты, связи |
 | `samples/UiDesigner.Demo` | `net10.0` | демо дизайнера интерфейса, `AvaloniaUseCompiledBindingsByDefault = true` |
 | `samples/Nodes.Demo` | `net10.0` | демо редактора узлов — хост на одном публичном API, свой `CLAUDE.md` |
+| `samples/Nodes.StateMachine` | `net10.0` | машина состояний на узлах: запуск с показом как в Unreal, контекстное меню, живое приложение Avalonia; свой `CLAUDE.md` |
 
 Общее у четырёх библиотек — TFM, документация, метаданные пакета — лежит в `src/Library.props`, и каждая импортирует его одной строкой.
 

@@ -1,0 +1,126 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
+        xmlns:machine="clr-namespace:Nodes.StateMachine.Machine"
+        x:Class="Nodes.StateMachine.MainWindow"
+        x:DataType="machine:MachineDocument"
+        Title="Машина состояний — ArxisStudio.Surface.Nodes"
+        Width="1440" Height="840"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Styles>
+        <!--
+            Запущенная машина — как отладка State Machine в Unreal: активное состояние в янтарной
+            рамке, след покинутого состояния и сработавшего перехода — рамка тоньше и прозрачнее, и он
+            гаснет. Класс контейнеру ставит окно по MachineNode.Look. Селектор с классом — триггер стиля,
+            и он сильнее значения, поставленного шаблоном карточки.
+        -->
+        <Style Selector="surface|Node.active /template/ Border#PART_Card">
+            <Setter Property="BorderBrush" Value="#FFB300" />
+            <Setter Property="BorderThickness" Value="3" />
+        </Style>
+        <Style Selector="surface|Node.trace /template/ Border#PART_Card">
+            <Setter Property="BorderBrush" Value="#99FFB300" />
+            <Setter Property="BorderThickness" Value="2" />
+        </Style>
+        <Style Selector="TextBlock.run">
+            <Setter Property="Foreground" Value="#FFB300" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="12,8">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                <TextBlock x:Name="ZoomText" VerticalAlignment="Center" Opacity="0.7" />
+                <Button x:Name="RunButton" Classes="accent" Content="▶ Запустить" Click="OnRunClick" />
+                <CheckBox x:Name="NetworkBox" Content="Сеть" IsChecked="True" />
+                <Button Content="Пример" Click="OnExampleClick" />
+                <Button Content="Показать всё" Click="OnFitClick" />
+                <Button x:Name="UndoButton" Content="Отменить" Click="OnUndoClick" />
+                <Button x:Name="RedoButton" Content="Повторить" Click="OnRedoClick" />
+            </StackPanel>
+            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Opacity="0.7"
+                       Text="Правая кнопка по холсту — новое состояние, переход, вход · по узлу — экран, условие, начальное, удалить · от порта — связь · Delete — удалить" />
+        </DockPanel>
+
+        <TextBlock x:Name="StatusText" DockPanel.Dock="Bottom" Margin="12,6" Opacity="0.7" />
+
+        <!-- Приложение, которым управляет машина, и журнал переходов. -->
+        <Border DockPanel.Dock="Right" Width="380" BorderThickness="1,0,0,0" BorderBrush="#33FFFFFF">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Margin="16,12,16,0" Text="Приложение" Opacity="0.7" />
+                <DockPanel DockPanel.Dock="Bottom" Height="240">
+                    <TextBlock DockPanel.Dock="Top" Margin="16,8" Text="Журнал" Opacity="0.7" />
+                    <ListBox x:Name="LogList" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+                <Border x:Name="PreviewFrame" Margin="12" CornerRadius="8" BorderThickness="1" BorderBrush="#33FFFFFF" ClipToBounds="True" />
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <surface:NodeEditor x:Name="Editor"
+                                ItemsSource="{Binding Nodes}"
+                                ItemLocationBinding="{Binding Location}"
+                                ItemHeaderBinding="{Binding Title}"
+                                ItemAccentBinding="{Binding Accent}"
+                                EstimatedItemSize="178,76"
+                                Links="{Binding Links}"
+                                LinkSourceBinding="{Binding From}"
+                                LinkTargetBinding="{Binding To}"
+                                LinkStrokeBinding="{Binding Color}"
+                                PortNodeBinding="{Binding Node, DataType={x:Type machine:FlowPort}}">
+                <!-- Шаблоны — от частного к общему: перевалка, переход и состояние — тоже MachineNode. -->
+                <surface:NodeEditor.DataTemplates>
+                    <DataTemplate x:DataType="machine:RerouteNode">
+                        <surface:Reroute Input="{Binding Inputs[0]}" Output="{Binding Outputs[0]}" />
+                    </DataTemplate>
+
+                    <!-- Переход: условие — название узла; в теле — штырьки и «сработал» на запущенной машине. -->
+                    <DataTemplate x:DataType="machine:TransitionNode">
+                        <Grid ColumnDefinitions="Auto,*,Auto" MinWidth="140">
+                            <surface:Port Direction="Input" Data="{Binding Inputs[0]}" />
+                            <TextBlock Grid.Column="1" Classes="run" Text="{Binding RunText}" IsVisible="{Binding HasRunText}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" />
+                            <surface:Port Grid.Column="2" Direction="Output" Data="{Binding Outputs[0]}" />
+                        </Grid>
+                    </DataTemplate>
+
+                    <!-- Состояние: порты, экран и время в состоянии на запущенной машине. -->
+                    <DataTemplate x:DataType="machine:StateNode">
+                        <StackPanel MinWidth="170">
+                            <Grid ColumnDefinitions="*,*">
+                                <surface:Port Direction="Input" Data="{Binding Inputs[0]}" Content="{Binding Inputs[0].Name}" />
+                                <surface:Port Grid.Column="1" Direction="Output" Data="{Binding Outputs[0]}" Content="{Binding Outputs[0].Name}" />
+                            </Grid>
+                            <TextBlock Text="{Binding ScreenText}" Margin="10,2,10,4" Opacity="0.7" FontSize="12" />
+                            <TextBlock Classes="run" Text="{Binding RunText}" IsVisible="{Binding HasRunText}" Margin="10,0,10,6" FontSize="12" />
+                        </StackPanel>
+                    </DataTemplate>
+
+                    <!-- Вход и любое состояние: только выход. -->
+                    <DataTemplate x:DataType="machine:MachineNode">
+                        <ItemsControl ItemsSource="{Binding Outputs}" MinWidth="150">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="machine:FlowPort">
+                                    <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DataTemplate>
+                </surface:NodeEditor.DataTemplates>
+            </surface:NodeEditor>
+
+            <surface:SurfaceMinimap Editor="{Binding #Editor}"
+                                    Width="220" Height="150"
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                    Margin="12" />
+        </Grid>
+    </DockPanel>
+</Window>
