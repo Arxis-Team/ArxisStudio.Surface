@@ -65,6 +65,11 @@
             <Setter Property="Fill" Value="{Binding ActualPinBrush, RelativeSource={RelativeSource TemplatedParent}}" />
         </Style>
 
+        <!-- Над зоной захвата штырька (NodeEditor.PinGrabSize) — рука: связь тянут отсюда, а не из подписи. -->
+        <Style Selector="^:pin-over">
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
         <!-- Протягиваемая связь над портом: примет ли он её — видно до отпускания. -->
         <Style Selector="^:accepting /template/ Path#PART_Pin">
             <Setter Property="Stroke" Value="{DynamicResource NodeEditor.Port.AcceptingStroke}" />

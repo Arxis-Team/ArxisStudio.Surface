@@ -349,20 +349,54 @@ public class Port : ContentControl
     }
 
     /// <summary>
-    /// Нажатие на порт начинает протяжку связи, а не перетаскивание узла.
+    /// Нажатие на штырёк начинает протяжку связи, а не перетаскивание узла.
     /// </summary>
     /// <remarks>
-    /// Нажатие помечается обработанным, поэтому до узла оно не доходит: ни выбора, ни
-    /// перетаскивания узла из порта не бывает.
+    /// Только в зоне захвата штырька (<see cref="NodeEditor.PinGrabSize"/>): подпись порта — текст, а не
+    /// ручка, и связь, потянувшаяся из надписи, удивляла. Нажатие в зоне помечается обработанным и до
+    /// узла не доходит; вне её — идёт узлу, и узел выбирают и тянут за строку порта, как за тело.
     /// </remarks>
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
 
-        if (e.Handled || _editor == null || Key is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        if (e.Handled || _editor == null || Key is null || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            || !IsOnPin(e))
             return;
 
         e.Handled = _editor.BeginPendingLink(this, e);
+    }
+
+    /// <summary>
+    /// Курсор-рука над зоной захвата: где начнётся связь, видно до нажатия.
+    /// </summary>
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        PseudoClasses.Set(":pin-over", _editor != null && Key is not null && IsOnPin(e));
+    }
+
+    /// <inheritdoc />
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        PseudoClasses.Set(":pin-over", false);
+    }
+
+    /// <summary>
+    /// Лежит ли указатель в зоне захвата штырька: в квадрате <see cref="NodeEditor.PinGrabSize"/>
+    /// пикселей экрана вокруг его центра или на самом штырьке, если тот крупнее.
+    /// </summary>
+    private bool IsOnPin(PointerEventArgs e)
+    {
+        if (_pin is not { Bounds: { Width: > 0, Height: > 0 } bounds } pin)
+            return true;
+
+        // Координаты штырька — мировые единицы; квадрат задан на экране, и на отдалении он в них крупнее.
+        var half = (_editor?.PinGrabSize ?? 0) / 2 / Math.Max(_editor?.ViewportZoom ?? 1, 0.0001);
+        var at = e.GetPosition(pin);
+        return Math.Abs(at.X - (bounds.Width / 2)) <= Math.Max(half, bounds.Width / 2)
+            && Math.Abs(at.Y - (bounds.Height / 2)) <= Math.Max(half, bounds.Height / 2);
     }
 
     /// <inheritdoc />

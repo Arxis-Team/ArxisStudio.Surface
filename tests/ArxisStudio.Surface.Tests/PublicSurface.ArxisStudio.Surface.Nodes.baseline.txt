@@ -109,6 +109,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia LinkTargetBindingProperty -> LinkTargetBinding : BindingBase (styled) = null
     avalonia LinkThicknessBindingProperty -> LinkThicknessBinding : BindingBase (styled) = null
     avalonia LinksProperty -> Links : IEnumerable (styled) = null
+    avalonia PinGrabSizeProperty -> PinGrabSize : Double (styled) = 24
     avalonia PortCaptureRadiusProperty -> PortCaptureRadius : Double (styled) = 12
     avalonia PortNodeBindingProperty -> PortNodeBinding : BindingBase (styled) = null
     avalonia SelectedLinksProperty -> SelectedLinks : IReadOnlyList<Object> (direct)
@@ -143,6 +144,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     property Boolean AreLinkMarkersVisible { get; set; }
     property Boolean IsLinkPulseEnabled { get; set; }
     property Double LinkHitTolerance { get; set; }
+    property Double PinGrabSize { get; set; }
     property Double PortCaptureRadius { get; set; }
     property IEnumerable Links { get; set; }
     property IReadOnlyList<Object> SelectedLinks { get; }
@@ -173,6 +175,8 @@ class ArxisStudio.Surface.Nodes.Port : ContentControl
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPointerExited(PointerEventArgs)
+    method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Boolean IsConnected { get; }

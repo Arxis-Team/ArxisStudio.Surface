@@ -118,6 +118,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0016](docs/adr/0016-execution-pins-are-the-hosts-kind.md) | Пины и провода выполнения: вид — форма и цвет штырька, толщина провода; смысл и правила — хоста |
 | [0017](docs/adr/0017-pin-roles-give-the-base-look.md) | Роли пинов — данные, выполнение, делегат: базовый вид из темы, хост сильнее роли, правил у роли нет |
 | [0018](docs/adr/0018-a-wire-dropped-on-empty-canvas-is-the-hosts-cue.md) | Провод, отпущенный в пустоту, — `ConnectDropped` с портом и точкой; меню действий и новый узел — хоста |
+| [0019](docs/adr/0019-a-link-starts-at-the-pin.md) | Связь начинается от штырька, в зоне захвата `PinGrabSize`; подпись порта тянет узел |
 
 ## Лицензия
 

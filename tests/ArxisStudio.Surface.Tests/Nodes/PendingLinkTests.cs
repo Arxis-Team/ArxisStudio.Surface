@@ -240,6 +240,77 @@ public class PendingLinkTests
     }
 
     [AvaloniaFact]
+    public void Pressing_The_Port_Label_Drags_The_Node_Not_A_Link()
+    {
+        // Подпись — текст, а не ручка: связь из надписи удивляла. Нажатие в 50 единицах от штырька —
+        // вне зоны захвата в 24 пикселя — уходит узлу, и узел едет за указателем.
+        var stand = Create();
+        var requests = RecordRequests(stand);
+        var label = Pin(stand, 0, PortDirection.Input) + new Vector(50, 0);
+        Assert.True(stand.PortOf(0, PortDirection.Input).TryGetWorldBounds(out var port) && port.Contains(label),
+            "Точка обязана лежать на строке порта, иначе тест проверял бы тело узла.");
+
+        DragLink(stand, label, label + new Vector(80, 60));
+
+        Assert.Empty(requests);
+        Assert.False(stand.Editor.PendingPreview!.IsVisible, "Связь из подписи тянуться не должна.");
+        Assert.Equal(new Point(180, 160), stand.Node(0).Location);
+    }
+
+    [AvaloniaFact]
+    public void A_Press_Beside_The_Pin_Still_Starts_A_Link()
+    {
+        // Штырёк в 10 единиц мал; зона захвата — квадрат 24 вокруг его центра, и промах на 9 не беда.
+        var stand = Create();
+        var requests = RecordRequests(stand);
+
+        DragLink(stand, Pin(stand, 0, PortDirection.Output) + new Vector(-9, 4), Pin(stand, 1, PortDirection.Input));
+
+        Assert.Single(requests);
+    }
+
+    [AvaloniaFact]
+    public void The_Pin_Grab_Zone_Is_In_Screen_Pixels()
+    {
+        // 10 пикселей экрана от центра штырька на отдалении 0,5 — это 20 мировых единиц: зона в 24 пикселя
+        // их накрывает, а без запаса (PinGrabSize = 0) ловится только сам штырёк, и связи нет.
+        const double zoom = 0.5;
+        foreach (var (size, expected) in new[] { (24.0, 1), (0.0, 0) })
+        {
+            var stand = Create();
+            stand.Editor.PinGrabSize = size;
+            stand.Editor.ViewportZoom = zoom;
+            stand.RunLayout();
+            var requests = RecordRequests(stand);
+
+            Point Screen(Point world) => (world - (Vector)stand.Editor.ViewportLocation) * zoom;
+            var from = Screen(Pin(stand, 0, PortDirection.Output)) + new Vector(-10, 0);
+            var to = Screen(Pin(stand, 1, PortDirection.Input));
+
+            Press(stand, from);
+            MoveTo(stand, from + ((to - from) / 2));
+            MoveTo(stand, to);
+            stand.Window.MouseUp(to, MouseButton.Left);
+
+            Assert.Equal(expected, requests.Count);
+        }
+    }
+
+    [AvaloniaFact]
+    public void The_Cursor_Is_A_Hand_Only_Over_The_Grab_Zone()
+    {
+        var stand = Create();
+        var port = stand.PortOf(0, PortDirection.Input);
+        var pin = Pin(stand, 0, PortDirection.Input);
+
+        stand.Window.MouseMove(pin);
+        Assert.Contains(":pin-over", port.Classes);
+
+        stand.Window.MouseMove(pin + new Vector(50, 0));
+        Assert.DoesNotContain(":pin-over", port.Classes);
+    }
+
+    [AvaloniaFact]
     public void A_Release_On_The_Empty_Canvas_Requests_Nothing()
     {
         var stand = Create();

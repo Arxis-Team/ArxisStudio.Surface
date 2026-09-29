@@ -33,6 +33,29 @@ public partial class NodeEditor
     }
 
     /// <summary>
+    /// Идентификатор свойства размера зоны захвата штырька в пикселях экрана.
+    /// </summary>
+    public static readonly StyledProperty<double> PinGrabSizeProperty =
+        AvaloniaProperty.Register<NodeEditor, double>(nameof(PinGrabSize), 24.0);
+
+    /// <summary>
+    /// Получает или задает сторону квадрата вокруг центра штырька, нажатие в котором начинает связь.
+    /// </summary>
+    /// <remarks>
+    /// В пикселях экрана, как <see cref="PortCaptureRadius"/>: на отдалении штырёк мельче, а цель под
+    /// указатель остаётся той же. По умолчанию 24 — наименьшая цель указателя по WCAG 2.5.8: штырёк в 10
+    /// пикселей без запаса ловится с трудом. Штырёк крупнее квадрата ловится целиком. Нажатие вне зоны —
+    /// по подписи порта, его полю или пустому месту строки — уходит узлу: его выбирают и тянут, а связь
+    /// начинается только от штырька. Порт без штырька в шаблоне (<c>PART_Pin</c>) начинает связь всей
+    /// площадью, как прежде.
+    /// </remarks>
+    public double PinGrabSize
+    {
+        get => GetValue(PinGrabSizeProperty);
+        set => SetValue(PinGrabSizeProperty, value);
+    }
+
+    /// <summary>
     /// Возникает, когда протягиваемая связь пришла на новый порт: можно ли соединить.
     /// </summary>
     public event EventHandler<ConnectValidatingEventArgs>? ConnectValidating;
