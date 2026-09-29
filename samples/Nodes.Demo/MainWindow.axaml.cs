@@ -199,24 +199,6 @@ public partial class MainWindow : Window
 
     private void OnLargeGraphClick(object? sender, RoutedEventArgs e) => Load(GraphDocument.CreateGrid(10_000));
 
-    private void OnImageGraphClick(object? sender, RoutedEventArgs e) => LoadExample(GraphDocument.CreateSample(), fit: false);
-
-    private void OnStateMachineClick(object? sender, RoutedEventArgs e) => LoadExample(GraphDocument.CreateStateMachine(), fit: true);
-
-    /// <summary>
-    /// Ставит пример и показывает его: машина состояний шире окна, и её вписывают целиком; граф
-    /// изображения помещается в окно у начала координат.
-    /// </summary>
-    internal void LoadExample(GraphDocument document, bool fit)
-    {
-        Load(document);
-        UpdateLayout();
-        if (fit)
-            FitAll();
-        else
-            Editor.ViewportLocation = default;
-    }
-
     private void OnFitClick(object? sender, RoutedEventArgs e) => FitAll();
 
     /// <summary>

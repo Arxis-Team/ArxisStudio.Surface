@@ -12,7 +12,7 @@ namespace Nodes.Demo;
 /// Связь знает свои концы данными портов — <see cref="GraphPort"/>, — а не координатами (ADR 0004):
 /// где порт на холсте, редактор находит сам.
 /// </remarks>
-public sealed partial class GraphDocument
+public sealed class GraphDocument
 {
     /// <summary>
     /// Шаг сетки <see cref="CreateGrid"/>. Узел с двумя входами и выходом в теме библиотеки — 178 × 76,
@@ -33,22 +33,12 @@ public sealed partial class GraphDocument
     /// <param name="target">Вход.</param>
     /// <param name="moving">Связь, чей конец перецепляют, или <see langword="null"/> для новой.</param>
     /// <remarks>
-    /// Направления проверяет сам редактор; здесь — правила графа. В свой же узел нельзя. Связь, что
-    /// перецепляет свой конец, в правилах не считается: её вход занят ею же. Данные — цвет и число —
-    /// приходят во вход одной связью; поток управления машины состояний живёт по своим правилам
-    /// (<see cref="AllowsFlow"/>): состояние принимает сколько угодно переходов.
+    /// Направления проверяет сам редактор; здесь — правила графа: в свой же узел нельзя, и во вход
+    /// приходит одна связь — не считая той, что перецепляет свой конец: её вход занят ею же.
     /// </remarks>
-    public bool CanConnect(GraphPort source, GraphPort target, GraphLink? moving)
-    {
-        if (ReferenceEquals(source.Node, target.Node))
-            return false;
-
-        var others = Links.Where(link => !ReferenceEquals(link, moving)).ToList();
-        if (source.Kind == PortKind.Flow || target.Kind == PortKind.Flow)
-            return AllowsFlow(source, target, others);
-
-        return !others.Any(link => ReferenceEquals(link.To, target));
-    }
+    public bool CanConnect(GraphPort source, GraphPort target, GraphLink? moving) =>
+        !ReferenceEquals(source.Node, target.Node)
+        && !Links.Any(link => !ReferenceEquals(link, moving) && ReferenceEquals(link.To, target));
 
     /// <summary>
     /// Новая перевалка — узел с одним входом и одним выходом (ADR 0005 библиотеки).
@@ -160,10 +150,7 @@ public enum PortKind
     Color,
 
     /// <summary>Число.</summary>
-    Number,
-
-    /// <summary>Поток управления машины состояний: из состояния в переход и из перехода в состояние.</summary>
-    Flow
+    Number
 }
 
 /// <summary>
@@ -179,16 +166,10 @@ public static class PortKinds
 
     public static readonly Color NumberWire = Color.Parse("#2BA8A8");
 
-    /// <summary>
-    /// Поток управления — светлый, как провода исполнения в Blueprint; на тёмном холсте — 10:1.
-    /// </summary>
-    public static readonly Color FlowWire = Color.Parse("#C9CED6");
-
     public static Color? ColorOf(PortKind kind) => kind switch
     {
         PortKind.Color => ColorWire,
         PortKind.Number => NumberWire,
-        PortKind.Flow => FlowWire,
         _ => null
     };
 }

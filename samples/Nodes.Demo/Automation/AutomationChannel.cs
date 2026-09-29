@@ -186,19 +186,6 @@ internal sealed class AutomationChannel
             case "realization":
                 return Realization();
 
-            case "example":
-            {
-                // Пример графа, как кнопками окна: «image» — граф изображения, «states» — машина состояний.
-                var example = command.TryGetProperty("example", out var value) ? value.GetString() : null;
-                if (example == "states")
-                    _window.LoadExample(GraphDocument.CreateStateMachine(), fit: true);
-                else
-                    _window.LoadExample(GraphDocument.CreateSample(), fit: false);
-
-                _window.UpdateLayout();
-                return State(false);
-            }
-
             case "fit":
             {
                 _window.FitAll();

@@ -12,8 +12,6 @@
         <DockPanel DockPanel.Dock="Top" Margin="12,8">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
                 <TextBlock x:Name="ZoomText" VerticalAlignment="Center" Opacity="0.7" />
-                <Button x:Name="ImageGraphButton" Content="Изображение" Click="OnImageGraphClick" />
-                <Button x:Name="StateMachineButton" Content="Машина состояний" Click="OnStateMachineClick" />
                 <Button x:Name="LargeGraphButton" Content="10 000 узлов" Click="OnLargeGraphClick" />
                 <Button x:Name="FitButton" Content="Показать всё" Click="OnFitClick" />
                 <Button x:Name="UndoButton" Content="Отменить" Click="OnUndoClick" />
@@ -37,8 +35,7 @@
                 граф на 10 000 узлов вошёл в окно целиком. Название узла — из ItemHeaderBinding, полоса
                 под ним — цвет вида узла из ItemAccentBinding, провод — цвет типа порта из
                 LinkStrokeBinding (ADR 0009): обычный узел и его карточка показывают одно и то же.
-                Шаблоны узлов — по типу данных, от частного к общему: перевалка, переход и состояние машины
-                состояний — тоже GraphNode, и шаблон узла изображения, стоящий раньше, взял бы их себе.
+                Шаблоны узлов — по типу данных: перевалка первой, она тоже GraphNode.
             -->
             <surface:NodeEditor x:Name="Editor"
                                 ItemsSource="{Binding Nodes}"
@@ -55,39 +52,6 @@
                 <surface:NodeEditor.DataTemplates>
                     <DataTemplate x:DataType="demo:RerouteNode">
                         <surface:Reroute Input="{Binding Inputs[0]}" Output="{Binding Outputs[0]}" />
-                    </DataTemplate>
-
-                    <!-- Переход: условие — название узла, тело — только штырьки входа и выхода. -->
-                    <DataTemplate x:DataType="demo:TransitionNode">
-                        <Grid ColumnDefinitions="Auto,*,Auto" MinWidth="120">
-                            <surface:Port Direction="Input" Data="{Binding Inputs[0]}" />
-                            <surface:Port Grid.Column="2" Direction="Output" Data="{Binding Outputs[0]}" />
-                        </Grid>
-                    </DataTemplate>
-
-                    <!-- Состояние: порты потока и клип анимации под ними. -->
-                    <DataTemplate x:DataType="demo:StateNode">
-                        <StackPanel MinWidth="160">
-                            <Grid ColumnDefinitions="*,*">
-                                <ItemsControl ItemsSource="{Binding Inputs}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="demo:GraphPort">
-                                            <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Outputs}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="demo:GraphPort">
-                                            <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Grid>
-                            <TextBlock Text="{Binding Clip, StringFormat='клип: {0}'}"
-                                       IsVisible="{Binding Clip, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                       Margin="10,2,10,6" Opacity="0.7" FontSize="12" />
-                        </StackPanel>
                     </DataTemplate>
 
                     <!--
