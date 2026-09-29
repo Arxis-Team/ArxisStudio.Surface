@@ -55,6 +55,13 @@ public partial class MainWindow : Window
 
         NetworkBox.IsCheckedChanged += (_, _) => _context.Online = NetworkBox.IsChecked == true;
 
+        // Фигуры — после разметки: выбор списка приходит ещё внутри InitializeComponent, когда поля
+        // окна не заданы.
+        PulseShapeBox.SelectionChanged += OnPulseShapeChanged;
+        MarkerShapeBox.SelectionChanged += OnMarkerShapeChanged;
+        OnPulseShapeChanged(null, null);
+        OnMarkerShapeChanged(null, null);
+
         Load(MachineDocument.CreateUiExample());
         Opened += (_, _) =>
         {
@@ -90,8 +97,13 @@ public partial class MainWindow : Window
             _runner.PropertyChanged -= OnRunnerChanged;
 
         var log = _runner?.Log;
+        if (_runner != null)
+            _runner.Fired -= OnFired;
+
+        Editor.ClearLinkPulses();
         _runner = new MachineRunner(_document, _context);
         _runner.PropertyChanged += OnRunnerChanged;
+        _runner.Fired += OnFired;
         if (log != null)
         {
             foreach (var line in log.Reverse())
@@ -295,7 +307,36 @@ public partial class MainWindow : Window
         container.Classes.Set("trace", look == RunLook.Trace);
     }
 
-    private void OnRunnerChanged(object? sender, PropertyChangedEventArgs e) => UpdateChrome();
+    private void OnRunnerChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Остановленная машина гасит провода сразу: импульс отладки — о работающей.
+        if (e.PropertyName == nameof(MachineRunner.IsRunning) && !_runner.IsRunning)
+            Editor.ClearLinkPulses();
+
+        UpdateChrome();
+    }
+
+    /// <summary>
+    /// Сработавший переход зажигает свои провода импульсом — пузыри бегут от состояния к цели, как по
+    /// проводам исполнения Blueprint. Выключенный «Импульсы» редактор вызов пропустит сам.
+    /// </summary>
+    private void OnFired(IReadOnlyList<FlowLink> path)
+    {
+        foreach (var link in path)
+            Editor.PulseLink(link);
+    }
+
+    private void OnMarkerShapeChanged(object? sender, SelectionChangedEventArgs? e)
+    {
+        if (MarkerShapeBox.SelectedItem is ComboBoxItem { Tag: LinkShape shape })
+            Editor.LinkMarker = new LinkMarker { Shape = shape };
+    }
+
+    private void OnPulseShapeChanged(object? sender, SelectionChangedEventArgs? e)
+    {
+        if (PulseShapeBox.SelectedItem is ComboBoxItem { Tag: LinkShape shape })
+            Editor.LinkPulse = new LinkPulse { Shape = shape };
+    }
 
     // --- Кнопки --------------------------------------------------------------------------------------
 

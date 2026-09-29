@@ -35,11 +35,9 @@ public sealed class MachineRunner : Observable
     private readonly Stopwatch _clock = new();
     private readonly HashSet<string> _events = new();
     private readonly Dictionary<MachineNode, int> _traces = new();
-    private readonly HashSet<FlowLink> _hot = new();
     private StateNode? _current;
     private double _secondsInState;
     private TimeSpan _last;
-    private int _ticks;
 
     public MachineRunner(MachineDocument document, MachineContext context)
     {
@@ -55,6 +53,13 @@ public sealed class MachineRunner : Observable
     /// Журнал: сверху — последнее.
     /// </summary>
     public ObservableCollection<string> Log { get; } = new();
+
+    /// <summary>
+    /// Возникает, когда сработал переход: провода его пути — от состояния до цели, через переход и узлы
+    /// перенаправления. Окно зажигает по ним импульсы редактора (<c>NodeEditor.PulseLink</c>), как
+    /// пузыри на проводах исполнения в Blueprint.
+    /// </summary>
+    public event Action<IReadOnlyList<FlowLink>>? Fired;
 
     public bool IsRunning => _timer.IsEnabled;
 
@@ -108,10 +113,6 @@ public sealed class MachineRunner : Observable
             node.RunText = null;
         }
 
-        foreach (var link in _hot)
-            link.Heat = 0;
-
-        _hot.Clear();
         _traces.Clear();
         Current = null;
         Raise(nameof(IsRunning));
@@ -187,11 +188,7 @@ public sealed class MachineRunner : Observable
         Trace(from);
         Trace(transition);
         transition.RunText = "сработал";
-        foreach (var link in path)
-        {
-            link.Heat = 10;
-            _hot.Add(link);
-        }
+        Fired?.Invoke(path);
 
         Enter(target);
     }
@@ -212,18 +209,10 @@ public sealed class MachineRunner : Observable
     }
 
     /// <summary>
-    /// Гасит следы: провода — ступенью накала через такт, узлы — по счёту тактов; и то и другое — за
-    /// секунду.
+    /// Гасит следы узлов по счёту тактов — за секунду. Провода гасит сам редактор: импульс конечен.
     /// </summary>
     private void Fade()
     {
-        foreach (var link in _ticks++ % 2 == 0 ? _hot.ToList() : [])
-        {
-            link.Heat -= 1;
-            if (link.Heat == 0)
-                _hot.Remove(link);
-        }
-
         foreach (var (node, left) in _traces.ToList())
         {
             if (left > 1)

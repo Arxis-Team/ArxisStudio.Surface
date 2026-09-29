@@ -352,9 +352,9 @@ public sealed class FlowPort(MachineNode node, string name, bool isInput)
 /// Связь потока управления: из выхода <see cref="From"/> во вход <see cref="To"/>.
 /// </summary>
 /// <remarks>
-/// Цвет провода — модели: редактор берёт его привязкой <c>LinkStrokeBinding</c> и перечитывает по
-/// <see cref="Observable.PropertyChanged"/>. Сработавший переход зажигает свои провода, и след гаснет
-/// за секунду — <see cref="Heat"/>, ступенями: кисть у библиотеки одна на цвет.
+/// Цвет провода — модели: редактор берёт его привязкой <c>LinkStrokeBinding</c>. Вспышку сработавшего
+/// провода рисует редактор — импульсом (<c>NodeEditor.PulseLink</c>, ADR 0014 библиотеки), модель о ней
+/// не знает.
 /// </remarks>
 public sealed class FlowLink(FlowPort from, FlowPort to) : Observable
 {
@@ -363,41 +363,11 @@ public sealed class FlowLink(FlowPort from, FlowPort to) : Observable
     /// </summary>
     public static readonly Color Idle = Color.Parse("#C9CED6");
 
-    /// <summary>
-    /// Горящий провод и рамка активного состояния — янтарь отладки Unreal.
-    /// </summary>
-    public static readonly Color Hot = Color.Parse("#FFB300");
-
-    private int _heat;
-
     public FlowPort From { get; } = from;
 
     public FlowPort To { get; } = to;
 
-    /// <summary>
-    /// Накал: 0 — провод остыл, 10 — только что сработал.
-    /// </summary>
-    public int Heat
-    {
-        get => _heat;
-        set
-        {
-            if (Set(ref _heat, Math.Clamp(value, 0, 10)))
-                Raise(nameof(Color));
-        }
-    }
-
-    public Color Color
-    {
-        get
-        {
-            var t = _heat / 10.0;
-            return Color.FromRgb(
-                (byte)(Idle.R + ((Hot.R - Idle.R) * t)),
-                (byte)(Idle.G + ((Hot.G - Idle.G) * t)),
-                (byte)(Idle.B + ((Hot.B - Idle.B) * t)));
-        }
-    }
+    public Color Color => Idle;
 
     public override string ToString() => $"{From} → {To}";
 }
