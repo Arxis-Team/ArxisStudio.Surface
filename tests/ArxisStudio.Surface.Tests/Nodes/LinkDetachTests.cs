@@ -36,6 +36,7 @@ public class LinkDetachTests
 
             Nodes.Editor.ReconnectRequested += (_, e) => Reconnects.Add(e);
             Nodes.Editor.LinkDeleteRequested += (_, e) => Deletes.Add(e);
+            Nodes.Editor.ConnectDropped += (_, e) => Drops.Add(e);
         }
 
         public NodeStand Nodes { get; }
@@ -49,6 +50,8 @@ public class LinkDetachTests
         public List<ReconnectRequestedEventArgs> Reconnects { get; } = new();
 
         public List<LinkDeleteRequestedEventArgs> Deletes { get; } = new();
+
+        public List<ConnectDroppedEventArgs> Drops { get; } = new();
 
         /// <summary>
         /// Точка на связи: у источника при малом параметре, у цели при большом.
@@ -169,6 +172,7 @@ public class LinkDetachTests
         var request = Assert.Single(stand.Deletes);
         Assert.Equal([stand.Data], request.Links);
         Assert.Empty(stand.Reconnects);
+        Assert.Empty(stand.Drops);
     }
 
     [AvaloniaFact]

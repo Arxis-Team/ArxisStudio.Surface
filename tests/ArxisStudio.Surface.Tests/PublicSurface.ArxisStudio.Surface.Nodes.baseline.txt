@@ -1,3 +1,9 @@
+sealed class ArxisStudio.Surface.Nodes.ConnectDroppedEventArgs : EventArgs
+    ctor .ctor(Object, PortDirection, Point, Point)
+    property Object Port { get; }
+    property Point Location { get; }
+    property Point ViewportPoint { get; }
+    property PortDirection Direction { get; }
 sealed class ArxisStudio.Surface.Nodes.ConnectRequestedEventArgs : EventArgs
     ctor .ctor(Object, Object)
     property Boolean Handled { get; set; }
@@ -107,6 +113,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia PortNodeBindingProperty -> PortNodeBinding : BindingBase (styled) = null
     avalonia SelectedLinksProperty -> SelectedLinks : IReadOnlyList<Object> (direct)
     ctor .ctor()
+    event EventHandler<ConnectDroppedEventArgs> ConnectDropped
     event EventHandler<ConnectRequestedEventArgs> ConnectRequested
     event EventHandler<ConnectValidatingEventArgs> ConnectValidating
     event EventHandler<LinkDeleteRequestedEventArgs> LinkDeleteRequested

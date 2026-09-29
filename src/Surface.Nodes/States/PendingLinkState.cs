@@ -124,6 +124,28 @@ internal sealed class PendingLinkState : EditorState
             var (source, target) = Normalise(accepted);
             _editor.RequestConnect(source, target);
         }
+        else if (candidate == null)
+        {
+            ReportDrop(e.GetPosition(_editor));
+        }
+    }
+
+    /// <summary>
+    /// Связь отпущена мимо портов — сообщение хосту (ADR 0018).
+    /// </summary>
+    /// <remarks>
+    /// Отпускание на своём же порте — щелчок по нему, а не бросок: порт жест начинает на нажатии, и
+    /// без этой проверки каждый щелчок по пину открывал бы хосту меню. Свой порт кандидатом не
+    /// бывает, поэтому он проверяется здесь, той же рамкой с радиусом захвата.
+    /// </remarks>
+    private void ReportDrop(Point screen)
+    {
+        var world = _editor.GetWorldPosition(screen);
+        var radius = _editor.PortCaptureRadius / Math.Max(_editor.ViewportZoom, 0.0001);
+        if (_origin.TryGetWorldBounds(out var own) && own.Inflate(radius).Contains(world))
+            return;
+
+        _editor.ReportConnectDropped(_originKey, _origin.Direction, world, screen);
     }
 
     /// <summary>

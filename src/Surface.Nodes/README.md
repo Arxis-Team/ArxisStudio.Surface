@@ -113,6 +113,7 @@ editor.ConnectRequested += (_, e) =>
 editor.ReconnectRequested += (_, e) => e.Handled = graph.Reconnect(e.Link, e.End, e.NewPort);
 editor.LinkDeleteRequested += (_, e) => e.Handled = graph.RemoveLinks(e.Links);
 editor.LinkSplitRequested += (_, e) => e.Handled = graph.InsertReroute(e.Link, e.Location);
+editor.ConnectDropped += (_, e) => menu.OpenFor(e.Port, e.Location, e.ViewportPoint);
 ```
 
 | Событие | Аргументы | Когда |
@@ -122,11 +123,18 @@ editor.LinkSplitRequested += (_, e) => e.Handled = graph.InsertReroute(e.Link, e
 | `ReconnectRequested` | `Link`, `End` (`Source`/`Target`), `OldPort`, `NewPort`, `Handled` | отцеплённый конец брошен на другой порт |
 | `LinkDeleteRequested` | `Links`, `Handled` | `Delete` по выбранным связям, конец брошен в пустоту, разрез |
 | `LinkSplitRequested` | `Link`, `Location`, `Handled` | двойной щелчок по связи |
+| `ConnectDropped` | `Port`, `Direction`, `Location`, `ViewportPoint` | новая связь отпущена мимо портов; сообщение без `Handled` (ADR 0018) |
 
 Правила графа — «во вход одна связь», запрет циклов, совместимость типов — живут в
 `ConnectValidating`. Он спрашивается и о новой связи, и об отцеплённом конце и называет перецепляемую
 связь: иначе «во вход одна связь» отказало бы связи, которая переносит свой же конец. **Источник —
 всегда выход**, в какую сторону ни тянули.
+
+`ConnectDropped` — повод для меню действий, как у Blueprint: провод из пина, брошенный в пустоту,
+открывает у хоста список узлов, способных его принять, и новый узел встаёт в `Location` уже
+подключённым. Меню хост вызывает сам — `RequestContextAsync(SurfaceContextSource.Programmatic,
+e.ViewportPoint)` своим поставщиком действий. Связь, отпущенная на отказавший порт или на свой же порт,
+сюда не приходит; отцеплённый конец в пустоте по-прежнему просит `LinkDeleteRequested`.
 
 Структурные правки хост кладёт в `SurfaceHistory` своей реализацией `ISurfaceChange` — тогда `Ctrl + Z`
 отменяет их вместе с перетаскиванием узлов:
@@ -140,7 +148,7 @@ history.Push(new LinkAdded(graph.Links, link));   // ISurfaceChange: Revert/Reap
 
 | Жест | Результат |
 | --- | --- |
-| протяжка от порта | новая связь; порт под концом показывает `:accepting` или `:refusing` ещё до отпускания |
+| протяжка от порта | новая связь; порт под концом показывает `:accepting` или `:refusing` ещё до отпускания; отпущенная мимо портов — `ConnectDropped` |
 | щелчок по связи | выбор; с `AdditiveSelectionModifiers` — переключение |
 | `Delete` при выбранных связях | `LinkDeleteRequested` |
 | протяжка тела связи | отцепляет ближний к нажатию конец: на порт того же направления — `ReconnectRequested`, в пустоту — `LinkDeleteRequested`, на свой порт — ничего |
@@ -487,4 +495,6 @@ editor.ClearLinkPulses();                            // остановили о�
 Образцы: `samples/Nodes.Demo` — все запросы, узлы перенаправления, разрез, миникарта, 10 000 узлов,
 роли выполнения и делегата (наблюдатель, как Event Dispatcher), импульсы по волне вычисления, маркеры по
 типу провода привязкой; `samples/Nodes.StateMachine` — роль выполнения стилем, импульсы по сработавшему переходу,
-маркер редактора с выбором фигуры, контекстное меню.
+маркер редактора с выбором фигуры, контекстное меню; `samples/Nodes.Calculator` — граф в духе Blueprint:
+компактные узлы математики, литералы у неподключённых пинов, палитра действий с поиском по правой кнопке и
+по `ConnectDropped`, узел преобразования между типами, «Играть» с импульсами, строками на экране и журналом.

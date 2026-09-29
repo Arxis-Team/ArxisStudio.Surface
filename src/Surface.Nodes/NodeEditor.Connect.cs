@@ -59,6 +59,18 @@ public partial class NodeEditor
     public event EventHandler<ReconnectRequestedEventArgs>? ReconnectRequested;
 
     /// <summary>
+    /// Возникает, когда новую связь отпустили мимо портов (ADR 0018).
+    /// </summary>
+    /// <remarks>
+    /// Сообщение, а не просьба: редактор ничего не создаёт и не ждёт ответа. Хост, у которого связь в
+    /// пустоту что-то значит, — как меню действий Blueprint, подключающее новый узел к пину, — берёт
+    /// отсюда порт и точку. Отпущенная на порт, отказавший ей, или на свой же порт связь сюда не
+    /// приходит: человек целился в порт. Отцеплённый конец существующей связи в пустоте просит её
+    /// удалить (<see cref="LinkDeleteRequested"/>), а не это.
+    /// </remarks>
+    public event EventHandler<ConnectDroppedEventArgs>? ConnectDropped;
+
+    /// <summary>
     /// Превью протягиваемой связи из шаблона.
     /// </summary>
     internal PendingLinkPreview? PendingPreview { get; private set; }
@@ -115,6 +127,9 @@ public partial class NodeEditor
 
         return args.Handled;
     }
+
+    internal void ReportConnectDropped(object port, PortDirection direction, Point location, Point viewportPoint) =>
+        ConnectDropped?.Invoke(this, new ConnectDroppedEventArgs(port, direction, location, viewportPoint));
 
     internal bool RequestReconnect(object link, LinkEnd end, object oldPort, object newPort)
     {

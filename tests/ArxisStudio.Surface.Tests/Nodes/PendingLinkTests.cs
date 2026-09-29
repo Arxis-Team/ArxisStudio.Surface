@@ -251,6 +251,62 @@ public class PendingLinkTests
         Assert.False(stand.Editor.PendingPreview!.IsVisible, "Превью обязано погаснуть с концом жеста.");
     }
 
+    private static List<ConnectDroppedEventArgs> RecordDrops(NodeStand stand)
+    {
+        var drops = new List<ConnectDroppedEventArgs>();
+        stand.Editor.ConnectDropped += (_, e) => drops.Add(e);
+        return drops;
+    }
+
+    [AvaloniaFact]
+    public void A_Release_On_The_Empty_Canvas_Reports_The_Port_And_The_Point()
+    {
+        // Как у Blueprint: провод, брошенный в пустоту, — повод хосту открыть меню действий по типу пина
+        // и поставить узел в точку отпускания (ADR 0018).
+        var stand = Create();
+        var drops = RecordDrops(stand);
+        var shift = new Vector(50, 40);
+        stand.Editor.ViewportLocation = new Point(shift.X, shift.Y);
+        stand.RunLayout();
+        var screen = new Point(700, 500);
+
+        DragLink(stand, Pin(stand, 1, PortDirection.Input) - shift, screen);
+
+        var drop = Assert.Single(drops);
+        Assert.Equal(NodeStand.In(1), drop.Port);
+        Assert.Equal(PortDirection.Input, drop.Direction);
+        Assert.Equal(screen, drop.ViewportPoint);
+        Assert.Equal(screen + shift, drop.Location);
+    }
+
+    [AvaloniaFact]
+    public void A_Refusing_Port_Is_Not_A_Drop()
+    {
+        // Человек целился в порт: меню действий вместо отказа было бы наказанием за промах.
+        var stand = Create();
+        var drops = RecordDrops(stand);
+        stand.Editor.ConnectValidating += (_, e) => e.IsAllowed = false;
+
+        DragLink(stand, Pin(stand, 0, PortDirection.Output), Pin(stand, 1, PortDirection.Input));
+
+        Assert.Empty(drops);
+    }
+
+    [AvaloniaFact]
+    public void A_Click_On_A_Port_Is_Not_A_Drop()
+    {
+        // Порт начинает жест нажатием, и без проверки каждый щелчок по пину открывал бы хосту меню.
+        var stand = Create();
+        var drops = RecordDrops(stand);
+        var pin = Pin(stand, 0, PortDirection.Output);
+
+        Press(stand, pin);
+        MoveTo(stand, pin + new Vector(3, 2));
+        stand.Window.MouseUp(pin + new Vector(3, 2), MouseButton.Left);
+
+        Assert.Empty(drops);
+    }
+
     [AvaloniaFact]
     public void The_Preview_Follows_The_Pointer_And_Snaps_To_An_Accepting_Pin()
     {

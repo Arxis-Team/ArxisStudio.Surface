@@ -10,6 +10,7 @@ dotnet test tests/ArxisStudio.Surface.Tests/ArxisStudio.Surface.Tests.csproj
 dotnet run --project samples/UiDesigner.Demo # запуск демо дизайнера интерфейса
 dotnet run --project samples/Nodes.Demo        # запуск демо редактора узлов
 dotnet run --project samples/Nodes.StateMachine # машина состояний на узлах, ведёт интерфейс Avalonia
+dotnet run --project samples/Nodes.Calculator  # калькулятор в духе Blueprint
 ```
 
 Один тест: `dotnet test --filter "FullyQualifiedName~SelectionTests.Click_On_Nested_Control_Selects_It_As_Nested_Target"`.
@@ -63,6 +64,7 @@ dotnet build src/Surface.UiDesigner/ArxisStudio.Surface.UiDesigner.csproj
 | `samples/UiDesigner.Demo` | `net10.0` | демо дизайнера интерфейса, `AvaloniaUseCompiledBindingsByDefault = true` |
 | `samples/Nodes.Demo` | `net10.0` | демо редактора узлов — хост на одном публичном API, свой `CLAUDE.md` |
 | `samples/Nodes.StateMachine` | `net10.0` | машина состояний на узлах: запуск с показом как в Unreal, контекстное меню, живое приложение Avalonia; свой `CLAUDE.md` |
+| `samples/Nodes.Calculator` | `net10.0` | калькулятор в духе Blueprint: компактные узлы, литералы пинов, палитра действий с поиском, преобразования типов, «Играть»; свой `CLAUDE.md` |
 
 Общее у четырёх библиотек — TFM, документация, метаданные пакета — лежит в `src/Library.props`, и каждая импортирует его одной строкой.
 
@@ -985,7 +987,9 @@ SurfaceView`, `Node : SurfaceItem`, порты и связи. Первый эт�
 выполнившем. Правила графа — хоста, в `ConnectValidating`; он спрашивается и о новой связи, и об
 отцеплённом конце и называет перецепляемую связь (`Link`) — иначе «во вход — одна связь» отказало
 бы связи, переносящей свой выход. Источник — всегда выход, в какую сторону ни тянули. Порт ловит
-протягиваемый конец в радиусе `PortCaptureRadius` пикселей экрана и притягивает его к штырьку.
+протягиваемый конец в радиусе `PortCaptureRadius` пикселей экрана и притягивает его к штырьку. Новая
+связь, отпущенная мимо портов, поднимает `ConnectDropped` — сообщение без `Handled` с портом и точкой:
+меню действий и новый узел — хоста (ADR 0018). Отказавший порт и свой порт броском не считаются.
 
 **Отцепляют протяжкой тела связи**: уходит ближний к нажатию конец (по параметру кривой — она
 симметрична, и 0,5 делит её пополам и по длине). На другой порт того же направления — перецепить,
@@ -1195,7 +1199,8 @@ Blueprint: импульсы `PulseLink` и маркеры `LinkMarker`, кажд
 штырька (`Port.PinShape`, `PinBrush`) и толщина провода из модели (`LinkThicknessBinding`), смысл и
 правила — у хоста (ADR 0016). Двенадцатый — роли пинов: базовый вид выполнения и делегата (Event
 Dispatcher) даёт тема по `Port.PinRole` и `LinkRoleBinding`; хост сильнее роли, `null` хоста — вид роли
-(ADR 0017). Числа — в «Стенде стоимости» и в ADR. Кандидаты
+(ADR 0017). Тринадцатый — провод, отпущенный в пустоту, сообщает хосту порт и точку (`ConnectDropped`),
+и хост открывает меню действий, как Blueprint (ADR 0018). Числа — в «Стенде стоимости» и в ADR. Кандидаты
 на следующий: тело узла, которое разворачивание
 строит заново, — пул в дереве, как у `VirtualizingStackPanel`; кадр перетаскивания всего большого выбора
 — 99 мс на 10 000 узлах, почти всё — запись привязкой и её перечитывание, отвергнутый путь «двигать
@@ -1226,6 +1231,7 @@ Dispatcher) даёт тема по `Port.PinRole` и `LinkRoleBinding`; хост
 | [0015](docs/adr/0015-the-wire-bends-like-blueprint.md) | Касательная провода — по правилу Blueprint: расстояние по каждой оси с пределом и множителем, отдельно вперёд и назад, плечо Безье — треть; числа — `LinkCurve` |
 | [0016](docs/adr/0016-execution-pins-are-the-hosts-kind.md) | Пины выполнения: библиотека даёт вид — `Port.PinShape`/`PinGeometry`/`PinBrush`, `LinkThicknessBinding`, — смысл и правила соединения остаются хосту; штырёк — `Path#PART_Pin` |
 | [0017](docs/adr/0017-pin-roles-give-the-base-look.md) | Роли пинов `Data`/`Execution`/`Delegate` — вид без правил: пин и провод роли из темы (`PinRole`, `LinkRoleBinding`); источники вида — хост, роль, тема; `null` хоста — вид роли, `PinShape` — `PortShape?` |
+| [0018](docs/adr/0018-a-wire-dropped-on-empty-canvas-is-the-hosts-cue.md) | Новая связь, отпущенная мимо портов, — `ConnectDropped`: сообщение с портом, направлением и точкой, без `Handled`; меню и узел — хоста; отказавший и свой порт — не бросок, отцеплённый конец по-прежнему удаляет |
 
 `SelectTarget(control, additive)` — единственный публичный способ задать выделение, который меняет **оба** слоя. Внутри него порядок существенный и в обратном тихо не работает: очистка индексного выбора приходит в обработчик, а тот на пустом выборе вычищает и слой target'ов. Оба слоя обязаны меняться вместе — см. «Двухуровневое выделение».
 
