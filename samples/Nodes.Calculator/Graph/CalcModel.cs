@@ -288,11 +288,30 @@ public sealed class CalcPort : Observable
         set
         {
             if (Set(ref _display, value))
+            {
                 Raise(nameof(HasDisplay));
+                Raise(nameof(ShowsValue));
+            }
         }
     }
 
     public bool HasDisplay => _display != null;
+
+    /// <summary>
+    /// Показывать ли пузырь значения. У узла преобразования его нет, как у Blueprint: то же значение видно
+    /// на следующем узле, а место под него вдвое раздувало бы маленький «•».
+    /// </summary>
+    public bool ShowsValue => HasDisplay && !Node.IsConversion;
+
+    /// <summary>
+    /// Значение выхода — текст: его место шире числового.
+    /// </summary>
+    public bool IsTextValue => _type == PinType.String;
+
+    /// <summary>
+    /// Значение выхода — «истина» или «ложь».
+    /// </summary>
+    public bool IsFlagValue => _type == PinType.Boolean;
 
     internal void Rename()
     {

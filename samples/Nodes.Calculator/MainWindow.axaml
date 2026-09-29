@@ -60,16 +60,37 @@
             <Setter Property="Margin" Value="0" />
         </Style>
 
-        <!-- Значение выхода по живому счёту — пузырь, как «Watch this value» у Blueprint. -->
+        <!--
+            Значение выхода — пузырь, как «Watch this value» у Blueprint. Место у него постоянное по типу
+            пина: по пузырю по размеру значения узел рос и сжимался на каждом проходе цикла, и соседние
+            провода дёргались вместе с ним. Цифры одной ширины (tnum) и прижаты вправо — разряды стоят на
+            месте; не влезшее обрезается многоточием, целиком оно — в подсказке.
+        -->
         <Style Selector="Border.value">
             <Setter Property="Background" Value="#2EFFFFFF" />
             <Setter Property="CornerRadius" Value="3" />
             <Setter Property="Padding" Value="5,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Width" Value="52" />
+        </Style>
+
+        <Style Selector="Border.value.flag">
+            <Setter Property="Width" Value="54" />
+        </Style>
+
+        <Style Selector="Border.value.text">
+            <Setter Property="Width" Value="108" />
         </Style>
 
         <Style Selector="Border.value TextBlock">
             <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontFeatures" Value="+tnum" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style Selector="Border.value.text TextBlock, Border.value.flag TextBlock">
+            <Setter Property="TextAlignment" Value="Left" />
         </Style>
 
         <Style Selector="Border.warning">
@@ -218,7 +239,9 @@
                                             <surface:Port Direction="Output" Data="{Binding}"
                                                           PinRole="{Binding Role}" PinBrush="{Binding Brush}">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <Border Classes="value" IsVisible="{Binding HasDisplay}">
+                                                    <Border Classes="value" Classes.text="{Binding IsTextValue}"
+                                                            Classes.flag="{Binding IsFlagValue}"
+                                                            IsVisible="{Binding ShowsValue}" ToolTip.Tip="{Binding Display}">
                                                         <TextBlock Text="{Binding Display}" />
                                                     </Border>
                                                     <TextBlock Text="{Binding Name}" IsVisible="{Binding HasName}" VerticalAlignment="Center" />
