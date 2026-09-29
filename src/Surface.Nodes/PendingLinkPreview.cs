@@ -43,9 +43,9 @@ internal sealed class PendingLinkPreview : Control
         IsVisible = false;
     }
 
-    public void Show(Point source, Point target)
+    public void Show(Point source, Point target, LinkCurve? curve = null)
     {
-        Geometry = new LinkGeometry(source, target);
+        Geometry = new LinkGeometry(source, target, curve: curve);
         WorldBounds = Geometry.Bounds.Inflate(StrokeThickness);
         IsActive = true;
         IsVisible = true;

@@ -172,6 +172,21 @@ history.Push(new LinkAdded(graph.Links, link));   // ISurfaceChange: Revert/Reap
 делать: `NodeEditorKeyCommands.CancelLink` (`nodes.cancelLink`), `ClearLinkSelection`
 (`nodes.clearLinkSelection`), `DeleteLinks` (`nodes.deleteLinks`).
 
+## Кривая провода
+
+Провод — кубическая кривая с горизонтальными касательными: из выхода вправо, во вход слева. Длина
+касательной — по правилу Blueprint (ADR 0015): `min(|dx|, предел) · множитель + min(|dy|, предел) ·
+множитель`, плечо кривой — треть. Вперёд — 1000 и 1 по обеим осям, назад — 200 и 3 по горизонтали,
+200 и 1,5 по вертикали; плечо назад не короче 40. Числа задаёт `NodeEditor.LinkCurve`:
+
+```csharp
+editor.LinkCurve = new LinkCurve { BackwardHorizontalFactor = 2, BackwardVerticalFactor = 1 };
+```
+
+Новое значение пересчитывает все провода; правка полей уже заданного объекта — нет. Длинный почти
+горизонтальный провод назад остаётся вытянутой петлёй у портов, как в Blueprint; круглую даёт узел
+перенаправления на нём.
+
 ## Излом связи: узел перенаправления
 
 Излом — это узел, а не точка на связи (ADR 0005). Связь в библиотеке остаётся одной кубической кривой
@@ -237,6 +252,7 @@ editor.ClearLinkPulses();                            // остановили о�
 
 | API | Что делает |
 |---|---|
+| `LinkCurve` | изгиб проводов: пределы и множители касательной вперёд и назад (ADR 0015) |
 | `PulseLink(link, pulse?)` / `ClearLinkPulses()` | зажечь импульс по проводу / погасить все |
 | `IsLinkPulseEnabled` | выключатель импульсов: выключенный гасит горящие и не зажигает новые |
 | `LinkPulse` | вид импульса по умолчанию: `Shape`, `Geometry`, `Size`, `Speed` (192), `Spacing` (64), `Lifetime` (1 с), `FadeIn`, `FadeOut`, `Brush`, `GlowBrush`, `GlowThickness` |

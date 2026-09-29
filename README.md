@@ -57,7 +57,7 @@ xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
 
 ## Публичная поверхность
 
-86 публичных типов: 43 в ядре, 16 в инструментах, 11 в дизайнере интерфейса, 16 в редакторе узлов.
+87 публичных типов: 43 в ядре, 16 в инструментах, 11 в дизайнере интерфейса, 17 в редакторе узлов.
 Слепок каждой сборки — до члена и значения по умолчанию у `AvaloniaProperty` — лежит в
 `tests/ArxisStudio.Surface.Tests/PublicSurface.<сборка>.baseline.txt`; новый публичный член роняет
 `PublicSurfaceTests`, пока слепок не обновлён. Машины состояний, стратегии размещения, резолверы
@@ -112,6 +112,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0012](docs/adr/0012-large-layers-draw-through-skia.md) | Большие слои рисуют Skia напрямую, без Skia — прежний путь |
 | [0013](docs/adr/0013-the-reroute-node-faces-the-wire.md) | Узел перенаправления разворачивается по проводу; повисший снимает хост; упрощённый вид узлов — ниже 0,3 |
 | [0014](docs/adr/0014-the-wire-shows-the-flow.md) | Импульсы `PulseLink` и маркеры `LinkMarker` на проводах, у каждых свой выключатель |
+| [0015](docs/adr/0015-the-wire-bends-like-blueprint.md) | Касательная провода — по правилу и числам Blueprint, отдельно вперёд и назад; настройка — `LinkCurve` |
 
 ## Лицензия
 

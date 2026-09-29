@@ -36,6 +36,12 @@ public partial class NodeEditor
         AvaloniaProperty.Register<NodeEditor, BindingBase?>(nameof(LinkMarkerBinding));
 
     /// <summary>
+    /// Идентификатор свойства <see cref="LinkCurve"/>.
+    /// </summary>
+    public static readonly StyledProperty<LinkCurve?> LinkCurveProperty =
+        AvaloniaProperty.Register<NodeEditor, LinkCurve?>(nameof(LinkCurve));
+
+    /// <summary>
     /// Идентификатор свойства <see cref="LinkPulse"/>.
     /// </summary>
     public static readonly StyledProperty<LinkPulse?> LinkPulseProperty =
@@ -117,6 +123,18 @@ public partial class NodeEditor
     {
         get => GetValue(LinkPulseProperty);
         set => SetValue(LinkPulseProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает изгиб проводов. Без значения — правило и числа Blueprint (ADR 0015).
+    /// </summary>
+    /// <remarks>
+    /// Новое значение пересчитывает кривые всех связей; правка полей уже заданного объекта — нет.
+    /// </remarks>
+    public LinkCurve? LinkCurve
+    {
+        get => GetValue(LinkCurveProperty);
+        set => SetValue(LinkCurveProperty, value);
     }
 
     /// <summary>
@@ -250,6 +268,10 @@ public partial class NodeEditor
         else if (change.Property == AreLinkMarkersVisibleProperty || change.Property == LinkMarkerProperty)
         {
             OnLinkFlowChanged();
+        }
+        else if (change.Property == LinkCurveProperty)
+        {
+            RefreshAllLinks();
         }
     }
 

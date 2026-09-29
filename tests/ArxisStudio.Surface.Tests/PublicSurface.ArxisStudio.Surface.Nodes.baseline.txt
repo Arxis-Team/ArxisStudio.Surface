@@ -28,6 +28,16 @@ class ArxisStudio.Surface.Nodes.Link : Control
     property Object Target { get; set; }
     property Point SourceAnchor { get; }
     property Point TargetAnchor { get; }
+sealed class ArxisStudio.Surface.Nodes.LinkCurve
+    ctor .ctor()
+    property Double BackwardHorizontalFactor { get; set; }
+    property Double BackwardHorizontalRange { get; set; }
+    property Double BackwardVerticalFactor { get; set; }
+    property Double BackwardVerticalRange { get; set; }
+    property Double ForwardHorizontalFactor { get; set; }
+    property Double ForwardHorizontalRange { get; set; }
+    property Double ForwardVerticalFactor { get; set; }
+    property Double ForwardVerticalRange { get; set; }
 sealed class ArxisStudio.Surface.Nodes.LinkDeleteRequestedEventArgs : EventArgs
     ctor .ctor(IReadOnlyList<Object>)
     property Boolean Handled { get; set; }
@@ -81,6 +91,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     avalonia AreLinkMarkersVisibleProperty -> AreLinkMarkersVisible : Boolean (styled) = true
     avalonia IsLinkPulseEnabledProperty -> IsLinkPulseEnabled : Boolean (styled) = true
     avalonia ItemHeaderBindingProperty -> ItemHeaderBinding : BindingBase (styled) = null
+    avalonia LinkCurveProperty -> LinkCurve : LinkCurve (styled) = null
     avalonia LinkCutModifiersProperty -> LinkCutModifiers : KeyModifiers (styled) = Alt
     avalonia LinkHitToleranceProperty -> LinkHitTolerance : Double (styled) = 6
     avalonia LinkMarkerBindingProperty -> LinkMarkerBinding : BindingBase (styled) = null
@@ -125,6 +136,7 @@ class ArxisStudio.Surface.Nodes.NodeEditor : SurfaceView
     property IEnumerable Links { get; set; }
     property IReadOnlyList<Object> SelectedLinks { get; }
     property KeyModifiers LinkCutModifiers { get; set; }
+    property LinkCurve LinkCurve { get; set; }
     property LinkMarker LinkMarker { get; set; }
     property LinkPulse LinkPulse { get; set; }
 static class ArxisStudio.Surface.Nodes.NodeEditorKeyCommands

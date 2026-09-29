@@ -158,7 +158,7 @@ internal sealed class PendingLinkState : EditorState
             ? (_originAnchor, loose)
             : (loose, _originAnchor);
 
-        _editor.PendingPreview?.Show(source, target);
+        _editor.PendingPreview?.Show(source, target, _editor.LinkCurve);
     }
 
     /// <summary>

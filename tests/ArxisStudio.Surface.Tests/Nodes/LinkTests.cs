@@ -48,6 +48,21 @@ public class LinkTests
     }
 
     [AvaloniaFact]
+    public void A_New_Link_Curve_Reshapes_Every_Wire()
+    {
+        // LinkCurve редактора пересчитывает кривые сразу, без сдвига узлов.
+        var stand = Create(new Point(100, 100), new Point(400, 200));
+        var link = stand.LinkOf(stand.Connect(0, 1));
+        var before = link.Geometry.SourceControl.X - link.Geometry.Source.X;
+
+        stand.Editor.LinkCurve = new LinkCurve { ForwardHorizontalFactor = 0, ForwardVerticalFactor = 0 };
+        stand.RunLayout();
+
+        Assert.True(before > 0, "у провода вперёд плечо положительное");
+        Assert.Equal(0, link.Geometry.SourceControl.X - link.Geometry.Source.X, 6);
+    }
+
+    [AvaloniaFact]
     public void A_Link_Follows_A_Dragged_Node()
     {
         var stand = Create(new Point(100, 100), new Point(400, 200));

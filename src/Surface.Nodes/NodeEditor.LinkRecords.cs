@@ -117,7 +117,8 @@ public partial class NodeEditor
                 source,
                 target,
                 IsReversedEnd(record.Source, LinkEnd.Source),
-                IsReversedEnd(record.Target, LinkEnd.Target));
+                IsReversedEnd(record.Target, LinkEnd.Target),
+                LinkCurve);
             bent = !moved && (!Near(record.Geometry.SourceControl, geometry.SourceControl)
                 || !Near(record.Geometry.TargetControl, geometry.TargetControl));
             record.Geometry = geometry;

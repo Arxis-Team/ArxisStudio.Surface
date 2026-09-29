@@ -9,9 +9,13 @@ namespace ArxisStudio.Surface.Nodes;
 /// <remarks>
 /// Касательные горизонтальны: из выхода связь уходит вправо, во вход приходит слева — так же, как
 /// стоят штырьки портов. Развёрнутый конец — у развёрнутого узла перенаправления (ADR 0013) — смотрит
-/// в обратную сторону: из выхода влево, во вход справа. Плечо касательной — половина горизонтального расстояния, но не короче
-/// <see cref="MinTangent"/>: иначе связь к узлу, стоящему левее, разворачивалась бы петлёй без
-/// изгиба, прямо сквозь оба узла.
+/// в обратную сторону: из выхода влево, во вход справа.
+/// <para>
+/// Длина касательной — по правилу Blueprint (<see cref="LinkCurve"/>, ADR 0015): от расстояния по обеим
+/// осям, отдельно для провода вперёд и назад; плечо кривой — треть эрмитовой касательной. Вперёд — вход
+/// лежит по ходу выхода: правее обычного выхода или левее развёрнутого. Плечо провода назад не короче
+/// <see cref="MinTangent"/>: иначе связь к узлу вплотную слева шла бы без петли, прямо сквозь оба узла.
+/// </para>
 /// <para>
 /// Расстояние до кривой меряется по ломаной из <see cref="Segments"/> отрезков. Арифметика не знает
 /// ни контролов, ни редактора — точки приходят готовыми, в мировых координатах, — поэтому её потом
@@ -24,12 +28,20 @@ internal readonly struct LinkGeometry
 
     public const int Segments = 24;
 
-    public LinkGeometry(Point source, Point target, bool sourceReversed = false, bool targetReversed = false)
+    public LinkGeometry(Point source, Point target, bool sourceReversed = false, bool targetReversed = false, LinkCurve? curve = null)
     {
         Source = source;
         Target = target;
 
-        var reach = Math.Max(Math.Abs(target.X - source.X) / 2, MinTangent);
+        var c = curve ?? LinkCurve.Default;
+        var dx = Math.Abs(target.X - source.X);
+        var dy = Math.Abs(target.Y - source.Y);
+        var forward = (sourceReversed ? source.X - target.X : target.X - source.X) >= 0;
+        var tangent = forward
+            ? (Math.Min(dx, c.ForwardHorizontalRange) * c.ForwardHorizontalFactor) + (Math.Min(dy, c.ForwardVerticalRange) * c.ForwardVerticalFactor)
+            : (Math.Min(dx, c.BackwardHorizontalRange) * c.BackwardHorizontalFactor) + (Math.Min(dy, c.BackwardVerticalRange) * c.BackwardVerticalFactor);
+
+        var reach = forward ? tangent / 3 : Math.Max(tangent / 3, MinTangent);
         SourceControl = source + new Vector(sourceReversed ? -reach : reach, 0);
         TargetControl = target - new Vector(targetReversed ? -reach : reach, 0);
     }

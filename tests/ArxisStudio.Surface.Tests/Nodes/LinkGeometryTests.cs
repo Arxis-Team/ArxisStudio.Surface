@@ -32,14 +32,54 @@ public class LinkGeometryTests
     }
 
     [Fact]
-    public void A_Target_To_The_Left_Still_Gets_A_Bend()
+    public void A_Forward_Wire_Bends_By_Both_Axes()
     {
-        // Вход левее выхода: половина расстояния по горизонтали дала бы петлю без изгиба прямо
-        // сквозь узлы — плечо не короче наименьшего.
-        var g = new LinkGeometry(new Point(200, 0), new Point(190, 100));
+        // Правило Blueprint (ADR 0015): касательная вперёд — |dx| + |dy|, плечо — её треть. Почти
+        // вертикальный провод изгибается плавно, а не идёт прямо с изломом у порта.
+        var g = new LinkGeometry(new Point(0, 0), new Point(30, 270));
 
-        Assert.Equal(LinkGeometry.MinTangent, g.SourceControl.X - g.Source.X, Precision);
-        Assert.Equal(LinkGeometry.MinTangent, g.Target.X - g.TargetControl.X, Precision);
+        Assert.Equal(100, g.SourceControl.X - g.Source.X, Precision);
+        Assert.Equal(100, g.Target.X - g.TargetControl.X, Precision);
+    }
+
+    [Fact]
+    public void A_Backward_Wire_Loops_Wide()
+    {
+        // Назад — 3 · min(|dx|, 200) + 1,5 · min(|dy|, 200): петля обходит узлы, а не делает шпильку у
+        // порта. Вход вплотную слева — не короче наименьшего плеча.
+        var g = new LinkGeometry(new Point(200, 0), new Point(50, 170));
+        Assert.Equal(((3 * 150) + (1.5 * 170)) / 3, g.SourceControl.X - g.Source.X, Precision);
+
+        var tight = new LinkGeometry(new Point(200, 0), new Point(195, 0));
+        Assert.Equal(LinkGeometry.MinTangent, tight.SourceControl.X - tight.Source.X, Precision);
+    }
+
+    [Fact]
+    public void The_Tangent_Stops_Growing_Past_Its_Range()
+    {
+        var forward = new LinkGeometry(new Point(0, 0), new Point(5000, 0));
+        Assert.Equal(1000.0 / 3, forward.SourceControl.X - forward.Source.X, Precision);
+
+        var backward = new LinkGeometry(new Point(5000, 0), new Point(0, 5000));
+        Assert.Equal(((3 * 200) + (1.5 * 200)) / 3, backward.SourceControl.X - backward.Source.X, Precision);
+    }
+
+    [Fact]
+    public void A_Reversed_Source_Is_Forward_Towards_The_Left()
+    {
+        // Развёрнутый узел перенаправления выходит влево: вход левее — провод вперёд, короткое плечо.
+        var g = new LinkGeometry(new Point(200, 0), new Point(50, 0), sourceReversed: true);
+
+        Assert.Equal(-50, g.SourceControl.X - g.Source.X, Precision);
+    }
+
+    [Fact]
+    public void The_Host_Curve_Replaces_The_Numbers()
+    {
+        var curve = new LinkCurve { ForwardHorizontalFactor = 3, ForwardVerticalFactor = 0 };
+        var g = new LinkGeometry(new Point(0, 0), new Point(100, 400), curve: curve);
+
+        Assert.Equal(100, g.SourceControl.X - g.Source.X, Precision);
     }
 
     [Fact]
