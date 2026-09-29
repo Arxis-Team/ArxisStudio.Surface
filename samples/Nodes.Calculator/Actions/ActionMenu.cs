@@ -83,11 +83,11 @@ internal sealed class ActionMenu(MainWindow window) : ISurfaceContextActionProvi
             return items;
         }
 
-        var hasBegin = window.Document.Nodes.Any(n => n.Definition == NodeCatalog.BeginPlay);
+        var hasBegin = window.Document.Nodes.Any(n => n.Definition == NodeCatalog.Startup);
         foreach (var definition in NodeCatalog.All)
         {
-            // «Начало игры» у Blueprint одно на граф.
-            var enabled = definition != NodeCatalog.BeginPlay || !hasBegin;
+            // Событие запуска у Blueprint одно на граф, как Begin Play.
+            var enabled = definition != NodeCatalog.Startup || !hasBegin;
             Section(definition.Category).Add(Leaf(definition, null, at, origin, enabled));
         }
 

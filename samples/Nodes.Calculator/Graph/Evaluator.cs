@@ -81,14 +81,14 @@ public sealed class Evaluator
     }
 
     /// <summary>
-    /// Прогон от каждого «Начала игры» в порядке узлов.
+    /// Прогон от каждого события «При запуске» в порядке узлов.
     /// </summary>
     public static Trace Run(CalcDocument document)
     {
         var evaluator = new Evaluator(document, running: true);
         try
         {
-            foreach (var begin in document.Nodes.Where(n => n.Definition == NodeCatalog.BeginPlay).ToList())
+            foreach (var begin in document.Nodes.Where(n => n.Definition == NodeCatalog.Startup).ToList())
                 evaluator.Fire(begin.Outputs[0]);
         }
         catch (LoopLimitException limit)

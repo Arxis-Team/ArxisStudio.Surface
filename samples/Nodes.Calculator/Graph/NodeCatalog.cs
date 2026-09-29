@@ -5,16 +5,16 @@ namespace Nodes.Calculator.Graph;
 /// поток выполнения, математика компактными узлами, строки, преобразования, утилиты, переменные.
 /// </summary>
 /// <remarks>
-/// Узлы выполнения — «Начало игры», «Вывести строку», «Ветвление», «Последовательность», «Цикл For»,
+/// Узлы выполнения — «При запуске», «Вывести строку», «Ветвление», «Последовательность», «Цикл For»,
 /// «Задать» — считает <see cref="Evaluator"/> по <see cref="NodeDefinition.Id"/>; чистые узлы несут свой
 /// счёт в <see cref="NodeDefinition.Compute"/>.
 /// </remarks>
 public static class NodeCatalog
 {
-    public static readonly NodeDefinition BeginPlay = new()
+    public static readonly NodeDefinition Startup = new()
     {
-        Id = "begin-play", Title = "Начало игры", Category = "События", Look = NodeLook.Event,
-        Keywords = "begin play event старт запуск событие",
+        Id = "startup", Title = "При запуске", Category = "События", Look = NodeLook.Event,
+        Keywords = "begin play event start старт запуск начало событие",
         Outputs = [Exec()]
     };
 
@@ -173,7 +173,7 @@ public static class NodeCatalog
     /// </summary>
     public static readonly NodeDefinition[] All =
     [
-        BeginPlay,
+        Startup,
         Branch, Sequence, ForLoop,
         Add, Subtract, Multiply, Divide, Remainder, Power, SquareRoot, Absolute, Min, Max, Round,
         Greater, Less, GreaterOrEqual, LessOrEqual, Equal,
