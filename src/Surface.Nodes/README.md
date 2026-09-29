@@ -374,7 +374,8 @@ editor.ClearLinkPulses();                            // остановили о�
 
 | Что | Чем |
 | --- | --- |
-| карточка и область заголовка | своя `ControlTheme` для `Node`: части `PART_Card`, `PART_Header`, `PART_HeaderPresenter`, `PART_ContentPresenter`, псевдоклассы `:header`, `:accent`, `:light-accent` |
+| карточка и область заголовка | своя `ControlTheme` для `Node`: части `PART_Card`, `PART_Header`, `PART_HeaderPresenter`, `PART_ContentPresenter`, `PART_Outline`, псевдоклассы `:header`, `:accent`, `:light-accent` |
+| выбор и подсветка узла | `PART_Outline` — обводка поверх карточки толщиной `NodeEditor.Node.SelectedBorderThickness`, места не занимает; тема красит её на `:selected`, хост — для своих состояний (`surface|Node.active /template/ Border#PART_Outline`). Рамку карточки для этого не утолщают: содержимое уехало бы внутрь, и узел прыгал бы на пиксель |
 | вид заголовка | `Node.HeaderTemplate` — стилем узла |
 | тело узла | шаблон узла — `ItemTemplate` или `DataTemplates` |
 | штырёк | `Port.PinRole`, `PinShape`, `PinGeometry`, `PinBrush` — привязкой или стилем; ключи ролей `NodeEditor.Pin.*` |

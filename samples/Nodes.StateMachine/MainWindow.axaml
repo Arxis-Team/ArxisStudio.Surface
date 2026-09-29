@@ -14,13 +14,14 @@
             Запущенная машина — как отладка State Machine в Unreal: активное состояние в янтарной
             рамке, след покинутого состояния и сработавшего перехода — рамка тоньше и прозрачнее, и он
             гаснет. Класс контейнеру ставит окно по MachineNode.Look. Селектор с классом — триггер стиля,
-            и он сильнее значения, поставленного шаблоном карточки.
+            и он сильнее значения, поставленного темой. Красится обводка узла, а не рамка карточки: обводка
+            места не занимает, а толстая рамка карточки сдвигала бы содержимое и растила узел.
         -->
-        <Style Selector="surface|Node.active /template/ Border#PART_Card">
+        <Style Selector="surface|Node.active /template/ Border#PART_Outline">
             <Setter Property="BorderBrush" Value="#FFB300" />
             <Setter Property="BorderThickness" Value="3" />
         </Style>
-        <Style Selector="surface|Node.trace /template/ Border#PART_Card">
+        <Style Selector="surface|Node.trace /template/ Border#PART_Outline">
             <Setter Property="BorderBrush" Value="#99FFB300" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>

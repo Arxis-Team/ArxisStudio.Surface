@@ -4,7 +4,10 @@
 
     <!--
         Узел рисует свою карточку сам: у дизайнера интерфейса карточку рисует хост, а узел графа —
-        это и есть карточка. Выделение — рамкой той же карточки: ручек размера у узла нет.
+        это и есть карточка. Ручек размера у узла нет. Выделение — рамкой PART_Outline поверх карточки, а не
+        толщиной рамки самой карточки: толстая рамка карточки сдвигала бы содержимое внутрь и растила узел, и
+        выбранный узел прыгал бы на пиксель. Обводка места не занимает и в попадании не участвует; её же хост
+        красит для своих состояний узла (`surface|Node.active /template/ Border#PART_Outline`).
 
         Фон карточки непрозрачный, а у самого контейнера — Transparent: контейнер отвечает на
         нажатие всей площадью, и там, где карточка скруглена, тоже.
@@ -47,6 +50,11 @@
                                               ContentTemplate="{TemplateBinding ContentTemplate}" />
                         </DockPanel>
                     </Border>
+                    <Border Name="PART_Outline"
+                            BorderBrush="Transparent"
+                            BorderThickness="{DynamicResource NodeEditor.Node.SelectedBorderThickness}"
+                            CornerRadius="{DynamicResource NodeEditor.Node.CornerRadius}"
+                            IsHitTestVisible="False" />
                 </Grid>
             </ControlTemplate>
         </Setter>
@@ -55,9 +63,8 @@
             <Setter Property="BorderBrush" Value="{DynamicResource NodeEditor.Node.HoverBorderBrush}" />
         </Style>
 
-        <Style Selector="^:selected /template/ Border#PART_Card">
+        <Style Selector="^:selected /template/ Border#PART_Outline">
             <Setter Property="BorderBrush" Value="{DynamicResource NodeEditor.Node.SelectedBorderBrush}" />
-            <Setter Property="BorderThickness" Value="{DynamicResource NodeEditor.Node.SelectedBorderThickness}" />
         </Style>
 
         <Style Selector="^:header /template/ Border#PART_Header">
@@ -83,6 +90,10 @@
         <Style Selector="^:reroute /template/ Border#PART_Card">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="^:reroute /template/ Border#PART_Outline">
+            <Setter Property="IsVisible" Value="False" />
         </Style>
 
         <Style Selector="^:reroute /template/ Border#PART_Header">

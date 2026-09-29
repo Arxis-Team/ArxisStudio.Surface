@@ -116,6 +116,26 @@ public class NodeHeaderTests
         node.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
 
     [AvaloniaFact]
+    public void Selecting_A_Node_Changes_Neither_Its_Size_Nor_Where_Its_Body_Stands()
+    {
+        // Выбор рисует обводка поверх карточки. Толще рамка самой карточки — и содержимое уезжало
+        // внутрь, а узел подрастал: выбранный узел прыгал на пиксель и возвращался со снятием выбора.
+        var stand = Create();
+        var node = stand.Node(0);
+        var body = Part<ContentPresenter>(node, "PART_ContentPresenter");
+        var size = node.Bounds.Size;
+        var at = body.TranslatePoint(default, node);
+
+        stand.Editor.SelectTarget(node);
+        stand.RunLayout();
+
+        Assert.Contains(":selected", node.Classes);
+        Assert.Equal(size, node.Bounds.Size);
+        Assert.Equal(at, body.TranslatePoint(default, node));
+        Assert.Equal(stand.Resource("NodeEditor.Node.SelectedBorderBrush"), Part<Border>(node, "PART_Outline").BorderBrush);
+    }
+
+    [AvaloniaFact]
     public void A_Node_Takes_Its_Header_From_The_Binding()
     {
         var stand = Create();
