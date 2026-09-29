@@ -139,6 +139,12 @@ public partial class NodeEditor
 
         UpdateConnected(source);
         UpdateConnected(target);
+
+        if (_knotByKey.Count > 0)
+        {
+            SettleKnotAt(source);
+            SettleKnotAt(target);
+        }
     }
 
     internal void AttachPort(Port port, Node node)
@@ -250,6 +256,7 @@ public partial class NodeEditor
     {
         UpdateConnected(key);
         RefreshLinksAt(key);
+        SettleKnotAt(key);
 
         // Ниже порога упрощённого вида контрол связи держит живой порт на её конце: пришёл порт —
         // связь разворачивается, ушёл — сворачивается.

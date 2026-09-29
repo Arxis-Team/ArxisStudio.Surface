@@ -228,6 +228,8 @@ public partial class NodeEditor
 
         foreach (var key in keys)
         {
+            Unmap(key);
+
             if (_lastOffsets.TryGetValue(key, out var last) && ReferenceEquals(last.Node, item))
                 _lastOffsets.Remove(key);
 

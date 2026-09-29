@@ -108,9 +108,18 @@ public partial class NodeEditor
         var moved = resolved != record.IsResolved
             || (resolved && (!Near(record.Geometry.Source, source) || !Near(record.Geometry.Target, target)));
 
+        // Касательные меняет и разворот узла перенаправления на конце, при тех же концах (ADR 0013).
+        var bent = false;
         if (resolved)
         {
-            record.Geometry = new LinkGeometry(source, target);
+            var geometry = new LinkGeometry(
+                source,
+                target,
+                IsReversedEnd(record.Source, LinkEnd.Source),
+                IsReversedEnd(record.Target, LinkEnd.Target));
+            bent = !moved && (!Near(record.Geometry.SourceControl, geometry.SourceControl)
+                || !Near(record.Geometry.TargetControl, geometry.TargetControl));
+            record.Geometry = geometry;
             record.WorldBounds = record.Geometry.Bounds.Inflate(ThicknessOf(record));
         }
 
@@ -129,8 +138,15 @@ public partial class NodeEditor
             OnSimplifiedLinksChanged();
         }
 
-        if (moved)
+        if (moved || bent)
             OnContentChanged();
+
+        // Сдвинулся дальний конец — узел перенаправления на ближнем мог развернуться (ADR 0013).
+        if (moved && _knotByKey.Count > 0)
+        {
+            UpdateKnotAt(record.Source);
+            UpdateKnotAt(record.Target);
+        }
     }
 
     /// <summary>

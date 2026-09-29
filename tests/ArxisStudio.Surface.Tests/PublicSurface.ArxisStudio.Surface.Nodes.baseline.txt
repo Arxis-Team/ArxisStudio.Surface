@@ -119,5 +119,6 @@ class ArxisStudio.Surface.Nodes.Reroute : TemplatedControl
     ctor .ctor()
     method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Object Input { get; set; }
     property Object Output { get; set; }

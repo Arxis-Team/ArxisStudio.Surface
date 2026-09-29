@@ -115,6 +115,61 @@ public class RerouteTests
     }
 
     [AvaloniaFact]
+    public void A_Wire_Running_Back_Turns_The_Knot_Around()
+    {
+        // Провод идёт через узел перенаправления справа налево — узел разворачивается, как в Blueprint
+        // (ADR 0013): во вход связь приходит справа, из выхода уходит влево, и у кольца нет петель.
+        var stand = Create();
+        var into = stand.LinkOf(stand.Links[0]);
+        var outOf = stand.LinkOf(stand.Links[1]);
+        Assert.False(stand.Editor.IsKnotReversed(NodeStand.In(1)));
+        Assert.True(into.Geometry.TargetControl.X < into.Geometry.Target.X, "во вход — слева");
+
+        stand.Node(2).Location = new Point(-300, 100);
+        stand.RunLayout();
+
+        Assert.True(stand.Editor.IsKnotReversed(NodeStand.In(1)), "цель левее источника — узел развёрнут");
+        Assert.True(into.Geometry.TargetControl.X > into.Geometry.Target.X, "во вход — справа");
+        Assert.True(outOf.Geometry.SourceControl.X < outOf.Geometry.Source.X, "из выхода — влево");
+        Assert.True(into.Geometry.SourceControl.X > into.Geometry.Source.X, "выход обычного узла не разворачивается");
+
+        stand.Node(2).Location = new Point(480, 100);
+        stand.RunLayout();
+
+        Assert.False(stand.Editor.IsKnotReversed(NodeStand.In(1)));
+        Assert.True(outOf.Geometry.SourceControl.X > outOf.Geometry.Source.X, "из выхода — снова вправо");
+    }
+
+    [AvaloniaFact]
+    public void A_Knot_With_One_Side_Faces_Its_Only_Neighbour()
+    {
+        // Связь только с одной стороны — решает центр самого узла: стоит он левее источника — провод
+        // приходит справа.
+        var stand = Create();
+        stand.Links.RemoveAt(1);
+        stand.Node(1).Location = new Point(-100, 180);
+        stand.RunLayout();
+
+        var into = stand.LinkOf(stand.Links[0]);
+        Assert.True(stand.Editor.IsKnotReversed(NodeStand.In(1)));
+        Assert.True(into.Geometry.TargetControl.X > into.Geometry.Target.X, "во вход — справа");
+    }
+
+    [AvaloniaFact]
+    public void A_Removed_Knot_Is_Forgotten()
+    {
+        // Узел перенаправления ушёл из графа вместе со связями — редактор не держит его ключей.
+        var stand = Create();
+        Assert.Equal(2, stand.Editor.KnotKeys);
+
+        stand.Links.Clear();
+        stand.Items.RemoveAt(1);
+        stand.RunLayout();
+
+        Assert.Equal(0, stand.Editor.KnotKeys);
+    }
+
+    [AvaloniaFact]
     public void The_Knot_Shows_The_Selection_Of_Its_Node()
     {
         var stand = Create();

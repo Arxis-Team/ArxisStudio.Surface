@@ -20,7 +20,7 @@ namespace ArxisStudio.Tests;
 /// <remarks>
 /// Стенд: окно 800 × 600, редактор узлов над сеткой 10 × 10 узлов 120 × 80 с шагом 200 × 120 и
 /// связями цепочкой внутри ряда; ещё одна, длинная, идёт из первого узла ряда в четвёртый — под вторым
-/// и третьим. Привязки положения и узла порта заданы; масштаб 0,4 — ниже порога, и видно всё.
+/// и третьим. Привязки положения и узла порта заданы; масштаб 0,25 — ниже порога редактора узлов (0,3), и видно всё.
 /// </remarks>
 public class NodeSimplifiedViewTests
 {
@@ -85,7 +85,7 @@ public class NodeSimplifiedViewTests
 
         var stand = new Stand(window, editor, nodes, links) { Long = longLink };
         stand.RunLayout();
-        editor.ViewportZoom = 0.4;
+        editor.ViewportZoom = 0.25;
         stand.RunLayout();
         return stand;
     }
@@ -196,7 +196,7 @@ public class NodeSimplifiedViewTests
         Assert.Empty(editor.GetRealizedContainers());
         Assert.Equal(1, editor.RealizedLinks);
 
-        editor.ViewportZoom = 0.4;
+        editor.ViewportZoom = 0.25;
         stand.RunLayout();
 
         Assert.Empty(editor.GetRealizedContainers());
@@ -286,11 +286,11 @@ public class NodeSimplifiedViewTests
         stand.Render();
         var (all, fewer) = stand.Layer.CountVisible();
         Assert.Equal(stand.Links.Count, all);
-        stand.Editor.ViewportZoom = 0.45;
+        stand.Editor.ViewportZoom = 0.28;
         stand.RunLayout();
         stand.Render();
         var (_, more) = stand.Layer.CountVisible();
-        Assert.True(more > fewer, $"на 0,45 отрезков {more}, на 0,1 — {fewer}");
+        Assert.True(more > fewer, $"на 0,28 отрезков {more}, на 0,1 — {fewer}");
     }
 
     [AvaloniaFact]
@@ -400,12 +400,12 @@ public class NodeSimplifiedViewTests
         }
 
         Drag(new Vector(40, 20));
-        Assert.Equal(start + new Vector(100, 50), node.Location);
+        Assert.Equal(start + new Vector(160, 80), node.Location);
 
         stand.Editor.Selection.Select(22);
         stand.RunLayout();
         Drag(new Vector(40, 20));
-        Assert.Equal(start + new Vector(200, 100), node.Location);
+        Assert.Equal(start + new Vector(320, 160), node.Location);
     }
 
     [AvaloniaFact]

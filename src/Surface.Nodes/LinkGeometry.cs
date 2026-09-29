@@ -8,7 +8,8 @@ namespace ArxisStudio.Surface.Nodes;
 /// </summary>
 /// <remarks>
 /// Касательные горизонтальны: из выхода связь уходит вправо, во вход приходит слева — так же, как
-/// стоят штырьки портов. Плечо касательной — половина горизонтального расстояния, но не короче
+/// стоят штырьки портов. Развёрнутый конец — у развёрнутого узла перенаправления (ADR 0013) — смотрит
+/// в обратную сторону: из выхода влево, во вход справа. Плечо касательной — половина горизонтального расстояния, но не короче
 /// <see cref="MinTangent"/>: иначе связь к узлу, стоящему левее, разворачивалась бы петлёй без
 /// изгиба, прямо сквозь оба узла.
 /// <para>
@@ -23,14 +24,14 @@ internal readonly struct LinkGeometry
 
     public const int Segments = 24;
 
-    public LinkGeometry(Point source, Point target)
+    public LinkGeometry(Point source, Point target, bool sourceReversed = false, bool targetReversed = false)
     {
         Source = source;
         Target = target;
 
         var reach = Math.Max(Math.Abs(target.X - source.X) / 2, MinTangent);
-        SourceControl = source + new Vector(reach, 0);
-        TargetControl = target - new Vector(reach, 0);
+        SourceControl = source + new Vector(sourceReversed ? -reach : reach, 0);
+        TargetControl = target - new Vector(targetReversed ? -reach : reach, 0);
     }
 
     public Point Source { get; }

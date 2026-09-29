@@ -18,9 +18,10 @@ namespace ArxisStudio.Surface.Nodes;
 /// начинает связь из выхода: его штырёк лежит сверху. Нажатие по кольцу тянет узел.
 /// </para>
 /// <para>
-/// Касательные у узла перенаправления горизонтальны, как у любого порта: связь, уведённая через него
-/// назад,
-/// петляет.
+/// Касательные у узла перенаправления смотрят по течению провода, как в Blueprint (ADR 0013): идёт
+/// провод через него справа налево — во вход он приходит справа, а из выхода уходит влево, и связь,
+/// уведённая назад, не закручивается у кольца. Решает редактор — по дальним концам связей, и помнит
+/// решение и у свёрнутого узла.
 /// </para>
 /// </remarks>
 public class Reroute : TemplatedControl
@@ -38,6 +39,7 @@ public class Reroute : TemplatedControl
         AvaloniaProperty.Register<Reroute, object?>(nameof(Output));
 
     private Node? _node;
+    private NodeEditor? _editor;
     private IDisposable? _selection;
 
     /// <summary>
@@ -70,6 +72,18 @@ public class Reroute : TemplatedControl
         _node.SetReroute(true);
         _selection = _node.GetObservable(SurfaceItem.IsSelectedProperty)
             .Subscribe(new SelectionSink(this));
+
+        _editor = _node.FindAncestorOfType<NodeEditor>();
+        _editor?.AttachKnot(Input, Output);
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == InputProperty || change.Property == OutputProperty)
+            _editor?.AttachKnot(Input, Output);
     }
 
     /// <inheritdoc />
@@ -81,6 +95,7 @@ public class Reroute : TemplatedControl
         _selection = null;
         _node?.SetReroute(false);
         _node = null;
+        _editor = null;
         PseudoClasses.Set(":selected", false);
     }
 

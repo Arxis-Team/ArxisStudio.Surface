@@ -312,14 +312,15 @@ public class VirtualGraphCostProbeTests
     public void Zooming_Out_Realizes_Down_To_The_Simplified_Zoom_And_No_Further()
     {
         // До порога упрощённого вида окно видит тем больше, чем дальше холст, и развёрнуто всё видимое:
-        // на 50 % — вчетверо больше, чем на 100 %. Ниже порога не развёрнуто ничего — ни узлов, ни
-        // связей, — и на обоих графах одинаково (ADR 0008).
+        // на 50 % — вчетверо больше, чем на 100 %, на 35 % — ещё больше. Ниже порога редактора узлов
+        // (30 %, ADR 0013) не развёрнуто ничего — ни узлов, ни связей, — и на обоих графах одинаково
+        // (ADR 0008).
         var counts = new Dictionary<(int Size, double Zoom), (int Nodes, int Links)>();
         foreach (var size in new[] { Small, Large })
         {
             var graph = Create(size);
             counts[(size, 1)] = (graph.Panel.RealizedCount, graph.Editor.RealizedLinks);
-            foreach (var zoom in new[] { 0.5, 0.3, 0.1 })
+            foreach (var zoom in new[] { 0.5, 0.35, 0.25, 0.1 })
             {
                 var (realized, milliseconds, megabytes) = ZoomTo(graph, zoom);
                 counts[(size, zoom)] = (realized, graph.Editor.RealizedLinks);
@@ -330,9 +331,10 @@ public class VirtualGraphCostProbeTests
 
         Assert.True(counts[(Small, 0.5)].Nodes >= 3 * counts[(Small, 1)].Nodes, $"на 50 % развёрнуто {counts[(Small, 0.5)]}");
         Assert.Equal(counts[(Small, 0.5)], counts[(Large, 0.5)]);
+        Assert.True(counts[(Small, 0.35)].Nodes > counts[(Small, 0.5)].Nodes, $"на 35 % развёрнуто {counts[(Small, 0.35)]}");
         foreach (var size in new[] { Small, Large })
         {
-            Assert.Equal((0, 0), counts[(size, 0.3)]);
+            Assert.Equal((0, 0), counts[(size, 0.25)]);
             Assert.Equal((0, 0), counts[(size, 0.1)]);
         }
     }

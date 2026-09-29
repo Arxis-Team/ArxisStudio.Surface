@@ -146,7 +146,7 @@ public class LinkStrokeTests
         // Ниже порога провода без контролов рисует слой — по геометрии на цвет модели; правка модели
         // перекрашивает и там.
         var stand = Create();
-        stand.Editor.ViewportZoom = 0.4;
+        stand.Editor.ViewportZoom = 0.25;
         stand.RunLayout();
         stand.Window.CaptureRenderedFrame();
         Assert.Equal(0, stand.Editor.RealizedLinks);

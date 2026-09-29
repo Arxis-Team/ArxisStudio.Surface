@@ -25,7 +25,16 @@ public partial class NodeEditor : SurfaceView
         // своим границам. Границ самого узла здесь не слушают намеренно: сдвиг узла меняет и их, и
         // каждый кадр перетаскивания пересчитывал бы каждую его связь дважды.
         SurfaceItem.LocationProperty.Changed.AddClassHandler<Node>((node, _) => OnNodeGeometryChanged(node));
+
+        // Граф читают издали: узел с названием и портами нужен и на трети масштаба, как в Blueprint,
+        // где подробный вид держится до 0,375, а упрощённый начинается с 0,25 (ADR 0013).
+        SimplifiedZoomProperty.OverrideDefaultValue<NodeEditor>(SimplifiedZoomDefault);
     }
+
+    /// <summary>
+    /// Порог упрощённого вида у редактора узлов — ниже, чем у поверхности (0,5).
+    /// </summary>
+    internal const double SimplifiedZoomDefault = 0.3;
 
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="NodeEditor"/>.
