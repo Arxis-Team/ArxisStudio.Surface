@@ -76,7 +76,7 @@
                                 LinkTargetBinding="{Binding To}"
                                 LinkStrokeBinding="{Binding Color}"
                                 PortNodeBinding="{Binding Node, DataType={x:Type machine:FlowPort}}">
-                <!-- Шаблоны — от частного к общему: перевалка, переход и состояние — тоже MachineNode. -->
+                <!-- Шаблоны — от частного к общему: узел перенаправления, переход и состояние — тоже MachineNode. -->
                 <surface:NodeEditor.DataTemplates>
                     <DataTemplate x:DataType="machine:RerouteNode">
                         <surface:Reroute Input="{Binding Inputs[0]}" Output="{Binding Outputs[0]}" />

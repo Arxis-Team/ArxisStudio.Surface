@@ -107,7 +107,7 @@ public class PendingLinkTests
     }
 
     /// <summary>
-    /// Узел 1 — вход и выход в одной точке, как у перевалки. Выход поставлен первым: по одному
+    /// Узел 1 — вход и выход в одной точке, как у узла перенаправления. Выход поставлен первым: по одному
     /// расстоянию — поровну — выбирался бы тот, что встретился раньше.
     /// </summary>
     private static readonly IDataTemplate PortsOnTopAtOne = new FuncDataTemplate<string>((name, _) =>
@@ -128,7 +128,7 @@ public class PendingLinkTests
     public void Ports_On_Top_Of_Each_Other_Resolve_By_Direction()
     {
         // По одному расстоянию конец из выхода выбрал бы выход узла 1 и получил отказ: связь в
-        // перевалку не входила бы вовсе.
+        // узел перенаправления не входила бы вовсе.
         var stand = NodeStand.Create([new Point(100, 100), new Point(400, 200)], itemTemplate: PortsOnTopAtOne);
         var requests = RecordRequests(stand);
         var output = Pin(stand, 1, PortDirection.Output);

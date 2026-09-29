@@ -252,7 +252,7 @@ public class NodeHeaderTests
     [AvaloniaFact]
     public void A_Reroute_Has_No_Header()
     {
-        // Перевалка сама себе карточка: заголовка у неё нет, даже если хост его дал.
+        // Узел перенаправления сам себе карточка: заголовка у него нет, даже если хост его дал.
         var stand = Create(new FuncDataTemplate<Card>((_, _) => new Reroute()));
 
         Assert.False(Part<Border>(stand.Node(0), "PART_Header").IsVisible);

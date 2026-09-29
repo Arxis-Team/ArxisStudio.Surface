@@ -41,9 +41,9 @@ public sealed class GraphDocument
         && !Links.Any(link => !ReferenceEquals(link, moving) && ReferenceEquals(link.To, target));
 
     /// <summary>
-    /// Новая перевалка — узел с одним входом и одним выходом (ADR 0005 библиотеки).
+    /// Новый узел перенаправления — узел с одним входом и одним выходом (ADR 0005 библиотеки).
     /// </summary>
-    public RerouteNode CreateReroute(Point location) => new($"Перевалка {++_reroutes}", location);
+    public RerouteNode CreateReroute(Point location) => new($"Узел перенаправления {++_reroutes}", location);
 
     public static GraphDocument CreateSample()
     {
@@ -143,7 +143,7 @@ public static class NodeKinds
 /// </summary>
 public enum PortKind
 {
-    /// <summary>Любое значение — у перевалки; провод берёт цвет другого конца.</summary>
+    /// <summary>Любое значение — у узла перенаправления; провод берёт цвет другого конца.</summary>
     Any,
 
     /// <summary>Цвет.</summary>
@@ -221,7 +221,7 @@ public class GraphNode : INotifyPropertyChanged
     public IReadOnlyList<GraphPort> Outputs { get; }
 
     /// <summary>
-    /// Цвет вида узла: полоса под названием узла и под его упрощённой карточкой. У перевалки — нет.
+    /// Цвет вида узла: полоса под названием узла и под его упрощённой карточкой. У узла перенаправления — нет.
     /// </summary>
     public Color? Accent { get; init; }
 
@@ -231,7 +231,7 @@ public class GraphNode : INotifyPropertyChanged
 }
 
 /// <summary>
-/// Перевалка: излом связи — это узел, а не точка на связи. Шаблон у неё — <c>Reroute</c> библиотеки.
+/// Узел перенаправления: излом связи — это узел, а не точка на связи. Шаблон у него — <c>Reroute</c> библиотеки.
 /// </summary>
 public sealed class RerouteNode(string title, Point location)
     : GraphNode(title, location, [new GraphPortSpec("вход", PortKind.Any)], [new GraphPortSpec("выход", PortKind.Any)]);
@@ -259,7 +259,7 @@ public sealed class GraphPort(GraphNode node, string name, bool isInput, PortKin
 public sealed record GraphLink(GraphPort From, GraphPort To)
 {
     /// <summary>
-    /// Цвет провода — по типу входа, а у входа перевалки — по типу выхода; редактор берёт его
+    /// Цвет провода — по типу входа, а у входа узла перенаправления — по типу выхода; редактор берёт его
     /// привязкой <c>LinkStrokeBinding</c> в обоих видах (ADR 0009 библиотеки).
     /// </summary>
     public Color? Color => PortKinds.ColorOf(To.Kind) ?? PortKinds.ColorOf(From.Kind);

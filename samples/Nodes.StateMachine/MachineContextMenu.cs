@@ -12,7 +12,7 @@ namespace Nodes.StateMachine;
 /// Поставщик действий библиотеки (<see cref="ISurfaceContextActionProvider"/>): редактор спрашивает его
 /// при каждом вызове меню и сам показывает то, что тот вернул. По пустому холсту меню ставит узел в
 /// точку щелчка — состояние с выбранным экраном, переход с выбранным условием, «любое состояние», вход
-/// и перевалку; по узлу — меняет экран или условие, делает состояние начальным и удаляет. Каждая правка
+/// и узел перенаправления; по узлу — меняет экран или условие, делает состояние начальным и удаляет. Каждая правка
 /// — запись истории окна, и Ctrl + Z её отменяет.
 /// </remarks>
 internal sealed class MachineContextMenu(MainWindow window) : ISurfaceContextActionProvider
@@ -40,7 +40,7 @@ internal sealed class MachineContextMenu(MainWindow window) : ISurfaceContextAct
             Item(trigger.Title, () => window.AddNode(new TransitionNode(trigger, at)))).ToList()),
         Item("Любое состояние", () => window.AddNode(new AnyStateNode(at))),
         Item("Вход", () => window.AddNode(new EntryNode(at)), enabled: !window.Document.Nodes.OfType<EntryNode>().Any()),
-        Item("Перевалка", () => window.AddNode(new RerouteNode(at))),
+        Item("Узел перенаправления", () => window.AddNode(new RerouteNode(at))),
         Separator(),
         Item("Показать всё", window.FitAll)
     ];

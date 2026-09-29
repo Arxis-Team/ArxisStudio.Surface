@@ -33,7 +33,7 @@ public sealed class MachineDocument
         if (others.Any(link => ReferenceEquals(link.From, source) && ReferenceEquals(link.To, target)))
             return false;
 
-        // У перехода и перевалки один вход и один выход, у входа машины — одно начальное состояние:
+        // У перехода и узла перенаправления один вход и один выход, у входа машины — одно начальное состояние:
         // иначе путь из состояния стал бы неоднозначным.
         if (target.Node is TransitionNode or RerouteNode && others.Any(link => ReferenceEquals(link.To, target)))
             return false;
@@ -52,7 +52,7 @@ public sealed class MachineDocument
     }
 
     /// <summary>
-    /// Куда ведёт выход: через перевалки до первого узла, который не перевалка.
+    /// Куда ведёт выход: через узлы перенаправления до первого узла, который не узел перенаправления.
     /// </summary>
     /// <param name="output">Выход, с которого начать.</param>
     /// <param name="path">Провода пути — окно зажигает их, когда путь сработал.</param>
@@ -64,7 +64,7 @@ public sealed class MachineDocument
             var path = new List<FlowLink> { first };
             var node = first.To.Node;
 
-            // Перевалка — один выход; счётчик — защита от кольца из перевалок.
+            // У узла перенаправления один выход; счётчик — защита от кольца из таких узлов.
             for (var hops = 0; node is RerouteNode reroute && hops < 64; hops++)
             {
                 var next = Links.FirstOrDefault(link => ReferenceEquals(link.From, reroute.Outputs[0]));
@@ -97,7 +97,7 @@ public sealed class MachineDocument
     /// Провод выходит вправо и входит слева, поэтому машина читается слева направо по главному ряду.
     /// Обратный переход стоит слева от состояния, в которое возвращает, на своей полосе — выше или ниже
     /// главного ряда: длинный провод идёт по полосе, а в состояние входит короткий, и узлов провода не
-    /// пересекают. Выход с главной возвращается ко входу перевалками по нижнему краю.
+    /// пересекают. Выход с главной возвращается ко входу узлами перенаправления по нижнему краю.
     /// </remarks>
     public static MachineDocument CreateUiExample()
     {
@@ -130,7 +130,7 @@ public sealed class MachineDocument
         d.Transition(home, settings, Triggers.OpenSettings, new Point(1460, 430));
         d.Transition(settings, home, Triggers.Back, new Point(980, 470));
 
-        // Выход — к началу перевалками по низу: переход слева от входа занял бы полосу «Повторить».
+        // Выход — к началу узлами перенаправления по низу: переход слева от входа занял бы полосу «Повторить».
         var signOut = d.Add(new TransitionNode(Triggers.SignOut, new Point(1460, 600)));
         var turn = d.Add(new RerouteNode(new Point(1690, 730)));
         var back = d.Add(new RerouteNode(new Point(215, 730)));

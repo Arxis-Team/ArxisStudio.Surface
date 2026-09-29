@@ -140,7 +140,7 @@ public class Node : SurfaceItem
     internal bool IsArranging { get; private set; }
 
     /// <summary>
-    /// Отмечает узел перевалкой — его ставит и снимает сам <see cref="Reroute"/>.
+    /// Отмечает узел как узел перенаправления — его ставит и снимает сам <see cref="Reroute"/>.
     /// </summary>
     internal void SetReroute(bool value) => PseudoClasses.Set(":reroute", value);
 }

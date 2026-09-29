@@ -11,7 +11,7 @@ using ArxisStudio.Surface.States;
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Двойной щелчок по связи просит разрезать её узлом-перевалкой (ADR 0005).
+/// Двойной щелчок по связи просит разрезать её узлом перенаправления (ADR 0005).
 /// </summary>
 /// <remarks>
 /// Связь из узла 0 во вход узла 1. В безголовом режиме время стоит, поэтому два нажатия в одной
@@ -20,7 +20,7 @@ namespace ArxisStudio.Tests;
 public class LinkSplitTests
 {
     /// <summary>
-    /// Узел 3 — перевалка, как её поставил бы хост; остальные — обычные узлы с портами.
+    /// Узел 3 — узел перенаправления, как его поставил бы хост; остальные — обычные узлы с портами.
     /// </summary>
     private static readonly IDataTemplate KnotAtThree = new FuncDataTemplate<string>((name, _) =>
         name == NodeStand.NodeName(3)
@@ -161,7 +161,7 @@ public class LinkSplitTests
     [AvaloniaFact]
     public void The_Host_Splits_The_Link_With_A_Knot()
     {
-        // Как это делает хост: перевалка в точке запроса, вместо одной связи — две через неё.
+        // Как это делает хост: узел перенаправления в точке запроса, вместо одной связи — две через него.
         var stand = Create();
         var knot = NodeStand.NodeName(3);
         Point? location = null;

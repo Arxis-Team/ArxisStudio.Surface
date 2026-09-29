@@ -14,7 +14,7 @@
 | `ArxisStudio.Surface` | холст, viewport, сетка, контейнеры, выделение, жесты, клавиатура, контракт изменений, `SurfaceHistory` | Avalonia | [src/Surface](src/Surface/README.md) |
 | `ArxisStudio.Surface.Editing` | ручки изменения размера, привязка, направляющие и интервалы, линейки, блокировки, миникарта | ядро | [src/Surface.Editing](src/Surface.Editing/README.md) |
 | `ArxisStudio.Surface.UiDesigner` | `UiDesignerView`: дизайнер интерфейса — вложенные контролы, раскладка, перестановка, группы | ядро, инструменты | [src/Surface.UiDesigner](src/Surface.UiDesigner/README.md) |
-| `ArxisStudio.Surface.Nodes` | `NodeEditor`: узлы, порты, связи, перевалки, разрез | ядро, инструменты | [src/Surface.Nodes](src/Surface.Nodes/README.md) |
+| `ArxisStudio.Surface.Nodes` | `NodeEditor`: узлы, порты, связи, узлы перенаправления, разрез | ядро, инструменты | [src/Surface.Nodes](src/Surface.Nodes/README.md) |
 
 Все четыре — `net8.0` (минимальный TFM Avalonia 12), Avalonia 12.1.1, версия `0.x`: публичная
 поверхность закреплена слепками, но ещё меняется. В NuGet библиотека не публикуется; подключают её
@@ -131,7 +131,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0002](docs/adr/0002-where-the-group-mark-lives-belongs-to-the-document-owner.md) | Смысл группы — за редактором, место её хранения — за владельцем документа |
 | [0003](docs/adr/0003-the-library-is-three-layers-and-references-go-down.md) | Библиотека — слои, ссылки идут только вниз |
 | [0004](docs/adr/0004-the-node-editor-is-a-fourth-layer-beside-the-form-designer.md) | Редактор узлов — четвёртый слой рядом с дизайнером интерфейса; связь знает концы данными портов |
-| [0005](docs/adr/0005-a-bend-is-a-reroute-node-and-the-minimap-is-a-surface-tool.md) | Излом связи — узел-перевалка, разрез — удаление перечёркнутых, миникарта — инструмент любой поверхности |
+| [0005](docs/adr/0005-a-bend-is-a-reroute-node-and-the-minimap-is-a-surface-tool.md) | Излом связи — узел перенаправления, разрез — удаление перечёркнутых, миникарта — инструмент любой поверхности |
 | [0006](docs/adr/0006-names-follow-the-layers.md) | Имена следуют слоям: приставка `Design` уступает `Surface`, дизайнер — `UiDesignerView` |
 | [0007](docs/adr/0007-containers-follow-the-viewport.md) | Контейнеры следуют видимой области: раскладка по изменениям, виртуализация узлов и связей, закешированная миникарта |
 | [0008](docs/adr/0008-the-small-zoom-is-drawn-not-realized.md) | Малый масштаб рисуется: карточки без контейнеров с полосой заголовка из привязки хоста, нажатие разворачивает |

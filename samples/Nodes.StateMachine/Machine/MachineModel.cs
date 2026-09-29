@@ -330,7 +330,7 @@ public sealed class TransitionNode : MachineNode
 }
 
 /// <summary>
-/// Перевалка: излом провода — узел, как у демо узлов. Шаблон у неё — <c>Reroute</c> библиотеки.
+/// Узел перенаправления: излом провода — узел, как у демо узлов. Шаблон у него — <c>Reroute</c> библиотеки.
 /// </summary>
 public sealed class RerouteNode(Point location) : MachineNode(null, location, hasInput: true, hasOutput: true, "вход", "выход");
 

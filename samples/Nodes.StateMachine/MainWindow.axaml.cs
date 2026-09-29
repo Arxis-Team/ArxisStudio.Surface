@@ -220,7 +220,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Ломает провод перевалкой — как у демо узлов: вместо одной связи перевалка и две связи через неё.
+    /// Ломает провод узлом перенаправления — как у демо узлов: вместо одной связи узел перенаправления
+    /// и две связи через него.
     /// </summary>
     private void OnLinkSplitRequested(object? sender, LinkSplitRequestedEventArgs e)
     {
