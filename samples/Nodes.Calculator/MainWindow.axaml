@@ -1,0 +1,259 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
+        xmlns:calc="clr-namespace:Nodes.Calculator"
+        xmlns:graph="clr-namespace:Nodes.Calculator.Graph"
+        xmlns:actions="clr-namespace:Nodes.Calculator.Actions"
+        x:Class="Nodes.Calculator.MainWindow"
+        x:DataType="graph:CalcDocument"
+        Title="Калькулятор Blueprint — ArxisStudio.Surface.Nodes"
+        Width="1400" Height="860"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Styles>
+        <!--
+            Литерал — поле значения у неподключённого входа, как у пинов Blueprint. Подключённый порт
+            (:connected библиотеки) его прячет: значение приходит по проводу. Стиль ставит видимость
+            панели, а не самого поля: у поля своя видимость привязкой — по типу пина, — и значение стиля
+            локальную привязку не перекрыло бы.
+        -->
+        <!-- Строки пинов одной высоты, как у Blueprint: с полем значения и без него. -->
+        <Style Selector="surface|Port">
+            <Setter Property="MinHeight" Value="22" />
+        </Style>
+
+        <Style Selector="surface|Port:connected Panel.literal">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="TextBox.literal">
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="MinWidth" Value="34" />
+            <Setter Property="MaxWidth" Value="150" />
+            <Setter Property="Padding" Value="5,1" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+
+        <Style Selector="TextBox.error">
+            <Setter Property="BorderBrush" Value="#F85149" />
+        </Style>
+
+        <Style Selector="CheckBox.literal">
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <!-- Знак компактного узла — крупно и приглушённо, как «+» математики Blueprint. -->
+        <Style Selector="TextBlock.symbol">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.45" />
+            <Setter Property="Margin" Value="10,0" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="Grid.conversion TextBlock.symbol">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+
+        <!-- Значение выхода по живому счёту — пузырь, как «Watch this value» у Blueprint. -->
+        <Style Selector="Border.value">
+            <Setter Property="Background" Value="#2EFFFFFF" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="5,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="Border.value TextBlock">
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+
+        <Style Selector="Border.warning">
+            <Setter Property="Background" Value="#4A3A0C" />
+            <Setter Property="BorderBrush" Value="#D4A017" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+
+        <Style Selector="Border.warning TextBlock">
+            <Setter Property="Foreground" Value="#FFD866" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+
+        <Style Selector="Button.add-pin">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+
+        <Style Selector="TextBox.variable">
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="12,8" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="PlayButton" Classes="accent" Content="▶ Играть" Click="OnPlayClick" ToolTip.Tip="F5" />
+                <CheckBox Content="Импульсы" VerticalAlignment="Center" IsChecked="{Binding #Editor.IsLinkPulseEnabled}" />
+                <Button Content="Пример" Click="OnSampleClick" />
+                <Button Content="Показать всё" Click="OnFitClick" />
+                <Button x:Name="UndoButton" Content="Отменить" Click="OnUndoClick" />
+                <Button x:Name="RedoButton" Content="Повторить" Click="OnRedoClick" />
+                <TextBlock x:Name="ZoomText" VerticalAlignment="Center" Opacity="0.7" />
+            </StackPanel>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"
+                       Text="Правая кнопка по холсту — все действия с поиском · провод из пина в пустоту — действия для этого пина, узел встанет подключённым · провод между разными типами ставит преобразование · двойной щелчок по проводу — излом · Alt + протяжка — разрез · F5 — играть" />
+        </StackPanel>
+
+        <!-- Журнал вывода — Output Log: сюда пишет «Вывести строку» и ошибки прогона. -->
+        <Border DockPanel.Dock="Bottom" Height="150" BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <DockPanel Margin="12,6">
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                    <Button DockPanel.Dock="Right" Content="Очистить" Click="OnClearLogClick" Padding="8,2" MinHeight="0" />
+                    <TextBlock Text="Журнал вывода" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+                <ScrollViewer x:Name="LogScroll">
+                    <ItemsControl x:Name="LogList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="calc:LogLine">
+                                <SelectableTextBlock Text="{Binding Text}" Foreground="{Binding Brush}"
+                                                     FontFamily="Cascadia Mono, Consolas, monospace" FontSize="12" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- «Мой Blueprint»: переменные графа и их значения по умолчанию. -->
+        <Border DockPanel.Dock="Left" Width="240" BorderThickness="0,0,1,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <StackPanel Margin="12,8" Spacing="6">
+                <TextBlock Text="Мой Blueprint" FontWeight="SemiBold" FontSize="15" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="+" Click="OnAddVariableClick" Padding="10,2" MinHeight="0"
+                            ToolTip.Tip="Новая переменная" />
+                    <TextBlock Text="Переменные" Opacity="0.8" VerticalAlignment="Center" />
+                </DockPanel>
+                <ItemsControl x:Name="VariableList" ItemsSource="{Binding Variables}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="graph:CalcVariable">
+                            <Grid ColumnDefinitions="Auto,*,72" Margin="0,3">
+                                <Ellipse Width="10" Height="10" Margin="0,0,8,0" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Classes="variable" Tag="name" Text="{Binding Name}" />
+                                <TextBox Grid.Column="2" Classes="variable" Classes.error="{Binding HasError}" Tag="value"
+                                         Text="{Binding Value}" Margin="6,0,0,0" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12"
+                           Text="«Получить» и «Задать» — в меню действий, раздел «Переменные». Значение по умолчанию сразу меняет счёт на холсте; «Играть» начинает с него." />
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <!--
+                Узел — определение каталога и порты. Название и полоса — из Header и Accent модели
+                (ADR 0009 библиотеки): у компактных узлов и узлов переменных их нет, и библиотека не рисует
+                области заголовка. Пин — роль и цвет типа (ADR 0017), провод — цвет типа и роль (LinkStrokeBinding,
+                LinkRoleBinding): выполнение рисует тема, данные — цвета Blueprint из модели.
+            -->
+            <surface:NodeEditor x:Name="Editor"
+                                ItemsSource="{Binding Nodes}"
+                                ItemLocationBinding="{Binding Location}"
+                                ItemHeaderBinding="{Binding Header}"
+                                ItemAccentBinding="{Binding Accent}"
+                                Links="{Binding Links}"
+                                LinkSourceBinding="{Binding From}"
+                                LinkTargetBinding="{Binding To}"
+                                LinkStrokeBinding="{Binding Color}"
+                                LinkRoleBinding="{Binding Role}"
+                                PortNodeBinding="{Binding Node, DataType={x:Type graph:CalcPort}}">
+                <surface:NodeEditor.DataTemplates>
+                    <DataTemplate x:DataType="graph:RerouteNode">
+                        <surface:Reroute Input="{Binding Inputs[0]}" Output="{Binding Outputs[0]}" />
+                    </DataTemplate>
+
+                    <DataTemplate x:DataType="graph:CalcNode">
+                        <StackPanel Spacing="4">
+                            <Border Classes="warning" IsVisible="{Binding HasWarning}">
+                                <TextBlock Text="{Binding Warning, StringFormat='⚠ {0}'}" />
+                            </Border>
+                            <Grid ColumnDefinitions="Auto,*,Auto" Classes.conversion="{Binding IsConversion}">
+                                <ItemsControl ItemsSource="{Binding Inputs}" VerticalAlignment="Center">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="graph:CalcPort">
+                                            <surface:Port Direction="Input" Data="{Binding}"
+                                                          PinRole="{Binding Role}" PinBrush="{Binding Brush}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="{Binding Name}" IsVisible="{Binding HasName}" VerticalAlignment="Center" />
+                                                    <Panel Classes="literal">
+                                                        <TextBox Classes="literal" Classes.error="{Binding HasError}"
+                                                                 Text="{Binding Text}" IsVisible="{Binding HasTextLiteral}" />
+                                                        <CheckBox Classes="literal" IsChecked="{Binding Flag}"
+                                                                  IsVisible="{Binding HasFlagLiteral}" />
+                                                    </Panel>
+                                                </StackPanel>
+                                            </surface:Port>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Grid.Column="1" Classes="symbol" Text="{Binding Symbol}" IsVisible="{Binding IsCompact}" />
+                                <ItemsControl Grid.Column="2" ItemsSource="{Binding Outputs}" VerticalAlignment="Center">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="graph:CalcPort">
+                                            <surface:Port Direction="Output" Data="{Binding}"
+                                                          PinRole="{Binding Role}" PinBrush="{Binding Brush}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Border Classes="value" IsVisible="{Binding HasDisplay}">
+                                                        <TextBlock Text="{Binding Display}" />
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Name}" IsVisible="{Binding HasName}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </surface:Port>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                            <Button Classes="add-pin" Content="Добавить пин ⊕" IsVisible="{Binding CanAddPin}" Click="OnAddPinClick" />
+                        </StackPanel>
+                    </DataTemplate>
+                </surface:NodeEditor.DataTemplates>
+            </surface:NodeEditor>
+
+            <!-- Строки на экране — Print String «на экран»: сверху слева, новая сверху, гаснут по длительности. -->
+            <ItemsControl x:Name="ScreenList" Margin="16,12" IsHitTestVisible="False"
+                          HorizontalAlignment="Left" VerticalAlignment="Top">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="calc:ScreenLine">
+                        <TextBlock Text="{Binding Text}" Foreground="#33B5FF" FontSize="15" Opacity="{Binding Opacity}">
+                            <TextBlock.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.4" />
+                                </Transitions>
+                            </TextBlock.Transitions>
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Popup x:Name="PalettePopup" PlacementTarget="{Binding #Editor}" Placement="AnchorAndGravity"
+                   PlacementAnchor="TopLeft" PlacementGravity="BottomRight" IsLightDismissEnabled="True">
+                <actions:ActionPalette x:Name="Palette" />
+            </Popup>
+        </Grid>
+    </DockPanel>
+</Window>

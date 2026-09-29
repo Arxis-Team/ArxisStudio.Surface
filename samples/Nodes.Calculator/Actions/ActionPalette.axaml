@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:actions="clr-namespace:Nodes.Calculator.Actions"
+             x:Class="Nodes.Calculator.Actions.ActionPalette">
+
+    <UserControl.Styles>
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+
+        <!-- Раздел — не действие: его не выбирают ни стрелками, ни щелчком. -->
+        <Style Selector="ListBoxItem" x:DataType="actions:PaletteRow">
+            <Setter Property="IsEnabled" Value="{Binding IsSelectable}" />
+        </Style>
+
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- «Все действия для этого Blueprint»: поиск сверху, разделы деревом, как палитра Unreal Engine. -->
+    <Border Width="410" Height="460" Padding="8" CornerRadius="6" BorderThickness="1"
+            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BoxShadow="0 8 24 0 #66000000">
+        <DockPanel>
+            <DockPanel DockPanel.Dock="Top" Margin="2,0,2,6">
+                <CheckBox x:Name="ContextBox" DockPanel.Dock="Right" Content="С учётом контекста" FontSize="12"
+                          IsChecked="True" MinHeight="0" />
+                <TextBlock Text="Все действия для этого Blueprint" FontWeight="SemiBold" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+            <TextBox x:Name="SearchBox" DockPanel.Dock="Top" PlaceholderText="Поиск" Margin="0,0,0,6" />
+            <ListBox x:Name="RowList" SelectionMode="Single" Background="Transparent">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="actions:PaletteRow">
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Indent}">
+                            <TextBlock Text="{Binding Glyph}" Width="16" TextAlignment="Center" Opacity="0.75"
+                                       IsVisible="{Binding !IsSection}" />
+                            <TextBlock Text="{Binding Text}" Classes.section="{Binding IsSection}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+    </Border>
+</UserControl>
