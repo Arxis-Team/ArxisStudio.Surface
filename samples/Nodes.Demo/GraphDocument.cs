@@ -75,12 +75,28 @@ public sealed class GraphDocument
     /// <param name="target">Вход.</param>
     /// <param name="moving">Связь, чей конец перецепляют, или <see langword="null"/> для новой.</param>
     /// <remarks>
-    /// Направления проверяет сам редактор; здесь — правила графа: в свой же узел нельзя, и во вход
-    /// приходит одна связь — не считая той, что перецепляет свой конец: её вход занят ею же.
+    /// Направления проверяет сам редактор; здесь — правила графа, как в Blueprint (ADR 0016 библиотеки):
+    /// в свой же узел нельзя; выполнение соединяется только с выполнением, данные — с данными, узел
+    /// перенаправления — с любым; из выхода выполнения — одна связь, во вход выполнения — сколько угодно;
+    /// во вход данных — одна. Связь, что перецепляет свой конец, в правилах не считается: её концы
+    /// заняты ею же.
     /// </remarks>
-    public bool CanConnect(GraphPort source, GraphPort target, GraphLink? moving) =>
-        !ReferenceEquals(source.Node, target.Node)
-        && !Links.Any(link => !ReferenceEquals(link, moving) && ReferenceEquals(link.To, target));
+    public bool CanConnect(GraphPort source, GraphPort target, GraphLink? moving)
+    {
+        if (ReferenceEquals(source.Node, target.Node))
+            return false;
+
+        var kind = source.Kind is PortKind.Any ? target.Kind : source.Kind;
+        var other = target.Kind is PortKind.Any ? source.Kind : target.Kind;
+        if (kind is not PortKind.Any && other is not PortKind.Any && (kind is PortKind.Execution) != (other is PortKind.Execution))
+            return false;
+
+        var others = Links.Where(link => !ReferenceEquals(link, moving)).ToList();
+        if (kind is PortKind.Execution)
+            return !others.Any(link => ReferenceEquals(link.From, source));
+
+        return !others.Any(link => ReferenceEquals(link.To, target));
+    }
 
     /// <summary>
     /// Новый узел перенаправления — узел с одним входом и одним выходом (ADR 0005 библиотеки).
@@ -95,13 +111,21 @@ public sealed class GraphDocument
         var number = document.Add("Число", new Point(60, 300), inputs: [], outputs: [Number("Значение")], NodeKinds.Source);
         var blur = document.Add("Размытие", new Point(360, 60), inputs: [Color("Цвет"), Number("Радиус")], outputs: [Color("Цвет")], NodeKinds.Filter);
         var mix = document.Add("Смешивание", new Point(660, 150), inputs: [Color("A"), Color("B"), Number("Доля")], outputs: [Color("Цвет")], NodeKinds.Blend);
-        var output = document.Add("Вывод", new Point(960, 190), inputs: [Color("Цвет")], outputs: [], NodeKinds.Output);
+        var output = document.Add("Вывод", new Point(960, 190), inputs: [Execution(), Color("Цвет")], outputs: [Execution()], NodeKinds.Output);
+
+        // Поток выполнения, как в Blueprint: событие запускает «Вывод», тот — «Журнал». Узлы данных
+        // выше пинов выполнения не имеют: их значения считаются, когда до «Вывода» доходит выполнение.
+        var tick = document.Add("Каждый кадр", new Point(660, -20), inputs: [], outputs: [Execution()], NodeKinds.Event);
+        var log = document.Add("Журнал", new Point(1260, 190), inputs: [Execution(), Color("Цвет")], outputs: [], NodeKinds.Utility);
+        document.Links.Add(new GraphLink(tick.Outputs[0], output.Inputs[0]));
+        document.Links.Add(new GraphLink(output.Outputs[0], log.Inputs[0]));
 
         document.Links.Add(new GraphLink(image.Outputs[0], blur.Inputs[0]));
         document.Links.Add(new GraphLink(number.Outputs[0], blur.Inputs[1]));
         document.Links.Add(new GraphLink(blur.Outputs[0], mix.Inputs[0]));
         document.Links.Add(new GraphLink(image.Outputs[0], mix.Inputs[1]));
-        document.Links.Add(new GraphLink(mix.Outputs[0], output.Inputs[0]));
+        document.Links.Add(new GraphLink(mix.Outputs[0], output.Inputs[1]));
+        document.Links.Add(new GraphLink(mix.Outputs[0], log.Inputs[1]));
 
         return document;
     }
@@ -155,6 +179,8 @@ public sealed class GraphDocument
     private static GraphPortSpec Color(string name) => new(name, PortKind.Color);
 
     private static GraphPortSpec Number(string name) => new(name, PortKind.Number);
+
+    private static GraphPortSpec Execution() => new(string.Empty, PortKind.Execution);
 }
 
 /// <summary>
@@ -177,6 +203,11 @@ public static class NodeKinds
 
     public static readonly Color Utility = Color.Parse("#6A4C93");
 
+    /// <summary>
+    /// Событие — узел, с которого начинается выполнение, как красные события Blueprint.
+    /// </summary>
+    public static readonly Color Event = Color.Parse("#8E2A2A");
+
     public static readonly Color[] All = [Source, Filter, Blend, Output, Utility];
 }
 
@@ -192,7 +223,12 @@ public enum PortKind
     Color,
 
     /// <summary>Число.</summary>
-    Number
+    Number,
+
+    /// <summary>
+    /// Выполнение: не значение, а порядок — «когда», а не «что», как Exec-пины Blueprint.
+    /// </summary>
+    Execution
 }
 
 /// <summary>
@@ -209,6 +245,16 @@ public static class PortKinds
     public static readonly Color NumberWire = Color.Parse("#2BA8A8");
 
     /// <summary>
+    /// Провод выполнения — белый и толще проводов данных, как в Blueprint.
+    /// </summary>
+    public static readonly Color ExecutionWire = Color.Parse("#F2F2F2");
+
+    /// <summary>
+    /// Толщина провода выполнения в мировых единицах; провода данных — толщиной темы.
+    /// </summary>
+    public const double ExecutionThickness = 3.5;
+
+    /// <summary>
     /// Маркер провода цвета — стрелка посередине. Кисти нет: маркер берёт цвет провода.
     /// </summary>
     public static readonly LinkMarker ColorMarker = new() { Shape = LinkShape.Arrow };
@@ -222,6 +268,7 @@ public static class PortKinds
     {
         PortKind.Color => ColorWire,
         PortKind.Number => NumberWire,
+        PortKind.Execution => ExecutionWire,
         _ => null
     };
 
@@ -309,7 +356,33 @@ public sealed class GraphPort(GraphNode node, string name, bool isInput, PortKin
 
     public PortKind Kind { get; } = kind;
 
+    /// <summary>
+    /// Форма штырька: у выполнения — пятиугольник, у данных — круг (ADR 0016 библиотеки).
+    /// </summary>
+    public PortShape Shape => Kind is PortKind.Execution ? PortShape.Execution : PortShape.Circle;
+
+    /// <summary>
+    /// Цвет штырька — цвет его типа; у узла перенаправления — тема.
+    /// </summary>
+    public IBrush? Brush => PortKinds.ColorOf(Kind) is { } color ? PortBrushes.Of(color) : null;
+
     public override string ToString() => $"{Node.Title}.{Name}";
+}
+
+/// <summary>
+/// Кисть на цвет — одна на цвет, а не новая на каждый штырёк.
+/// </summary>
+internal static class PortBrushes
+{
+    private static readonly Dictionary<Color, IBrush> Brushes = new();
+
+    public static IBrush Of(Color color)
+    {
+        if (!Brushes.TryGetValue(color, out var brush))
+            Brushes[color] = brush = new Avalonia.Media.Immutable.ImmutableSolidColorBrush(color);
+
+        return brush;
+    }
 }
 
 /// <summary>
@@ -328,6 +401,11 @@ public sealed record GraphLink(GraphPort From, GraphPort To)
     /// (ADR 0014 библиотеки).
     /// </summary>
     public LinkMarker? Marker => PortKinds.MarkerOf(To.Kind is PortKind.Any ? From.Kind : To.Kind);
+
+    /// <summary>
+    /// Толщина провода: выполнение толще данных; редактор берёт её привязкой <c>LinkThicknessBinding</c>.
+    /// </summary>
+    public double? Thickness => (To.Kind is PortKind.Any ? From.Kind : To.Kind) is PortKind.Execution ? PortKinds.ExecutionThickness : null;
 
     public override string ToString() => $"{From} → {To}";
 }

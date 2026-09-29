@@ -24,6 +24,14 @@
             <Setter Property="BorderBrush" Value="#99FFB300" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
+        <!--
+            Порты машины — поток управления, как пины выполнения Blueprint (ADR 0016 библиотеки): вид
+            задан стилем по классу порта, а не привязкой к модели — оба пути равноправны.
+        -->
+        <Style Selector="surface|Port.flow">
+            <Setter Property="PinShape" Value="Execution" />
+            <Setter Property="PinBrush" Value="#E6E8EB" />
+        </Style>
         <Style Selector="TextBlock.run">
             <Setter Property="Foreground" Value="#FFB300" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -125,10 +133,10 @@
                     <!-- Переход: условие — название узла; в теле — штырьки и «сработал» на запущенной машине. -->
                     <DataTemplate x:DataType="machine:TransitionNode">
                         <Grid ColumnDefinitions="Auto,*,Auto" MinWidth="140">
-                            <surface:Port Direction="Input" Data="{Binding Inputs[0]}" />
+                            <surface:Port Classes="flow" Direction="Input" Data="{Binding Inputs[0]}" />
                             <TextBlock Grid.Column="1" Classes="run" Text="{Binding RunText}" IsVisible="{Binding HasRunText}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" />
-                            <surface:Port Grid.Column="2" Direction="Output" Data="{Binding Outputs[0]}" />
+                            <surface:Port Classes="flow" Grid.Column="2" Direction="Output" Data="{Binding Outputs[0]}" />
                         </Grid>
                     </DataTemplate>
 
@@ -136,8 +144,8 @@
                     <DataTemplate x:DataType="machine:StateNode">
                         <StackPanel MinWidth="170">
                             <Grid ColumnDefinitions="*,*">
-                                <surface:Port Direction="Input" Data="{Binding Inputs[0]}" Content="{Binding Inputs[0].Name}" />
-                                <surface:Port Grid.Column="1" Direction="Output" Data="{Binding Outputs[0]}" Content="{Binding Outputs[0].Name}" />
+                                <surface:Port Classes="flow" Direction="Input" Data="{Binding Inputs[0]}" Content="{Binding Inputs[0].Name}" />
+                                <surface:Port Classes="flow" Grid.Column="1" Direction="Output" Data="{Binding Outputs[0]}" Content="{Binding Outputs[0].Name}" />
                             </Grid>
                             <TextBlock Text="{Binding ScreenText}" Margin="10,2,10,4" Opacity="0.7" FontSize="12" />
                             <TextBlock Classes="run" Text="{Binding RunText}" IsVisible="{Binding HasRunText}" Margin="10,0,10,6" FontSize="12" />
@@ -149,7 +157,7 @@
                         <ItemsControl ItemsSource="{Binding Outputs}" MinWidth="150">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="machine:FlowPort">
-                                    <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}" />
+                                    <surface:Port Classes="flow" Direction="Output" Data="{Binding}" Content="{Binding Name}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

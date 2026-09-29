@@ -59,6 +59,7 @@
                                 LinkTargetBinding="{Binding To}"
                                 LinkStrokeBinding="{Binding Color}"
                                 LinkMarkerBinding="{Binding Marker}"
+                                LinkThicknessBinding="{Binding Thickness}"
                                 PortNodeBinding="{Binding Node, DataType={x:Type demo:GraphPort}}">
                 <surface:NodeEditor.DataTemplates>
                     <DataTemplate x:DataType="demo:RerouteNode">
@@ -75,14 +76,16 @@
                                 <ItemsControl ItemsSource="{Binding Inputs}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="demo:GraphPort">
-                                            <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}" />
+                                            <surface:Port Direction="Input" Data="{Binding}" Content="{Binding Name}"
+                                                          PinShape="{Binding Shape}" PinBrush="{Binding Brush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <ItemsControl Grid.Column="1" ItemsSource="{Binding Outputs}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="demo:GraphPort">
-                                            <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}" />
+                                            <surface:Port Direction="Output" Data="{Binding}" Content="{Binding Name}"
+                                                          PinShape="{Binding Shape}" PinBrush="{Binding Brush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
