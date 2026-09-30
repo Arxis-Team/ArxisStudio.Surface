@@ -72,7 +72,7 @@ src/Surface.Editing/         инструменты
 src/Surface.UiDesigner/      дизайнер интерфейса
 src/Surface.Nodes/           редактор узлов
 tests/                       headless-тесты всех сборок (Avalonia.Headless.XUnit, xunit v3)
-samples/UiDesigner.Demo/     хост дизайнера интерфейса
+samples/UiDesigner.Demo/     хост дизайнера интерфейса: конструктор форм на Surface, Markup и ProjectSystem
 samples/Nodes.Demo/          хост редактора узлов: граф данных, 10 000 узлов, волна вычисления
 samples/Nodes.StateMachine/  машина состояний на узлах, ведёт интерфейс Avalonia
 samples/Nodes.Calculator/    калькулятор в духе Blueprint: палитра действий, литералы, «Играть»
@@ -91,7 +91,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 
 | Образец | Что показывает | Проверка вживую |
 | --- | --- | --- |
-| `UiDesigner.Demo` | формы, вложенные контролы, группы, панель свойств, направляющие, отмена | канал `--automation <каталог>`, F12 (DevTools) в Debug |
+| `UiDesigner.Demo` | конструктор форм: открывает проект, показывает `.axaml` элементом формы, правит документ жестами и инспектором, собирает и запускает; нужны соседние `ArxisStudio.ProjectSystem` и `ArxisStudio.Markup` | `--verify <папка>`, `--shot <файл>`, канал `--automation <каталог>`, F12 (DevTools) в Debug |
 | `Nodes.Demo` | запросы графа, узлы перенаправления, разрез, миникарта, 10 000 узлов, роли пинов и пример наблюдателя на делегате, импульсы по волне вычисления, маркеры по типу провода | канал `--automation <каталог>`, `panBench`, F12 в Debug |
 | `Nodes.StateMachine` | запуск машины с показом как в Unreal, контекстное меню, импульсы по сработавшему переходу | F12 в Debug, MCP DevTools |
 | `Nodes.Calculator` | граф в духе Blueprint: компактные узлы математики, литералы пинов, палитра действий с поиском по правой кнопке и по проводу в пустоту, узел преобразования между типами, переменные, «Играть» с импульсами, строками на экране и журналом | F12 в Debug, MCP DevTools |

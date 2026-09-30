@@ -1,0 +1,524 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The tool's control styles, on ArxisStudio's scale rather than the mockup's this window was first
+    drawn from. Three rules of that scale are kept here, and each was broken before it was adopted:
+
+      Type is whole sizes — 13 for what is read, 12 for what is small, 11 for a caption. The
+      mockup's 12.5, 11.5 and 10.5 put every glyph between two pixel grids.
+
+      Nothing pressed is shorter than 24. The view switch stood at 20 and the header buttons at 22,
+      which is a target to aim for rather than to hit.
+
+      Every control that can be pressed says so four ways: under the pointer, under the press, with
+      the keyboard on it, and switched off. The first was all there was.
+
+    Every rule here is either qualified by a class this designer puts on its own controls, or scoped
+    under `.chrome` — the class its panels, bars and splitters carry. Neither reaches the canvas.
+
+    That scoping is not tidiness. A style cascades to everything below it in the tree, and the form
+    being edited is below this window like everything else, so a bare `TextBlock` rule set the font
+    of every label in somebody else's document and a bare `TextBox` rule gave their fields this
+    tool's background. The designer then showed a form that did not look like the form. Avalonia
+    offers no way to stop a style at a subtree — `IStyleHost.StylingParent` cuts the styles and the
+    control themes with them, which leaves the form invisible rather than unstyled — so the rule is
+    kept where it can be kept: a selector that cannot match anything outside this window's chrome.
+
+    The cost is that overlays are outside it. A combo box's drop-down and a tool tip live in the
+    window's overlay layer rather than under the panel that opened them, so they fall back to the
+    theme's own look. That is a smaller wrong than restyling the document.
+  -->
+
+  <!--
+    The text under a piece of chrome, given to the chrome itself and inherited from there.
+
+    It was a rule on every TextBlock below the class, and that rule outranked the markup it was
+    written for. A selector that depends on an ancestor's class is applied as a trigger, and a
+    trigger is stronger than a value a data template sets through a resource — so in every list,
+    `Foreground="{DynamicResource Fg3}"` was written and the primary colour was drawn. The paths of
+    the recent projects, the types in the hierarchy, the headings of the inspector's rows: all of
+    them asked to be quiet and none of them was. An inherited value is the weakest there is, which
+    is exactly the strength a default should have.
+  -->
+  <Style Selector=":is(Control).chrome">
+    <Setter Property="TextElement.FontFamily" Value="{DynamicResource UiFont}" />
+    <Setter Property="TextElement.FontSize" Value="13" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="TextBlock.caption">
+    <Setter Property="Foreground" Value="{DynamicResource Fg3}" />
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+
+  <Style Selector="TextBlock.dim">
+    <Setter Property="Foreground" Value="{DynamicResource Fg2}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="{DynamicResource MonoFont}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <!-- A section label: uppercase, tracked out, quiet. -->
+  <Style Selector="TextBlock.section">
+    <Setter Property="Foreground" Value="{DynamicResource Fg3}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.5" />
+  </Style>
+
+  <Style Selector="TextBlock.panelTitle">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <!--
+    Where the keyboard is. One ring for everything that takes focus, in the role the palette keeps
+    for it, drawn outside the control so it does not move what is inside. The theme's own ring is
+    the system's — black and white, and a different thing on every machine.
+  -->
+  <Style Selector=".chrome Button, .chrome ComboBox, .chrome CheckBox, .chrome ListBoxItem">
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderBrush="{DynamicResource Focus}" BorderThickness="2" CornerRadius="6" />
+      </FocusAdornerTemplate>
+    </Setter>
+  </Style>
+
+  <!--
+    A name for whoever cannot see the glyph. An icon button says what it does in its tooltip and
+    nowhere else, so the tooltip is what a screen reader is given as well: one string, written
+    once, and a button added later gets its name by having a tooltip. Without it the button is
+    announced by the class of its content — "Path". A button that has words and no tooltip gets
+    nothing from this and is named by its words, as before.
+  -->
+  <Style Selector=".chrome Button">
+    <Setter Property="AutomationProperties.Name" Value="{Binding $self.(ToolTip.Tip)}" />
+  </Style>
+
+  <!-- A toolbar button: flat until it is pointed at. -->
+  <Style Selector="Button.tool">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg2}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.tool:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.tool:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg4}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.tool:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource FgOff}" />
+  </Style>
+
+  <!--
+    The filled one, for the single action a screen is about. Not called `accent`: the theme has a
+    class of that name already, and it paints the button in the machine's own accent colour. The
+    New Project button was purple on the desk this was found on, whatever was written here.
+  -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource AccFill}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAcc}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccFillH}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAcc}" />
+  </Style>
+
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccFillP}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAcc}" />
+  </Style>
+
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Raised}" />
+    <Setter Property="Foreground" Value="{DynamicResource FgOff}" />
+  </Style>
+
+  <!-- An icon square in the toolbar. -->
+  <Style Selector="Button.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg2}" />
+  </Style>
+
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.icon:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg4}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <!-- A glyph has a colour of its own and cannot be recoloured from here, so it is faded. -->
+  <Style Selector="Button.icon:disabled">
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <Style Selector="Button.icon:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- The swatch in a colour row, which is a button so that it can open the picker. -->
+  <Style Selector="Button.swatch">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.swatch:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+  </Style>
+
+  <Style Selector="Button.swatch:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg4}" />
+  </Style>
+
+  <!--
+    The close button turns red under the pointer, as every window's does — and its cross turns
+    white with it, which is why the cross is drawn in the button's foreground and not in a colour
+    of its own: grey on red was the one place this bar could not be read. The foreground is set on
+    the button and not on its template's presenter, because the button is what the cross can see —
+    a template's part is not among a path's logical parents.
+  -->
+  <Style Selector="Button.closeButton:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource OnAcc}" />
+  </Style>
+
+  <Style Selector="Button.closeButton:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource MonoRed}" />
+  </Style>
+
+  <Style Selector="Button.closeButton:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource MonoRed}" />
+  </Style>
+
+  <Style Selector=".chrome TextBox">
+    <!-- A name, as for a button: the placeholder is the only label these have. -->
+    <Setter Property="AutomationProperties.Name" Value="{Binding $self.PlaceholderText}" />
+    <Setter Property="Background" Value="{DynamicResource Inp}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd2}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource Fg3}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!--
+    The theme repaints a field under the pointer and with the caret in it, in its own colours, and
+    a rule on the control does not reach those: they are set on the template's border.
+  -->
+  <Style Selector=".chrome TextBox:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource Inp}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Fg3}" />
+  </Style>
+
+  <Style Selector=".chrome TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource Inp}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Focus}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector=".chrome ComboBox">
+    <Setter Property="AutomationProperties.Name" Value="{Binding $self.(ToolTip.Tip)}" />
+    <Setter Property="Background" Value="{DynamicResource Inp}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd2}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <!--
+    A chooser that is part of the header rather than a field in a form: no box, no fill, just the
+    word and its chevron. It comes after the rule above on purpose — same element, later setters.
+  -->
+  <Style Selector="ComboBox.chip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="6,0,4,0" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg2}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="ComboBox.chip:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+  </Style>
+
+  <Style Selector=".chrome CheckBox">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg2}" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+
+  <!-- A pill that labels something. Not pressed, so it may be as short as its text. -->
+  <Style Selector="Border.chip2">
+    <Setter Property="Height" Value="20" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="9,0" />
+    <Setter Property="Background" Value="{DynamicResource Raised}" />
+  </Style>
+
+  <!-- A second-rank action beside the filled one. -->
+  <Style Selector="Button.quiet">
+    <Setter Property="Background" Value="{DynamicResource Bg2}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd2}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.quiet:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Raised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd2}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.quiet:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Raised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Fg3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.quiet:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd}" />
+    <Setter Property="Foreground" Value="{DynamicResource FgOff}" />
+  </Style>
+
+  <!-- Panels: one border colour, one radius, nothing else. -->
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource Bg2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Border.panelHeader">
+    <Setter Property="Height" Value="34" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="12,0,8,0" />
+  </Style>
+
+  <!-- A file that has a tab is plainly marked, so the grid says what is open without being asked. -->
+  <Style Selector="Border.tile">
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Border.tile.open">
+    <Setter Property="BorderBrush" Value="{DynamicResource Acc}" />
+  </Style>
+
+  <!--
+    A tab. Flat and quiet until it is the one being edited, which is the underline and the lighter
+    background — the same pair the canvas uses, so the eye reads them as one place. A button, for
+    the same reason the rail is: a tab the keyboard cannot reach is a form it cannot switch to.
+  -->
+  <Style Selector="Button.tab">
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Padding" Value="12,0,4,0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.tab:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.tab:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg4}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.tab.active /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Acc}" />
+  </Style>
+
+  <!-- The cross on a tab and on a recent row. As wide as it is tall, and both are a target's 24. -->
+  <Style Selector="Button.tabClose">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg3}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.tabClose:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.tabClose:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg4}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <!-- One value of an enum, in the row of them the design draws for a small type. -->
+  <Style Selector="Button.segment">
+    <Setter Property="Background" Value="{DynamicResource Inp}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd2}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,3,0" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.segment:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Raised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brd2}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.segment:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Raised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Fg3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector="Button.segment.chosen /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccFill}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccFill}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAcc}" />
+  </Style>
+
+  <Style Selector=".chrome ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+
+  <Style Selector=".chrome ListBoxItem">
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <!--
+    A row's three states, each on the template's presenter, because that is where the theme paints
+    its own — in the system's accent, which is not this palette's. The order is the precedence:
+    chosen wins over pointed-at.
+  -->
+  <Style Selector=".chrome ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Bg3}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector=".chrome ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sel}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <Style Selector=".chrome ListBoxItem:selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Sel}" />
+    <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+  </Style>
+
+  <!--
+    Lists whose rows are cards rather than lines: the projects opened before, and the files of the
+    one that is open. A list and not a stack of borders, so the arrows walk it and Enter opens what
+    they stopped on — a double click is still what a pointer does.
+  -->
+  <Style Selector="ListBox.recents ListBoxItem">
+    <Setter Property="Height" Value="52" />
+    <Setter Property="Padding" Value="10,0,12,0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+
+  <Style Selector="ListBox.tiles ListBoxItem">
+    <Setter Property="Width" Value="92" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="2" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+
+  <Style Selector=".chrome TreeViewItem">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector=".chrome TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource Sel}" />
+  </Style>
+
+  <Style Selector="GridSplitter.chrome">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+</Styles>

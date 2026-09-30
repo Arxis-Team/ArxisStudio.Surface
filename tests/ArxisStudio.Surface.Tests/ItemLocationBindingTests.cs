@@ -168,7 +168,7 @@ public class ItemLocationBindingTests
     [AvaloniaFact]
     public void A_Style_Bound_Item_Follows_Its_Model_After_A_Drag()
     {
-        // Так привязывают положение FormsDesigner и демо дизайнера: сеттером стиля. Запись ядра не
+        // Так привязывает положение демо дизайнера: сеттером стиля. Запись ядра не
         // снимает эту привязку — локальное значение затенило бы её, и после первого же жеста правка
         // модели контейнер бы не двигала.
         var view = new SurfaceView();

@@ -1,30 +1,57 @@
-﻿<Application xmlns="https://github.com/avaloniaui"
+<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="UiDesigner.Demo.App"
-             RequestedThemeVariant="Default">
-    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
+
+  <Application.Styles>
+    <FluentTheme />
 
     <!--
-        ViewLocator убран: он сопоставлял View по ViewModelBase, но от него
-        никто не наследуется. Шаблоны элементов заданы явно в MainWindow.axaml.
+      The colour picker's own theme, which FluentTheme does not carry: the controls live in a package
+      of their own and so do their templates. Without this a ColorView is a control with no template
+      — it measures 70×15, draws nothing, and the flyout opens on an empty rectangle.
+
+      Here rather than on the window, because the flyout it appears in is a platform popup: a window
+      of its own, whose styles come from the application and not from the window that opened it.
     -->
+    <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
 
-    <Application.Styles>
-        <FluentTheme />
-        <StyleInclude Source="avares://UiDesigner.Demo/Styles/UiDesignerStyles.axaml" />
-    </Application.Styles>
+    <!-- And the XAML pane's editor, for the same reason: its template ships with it. -->
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
 
-    <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerTheme.axaml" />
-                <ResourceInclude Source="avares://UiDesigner.Demo/Views/Screens/ScreenPalette.axaml" />
-            </ResourceDictionary.MergedDictionaries>
+    <StyleInclude Source="avares://UiDesigner.Demo/Views/Styles.axaml" />
+  </Application.Styles>
 
-            <!-- Контейнеры очерчены постоянно: на тёмном холсте иначе не видно,
-                 где кончается одна форма и начинается другая. -->
-            <x:Double x:Key="UiDesignerItem.OutlineOpacity">0.75</x:Double>
-        </ResourceDictionary>
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
 
-    </Application.Resources>
+        <!--
+          The editor's own theme, and without it there is no editor. ArxisStudio.Surface.UiDesigner ships its
+          template, its grid, its selection adorners and its resources in one dictionary that an
+          application merges; a control with no template renders nothing at all, so the canvas was
+          an empty rectangle — no grid, no forms, no handles — while every log line said the
+          document had loaded perfectly. It had. There was simply nothing drawing it.
+        -->
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerTheme.axaml" />
+
+        <!--
+          The design's own tokens, and they come last, because merged dictionaries are searched from
+          the last to the first: where the two describe the same thing — the canvas grid — the one
+          merged later is the one found. For as long as this stood above the editor's theme the
+          design's grid colours were declared and never drawn, and the canvas was the library's
+          default, three shades off, which no log line reports.
+        -->
+        <ResourceInclude Source="avares://UiDesigner.Demo/Views/Theme.axaml" />
+
+      </ResourceDictionary.MergedDictionaries>
+
+      <!-- Forms are outlined at rest: on a dark canvas there is otherwise nothing to say where one
+           form ends and the next begins. Declared here rather than merged, and an entry of the
+           dictionary itself is found before anything it merges. -->
+      <x:Double x:Key="UiDesignerItem.OutlineOpacity">0.75</x:Double>
+
+    </ResourceDictionary>
+  </Application.Resources>
+
 </Application>

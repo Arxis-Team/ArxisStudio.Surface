@@ -348,7 +348,9 @@ editor.GroupStore = new DocumentGroupStore(document);   // ISurfaceGroupStore: G
 Контекст собирает ядро; дизайнер определяет `Scope` по самому target'у под курсором: пустой холст —
 `Surface`, контейнер — `Container`, вложенный контрол — `NestedTarget`, target внутри текущего
 выделения — `Selection`. Действия даёт провайдер хоста (`ISurfaceContextActionProvider`); пример —
-`UiDesignerDemoContextActionsProvider` в демо.
+в `ContextActionTests`. Без провайдера действия можно отдать прямо в событии
+`ContextMenuRequesting` (`e.Actions`) — так делает демо; показать меню самому — там же, через
+`Handled`.
 
 ## Ключи темы
 
@@ -371,5 +373,6 @@ editor.GroupStore = new DocumentGroupStore(document);   // ISurfaceGroupStore: G
   `Ctrl + A` достанутся контролу, а не дизайнеру.
 - **Свой шаблон `UiDesignerView` не написать** без форка темы — см. «Подключение».
 
-Рабочий хост со всеми запросами, панелями групп и свойств, отменой и каналом автоматизации —
-`samples/UiDesigner.Demo`.
+Рабочий хост — `samples/UiDesigner.Demo`: конструктор форм с запросами редактора, иерархией,
+инспектором, отменой и каналом автоматизации. Кроме этой библиотеки ему нужны `ArxisStudio.Markup` и
+`ArxisStudio.ProjectSystem` рядом с репозиторием; самой библиотеке — нет.

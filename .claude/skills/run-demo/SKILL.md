@@ -17,6 +17,8 @@ dotnet build ArxisStudio.Surface.sln
 
 Ожидается **0 ошибок, 0 предупреждений** (у библиотеки включён `GenerateDocumentationFile` → CS1591 на недокументированный публичный член).
 
+Демо — конструктор форм на трёх семействах (ADR 0021), и его проект ссылается на соседние репозитории: рядом с этим должны лежать `ArxisStudio.ProjectSystem` и `ArxisStudio.Markup`. Без них сборка решения падает с `SURFDEMO01`; библиотеки собираются и без них — третьим вариантом из списка ниже.
+
 Если падает `MSB3021`/`MSB3027` («файл используется другим процессом») на `ArxisStudio.Surface*.dll` — **это не ошибка кода**, а блокировка от `Avalonia.Designer.HostApp` (XAML-превьюер Rider). Компиляция при этом проходит, ломается только копирование. Варианты:
 
 - закрыть вкладку превью в Rider;
@@ -26,10 +28,20 @@ dotnet build ArxisStudio.Surface.sln
 ### 2. Запустить
 
 ```bash
-powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action start
+powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action start -Project "$P/StudioCheckApp/StudioCheckApp.csproj" -Form MainWindow.axaml
 ```
 
-Ждёт появления окна и печатает pid. Если процесс упал — печатает stderr. Логи лежат в `%TEMP%\uidesigner-demo\`.
+Ждёт появления окна и печатает pid. Если процесс упал — печатает stderr. Логи лежат в `%TEMP%\uidesigner-demo\`; шаги загрузки проекта демо пишет туда же, в `out.log`.
+
+**Без `-Project` поднимается экран приветствия**, а редактора на нём нет: ни холста, ни жестов. Проект нужен настоящий, на диске. Готовый даёт самопроверка демо — она создаёт его по шаблону и оставляет в своей папке:
+
+```bash
+samples/UiDesigner.Demo/bin/Debug/net10.0/UiDesigner.Demo.exe --verify "$P"
+```
+
+Папка должна быть пустой; прогон идёт около минуты и заканчивается строкой `CHECK VERDICT ok …`. Ключ `-Automation <каталог>` у `start` поднимает ещё и канал управления редактором (`--automation`, корневой `CLAUDE.md`), а `-Theme light` открывает демо в светлой вариации — переключателя темы скрипту не нажать.
+
+**Вывод `start` в конвейер не направлять** (`… -Action start | head`): демо наследует канал конвейера, и тот ждёт его закрытия — команда не вернётся, пока демо живо. В файл — можно.
 
 ### 3. Снять скриншот
 
@@ -64,7 +76,7 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action doubleclick -X 140 -Y 211
 ```
 
-Двойной клик — отдельное действие, а не два `click` подряд: у одиночного на выходе стоит секундная пауза, и системный порог двойного клика она перекрывает. Им проверяются вход в группу у редактора и правка имени группы в панели групп.
+Двойной клик — отдельное действие, а не два `click` подряд: у одиночного на выходе стоит секундная пауза, и системный порог двойного клика она перекрывает. Им проверяется вход в группу у редактора.
 
 ```bash
 powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action rightclick -X 500 -Y 400
@@ -93,12 +105,18 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 ```
 
 ```bash
-# клавиатура: стрелки, Shift+стрелки, Delete, Escape, Ctrl+Z/X/Y, Ctrl+A, F12
-powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Right -Notches 5
-powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Down -Modifier Shift -Notches 2
+# клавиатура: стрелки, Shift+стрелки, Delete, Escape, Tab, Enter, Space, Ctrl+Z/X/Y, Ctrl+A, F12
+powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Right -Repeat 5
+powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Down -Modifier Shift -Repeat 2
 powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Z -Modifier Ctrl
 powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key F12
+
+# проход одной клавиатурой: с экрана приветствия до открытого проекта
+powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Tab -Repeat 3
+powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps1 -Action key -Key Enter
 ```
+
+Повтор клавиши — `-Repeat`, не `-Notches`: второе — щелчки колеса, и клавише оно ничего не говорит. На экране приветствия остановок `Tab` три — поиск, «Open» и список недавних проектов, — так что третий `Tab` встаёт на список, а `Enter` открывает строку под фокусом; `Shift + Tab` идёт назад.
 
 Клавиатура идёт через `keybd_event`, а не `SendKeys`: последний до приложения не доходит, хотя окно и foreground — `Ctrl + A` через него не делал ничего. Мышь работает иначе, потому что `mouse_event` адресуется точкой экрана, а не фокусом.
 
@@ -130,26 +148,26 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 
 ## Что проверять
 
-Верхняя панель демо — готовый индикатор состояния, по ней читается результат без догадок:
+Окно демо само показывает состояние редактора, и результат читается без догадок:
 
-| Поле | Что подтверждает |
+| Где | Что подтверждает |
 |---|---|
-| `N items` | `SelectedElements.Count` — счёт **контейнеров**, не вложенных targets |
-| `Target:` | тип primary target (`TextBlock`, `UiDesignerItem`, …) |
-| `Targets:` | `SelectedTargetsCount` — вложенные targets |
-| `X / Y / W / H` | геометрия выделения в координатах поверхности |
-| `Viewport` / `%` | `ViewportLocation` и `ViewportZoom` |
-| `Center / Fit / Center Sel / Fit Sel` | появляются только при непустом выделении |
+| строка пути над холстом (`Window › StackPanel › GoButton`) | главный выбранный target и его место в документе |
+| строка в «Hierarchy» | то же с другой стороны: выбор на холсте и в дереве — один |
+| шапка «Inspector» | тип и имя выбранного, либо `nothing selected` |
+| поля `Width` / `Height` инспектора | размер, как он записан в документе; пустое поле — размер не объявлен |
+| метка над формой (`MainWindow.axaml 900 × 600 100%`) | размер формы и масштаб |
+| `100%` внизу справа | `ViewportZoom` |
 
-Внутри Dashboard-элемента выводятся `SurfaceX / SurfaceY / X / Y` для `TextBlock1` — прямая проверка двусторонней синхронизации `Layout` (глобальные ↔ локальные координаты).
+Точные числа — `SelectionBounds`, счётчики обоих слоёв выделения, положение viewport — отдаёт канал автоматизации командой `state`: с картинки их не снять.
 
 Минимальный прогон после правок в редакторе:
 
-1. приложение стартует, окно есть, stderr пуст;
-2. элементы отрисованы, сетка выровнена;
-3. клик по заголовку внутри карточки → `1 items`, `Target: TextBlock`, адорнер с 8 хэндлами точно по контролу;
-4. колесо → зум меняется, сетка остаётся DPI-чёткой, адорнер не разъезжается с контролом;
-5. клик по пустому месту → выделение снимается.
+1. приложение стартует, окно есть, форма нарисована, `err.log` пуст;
+2. сетка выровнена, линейки стоят по краям холста;
+3. клик по контролу формы → рамка с 8 ручками точно по контролу, путь над холстом и строка иерархии называют его;
+4. колесо → масштаб меняется, сетка остаётся DPI-чёткой, рамка не разъезжается с контролом;
+5. клик по пустому месту холста → выделение снимается, инспектор пишет `nothing selected`.
 
 Пункт 4 важен отдельно: адорнеры позиционируются в мировых координатах с обратным масштабом, поэтому расхождение видно только на зуме, отличном от 100%.
 
@@ -157,4 +175,7 @@ powershell -ExecutionPolicy Bypass -File .claude/skills/run-demo/scripts/demo.ps
 
 - Только Windows: используется `user32.dll` (`mouse_event`, `keybd_event`, `GetWindowRect`, `CopyFromScreen`).
 - Скрипт двигает реальный курсор, жмёт реальные модификаторы и поднимает окно на передний план.
-- Верхняя панель показывает геометрию **контейнера** (`ActiveItem`), а не выбранного вложенного target. Позицию вложенного контрола видно только в самой карточке Dashboard — там выведены `SurfaceX / SurfaceY / X / Y` для `TextBlock1`. Для проверок, где важно точное положение вложенного элемента, тянуть надо именно его.
+- У окна демо нет системной рамки, и развёрнутое оно отдаёт `PrintWindow` кадр с чёрной каймой в 8 пикселей: это невидимая полоса растягивания, а не дефект вёрстки. Координаты клика считаются от того же кадра, так что пиксель со снимка по-прежнему годится как есть.
+- У **неразвёрнутого окна с системным заголовком** — это экран приветствия — точка ввода ложится ниже пикселя со снимка: замер дал сдвиг между 18 и 26 пикселями по вертикали (указатель, поставленный на одну строку, подсветил следующую под ней). У развёрнутого окна дизайнера сдвига нет. Целиться в приветствии надо с поправкой либо идти клавиатурой — `Tab` и `Enter` от координат не зависят.
+- Навести указатель без нажатия можно действием `wheel` с `-Notches 0`: курсор встаёт в точку, колесо не крутится. Так снимают состояние под указателем.
+- Жест меняет документ открытого проекта — настоящий файл, а не зашитую в демо разметку. Проект для проверок берите тот, что не жалко: из папки `--verify`.

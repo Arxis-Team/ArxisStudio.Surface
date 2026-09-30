@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UiDesigner.Demo.ViewModels"
+        x:Class="UiDesigner.Demo.Views.WelcomeWindow"
+        x:DataType="vm:WelcomeViewModel"
+        Title="ArxisStudio 2026.2 — Welcome"
+        Width="960" Height="640"
+        MinWidth="640" MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Bg1}">
+
+  <!--
+    The window the demo opens on, and it does one thing: it names the project to work on. The
+    projects opened before, and Open for one that is not among them.
+
+    There was a rail down the left with Projects, Templates and Learn, a New Project and a Clone
+    from Git beside Open, and a Settings line and an account at the foot. None of it showed the
+    designer, and half of it led nowhere — the settings and the account were drawings. With one
+    section left a rail is a menu of one, so it went too, and the mark it carried sits at the head
+    of the page.
+
+    Everything here is chrome — there is no document on this page — so the root carries the class
+    the tool's own control rules are scoped to.
+  -->
+  <ScrollViewer Classes="chrome" Padding="30,24,30,30">
+    <StackPanel>
+
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,26">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Border Width="32" Height="32" CornerRadius="8" Background="{DynamicResource AccFill}">
+            <TextBlock Text="Ax" Foreground="{DynamicResource OnAcc}" FontWeight="Bold" FontSize="13"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="ArxisStudio" FontWeight="SemiBold" FontSize="13" />
+            <TextBlock Text="{Binding Edition}" FontSize="11" Foreground="{DynamicResource Fg3}" />
+          </StackPanel>
+        </StackPanel>
+
+        <TextBox Grid.Column="2" Width="264" Height="30" PlaceholderText="Search projects"
+                 VerticalAlignment="Center" Text="{Binding Search, Mode=TwoWay}" />
+
+        <!-- The one action of the page, so it is the filled one. -->
+        <Button Grid.Column="3" Classes="primary" Height="30" Content="Open" VerticalAlignment="Center"
+                Command="{Binding OpenCommand}" ToolTip.Tip="Open a solution or project" />
+      </Grid>
+
+      <TextBlock Text="{Binding Problem}" Foreground="{DynamicResource RedText}" TextWrapping="Wrap"
+                 Margin="0,0,0,14" IsVisible="{Binding HasProblem}" />
+
+      <TextBlock Classes="section" Text="RECENT" Margin="0,0,0,10" />
+
+      <TextBlock Text="Nothing has been opened yet. Open a project to start."
+                 Foreground="{DynamicResource Fg3}" IsVisible="{Binding !HasRecent}" />
+
+      <!--
+        A list, so that the arrows walk it and Enter opens what they stopped on; Delete takes a row
+        off it, which is what its cross does. A double click is still what a pointer does.
+      -->
+      <ListBox x:Name="RecentList" Classes="recents" ItemsSource="{Binding Recent}"
+               IsVisible="{Binding HasRecent}" AutomationProperties.Name="Recent projects">
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem" x:DataType="vm:RecentProject">
+            <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+          </Style>
+        </ListBox.Styles>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:RecentProject">
+            <!-- Transparent rather than absent, so the whole row answers the double click. -->
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12"
+                  Background="Transparent" DoubleTapped="OnRecentOpened"
+                  ToolTip.Tip="Double-click or press Enter to open">
+              <Border Width="30" Height="30" CornerRadius="7" VerticalAlignment="Center"
+                      Background="{Binding Hue, Converter={x:Static vm:Converters.Hue}}">
+                <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnAcc}" FontSize="11"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                <TextBlock Text="{Binding Location}" Classes="mono" FontSize="11"
+                           Foreground="{DynamicResource Fg3}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+
+              <Border Grid.Column="2" Classes="chip2" VerticalAlignment="Center"
+                      IsVisible="{Binding Framework, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding Framework}" FontSize="11"
+                           Foreground="{DynamicResource Fg2}" VerticalAlignment="Center" />
+              </Border>
+
+              <TextBlock Grid.Column="3" Text="{Binding Ago}" FontSize="11"
+                         Foreground="{DynamicResource Fg3}" VerticalAlignment="Center"
+                         Width="110" TextAlignment="Right" />
+
+              <Button Grid.Column="4" Classes="tabClose" Content="×" Click="OnRecentForgotten"
+                      VerticalAlignment="Center" ToolTip.Tip="Remove from the list" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</Window>

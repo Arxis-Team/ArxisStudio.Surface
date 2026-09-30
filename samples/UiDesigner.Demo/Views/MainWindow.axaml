@@ -1,459 +1,1090 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:UiDesigner.Demo.ViewModels"
-        xmlns:screens="using:UiDesigner.Demo.Views.Screens"
-        xmlns:views="using:UiDesigner.Demo.Views"
+        xmlns:edit="using:AvaloniaEdit"
         xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="using:UiDesigner.Demo.Views"
         x:Class="UiDesigner.Demo.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="UiDesigner.Demo"
+        x:DataType="vm:DesignerViewModel"
+        Title="ArxisStudio — Forms Designer"
+        Background="{DynamicResource Bg1}"
+        FontFamily="{DynamicResource UiFont}"
+        MinWidth="1360"
+        Width="1600" Height="980"
         WindowState="Maximized"
-        WindowStartupLocation="CenterScreen">
+        WindowDecorations="BorderOnly">
 
-    <Design.DataContext>
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}" />
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding NewFormCommand}" />
+    <KeyBinding Gesture="F5" Command="{Binding RunCommand}" />
+    <KeyBinding Gesture="Ctrl+B" Command="{Binding BuildCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+    <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyCommand}" />
+    <KeyBinding Gesture="Ctrl+X" Command="{Binding CutCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteCommand}" />
+    <KeyBinding Gesture="Ctrl+D" Command="{Binding DuplicateCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAllCommand}" />
+    <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomToFitCommand}" />
+    <KeyBinding Gesture="Ctrl+G" Command="{Binding GroupCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+G" Command="{Binding UngroupCommand}" />
+    <KeyBinding Gesture="Alt+Up" Command="{Binding MoveUpCommand}" />
+    <KeyBinding Gesture="Alt+Down" Command="{Binding MoveDownCommand}" />
+  </Window.KeyBindings>
 
-    <Window.Styles>
-        <Style Selector="Button.toolBtn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="6"/>
-            <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="Foreground" Value="#CCCCCC"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.toolBtn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#33FFFFFF"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-    </Window.Styles>
-
-    <Window.Resources>
-        <Color x:Key="BackgroundColor">#141417</Color>
-        <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
-        <!--
-            Сетка больше не описывается в демо: её предоставляет сама библиотека
-            через SurfaceGrid в шаблоне UiDesignerView. Палитра и шаг настраиваются
-            ресурсами UiDesignerView.Grid.*.
-        -->
-    </Window.Resources>
+  <Window.Resources>
 
     <!--
-        Панель инструментов лежит в шапке, а не висит над холстом. Плавающая панель
-        закрывала верх макета и мешала работать ровно там, где чаще всего находится
-        начало формы; строка Auto отдаёт ей ровно свою высоту и ничего не отнимает
-        у редактора.
+      What the designer draws around a form, in the form's own coordinates.
+
+      Not in the container's content, which is the whole point. In `ContentMode="Loaded"` the editor
+      offers every control the author wrote as a target, and it finds them by walking the
+      container's content — so a caption or a title bar put in there is, correctly and unhelpfully,
+      something the user can select, resize and ask the inspector about. The container holds the form
+      and only the form; everything the designer adds is drawn over the canvas instead, in world
+      coordinates, through the editor's own viewport transform.
     -->
-    <Grid Background="{StaticResource BackgroundBrush}" RowDefinitions="Auto,*">
+    <DataTemplate x:Key="FormChromeTemplate" DataType="vm:FormViewModel">
+      <!--
+        Chrome, and it says so: this is drawn over the canvas rather than inside a panel, so without
+        the class the tool's own type rules do not reach it and its title took the theme's font and
+        colour instead of the designer's. The class stops at this layer, which holds no part of any
+        document — the forms are below it, in the editor.
+      -->
+      <StackPanel Classes="chrome" Width="{Binding Width}" Spacing="2">
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Height="20" HorizontalAlignment="Left">
+          <TextBlock Text="{Binding Caption}" Classes="mono" FontSize="11" FontWeight="Medium"
+                     Foreground="{DynamicResource Lnk}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SizeText}" Classes="mono" FontSize="11"
+                     Foreground="{DynamicResource Fg3}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding $parent[Window].((vm:DesignerViewModel)DataContext).ZoomText}"
+                     Classes="mono" FontSize="11" Foreground="{DynamicResource Fg3}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
 
         <!--
-            Линейки стоят рядом с редактором, а не внутри его шаблона: у редактора
-            точка ввода совпадает с точкой viewport'а, и слой, занявший место сверху
-            или слева, сдвинул бы это соответствие.
+          No title bar here any more. A window's title bar belongs to the window, and the card that
+          stands for the window draws it now — above itself, outside its own bounds, in the form's
+          theme rather than this tool's. This layer keeps what is the designer's and not the
+          window's: the caption above, and whatever went wrong below.
         -->
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,*">
 
-        <!--
-            Панель групп стоит рядом с редактором, как и линейки: она читает его
-            публичный API и ничего не знает о его внутренностях.
-        -->
-        <views:GroupsPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                           x:Name="Groups"
-                           Editor="{Binding #Editor}" />
+        <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" Margin="14"
+                   Foreground="{DynamicResource RedText}"
+                   IsVisible="{Binding Problem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-        <!--
-            Панель свойств — вторая проверка API на потребителе: геометрию она пишет
-            публичным швом редактора, а раскладку и оформление — прямо в свойства
-            Avalonia, и разделы честно помечают, что из этого отменяется.
-        -->
-        <views:PropertiesPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
-                               x:Name="Properties"
-                               Editor="{Binding #Editor}" />
+      </StackPanel>
+    </DataTemplate>
 
-        <surface:SurfaceRuler Grid.Row="0" Grid.Column="2"
-                                   x:Name="TopRuler"
-                                   Orientation="Horizontal"
-                                   Editor="{Binding #Editor}" />
-        <surface:SurfaceRuler Grid.Row="1" Grid.Column="1"
-                                   Orientation="Vertical"
-                                   Editor="{Binding #Editor}"
-                                   IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />
+  </Window.Resources>
 
-        <surface:UiDesignerView Grid.Row="1" Grid.Column="2"
-                                 x:Name="Editor"
-                                 ItemsSource="{Binding Elements}"
-                                 SelectedItems="{Binding SelectedElements}"
-                                 SelectionMode="Multiple"
-                                 Guides="{Binding Guides}"
-                                 ShowGuides="False"
-                                 ViewportZoom="{Binding Zoom, Mode=TwoWay}">
-            <surface:UiDesignerView.InputGestures>
-                <surface:SurfaceInputGestures PanButton="Middle"
-                                                       PanModifiers="None"
-                                                       MarqueeButton="Left"
-                                                       MarqueeModifiers="None"
-                                                       ZoomModifiers="None"
-                                                       ContainerInteractionModifiers="Control"
-                                                       AdditiveSelectionModifiers="Shift" />
-            </surface:UiDesignerView.InputGestures>
-            <surface:UiDesignerView.InteractionOptions>
-                <surface:SurfaceInteractionOptions ZoomStep="1.1"
-                                                           DragStartThreshold="3"
-                                                           ResizeMinSize="10" />
-            </surface:UiDesignerView.InteractionOptions>
+  <Window.Styles>
+    <Style Selector="surface|UiDesignerFormItem" x:DataType="vm:FormViewModel">
+      <!--
+        Annotated rather than Loaded, because this designer knows exactly what is editable and the
+        editor should not have to guess. `Loaded` means "everything the author wrote", found by
+        walking the form; Annotated asks for designer metadata instead, and the object map says
+        precisely which controls have a document element behind them — a button's own label is
+        in the map and is not the document's.
+      -->
+      <Setter Property="ContentMode" Value="Annotated" />
 
-            <!--
-                Курсоры жестов. Значения здесь совпадают с библиотечными: блок стоит
-                как документация настройки, а не как её изменение. Курсоры ручек
-                изменения размера и линейки задаются иначе — ресурсами темы: у них
-                есть свой элемент под указателем.
-            -->
-            <surface:UiDesignerView.Cursors>
-                <surface:SurfaceCursors Move="SizeAll"
-                                                 Blocked="No"
-                                                 Pan="Hand"
-                                                 Marquee="Cross"
-                                                 Reorder="DragMove"
-                                                 GuideHorizontal="SizeNorthSouth"
-                                                 GuideVertical="SizeWestEast" />
-            </surface:UiDesignerView.Cursors>
+      <!--
+        The card is the container, and the container is the form: `UiDesignerFormItem` holds the
+        document's root itself, so nothing is nested inside it and nothing has to be kept the same
+        size as it. `Background` is the card under the form — a form that declares no background
+        shows it — and the form's own background is drawn over it by the item.
+        `UiDesignerItem.OutlineOpacity` turns on an overlay outline that costs no pixel — a
+        BorderThickness would lay the form out inside the stroke and make it two pixels narrower
+        than the document says.
+      -->
+      <Setter Property="Background" Value="{DynamicResource Bg1}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brd}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Location" Value="{Binding Location, Mode=TwoWay}" />
+      <Setter Property="Width" Value="{Binding Width, Mode=TwoWay}" />
+      <Setter Property="Height" Value="{Binding Height, Mode=TwoWay}" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
 
-            <surface:UiDesignerView.DataTemplates>
-                <DataTemplate DataType="{x:Type vm:HomeScreenViewModel}">
-                    <screens:HomeScreenView />
-                </DataTemplate>
+    <!--
+      A form on the canvas must not live its own life: a button would eat the press and a text box
+      would take focus and accept typing. The editor does not need the form to answer — it works out
+      what was pointed at from rectangles in world coordinates. In `Loaded` mode the item's own theme
+      switches this off; Annotated leaves it to the host, so the host does it, on the part that hosts
+      the form and not on the card, which has to go on answering presses.
+    -->
+    <Style Selector="surface|UiDesignerFormItem /template/ Decorator#PART_FormHost">
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+  </Window.Styles>
 
-                <DataTemplate DataType="{x:Type vm:ThermostatScreenViewModel}">
-                    <screens:ThermostatScreenView />
-                </DataTemplate>
+  <Grid RowDefinitions="42,*,26">
 
-                <DataTemplate DataType="{x:Type vm:AddDeviceDialogViewModel}">
-                    <screens:AddDeviceDialogView />
-                </DataTemplate>
+    <!--
+      The toolbar, which is the design's 42px header: a 24px mark, the project, the branch, the
+      configuration, then the right-hand cluster - search, the run bezel, settings, a rule, and the
+      window's own buttons. The window is BorderOnly, so this row *is* the title bar: it keeps the
+      frame (and with it resizing and snapping) and drops the system caption the design does not have.
+    -->
+    <Border x:Name="TitleBar" Classes="chrome" Grid.Row="0" Background="{DynamicResource Bg2}"
+            BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="10,0"
+            PointerPressed="OnTitleBarPressed">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
 
-                <DataTemplate DataType="{x:Type vm:AutomationScreenViewModel}">
-                    <screens:AutomationScreenView />
-                </DataTemplate>
-
-                <DataTemplate DataType="{x:Type vm:ComponentLibraryViewModel}">
-                    <screens:ComponentLibraryView />
-                </DataTemplate>
-            </surface:UiDesignerView.DataTemplates>
-
-        </surface:UiDesignerView>
-        </Grid>
-
-        <Border Grid.Row="0"
-                Background="#1E1E1E"
-                BorderBrush="#3E4451" BorderThickness="0,0,0,1"
-                Padding="10,4">
-
-            <StackPanel Spacing="6">
-            <!-- Верхний ряд: чем редактор настраивают и как на него смотрят. -->
-            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                            ToolTip.Tip="Шаг сетки в мировых единицах. К нему же идёт привязка при перетаскивании и изменении размера.">
-                    <PathIcon Data="M3,3V21H21V3H3M9,19H5V15H9V19M9,13H5V9H9V13M9,7H5V5H9V7M15,19H11V15H15V19M15,13H11V9H15V13M15,7H11V5H15V7M19,19H17V15H19V19M19,13H17V9H19V13M19,7H17V5H19V7Z"
-                              Width="12" Height="12" Foreground="#999"/>
-                    <TextBlock Text="Grid" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
-                    <ComboBox Name="GridStepBox"
-                              MinWidth="64"
-                              FontSize="11"
-                              VerticalAlignment="Center"
-                              ItemsSource="{Binding GridCellSizes}"
-                              SelectedItem="{Binding GridCellSize}"/>
-                    <CheckBox Name="SnapBox"
-                              FontSize="10"
-                              Foreground="#999"
-                              VerticalAlignment="Center"
-                              Content="snap"
-                              IsChecked="{Binding #Editor.InteractionOptions.IsSnapToGridEnabled}"/>
-                </StackPanel>
-
-                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
-
-                <!--
-                    Три выключателя показа. ShowGuides прячет направляющие, не трогая
-                    набор; ShowRulers убирает линейки целиком; IsScaleVisible оставляет
-                    полосу, с которой всё ещё вытягиваются направляющие, но без делений.
-                -->
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <CheckBox Name="SpacingBox"
-                              FontSize="10"
-                              Foreground="#999"
-                              VerticalAlignment="Center"
-                              Content="spacing"
-                              IsChecked="{Binding #Editor.InteractionOptions.IsEqualSpacingEnabled}"/>
-                    <CheckBox Name="GuidesBox"
-                              FontSize="10"
-                              Foreground="#999"
-                              VerticalAlignment="Center"
-                              Content="guides"
-                              IsChecked="{Binding #Editor.ShowGuides}"/>
-                    <CheckBox Name="RulersBox"
-                              FontSize="10"
-                              Foreground="#999"
-                              VerticalAlignment="Center"
-                              Content="rulers"
-                              IsChecked="{Binding #Editor.ShowRulers}"/>
-                    <CheckBox Name="ScaleBox"
-                              FontSize="10"
-                              Foreground="#999"
-                              VerticalAlignment="Center"
-                              Content="ticks"
-                              IsEnabled="{Binding #Editor.ShowRulers}"
-                              IsChecked="{Binding #TopRuler.IsScaleVisible}"/>
-                </StackPanel>
-
-                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
-
-                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                    <PathIcon Data="M15.5,14L14.71,14L14.43,13.73C15.41,12.59 16,11.11 16,9.5C16,5.91 13.09,3 9.5,3C5.91,3 3,5.91 3,9.5C3,13.09 5.91,16 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71L14,15.5L19,20.5L20.5,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5C5,7.01 7.01,5 9.5,5C11.99,5 14,7.01 14,9.5C14,11.99 11.99,14 9.5,14Z"
-                              Width="14" Height="14" Foreground="#999"/>
-
-                    <Slider Width="80" VerticalAlignment="Center"
-                            Minimum="{Binding #Editor.MinZoom}"
-                            Maximum="{Binding #Editor.MaxZoom}"
-                            Value="{Binding #Editor.ViewportZoom}"
-                            TickFrequency="0.1" IsSnapToTickEnabled="False"/>
-
-                    <Button Classes="toolBtn" ToolTip.Tip="Reset Zoom (100%)"
-                            Command="{Binding ResetZoomCommand}"
-                            Padding="4,2">
-                        <TextBlock Text="{Binding #Editor.ViewportZoom, StringFormat='{}{0:P0}'}"
-                                   Foreground="White" FontSize="11" Width="35" TextAlignment="Center"/>
-                    </Button>
-                </StackPanel>
-
-                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
-
-                <Button Classes="toolBtn"
-                        ToolTip.Tip="Center active item in view"
-                        Click="CenterActiveItem_OnClick"
-                        IsVisible="{Binding ActiveItem, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="M12,2A10,10 0 0 1 22,12A10,10 0 0 1 12,22A10,10 0 0 1 2,12A10,10 0 0 1 12,2M11,7V11H7V13H11V17H13V13H17V11H13V7H11Z"
-                                  Width="14"
-                                  Height="14"
-                                  Foreground="#4C97FF"/>
-                        <TextBlock Text="Center"
-                                   Foreground="White"
-                                   FontSize="11"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Classes="toolBtn"
-                        ToolTip.Tip="Fit active item to view"
-                        Click="FitActiveItem_OnClick"
-                        IsVisible="{Binding ActiveItem, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="M3,3H9V5H5V9H3V3M21,3V9H19V5H15V3H21M3,21V15H5V19H9V21H3M21,21H15V19H19V15H21V21Z"
-                                  Width="14"
-                                  Height="14"
-                                  Foreground="#4C97FF"/>
-                        <TextBlock Text="Fit"
-                                   Foreground="White"
-                                   FontSize="11"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Classes="toolBtn"
-                        ToolTip.Tip="Center selected items in view"
-                        Click="CenterSelection_OnClick"
-                        IsVisible="{Binding HasSelection}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="M12,2L15,9H22L16.5,13.5L18.5,21L12,16.5L5.5,21L7.5,13.5L2,9H9L12,2Z"
-                                  Width="14"
-                                  Height="14"
-                                  Foreground="#4C97FF"/>
-                        <TextBlock Text="Center Sel"
-                                   Foreground="White"
-                                   FontSize="11"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Classes="toolBtn"
-                        ToolTip.Tip="Fit selected items to view"
-                        Click="FitSelection_OnClick"
-                        IsVisible="{Binding HasSelection}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="M4,4H9V6H6V9H4V4M20,4V9H18V6H15V4H20M4,20V15H6V18H9V20H4M20,20H15V18H18V15H20V20M9,9H15V15H9V9Z"
-                                  Width="14"
-                                  Height="14"
-                                  Foreground="#4C97FF"/>
-                        <TextBlock Text="Fit Sel"
-                                   Foreground="White"
-                                   FontSize="11"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
-
-                <Button Classes="toolBtn"
-                        Name="UndoButton"
-                        ToolTip.Tip="Undo"
-                        Click="Undo_OnClick">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="M12.5,8C9.85,8 7.45,8.99 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"
-                                  Width="14" Height="14" Foreground="#4C97FF"/>
-                        <TextBlock Text="Undo" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Classes="toolBtn"
-                        Name="RedoButton"
-                        ToolTip.Tip="Redo"
-                        Click="Redo_OnClick">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="M18.4,10.6C16.55,8.99 14.15,8 11.5,8C6.85,8 2.92,11.03 1.53,15.22L3.9,16C4.95,12.81 7.96,10.5 11.5,10.5C13.46,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"
-                                  Width="14" Height="14" Foreground="#4C97FF"/>
-                        <TextBlock Text="Redo" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-
-            <!--
-                Нижний ряд — читалка: что выбрано и какие у него числа. Она меняется
-                на каждый клик, поэтому и отделена от кнопок, которые стоят на месте.
-            -->
-            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Opacity="0.85">
-                <!--
-                    Считает формы, а не контролы: SelectedElements зеркалит SelectedItems,
-                    то есть индексный слой выделения. Подпись раньше говорила «items»,
-                    и четыре выбранных контрола внутри одной формы читались как «1 items» —
-                    будто выбран один. Число самих контролов стоит рядом, в «Targets».
-                -->
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
-                            ToolTip.Tip="Выбрано форм (UiDesignerItem). Число выбранных контролов — правее, «Targets»">
-                    <PathIcon Data="M12.5,17.5L17.5,12.5L12.5,12.5L12.5,17.5ZM6.5,7.5L6.5,12.5L11.5,12.5L6.5,7.5ZM19,3L19,9L21,9L21,3C21,1.9 20.1,1 19,1L13,1L13,3L19,3ZM3,21C3,22.1 3.9,23 5,23L11,23L11,21L5,21L5,15L3,15L3,21ZM3,9L5,9L5,3L11,3L11,1L5,1C3.9,1 3,1.9 3,3L3,9ZM21,15L19,15L19,21L13,21L13,23L19,23C20.1,23 21,22.1 21,21L21,15Z"
-                              Width="14" Height="14" Foreground="#4C97FF"/>
-                    <TextBlock Text="{Binding SelectedElements.Count, StringFormat='{}{0} forms'}"
-                               Foreground="White" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal"
-                            Spacing="6"
-                            VerticalAlignment="Center"
-                            Opacity="0.9"
-                            IsVisible="{Binding #Editor.PrimarySelectionTarget, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <TextBlock Text="Target:"
-                               Foreground="#666"
-                               FontSize="10"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.PrimarySelectionTarget.DisplayName}"
-                               Foreground="#F6C768"
-                               FontSize="11"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="Targets:"
-                               Foreground="#666"
-                               FontSize="10"
-                               Margin="10,0,0,0"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.SelectedTargetsCount, StringFormat='{}{0}'}"
-                               Foreground="#7EE787"
-                               FontSize="11"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-
-                    <!-- Чья раскладка распоряжается положением и что из этого следует.
-                         Отвечает на «почему этот контрол не двигается» без отладчика. -->
-                    <TextBlock Text="Layout:"
-                               Foreground="#666"
-                               FontSize="10"
-                               Margin="10,0,0,0"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.PrimarySelectionPlacement}"
-                               Foreground="#C792EA"
-                               FontSize="11"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.PrimarySelectionMovePolicy, StringFormat='move {0}'}"
-                               Foreground="#7F849C"
-                               FontSize="10"
-                               VerticalAlignment="Center"
-                               ToolTip.Tip="Действующая политика: политика пользователя, пересечённая с возможностями раскладки"/>
-
-                    <!-- Геометрия самого выбранного элемента в координатах поверхности.
-                         Блок ниже показывает контейнер, а этот — то, что выделено. -->
-                    <TextBlock Text="Sel:" Foreground="#666" FontSize="10"
-                               Margin="10,0,0,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.SelectionBounds.X, StringFormat='{}{0:0}'}"
-                               Foreground="#CCC" FontSize="11" FontFamily="Consolas, Monospace"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.SelectionBounds.Y, StringFormat='{}{0:0}'}"
-                               Foreground="#CCC" FontSize="11" FontFamily="Consolas, Monospace"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.SelectionBounds.Width, StringFormat='{}{0:0}'}"
-                               Foreground="#7F849C" FontSize="11" FontFamily="Consolas, Monospace"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.SelectionBounds.Height, StringFormat='{}{0:0}'}"
-                               Foreground="#7F849C" FontSize="11" FontFamily="Consolas, Monospace"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
-
-                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
-
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Opacity="0.9"
-                            IsVisible="{Binding ActiveItem, Converter={x:Static ObjectConverters.IsNotNull}}">
-
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <PathIcon Data="M12,2L16,6H13V13H20V10L24,14L20,18V15H13V22H16L12,26L8,22H11V15H4V18L0,14L4,10V13H11V6H8L12,2Z"
-                                  Width="12" Height="12" Foreground="#999" ToolTip.Tip="Position"/>
-
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="X" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding ActiveItem.X, StringFormat='{}{0:0}'}"
-                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="Y" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding ActiveItem.Y, StringFormat='{}{0:0}'}"
-                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <Rectangle Width="1" Height="10" Fill="#3E4451" Opacity="0.5"/>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <PathIcon Data="M2,6V8H5V6H2M2,10V12H5V10H2M2,14V16H5V14H2M2,18V20H5V18H2M6,2V22H18V2H6M16,6V8H8V6H16M16,10V12H8V10H16M16,14V16H8V14H16M16,18V20H8V18H16M20,6V8H22V6H20M20,10V12H22V10H20M20,14V16H22V14H20M20,18V20H22V18H20Z"
-                                  Width="12" Height="12" Foreground="#999" ToolTip.Tip="Size"/>
-
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="W" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding ActiveItem.Width, StringFormat='{}{0:F0}'}"
-                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="H" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding ActiveItem.Height, StringFormat='{}{0:F0}'}"
-                                       Foreground="#CCC" FontSize="12" Width="30" FontFamily="Consolas, Monospace"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                </StackPanel>
-
-                <Rectangle Width="1" Height="16" Fill="#3E4451"/>
-
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Opacity="0.5">
-                    <TextBlock Text="Viewport:" Foreground="#666" FontSize="10" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding #Editor.ViewportLocation.X, StringFormat='{}{0:0}'}" Foreground="#999" FontSize="10"/>
-                    <TextBlock Text="{Binding #Editor.ViewportLocation.Y, StringFormat='{}{0:0}'}" Foreground="#999" FontSize="10"/>
-                </StackPanel>
-            </StackPanel>
-            </StackPanel>
+        <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6" Background="{DynamicResource AccFill}"
+                VerticalAlignment="Center">
+          <TextBlock Text="Ax" Foreground="{DynamicResource OnAcc}" FontWeight="Bold" FontSize="11"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
 
+        <Button Grid.Column="1" Classes="tool" Command="{Binding OpenCommand}" Margin="8,0,0,0"
+                Foreground="{DynamicResource Fg}" ToolTip.Tip="Open a solution or project (Ctrl+O)">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding ProjectName}" FontWeight="SemiBold" FontSize="13" />
+            <Path Data="M4.2 6L8 9.8 11.8 6" Width="12" Height="12" Stretch="Uniform"
+                  Stroke="{DynamicResource Fg2}" StrokeThickness="1.4" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- The branch, read out of the repository the project sits in, and absent when there is none. -->
+        <Border Grid.Column="2" Height="28" CornerRadius="6" Padding="10,0" Margin="8,0,0,0"
+                VerticalAlignment="Center" IsVisible="{Binding HasBranch}"
+                ToolTip.Tip="The branch checked out where the project lives">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Path Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"
+                  Stroke="{DynamicResource Fg2}" StrokeThickness="1.2"
+                  Data="M4.7 9.5V8a2 2 0 0 1 2-2h2.6a2 2 0 0 0 2-1.5
+                        M2.9 11.3a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0
+                        M9.5 4.7a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0-3.6 0" />
+            <TextBlock Text="{Binding BranchName}" FontSize="12" Foreground="{DynamicResource Fg2}" />
+            <TextBlock Text="{Binding BranchAhead}" FontSize="12" Foreground="{DynamicResource Fg3}"
+                       IsVisible="{Binding BranchAhead, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </Border>
+
+        <!--
+          The configuration is chosen, not displayed. Changing it reloads the solution, because it is
+          an evaluation input rather than a label: output paths and conditioned items move with it.
+        -->
+        <Border Grid.Column="3" Height="28" CornerRadius="6" Padding="4,0,2,0" Margin="8,0,0,0"
+                VerticalAlignment="Center">
+          <ComboBox Classes="chip" ItemsSource="{Binding Configurations}"
+                    SelectedItem="{Binding Configuration, Mode=TwoWay}"
+                    ToolTip.Tip="What the designer evaluates, builds and starts" />
+        </Border>
+
+        <Button Grid.Column="5" Classes="icon" Width="30" Height="28" Margin="8,0,0,0"
+                Command="{Binding FocusSearchCommand}" ToolTip.Tip="Search the toolbox">
+          <Path Data="M10.2 10.2L13 13M10.9 7.2a3.7 3.7 0 1 1-7.4 0 3.7 3.7 0 0 1 7.4 0z"
+                Width="15" Height="15" Stretch="Uniform"
+                Stroke="{DynamicResource Fg2}" StrokeThickness="1.3" />
+        </Button>
+
+        <!-- The run bezel. Idle and running are two different sets of controls, as the design has them. -->
+        <!--
+          Shown only when this run is holding types the project has moved past — a class added or
+          changed since it was opened. Pressing it swaps the types in place, keeping the tabs, the
+          edits and the history; it starts the studio again only when the old types will not leave
+          the process, which is the one case a swap cannot be honest about.
+        -->
+        <Button Grid.Column="6" Classes="tool" Height="26" Margin="8,0,0,0" VerticalAlignment="Center"
+                Command="{Binding RestartCommand}" IsVisible="{Binding NeedsRestart}"
+                ToolTip.Tip="{Binding RestartReason}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Path Data="M13 8a5 5 0 1 1-1.6-3.7M13.3 2.9v2.7h-2.7" Width="13" Height="13"
+                  Stretch="Uniform" Stroke="{DynamicResource Yel}" StrokeThickness="1.4"
+                  VerticalAlignment="Center" />
+            <TextBlock Text="Reload" FontSize="12" Foreground="{DynamicResource YelText}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <Border Grid.Column="7" Background="{DynamicResource Bg1}" BorderBrush="{DynamicResource Brd}"
+                BorderThickness="1" CornerRadius="7" Padding="2" VerticalAlignment="Center" Margin="8,0,0,0">
+          <Panel>
+
+            <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding !IsRunning}">
+              <Button Classes="icon" Width="30" Height="24" Command="{Binding RunCommand}"
+                      ToolTip.Tip="Run (F5)">
+                <Path Data="M5.2 3.4v9.2L13 8z" Width="14" Height="14" Stretch="Uniform"
+                      Fill="{DynamicResource Grn}" />
+              </Button>
+              <Button Classes="icon" Width="30" Height="24" Command="{Binding BuildCommand}"
+                      ToolTip.Tip="Build (Ctrl+B)">
+                <Path Data="M13 8a5 5 0 1 1-1.6-3.7M13.3 2.9v2.7h-2.7" Width="14" Height="14"
+                      Stretch="Uniform" Stroke="{DynamicResource Fg2}" StrokeThickness="1.4" />
+              </Button>
+              <!-- Which project Run starts, out of the ones the solution says are startable. -->
+              <ComboBox Classes="chip" Height="24" MinWidth="130" MaxWidth="240"
+                        ItemsSource="{Binding RunTargets}"
+                        SelectedItem="{Binding RunTarget, Mode=TwoWay}"
+                        ToolTip.Tip="What Run would start" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsRunning}">
+              <StackPanel Orientation="Horizontal" Spacing="6" Height="24" Margin="9,0"
+                          VerticalAlignment="Center">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource Grn}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding RunningText}" FontSize="12"
+                           Foreground="{DynamicResource GrnText}" VerticalAlignment="Center" />
+              </StackPanel>
+              <Button Classes="icon" Width="30" Height="24" Command="{Binding RunCommand}"
+                      ToolTip.Tip="Restart">
+                <Path Data="M13 8a5 5 0 1 1-1.6-3.7M13.3 2.9v2.7h-2.7" Width="14" Height="14"
+                      Stretch="Uniform" Stroke="{DynamicResource Fg2}" StrokeThickness="1.4" />
+              </Button>
+              <!-- Pause and resume are one button, because they are one decision seen twice. -->
+              <Button Classes="icon" Width="30" Height="24" Command="{Binding PauseCommand}"
+                      ToolTip.Tip="{Binding PauseTip}">
+                <Panel>
+                  <Path Data="M6 3.4v9.2M10 3.4v9.2" Width="13" Height="13" Stretch="Uniform"
+                        Stroke="{DynamicResource Fg2}" StrokeThickness="1.7"
+                        IsVisible="{Binding !IsPaused}" />
+                  <Path Data="M5.4 3.4v9.2L12.6 8z" Width="13" Height="13" Stretch="Uniform"
+                        Fill="{DynamicResource Grn}" IsVisible="{Binding IsPaused}" />
+                </Panel>
+              </Button>
+
+              <Button Classes="icon" Width="30" Height="24" Command="{Binding StopCommand}"
+                      ToolTip.Tip="Stop">
+                <Path Data="M4 4h8v8h-8z" Width="13" Height="13" Stretch="Uniform"
+                      Fill="{DynamicResource Red}" />
+              </Button>
+            </StackPanel>
+
+          </Panel>
+        </Border>
+
+        <!-- Settings. One icon in the design, so one icon here, with what it settles behind it. -->
+        <Button Grid.Column="8" Classes="icon" Width="30" Height="28" Margin="8,0,0,0"
+                ToolTip.Tip="Settings">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuItem Header="{Binding ThemeMenuHeader}" Command="{Binding ToggleThemeCommand}" />
+              <MenuItem Header="-" />
+              <MenuItem Header="Snap to grid" Command="{Binding ToggleSnapToGridCommand}" />
+              <MenuItem Header="Snap to guides" Command="{Binding ToggleSnapToGuidesCommand}" />
+              <MenuItem Header="-" />
+              <!--
+                Three switches that people reach for separately. Hiding the rulers takes away the
+                way to make a guide; hiding the guides leaves the lines in the set and leaves the
+                pull to them working, the same way hiding the grid does. Clearing is the only one
+                of the three that throws anything away.
+              -->
+              <MenuItem Header="Rulers" Command="{Binding ToggleRulersCommand}" />
+              <MenuItem Header="Guides" Command="{Binding ToggleGuidesCommand}" />
+              <MenuItem Header="Clear guides" Command="{Binding ClearGuidesCommand}" />
+              <MenuItem Header="-" />
+              <MenuItem Header="Restore packages" Command="{Binding RestoreCommand}" />
+            </MenuFlyout>
+          </Button.Flyout>
+          <Path Width="15" Height="15" Stretch="Uniform"
+                Stroke="{DynamicResource Fg2}" StrokeThickness="1.3"
+                Data="M3 5h10M3 11h10
+                      M4.5 5a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0-3.4 0
+                      M8.1 11a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0-3.4 0" />
+        </Button>
+
+        <Rectangle Grid.Column="9" Width="1" Height="18" Fill="{DynamicResource Brd}" Margin="10,0" />
+
+        <!-- The window's own buttons, because BorderOnly leaves no system ones. -->
+        <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <Button Classes="icon" Width="30" Height="26" Click="OnMinimise" ToolTip.Tip="Minimise">
+            <!-- A rule rather than a Path: a flat geometry has no height for Uniform to scale. -->
+            <Rectangle Width="9" Height="1.3" Fill="{DynamicResource Fg2}" />
+          </Button>
+          <Button Classes="icon" Width="30" Height="26" Click="OnMaximise" ToolTip.Tip="Maximise">
+            <Path Data="M4 4h8v8h-8z" Width="13" Height="13" Stretch="Uniform"
+                  Stroke="{DynamicResource Fg2}" StrokeThickness="1.3" Fill="Transparent" />
+          </Button>
+          <Button Classes="icon closeButton" Width="30" Height="26" Click="OnClose" ToolTip.Tip="Close">
+            <Path Data="M4.5 4.5l7 7M11.5 4.5l-7 7" Width="13" Height="13" Stretch="Uniform"
+                  Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.3" />
+          </Button>
+        </StackPanel>
+
+      </Grid>
+    </Border>
+
+    <!-- Body -->
+    <Grid Grid.Row="1" ColumnDefinitions="262,4,*,4,302">
+
+      <!-- Left: hierarchy over toolbox -->
+      <Border Classes="chrome" Grid.Column="0" Background="{DynamicResource Bg2}"
+              BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,1,0">
+        <Grid RowDefinitions="1.15*,1,*">
+
+          <Grid Grid.Row="0" RowDefinitions="34,Auto,*">
+            <Border Grid.Row="0" Classes="panelHeader">
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Classes="panelTitle" Text="Hierarchy" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="icon" Width="24" Height="24"
+                        Command="{Binding NewFormCommand}" ToolTip.Tip="New form">
+                  <Path Data="M8 3.5v9M3.5 8h9" Width="13" Height="13" Stretch="Uniform"
+                        Stroke="{DynamicResource Fg2}" StrokeThickness="1.3" />
+                </Button>
+                <Button Grid.Column="2" Classes="icon" Width="24" Height="24"
+                        Click="OnFindInTree" ToolTip.Tip="Find in the tree">
+                  <Path Data="M10.2 10.2L13 13M10.9 7.2a3.7 3.7 0 1 1-7.4 0 3.7 3.7 0 0 1 7.4 0z"
+                        Width="13" Height="13" Stretch="Uniform"
+                        Stroke="{DynamicResource Fg2}" StrokeThickness="1.3" />
+                </Button>
+              </Grid>
+            </Border>
+            <!-- The filter, which is only there while it is being used. -->
+            <TextBox Grid.Row="1" x:Name="TreeSearch" Height="26" Margin="8,4"
+                     PlaceholderText="Name or type"
+                     IsVisible="{Binding IsHierarchySearchOpen}"
+                     Text="{Binding HierarchyFilter, Mode=TwoWay}" />
+
+            <ListBox Grid.Row="2" x:Name="HierarchyTree" ItemsSource="{Binding Hierarchy}"
+                     SelectedItem="{Binding SelectedHierarchyRow, Mode=TwoWay}"
+                     AutomationProperties.Name="Hierarchy">
+              <!-- A row is a template of glyphs and text blocks, and unnamed it is announced by the
+                   class of its view model. Its name is the element's. -->
+              <ListBox.Styles>
+                <Style Selector="ListBoxItem" x:DataType="vm:HierarchyRow">
+                  <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                </Style>
+              </ListBox.Styles>
+              <!--
+                One flyout on the list rather than one per row: the commands act on the selection,
+                and the right press selects the row under the pointer before the menu opens — the
+                handler in the code-behind is what makes that ordering true.
+              -->
+              <ListBox.ContextFlyout>
+                <MenuFlyout>
+                  <MenuItem Header="Copy" Command="{Binding CopyCommand}" InputGesture="Ctrl+C" />
+                  <MenuItem Header="Cut" Command="{Binding CutCommand}" InputGesture="Ctrl+X" />
+                  <MenuItem Header="Paste" Command="{Binding PasteCommand}" InputGesture="Ctrl+V" />
+                  <MenuItem Header="Duplicate" Command="{Binding DuplicateCommand}" InputGesture="Ctrl+D" />
+                  <MenuItem Header="-" />
+                  <MenuItem Header="Move up" Command="{Binding MoveUpCommand}" InputGesture="Alt+Up" />
+                  <MenuItem Header="Move down" Command="{Binding MoveDownCommand}" InputGesture="Alt+Down" />
+                  <MenuItem Header="-" />
+                  <MenuItem Header="Wrap in">
+                    <MenuItem Header="StackPanel" Click="OnWrap" Tag="StackPanel" />
+                    <MenuItem Header="Grid" Click="OnWrap" Tag="Grid" />
+                    <MenuItem Header="Border" Click="OnWrap" Tag="Border" />
+                    <MenuItem Header="ScrollViewer" Click="OnWrap" Tag="ScrollViewer" />
+                  </MenuItem>
+                  <MenuItem Header="Unwrap" Click="OnUnwrap" />
+                  <MenuItem Header="-" />
+                  <MenuItem Header="Delete" Command="{Binding DeleteSelectedCommand}" InputGesture="Delete" />
+                </MenuFlyout>
+              </ListBox.ContextFlyout>
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:HierarchyRow">
+                  <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" Height="24">
+                    <Border Width="{Binding Indent}" />
+                    <Path Grid.Column="1" Data="M4.2 6L8 9.8 11.8 6" Width="13" Height="13"
+                          Stretch="Uniform" Opacity="{Binding ChevronOpacity}"
+                          Stroke="{DynamicResource Fg3}" StrokeThickness="1.4"
+                          VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <Path Grid.Column="2" Data="{Binding Glyph}" Width="14" Height="14"
+                          Stretch="Uniform" StrokeThickness="1.2" VerticalAlignment="Center"
+                          Stroke="{Binding Hue, Converter={x:Static vm:Converters.Hue}}"
+                          Margin="0,0,5,0" />
+                    <TextBlock Grid.Column="3" Text="{Binding Name}" FontSize="13"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="4" Text="{Binding TypeLabel}" FontSize="11" Margin="6,0,0,0"
+                               Foreground="{DynamicResource Fg3}" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+
+          <Border Grid.Row="1" Background="{DynamicResource Brd}" />
+
+          <Grid Grid.Row="2" RowDefinitions="34,*">
+            <Border Grid.Row="0" Classes="panelHeader">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="panelTitle" Text="Toolbox" VerticalAlignment="Center" />
+                <TextBox x:Name="ToolboxSearch" Grid.Column="1" Width="104" Height="24" MinHeight="24" PlaceholderText="Search"
+                         Text="{Binding ToolboxFilter, Mode=TwoWay}" FontSize="11" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+            <ScrollViewer Grid.Row="1">
+              <ItemsControl x:Name="ToolboxList" ItemsSource="{Binding ToolboxGroups}" Margin="0,6">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ToolboxGroup">
+                    <StackPanel Margin="0,0,0,6">
+                      <TextBlock Classes="section" Text="{Binding Name}" Margin="12,0,0,2" Height="24" />
+                      <ItemsControl ItemsSource="{Binding Items}" Margin="8,0">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:ToolboxEntry">
+                            <Border Height="26" CornerRadius="5" Padding="7,0" Background="Transparent"
+                                    Cursor="Hand" ToolTip.Tip="{Binding Tip}">
+                              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <Path Data="{Binding Glyph}" Width="14" Height="14" Stretch="Uniform"
+                                      StrokeThickness="1.2"
+                                      Stroke="{Binding Hue, Converter={x:Static vm:Converters.Hue}}" />
+                                <TextBlock Text="{Binding Name}" FontSize="12"
+                                           TextTrimming="CharacterEllipsis" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+
+        </Grid>
+      </Border>
+
+      <GridSplitter Classes="chrome" Grid.Column="1" />
+
+      <!-- Centre -->
+      <Grid Grid.Column="2" RowDefinitions="36,32,*,4,212" Background="{DynamicResource Bg1}">
+
+        <Border Classes="chrome" Grid.Row="0" Background="{DynamicResource Bg2}"
+                BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="6,0">
+          <ItemsControl ItemsSource="{Binding Forms}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FormViewModel">
+                <!--
+                  A button with a button in it. The tab takes the click anywhere but on its cross;
+                  the cross handles its own press and stops it there, so closing a tab does not first
+                  switch to what it is about to close. Both are reached by Tab and pressed by Enter,
+                  which the border this used to be was not.
+                -->
+                <Button Classes="tab" Classes.active="{Binding IsActive}" Click="OnTabChosen"
+                        AutomationProperties.Name="{Binding Title}">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Path Data="M2.5 3h11v10h-11zM2.5 6h11" Width="13" Height="13" Stretch="Uniform"
+                          Stroke="{DynamicResource Acc}" StrokeThickness="1.2" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Title}" FontWeight="Medium" VerticalAlignment="Center" />
+                    <Button Classes="tabClose" Content="×" Click="OnTabClosed" ToolTip.Tip="Close" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+
+        <Border Classes="chrome" Grid.Row="1" Background="{DynamicResource Bg2}"
+                BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="12,0">
+          <Grid ColumnDefinitions="*,Auto">
+
+            <ItemsControl ItemsSource="{Binding Breadcrumb}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Crumb">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="›" FontSize="12" Foreground="{DynamicResource Fg3}"
+                               IsVisible="{Binding !IsFirst}" />
+                    <TextBlock Text="{Binding Name}" FontSize="12"
+                               FontWeight="{Binding Weight}"
+                               Foreground="{Binding IsLast, Converter={x:Static vm:Converters.CurrentWhenTrue}}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Grid.Column="1" Background="{DynamicResource Bg1}" BorderBrush="{DynamicResource Brd}"
+                    BorderThickness="1" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal">
+                <Button Classes="tool" Height="24" Padding="10,0" FontSize="11" CornerRadius="4" Content="Design"
+                        Command="{Binding ShowDesignCommand}"
+                        Background="{Binding IsDesignView, Converter={x:Static vm:Converters.AccentWhenTrue}}"
+                        Foreground="{Binding IsDesignView, Converter={x:Static vm:Converters.OnAccentWhenTrue}}" />
+                <Button Classes="tool" Height="24" Padding="10,0" FontSize="11" CornerRadius="4" Content="XAML"
+                        Command="{Binding ShowXamlCommand}"
+                        Background="{Binding IsXamlView, Converter={x:Static vm:Converters.AccentWhenTrue}}"
+                        Foreground="{Binding IsXamlView, Converter={x:Static vm:Converters.OnAccentWhenTrue}}" />
+                <Button Classes="tool" Height="24" Padding="10,0" FontSize="11" CornerRadius="4" Content="Split"
+                        Command="{Binding ShowSplitCommand}"
+                        Background="{Binding IsSplitView, Converter={x:Static vm:Converters.AccentWhenTrue}}"
+                        Foreground="{Binding IsSplitView, Converter={x:Static vm:Converters.OnAccentWhenTrue}}" />
+              </StackPanel>
+            </Border>
+
+          </Grid>
+        </Border>
+
+        <!--
+          The columns are dealt by the code-behind on every view change, because two of the three
+          arrangements cannot be said in markup: XAML-only needs the editor to take the star and
+          the canvas to take nothing, and a splitter drag writes local widths that would otherwise
+          outlive the mode that made them.
+        -->
+        <Grid Grid.Row="2" x:Name="CentreColumns" ColumnDefinitions="*,Auto,0">
+
+          <!--
+            The clip lives here, on the pane, because this is the one thing the viewport transform
+            does not move. Put on the chrome layer itself it would be evaluated in that layer's own
+            pre-transform space and pan and zoom with the forms — cutting the caption and title bar
+            off whichever form had strayed outside a rectangle that no longer corresponded to the
+            screen, while the card it belongs to stayed plainly visible. The editor's own theme
+            arranges it the same way round: clip the untransformed root, never the transformed layer.
+          -->
+          <!--
+            The rulers stand beside the editor rather than inside it, which is the library's own
+            rule and not a layout preference: the editor's input point is its viewport's origin, so
+            a strip taking the top or the left from within its template would move that origin and
+            all three coordinate systems with it. Placed here they read the editor's zoom and
+            offset through `Editor` and stay in step without knowing how either works.
+
+            Guides are dragged off them, which is why hiding the rulers hides the way to make one
+            while leaving the lines already made exactly where they were.
+          -->
+          <Grid Grid.Column="0" IsVisible="{Binding IsDesignVisible}"
+                ColumnDefinitions="Auto,*" RowDefinitions="Auto,*">
+
+            <Border Grid.Row="0" Grid.Column="0"
+                    Background="{DynamicResource Bg2}"
+                    BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,1,1"
+                    IsVisible="{Binding ShowRulers}" />
+
+            <surface:SurfaceRuler Grid.Row="0" Grid.Column="1"
+                                        x:Name="TopRuler"
+                                        Orientation="Horizontal"
+                                        Height="18"
+                                        IsVisible="{Binding ShowRulers}"
+                                        Editor="{Binding #Surface}"
+                                        Background="{DynamicResource Bg2}"
+                                        TickBrush="{DynamicResource Fg3}"
+                                        LabelBrush="{DynamicResource Fg3}" />
+
+            <surface:SurfaceRuler Grid.Row="1" Grid.Column="0"
+                                        Orientation="Vertical"
+                                        Width="18"
+                                        IsVisible="{Binding ShowRulers}"
+                                        Editor="{Binding #Surface}"
+                                        Background="{DynamicResource Bg2}"
+                                        TickBrush="{DynamicResource Fg3}"
+                                        LabelBrush="{DynamicResource Fg3}"
+                                        IsScaleVisible="{Binding #TopRuler.IsScaleVisible}" />
+
+          <Panel Grid.Row="1" Grid.Column="1" ClipToBounds="True">
+            <views:FormsDesignerView x:Name="Surface"
+                                 ItemsSource="{Binding Shown}"
+                                 SelectedItems="{Binding SelectedForms}"
+                                 SelectionMode="Multiple"
+                                 Guides="{Binding Guides}"
+                                 ShowGuides="{Binding ShowGuides}"
+                                 ShowRulers="{Binding ShowRulers}"
+                                 ViewportZoom="{Binding Zoom, Mode=TwoWay}">
+              <surface:UiDesignerView.InputGestures>
+                <surface:SurfaceInputGestures PanButton="Middle"
+                                                  PanModifiers="None"
+                                                  MarqueeButton="Left"
+                                                  MarqueeModifiers="None"
+                                                  ZoomModifiers="None"
+                                                  ContainerInteractionModifiers="Control"
+                                                  AdditiveSelectionModifiers="Shift"
+                                                  LargeNudgeModifiers="Shift"
+                                                  SnapBypassModifiers="Alt"
+                                                  ContainerEmptyAreaDrag="Marquee" />
+              </surface:UiDesignerView.InputGestures>
+              <surface:UiDesignerView.InteractionOptions>
+                <surface:SurfaceInteractionOptions ZoomStep="1.1"
+                                                       DragStartThreshold="3"
+                                                       ResizeMinSize="8"
+                                                       IsResizeContainedToParent="True"
+                                                       IsSnapToGridEnabled="{Binding SnapToGrid}"
+                                                       IsSnapToGuidesEnabled="{Binding SnapToGuides}"
+                                                       SnapGuideTolerance="6"
+                                                       NudgeStep="1"
+                                                       LargeNudgeStep="10" />
+              </surface:UiDesignerView.InteractionOptions>
+            </views:FormsDesignerView>
+
+            <!--
+              The chrome layer. Transformed by the editor's own viewport transform, so it pans and
+              zooms with the forms without knowing how either works, and hit-test invisible, so a
+              click always reaches the editor underneath.
+            -->
+            <ItemsControl ItemsSource="{Binding Shown}"
+                          ItemTemplate="{StaticResource FormChromeTemplate}"
+                          IsHitTestVisible="False"
+                          ClipToBounds="False"
+                          RenderTransform="{Binding #Surface.ViewportTransform}"
+                          RenderTransformOrigin="0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><Canvas /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+
+              <!--
+                On the container, not on the template's root. An ItemsControl wraps each item in a
+                presenter, and it is the presenter the Canvas positions; a Canvas.Left set inside the
+                template is read by whatever the template's root sits in, which is the presenter and
+                not the Canvas. Every form then stacks at the origin, which is exactly what it did.
+              -->
+              <ItemsControl.Styles>
+                <Style Selector="ContentPresenter" x:DataType="vm:FormViewModel">
+                  <Setter Property="Canvas.Left" Value="{Binding ChromeLeft}" />
+                  <Setter Property="Canvas.Top" Value="{Binding ChromeTop}" />
+                </Style>
+              </ItemsControl.Styles>
+            </ItemsControl>
+
+            <Border Classes="chrome" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="14"
+                    Background="{DynamicResource Bg2}" BorderBrush="{DynamicResource Brd}"
+                    BorderThickness="1" CornerRadius="7">
+              <StackPanel Orientation="Horizontal">
+                <Button Classes="icon" Width="28" Height="26" Content="−" Command="{Binding ZoomOutCommand}"
+                        ToolTip.Tip="Zoom out" />
+                <Button Classes="tool" Height="26" Padding="4,0" FontSize="12"
+                        Content="{Binding ZoomText}" Command="{Binding ZoomResetCommand}"
+                        ToolTip.Tip="Reset the zoom to 100%" />
+                <Button Classes="icon" Width="28" Height="26" Content="+" Command="{Binding ZoomInCommand}"
+                        ToolTip.Tip="Zoom in" />
+                <Button Classes="icon" Width="28" Height="26" Click="OnZoomToFit"
+                        ToolTip.Tip="Fit the form to the window (Ctrl+0)">
+                  <Path Data="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3" Width="14" Height="14"
+                        Stretch="Uniform" Stroke="{DynamicResource Fg2}" StrokeThickness="1.3" />
+                </Button>
+              </StackPanel>
+            </Border>
+          </Panel>
+          </Grid>
+
+          <GridSplitter Classes="chrome" Grid.Column="1" Width="4" IsVisible="{Binding IsSplitView}" />
+
+          <Border Classes="chrome" Grid.Column="2" IsVisible="{Binding IsXamlVisible}"
+                  Background="{DynamicResource Bg1}" BorderBrush="{DynamicResource Brd}" BorderThickness="1,0,0,0">
+            <!--
+              A code editor rather than a text block. The pane used to be one long line per line of
+              markup with nothing to scroll it sideways, so a document whose attributes ran past the
+              pane's width was simply cut off — and every one of them does. This brings the two
+              things a person reading XAML needs: the text laid out as code, and colour that
+              separates a tag from an attribute from a value.
+
+              Read-only on purpose. The document is edited through the canvas and the inspector, and
+              a pane that also accepted typing would be a second editor of the same file with no
+              answer for what happens when both change it.
+            -->
+            <edit:TextEditor x:Name="XamlView"
+                             IsReadOnly="True"
+                             ShowLineNumbers="True"
+                             FontFamily="{DynamicResource MonoFont}"
+                             FontSize="12"
+                             Background="Transparent"
+                             Foreground="{DynamicResource CodeTxt}"
+                             LineNumbersForeground="{DynamicResource Fg3}"
+                             HorizontalScrollBarVisibility="Auto"
+                             VerticalScrollBarVisibility="Auto"
+                             Padding="8,8,8,8" />
+          </Border>
+
+        </Grid>
+
+        <GridSplitter Classes="chrome" Grid.Row="3" Height="4" />
+
+        <!-- The dock: text tabs with a two-pixel underline, as designed. -->
+        <Border Classes="chrome" Grid.Row="4" Background="{DynamicResource Bg2}"
+                BorderBrush="{DynamicResource Brd}" BorderThickness="0,1,0,0">
+          <Grid RowDefinitions="32,*">
+
+            <Border Grid.Row="0" BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="6,0">
+              <StackPanel Orientation="Horizontal">
+                <Button Classes="tool" Height="32" CornerRadius="0" Padding="12,0" FontSize="12"
+                        Command="{Binding ShowProjectCommand}" AutomationProperties.Name="Project"
+                        BorderThickness="0,0,0,2"
+                        BorderBrush="{Binding IsDockProject, Converter={x:Static vm:Converters.UnderlineWhenTrue}}"
+                        Foreground="{Binding IsDockProject, Converter={x:Static vm:Converters.CurrentWhenTrue}}">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Path Data="M2.5 4.8h4l1.4 1.4h5.6v6.3H2.5z" Width="12" Height="12" Stretch="Uniform"
+                          Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2"
+                          VerticalAlignment="Center" />
+                    <TextBlock Text="Project" FontSize="12" Foreground="{Binding $parent[Button].Foreground}" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="tool" Height="32" CornerRadius="0" Padding="12,0" FontSize="12"
+                        Command="{Binding ShowConsoleCommand}" AutomationProperties.Name="Console"
+                        BorderThickness="0,0,0,2"
+                        BorderBrush="{Binding IsDockConsole, Converter={x:Static vm:Converters.UnderlineWhenTrue}}"
+                        Foreground="{Binding IsDockConsole, Converter={x:Static vm:Converters.CurrentWhenTrue}}">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Path Data="M3 4.5l3.5 3.5L3 11.5M8.5 11.5H13" Width="12" Height="12" Stretch="Uniform"
+                          Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.3"
+                          VerticalAlignment="Center" />
+                    <TextBlock Text="Console" FontSize="12" Foreground="{Binding $parent[Button].Foreground}" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+
+            <!-- Project: folders on the left, a grid of files on the right. -->
+            <Grid Grid.Row="1" ColumnDefinitions="198,1,*" IsVisible="{Binding IsDockProject}">
+              <ListBox ItemsSource="{Binding ProjectFolders}"
+                       SelectedItem="{Binding SelectedFolder, Mode=TwoWay}"
+                       AutomationProperties.Name="Project folders">
+                <ListBox.Styles>
+                  <Style Selector="ListBoxItem" x:DataType="vm:FolderRow">
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                  </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FolderRow">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*" Height="24">
+                      <Border Width="{Binding Indent}" />
+                      <Path Grid.Column="1" Data="M4.2 6L8 9.8 11.8 6" Width="12" Height="12"
+                            Stretch="Uniform" Stroke="{DynamicResource Fg3}" StrokeThickness="1.4"
+                            VerticalAlignment="Center" Margin="0,0,4,0"
+                            IsVisible="{Binding HasChildren}" />
+                      <Path Grid.Column="2" Data="M2.5 4.8h4l1.4 1.4h5.6v6.3H2.5z" Width="13" Height="13"
+                            Stretch="Uniform" Stroke="{DynamicResource Acc}" StrokeThickness="1.2"
+                            VerticalAlignment="Center" Margin="0,0,6,0" />
+                      <TextBlock Grid.Column="3" Text="{Binding Name}" FontSize="12"
+                                 VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <Border Grid.Column="1" Background="{DynamicResource Brd}" />
+
+              <!--
+                A list whose rows are tiles. The arrows move through it, across and down, and Enter
+                opens what they stopped on; a double click is still what a pointer does. It was a
+                panel of borders, which a pointer could open a file from and nothing else could.
+              -->
+              <ListBox Grid.Column="2" x:Name="FileTiles" Classes="tiles" ItemsSource="{Binding ProjectFiles}"
+                       Margin="12" AutomationProperties.Name="Project files">
+                  <ListBox.Styles>
+                    <Style Selector="ListBoxItem" x:DataType="vm:FileTile">
+                      <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                    </Style>
+                  </ListBox.Styles>
+                  <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  </ListBox.ItemsPanel>
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FileTile">
+                      <Border Classes="tile" Classes.open="{Binding IsOpen}"
+                              CornerRadius="8" Padding="4,10,4,8"
+                              Background="Transparent"
+                              DoubleTapped="OnProjectFileOpened"
+                              ToolTip.Tip="Double-click or press Enter to open">
+                        <!--
+                          What can be done to a file, on the button that asks. Delete is offered for
+                          markup only, because a form is what this designer knows how to take apart:
+                          the document, its code-behind and whatever has it open.
+                        -->
+                        <Border.ContextFlyout>
+                          <MenuFlyout>
+                            <MenuItem Header="Open" Click="OnProjectFileMenuOpen"
+                                      IsVisible="{Binding IsMarkup}" />
+                            <MenuItem Header="Delete the form…" Click="OnProjectFileDeleted"
+                                      IsVisible="{Binding IsMarkup}" />
+                          </MenuFlyout>
+                        </Border.ContextFlyout>
+                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                          <Path Data="{Binding Glyph}" Width="26" Height="26" Stretch="Uniform"
+                                StrokeThickness="1.1" HorizontalAlignment="Center"
+                                Stroke="{Binding Hue, Converter={x:Static vm:Converters.Hue}}" />
+                          <TextBlock Text="{Binding Name}" FontSize="11" TextAlignment="Center"
+                                     TextWrapping="Wrap" LineHeight="13" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+
+            <!-- Console: time, level, message. -->
+            <ScrollViewer Grid.Row="1" IsVisible="{Binding IsDockConsole}">
+              <ItemsControl ItemsSource="{Binding Logs}" Margin="14,8">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:LogRow">
+                    <Grid ColumnDefinitions="Auto,42,*" Height="20" ColumnSpacing="10">
+                      <TextBlock Text="{Binding Time}" Classes="mono" FontSize="12"
+                                 Foreground="{DynamicResource Fg3}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Level}" Classes="mono" FontSize="12"
+                                 FontWeight="SemiBold" VerticalAlignment="Center"
+                                 Foreground="{Binding Hue, Converter={x:Static vm:Converters.Hue}}" />
+                      <TextBlock Grid.Column="2" Text="{Binding Message}" Classes="mono" FontSize="12"
+                                 Foreground="{DynamicResource Fg2}" VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+          </Grid>
+        </Border>
+
+      </Grid>
+
+      <GridSplitter Classes="chrome" Grid.Column="3" />
+
+      <!-- Right: inspector -->
+      <Border Classes="chrome" Grid.Column="4" Background="{DynamicResource Bg2}"
+              BorderBrush="{DynamicResource Brd}" BorderThickness="1,0,0,0">
+        <Grid RowDefinitions="34,*">
+
+          <Border Grid.Row="0" Classes="panelHeader">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="panelTitle" Text="Inspector" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="icon" Width="24" Height="24"
+                      Command="{Binding ToggleThemeCommand}" ToolTip.Tip="Switch theme">
+                <Path Data="M3 5h10M3 11h10" Width="13" Height="13" Stretch="Uniform"
+                      Stroke="{DynamicResource Fg2}" StrokeThickness="1.3" />
+              </Button>
+            </Grid>
+          </Border>
+
+          <ScrollViewer Grid.Row="1">
+            <StackPanel>
+
+              <Grid ColumnDefinitions="Auto,*" Margin="14,12,14,10" ColumnSpacing="9">
+                <Border Width="30" Height="30" CornerRadius="7" Background="{DynamicResource Sel}">
+                  <Path Data="{Binding SelectedGlyph}" Width="16" Height="16" Stretch="Uniform"
+                        Stroke="{DynamicResource Acc}" StrokeThickness="1.3" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding SelectedName}" FontWeight="SemiBold" FontSize="13"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding SelectedTypeLine}" Classes="mono" FontSize="11"
+                             Foreground="{DynamicResource Fg3}" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding SelectedQualifier}" />
+                </StackPanel>
+              </Grid>
+
+              <!-- The chips: what the element declares beyond its properties. -->
+              <ItemsControl ItemsSource="{Binding SelectedChips}" Margin="14,0,14,12">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="{DynamicResource Raised}" CornerRadius="9" Padding="8,2" Margin="0,0,5,4">
+                      <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource Fg2}" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- The filter over the rows, because M beats scrolling for Margin. -->
+              <TextBox Height="26" Margin="14,0,14,10" PlaceholderText="Filter properties"
+                       IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Text="{Binding InspectorFilter, Mode=TwoWay}" />
+
+              <ItemsControl ItemsSource="{Binding PropertyGroups}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PropertyGroup">
+                    <Border BorderBrush="{DynamicResource Brd}" BorderThickness="0,1,0,0" Padding="14,8,14,12">
+                      <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Height="26">
+                          <Path Data="M4.2 6L8 9.8 11.8 6" Width="12" Height="12" Stretch="Uniform"
+                                Stroke="{DynamicResource Fg3}" StrokeThickness="1.4" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                     VerticalAlignment="Center" />
+                        </StackPanel>
+                        <!--
+                          Two to a line for the narrow editors and the whole panel for the wide
+                          ones, which is how the design lays them out and why a row knows its own
+                          width. A UniformGrid cannot let one cell span, so the two go in two panels.
+                        -->
+                        <ItemsControl ItemsSource="{Binding Narrow}" IsVisible="{Binding HasNarrow}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PropertyRow">
+                              <StackPanel Margin="0,0,10,8" Spacing="3">
+                                <TextBlock Text="{Binding Heading}" FontSize="11"
+                                           Foreground="{DynamicResource Fg3}"
+                                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+
+                                <!--
+                                  Written when the field is left or Enter is pressed, not on every
+                                  character. Every write rebuilds these rows — that is how the
+                                  inspector shows what the document now says — and a row rebuilt
+                                  under the caret takes the caret with it, so typing a width meant
+                                  clicking back into the field after every digit.
+                                -->
+                                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsText}">
+                                  <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                           Height="26" KeyDown="OnPropertyKeyDown"
+                                           IsReadOnly="{Binding IsReadOnly}"
+                                           PlaceholderText="{Binding Unset}"
+                                           FontFamily="{DynamicResource MonoFont}" FontWeight="Medium"
+                                           AutomationProperties.Name="{Binding Name}" />
+
+                                  <!--
+                                    Back to NaN, which is how Avalonia says "no size of its own".
+                                    A control with a width cannot stretch — the width wins — so
+                                    the way to let an alignment work is to take the number out,
+                                    and typing the three letters by hand was the only way there.
+                                    Beside Width and Height and nowhere else.
+                                  -->
+                                  <Button Grid.Column="1" Classes="quiet" Height="26" Padding="6,0"
+                                          Margin="4,0,0,0"
+                                          FontSize="11" FontFamily="{DynamicResource MonoFont}"
+                                          Content="NaN" IsVisible="{Binding IsSize}"
+                                          Command="{Binding ResetCommand}"
+                                          ToolTip.Tip="{Binding ResetTip}" />
+                                </Grid>
+
+                                <CheckBox IsChecked="{Binding Flag, Mode=TwoWay}" Height="26"
+                                          IsVisible="{Binding IsFlag}" IsEnabled="{Binding !IsReadOnly}"
+                                          AutomationProperties.Name="{Binding Name}" />
+
+                                <ComboBox ItemsSource="{Binding Choices}" Height="26"
+                                          SelectedItem="{Binding Value, Mode=TwoWay}"
+                                          IsVisible="{Binding IsChoice}" IsEnabled="{Binding !IsReadOnly}"
+                                          HorizontalAlignment="Stretch"
+                                          AutomationProperties.Name="{Binding Name}" />
+
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" Height="26"
+                                      IsVisible="{Binding IsColour}">
+                                  <!--
+                                    The swatch is the button. A colour is the one kind of value
+                                    nobody should have to spell, and the thing already showing which
+                                    colour it is is the obvious place to press.
+
+                                    A ColorView in a flyout rather than the ColorPicker control,
+                                    which is the same view behind a drop-down of its own: that one
+                                    writes on every colour the pointer crosses, and every write
+                                    rebuilds these rows — so the picker would delete itself, and its
+                                    open flyout, on the first movement of the spectrum. Here the
+                                    picking moves the swatch and the text, and closing the flyout is
+                                    what writes the document.
+                                  -->
+                                  <Button Classes="swatch" VerticalAlignment="Center"
+                                          IsEnabled="{Binding !IsReadOnly}"
+                                          ToolTip.Tip="Pick a colour">
+                                    <Border Width="16" Height="16" CornerRadius="4"
+                                            Background="{Binding Swatch}"
+                                            BorderBrush="{DynamicResource Brd2}" BorderThickness="1" />
+                                    <Button.Flyout>
+                                      <Flyout Placement="BottomEdgeAlignedRight" Closed="OnColourPicked">
+                                        <ColorView Color="{Binding Colour, Mode=TwoWay}"
+                                                   IsAlphaEnabled="True"
+                                                   IsColorPaletteVisible="True"
+                                                   IsColorSpectrumVisible="True"
+                                                   IsColorComponentsVisible="True" />
+                                      </Flyout>
+                                    </Button.Flyout>
+                                  </Button>
+                                  <TextBox Grid.Column="1" Height="26" KeyDown="OnPropertyKeyDown"
+                                           Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                           IsReadOnly="{Binding IsReadOnly}"
+                                           FontFamily="{DynamicResource MonoFont}" FontWeight="Medium"
+                                           AutomationProperties.Name="{Binding Name}" />
+                                </Grid>
+
+                                <TextBlock Text="{Binding Error}" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource RedText}"
+                                           IsVisible="{Binding HasError}" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding Wide}" IsVisible="{Binding HasWide}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PropertyRow">
+                              <StackPanel Margin="0,0,0,8" Spacing="3">
+                                <TextBlock Text="{Binding Heading}" FontSize="11"
+                                           Foreground="{DynamicResource Fg3}"
+                                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+
+                                <!-- One control per value, when a type has few enough of them. -->
+                                <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding IsSegmented}">
+                                  <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                                  </ItemsControl.ItemsPanel>
+                                  <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ChoiceOption">
+                                      <Button Classes="segment" Command="{Binding ChooseCommand}"
+                                              Content="{Binding Text}"
+                                              Classes.chosen="{Binding IsChosen}" />
+                                    </DataTemplate>
+                                  </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!--
+                                  An expression is shown and not edited. Typing a literal over a
+                                  binding would replace it with whatever the text happened to look
+                                  like, which is a change nobody asked for.
+                                -->
+                                <Border IsVisible="{Binding IsExpression}" Height="26" CornerRadius="5"
+                                        Background="{DynamicResource Inp}" Padding="8,0"
+                                        BorderBrush="{DynamicResource Acc}" BorderThickness="1">
+                                  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Path Data="M3.5 12.5L12.5 3.5M7.5 3.5h5v5" Width="12" Height="12"
+                                          Stretch="Uniform" Stroke="{DynamicResource Acc}"
+                                          StrokeThickness="1.3" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Value}" Classes="mono" FontSize="12"
+                                               Foreground="{DynamicResource Lnk}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                  </StackPanel>
+                                </Border>
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <Border BorderBrush="{DynamicResource Brd}" BorderThickness="0,1,0,0" Padding="14,10,14,10">
+                <Grid ColumnDefinitions="92,*,Auto" ColumnSpacing="6">
+                  <TextBox Text="{Binding NewPropertyName, Mode=TwoWay}" PlaceholderText="Name" />
+                  <TextBox Grid.Column="1" Text="{Binding NewPropertyValue, Mode=TwoWay}" PlaceholderText="Value" />
+                  <Button Grid.Column="2" Classes="primary" Height="26" Padding="10,0" Content="+"
+                          Command="{Binding AddPropertyCommand}" ToolTip.Tip="Add this property" />
+                </Grid>
+              </Border>
+
+              <!-- The design's dashed call to action at the foot of the inspector. -->
+              <Border Margin="14,4,14,16" Height="30" CornerRadius="6" BorderThickness="1"
+                      BorderBrush="{DynamicResource Brd2}">
+                <Button Classes="tool" Command="{Binding DeleteSelectedCommand}" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" Foreground="{DynamicResource Lnk}"
+                        FontWeight="Medium" FontSize="12" Content="Remove this control" />
+              </Border>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </Grid>
+      </Border>
+
     </Grid>
+
+    <!-- Status bar -->
+    <Border Classes="chrome" Grid.Row="2" Background="{DynamicResource Bg2}"
+            BorderBrush="{DynamicResource Brd}" BorderThickness="0,1,0,0" Padding="12,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <ProgressBar IsIndeterminate="True" Width="70" Height="3" VerticalAlignment="Center"
+                       IsVisible="{Binding IsBusy}" />
+          <TextBlock Classes="dim" Text="{Binding StatusLeft}" VerticalAlignment="Center" FontSize="11" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock Classes="dim" FontSize="11" Text="{Binding Configuration}" />
+          <TextBlock Classes="caption" Text="·" />
+          <TextBlock Classes="dim" FontSize="11" Text="{Binding ZoomText}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+  </Grid>
 </Window>

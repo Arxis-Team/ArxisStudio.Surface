@@ -1,0 +1,168 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The palette, by role. The numbers are ArxisStudio's own — the roles of its theme
+    (ArxisStudio.Themes.Arxis, Palette.axaml), copied here on 2026-09-30 — and not the mockup's this
+    window was first drawn from. The mockup's failed the thresholds the studio's design system sets
+    and its theme is tested against: tertiary text stood at 3.5:1 on the dark panel and 2.2:1 on
+    the light one where 4.5 is asked, a field's border at 2.1:1 and 1.6:1 where 3 is asked, and
+    white on the accent at 4.3:1.
+
+    Copied rather than referenced, because this demo builds beside two repositories already and the
+    theme would be a third. The self-check holds the thresholds instead: its verify run measures
+    the pairs this window draws, in both variants, so a number edited here cannot quietly fall
+    under one.
+
+    The names on the left are this window's, and they say what a colour is for, not what it looks
+    like. Each comment names the studio role the value came from.
+
+    Both variants are here because the toolbar switches between them; Avalonia picks by
+    ThemeVariant, so nothing in the window has to know which is current.
+  -->
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Dark">
+      <!-- Surfaces: the page and its fields, a panel, a raised plate, the canvas under the forms. -->
+      <SolidColorBrush x:Key="Bg1" Color="#171A1D" />     <!-- SurfaceBase -->
+      <SolidColorBrush x:Key="Bg2" Color="#1E2124" />     <!-- SurfacePanel -->
+      <SolidColorBrush x:Key="Raised" Color="#2C2E32" />  <!-- SurfaceRaised -->
+      <SolidColorBrush x:Key="Canvas" Color="#111316" />  <!-- SurfaceSunken -->
+      <SolidColorBrush x:Key="Inp" Color="#171A1D" />     <!-- SurfaceBase -->
+
+      <!-- Under the pointer and under the press: translucent, so one plate works on every surface. -->
+      <SolidColorBrush x:Key="Bg3" Color="#10FFFFFF" />   <!-- Hover -->
+      <SolidColorBrush x:Key="Bg4" Color="#1EFFFFFF" />   <!-- Pressed -->
+
+      <!-- Lines: a divider, and the border a control is recognised by. -->
+      <SolidColorBrush x:Key="Brd" Color="#2F3236" />     <!-- StrokeSubtle -->
+      <SolidColorBrush x:Key="Brd2" Color="#696C71" />    <!-- StrokeControl -->
+
+      <!-- Text: three levels, the disabled one, and text on an accent fill. -->
+      <SolidColorBrush x:Key="Fg" Color="#E1E3E7" />      <!-- TextPrimary -->
+      <SolidColorBrush x:Key="Fg2" Color="#B6B9BE" />     <!-- TextSecondary -->
+      <SolidColorBrush x:Key="Fg3" Color="#979A9F" />     <!-- TextTertiary -->
+      <SolidColorBrush x:Key="FgOff" Color="#66696E" />   <!-- TextDisabled -->
+      <SolidColorBrush x:Key="OnAcc" Color="#FFFFFF" />   <!-- TextOnAccent -->
+
+      <!--
+        The accent is three things, and one colour cannot be all of them: drawn (a glyph, an
+        underline), filled under white text, and written as text. A blue light enough to read as
+        text on a dark panel is too light to carry white text itself.
+      -->
+      <SolidColorBrush x:Key="Acc" Color="#5A8FF3" />       <!-- Accent: graphics -->
+      <SolidColorBrush x:Key="AccH" Color="#4D82EA" />      <!-- AccentHover -->
+      <SolidColorBrush x:Key="AccFill" Color="#3C6ECF" />   <!-- AccentFill: under OnAcc -->
+      <SolidColorBrush x:Key="AccFillH" Color="#3062C2" />  <!-- AccentFillHover -->
+      <SolidColorBrush x:Key="AccFillP" Color="#2957AF" />  <!-- AccentFillPressed -->
+      <SolidColorBrush x:Key="Lnk" Color="#77A4F6" />       <!-- Link: accent as text -->
+      <SolidColorBrush x:Key="Focus" Color="#5A8FF3" />     <!-- FocusRing -->
+      <SolidColorBrush x:Key="Sel" Color="#263D68" />       <!-- SelectionActive -->
+
+      <!-- The hues a kind of control or file is drawn in. Graphics, not text. -->
+      <SolidColorBrush x:Key="Grn" Color="#57A869" />     <!-- TintGreen -->
+      <SolidColorBrush x:Key="Org" Color="#E08855" />     <!-- TintOrange -->
+      <SolidColorBrush x:Key="Pur" Color="#A571E6" />     <!-- TintPurple -->
+      <SolidColorBrush x:Key="Red" Color="#E8665E" />     <!-- Error -->
+      <SolidColorBrush x:Key="Yel" Color="#DBA548" />     <!-- Warning -->
+
+      <!-- The same states written as words, which have the stricter threshold. -->
+      <SolidColorBrush x:Key="RedText" Color="#F07F77" />  <!-- ErrorText -->
+      <SolidColorBrush x:Key="YelText" Color="#E6B55D" />  <!-- WarningText -->
+      <SolidColorBrush x:Key="GrnText" Color="#69C27E" />  <!-- SuccessText -->
+
+      <!-- Tiles that carry white initials. The same in both variants: the text on them is. -->
+      <SolidColorBrush x:Key="MonoGrn" Color="#1E6B33" />  <!-- MonogramGreen -->
+      <SolidColorBrush x:Key="MonoOrg" Color="#A14916" />  <!-- MonogramOrange -->
+      <SolidColorBrush x:Key="MonoPur" Color="#55339C" />  <!-- MonogramPurple -->
+      <SolidColorBrush x:Key="MonoRed" Color="#AD2B38" />  <!-- MonogramRed -->
+
+      <!-- The XAML pane. -->
+      <SolidColorBrush x:Key="CodeTxt" Color="#BCBEC4" />  <!-- CodeText -->
+      <SolidColorBrush x:Key="CodeTag" Color="#E8BF6A" />  <!-- CodeTag -->
+      <SolidColorBrush x:Key="CodeAttr" Color="#BCBEC4" /> <!-- CodeAttribute -->
+      <SolidColorBrush x:Key="CodeStr" Color="#6AAB73" />  <!-- CodeString -->
+      <SolidColorBrush x:Key="CodeCmt" Color="#868A91" />  <!-- CodeComment -->
+
+      <!--
+        The editor's grid, under the keys its theme reads: the canvas, and two steps up from it —
+        the panel's colour for a cell, a divider's for every fifth.
+      -->
+      <SolidColorBrush x:Key="Surface.Grid.BackgroundBrush" Color="#111316" />
+      <SolidColorBrush x:Key="Surface.Grid.LineBrush" Color="#1E2124" />
+      <SolidColorBrush x:Key="Surface.Grid.MajorLineBrush" Color="#2F3236" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="Bg1" Color="#FFFFFF" />     <!-- SurfaceBase -->
+      <SolidColorBrush x:Key="Bg2" Color="#F7F8FA" />     <!-- SurfacePanel -->
+      <SolidColorBrush x:Key="Raised" Color="#EBEDF0" />  <!-- SurfaceRaised -->
+      <SolidColorBrush x:Key="Canvas" Color="#EFF0F3" />  <!-- SurfaceSunken -->
+      <SolidColorBrush x:Key="Inp" Color="#FFFFFF" />     <!-- SurfaceBase -->
+
+      <SolidColorBrush x:Key="Bg3" Color="#0C000000" />   <!-- Hover -->
+      <SolidColorBrush x:Key="Bg4" Color="#18000000" />   <!-- Pressed -->
+
+      <SolidColorBrush x:Key="Brd" Color="#DFE1E5" />     <!-- StrokeSubtle -->
+      <SolidColorBrush x:Key="Brd2" Color="#898C92" />    <!-- StrokeControl -->
+
+      <SolidColorBrush x:Key="Fg" Color="#1F2227" />      <!-- TextPrimary -->
+      <SolidColorBrush x:Key="Fg2" Color="#4F5359" />     <!-- TextSecondary -->
+      <SolidColorBrush x:Key="Fg3" Color="#686C73" />     <!-- TextTertiary -->
+      <SolidColorBrush x:Key="FgOff" Color="#A2A5AA" />   <!-- TextDisabled -->
+      <SolidColorBrush x:Key="OnAcc" Color="#FFFFFF" />   <!-- TextOnAccent -->
+
+      <SolidColorBrush x:Key="Acc" Color="#396ED6" />       <!-- Accent -->
+      <SolidColorBrush x:Key="AccH" Color="#3062C2" />      <!-- AccentHover -->
+      <SolidColorBrush x:Key="AccFill" Color="#3065CC" />   <!-- AccentFill -->
+      <SolidColorBrush x:Key="AccFillH" Color="#2759BC" />  <!-- AccentFillHover -->
+      <SolidColorBrush x:Key="AccFillP" Color="#224FA7" />  <!-- AccentFillPressed -->
+      <SolidColorBrush x:Key="Lnk" Color="#285CC2" />       <!-- Link -->
+      <SolidColorBrush x:Key="Focus" Color="#396ED6" />     <!-- FocusRing -->
+      <SolidColorBrush x:Key="Sel" Color="#CEDFFD" />       <!-- SelectionActive -->
+
+      <SolidColorBrush x:Key="Grn" Color="#2A7A3F" />     <!-- TintGreen -->
+      <SolidColorBrush x:Key="Org" Color="#A14916" />     <!-- TintOrange -->
+      <SolidColorBrush x:Key="Pur" Color="#55339C" />     <!-- TintPurple -->
+      <SolidColorBrush x:Key="Red" Color="#D33F3C" />     <!-- Error -->
+      <SolidColorBrush x:Key="Yel" Color="#B47A0A" />     <!-- Warning -->
+
+      <SolidColorBrush x:Key="RedText" Color="#B63132" />  <!-- ErrorText -->
+      <SolidColorBrush x:Key="YelText" Color="#9A6000" />  <!-- WarningText -->
+      <SolidColorBrush x:Key="GrnText" Color="#1D7D3E" />  <!-- SuccessText -->
+
+      <SolidColorBrush x:Key="MonoGrn" Color="#1E6B33" />  <!-- MonogramGreen -->
+      <SolidColorBrush x:Key="MonoOrg" Color="#A14916" />  <!-- MonogramOrange -->
+      <SolidColorBrush x:Key="MonoPur" Color="#55339C" />  <!-- MonogramPurple -->
+      <SolidColorBrush x:Key="MonoRed" Color="#AD2B38" />  <!-- MonogramRed -->
+
+      <SolidColorBrush x:Key="CodeTxt" Color="#1F2227" />  <!-- CodeText -->
+      <SolidColorBrush x:Key="CodeTag" Color="#0033B3" />  <!-- CodeTag -->
+      <SolidColorBrush x:Key="CodeAttr" Color="#174AD4" /> <!-- CodeAttribute -->
+      <SolidColorBrush x:Key="CodeStr" Color="#067D17" />  <!-- CodeString -->
+      <SolidColorBrush x:Key="CodeCmt" Color="#686B71" />  <!-- CodeComment -->
+
+      <!--
+        The same two steps, down from a light canvas. A cell's line is a divider's colour; the
+        theme has no role one step past that, so the fifth line is this window's own number.
+      -->
+      <SolidColorBrush x:Key="Surface.Grid.BackgroundBrush" Color="#EFF0F3" />
+      <SolidColorBrush x:Key="Surface.Grid.LineBrush" Color="#DFE1E5" />
+      <SolidColorBrush x:Key="Surface.Grid.MajorLineBrush" Color="#CFD2D8" />
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!--
+    The editor's own metrics, keyed the way UiDesignerView's theme expects, so the grid belongs to
+    the same design as everything around it rather than to the library's defaults. Its colours are
+    in the variants above and not here: an entry of the dictionary itself is found before its theme
+    dictionaries are asked, so a brush declared flat would be the dark one on a light desk too.
+  -->
+  <x:Double x:Key="Surface.Grid.CellSize">20</x:Double>
+  <x:Int32 x:Key="Surface.Grid.MajorInterval">5</x:Int32>
+
+  <FontFamily x:Key="UiFont">Inter,Segoe UI,system-ui,sans-serif</FontFamily>
+  <FontFamily x:Key="MonoFont">JetBrains Mono,Cascadia Code,Consolas,monospace</FontFamily>
+
+</ResourceDictionary>

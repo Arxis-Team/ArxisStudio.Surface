@@ -1,25 +1,76 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>WinExe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
-        <ApplicationManifest>app.manifest</ApplicationManifest>
-        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    </PropertyGroup>
+<Project Sdk="Microsoft.NET.Sdk">
 
-    <ItemGroup>
-        <AvaloniaResource Include="Assets\**" />
-    </ItemGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="AvaDevTools" />
-        <PackageReference Include="Avalonia" />
-        <PackageReference Include="Avalonia.Desktop" />
-        <PackageReference Include="Avalonia.Themes.Fluent" />
-        <PackageReference Include="Avalonia.Fonts.Inter" />
-        <PackageReference Include="CommunityToolkit.Mvvm" />
-    </ItemGroup>
+  <!--
+    Демо пришло из ArxisStudio.ProjectSystem (там оно было samples/FormsDesigner) и написано под его
+    настройки сборки. Две из них приехали вместе с ним.
 
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Surface.UiDesigner\ArxisStudio.Surface.UiDesigner.csproj" />
-    </ItemGroup>
+    InvariantGlobalization: под ней демо написано и проверено, и код на неё опирается — даты списка
+    недавних пишет инвариантная культура, потому что другой в этом режиме нет. Самопроверка проходит
+    и без неё, на машине с русской культурой; но она пишет в документ только целые числа, и что
+    станет с дробным в поле инспектора, этим прогоном не проверено. Поэтому настройка оставлена.
+
+    ShouldUnsetParentConfigurationAndPlatform: проектов ProjectSystem и Markup в этом решении нет, и
+    MSBuild сбросил бы им конфигурацию — сборка Release связалась бы с их Debug. В тех двух
+    репозиториях настройка стоит на всё решение; здесь её место — единственный проект, который на них
+    ссылается.
+
+    Третья — выключенные неявные using — не понадобилась: с включёнными, как у всего этого
+    репозитория, демо собирается без единого столкновения имён.
+  -->
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+  </PropertyGroup>
+
+  <!--
+    Три семейства разом — в этом и смысл демо, и причина, по которой оно демо, а не пакет. Каждое
+    отвечает на свой вопрос, и ни одно не отвечает на чужой:
+
+      Surface        холст, выделение и жесты, которыми двигают
+      Markup         что сказано в документе и каждая его правка
+      ProjectSystem  какой проект открыт, в какие сборки он разрешается, что он собирает и запускает
+
+    Сводит их потребитель, и потребитель здесь. Библиотеки Surface ни на Markup, ни на ProjectSystem
+    не ссылаются: ссылка есть только у этого проекта, и идёт она в соседние репозитории (ADR 0021).
+    Markup приходит через адаптер ProjectSystem — тот называет его сам и сам говорит, если его нет.
+  -->
+  <PropertyGroup>
+    <ProjectSystemRepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../../ArxisStudio.ProjectSystem/'))</ProjectSystemRepositoryRoot>
+    <ProjectSystemSource>$(ProjectSystemRepositoryRoot)src/</ProjectSystemSource>
+    <ProjectSystemAdapterProject>$(ProjectSystemSource)ArxisStudio.ProjectSystem.Markup.Xaml/ArxisStudio.ProjectSystem.Markup.Xaml.csproj</ProjectSystemAdapterProject>
+  </PropertyGroup>
+
+  <Target Name="CheckProjectSystemIsBesideUs" BeforeTargets="CollectPackageReferences;ResolveProjectReferences">
+    <Error
+      Condition="!Exists('$(ProjectSystemAdapterProject)')"
+      Code="SURFDEMO01"
+      Text="UiDesigner.Demo собирается поверх ArxisStudio.ProjectSystem и ArxisStudio.Markup и ждёт оба репозитория рядом с этим: ProjectSystem — в '$(ProjectSystemRepositoryRoot)', с адаптером в '$(ProjectSystemAdapterProject)'. Склонируйте их туда или исключите этот проект из сборки; библиотекам Surface они не нужны." />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Surface.UiDesigner/ArxisStudio.Surface.UiDesigner.csproj" />
+
+    <ProjectReference Include="$(ProjectSystemSource)ArxisStudio.ProjectSystem/ArxisStudio.ProjectSystem.csproj" />
+    <ProjectReference Include="$(ProjectSystemSource)ArxisStudio.ProjectSystem.MSBuild/ArxisStudio.ProjectSystem.MSBuild.csproj" />
+    <ProjectReference Include="$(ProjectSystemAdapterProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvaDevTools" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+  </ItemGroup>
+
 </Project>

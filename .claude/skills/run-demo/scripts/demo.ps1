@@ -12,7 +12,8 @@
 
 .EXAMPLE
 demo.ps1 -Action start
-demo.ps1 -Action shot  -Out C:\tmp\1.png
+demo.ps1 -Action start -Project C:\src\App\App.csproj -Form MainWindow.axaml
+demo.ps1 -Action shot -Out C:\tmp\1.png
 demo.ps1 -Action click -X 706 -Y 453
 demo.ps1 -Action doubleclick -X 140 -Y 211
 demo.ps1 -Action drag  -X 706 -Y 453 -ToX 760 -ToY 500
@@ -39,6 +40,19 @@ param(
     # Выключен по умолчанию: порт открывается только когда об этом просят.
     [switch]$Mcp,
 
+    # Проект и форма, которые демо откроет сразу (только при -Action start).
+    # Без проекта поднимается экран приветствия, а редактора на нём нет:
+    # ни холста для жестов, ни канала автоматизации.
+    [string]$Project,
+    [string]$Form,
+
+    # Каталог канала автоматизации (--automation). Каналу нужен редактор, то есть -Project.
+    [string]$Automation,
+
+    # Вариация, в которой демо откроется (--theme). Без ключа — тёмная.
+    [ValidateSet('', 'light', 'dark')]
+    [string]$Theme = '',
+
     [int]$X = 0,
     [int]$Y = 0,
     [int]$ToX = 0,
@@ -46,7 +60,7 @@ param(
     [ValidateSet('None', 'Ctrl', 'Shift', 'Alt', 'CtrlShift')]
     [string]$Modifier = 'None',
 
-    [ValidateSet('Left', 'Right', 'Up', 'Down', 'Delete', 'Escape', 'A', 'Z', 'Y', 'X', 'F12', 'Tab', 'Space')]
+    [ValidateSet('Left', 'Right', 'Up', 'Down', 'Delete', 'Escape', 'A', 'Z', 'Y', 'X', 'F12', 'Tab', 'Space', 'Enter')]
     [string]$Key = 'Right',
 
     [int]$Notches = 3,
@@ -443,9 +457,33 @@ switch ($Action) {
             Remove-Item Env:\AVA_DEVTOOLS_MCP_PORT -ErrorAction SilentlyContinue
         }
 
-        $p = Start-Process -FilePath $exe -PassThru `
-             -RedirectStandardOutput (Join-Path $logDir 'out.log') `
-             -RedirectStandardError  (Join-Path $logDir 'err.log')
+        # Пути берутся в кавычки здесь: Start-Process склеивает аргументы пробелом
+        # и путь с пробелом иначе приехал бы двумя.
+        $demoArgs = @()
+        if ($Project) {
+            $demoArgs += '"' + (Resolve-Path $Project).Path + '"'
+            if ($Form) { $demoArgs += '"' + $Form + '"' }
+        }
+        if ($Automation) {
+            if (-not $Project) { throw '-Automation требует -Project: на экране приветствия редактора нет.' }
+            $demoArgs += '--automation'
+            $demoArgs += '"' + $Automation + '"'
+        }
+        if ($Theme) {
+            $demoArgs += '--theme'
+            $demoArgs += $Theme
+        }
+
+        $start = @{
+            FilePath               = $exe
+            PassThru               = $true
+            RedirectStandardOutput = (Join-Path $logDir 'out.log')
+            RedirectStandardError  = (Join-Path $logDir 'err.log')
+        }
+        # Пустой список аргументов Start-Process не принимает.
+        if ($demoArgs.Count -gt 0) { $start.ArgumentList = $demoArgs }
+
+        $p = Start-Process @start
 
         $deadline = (Get-Date).AddSeconds($TimeoutSec)
         while ((Get-Date) -lt $deadline) {
@@ -527,6 +565,7 @@ switch ($Action) {
             'F12'    { 0x7B }   # DevTools демо
             'Tab'    { 0x09 }
             'Space'  { 0x20 }
+            'Enter'  { 0x0D }
             'A'      { 0x41 }
             'Z'      { 0x5A }
             'Y'      { 0x59 }

@@ -10,6 +10,12 @@
   <ItemGroup>
     <PackageVersion Include="AvaDevTools" Version="12.1.8" />
     <PackageVersion Include="Avalonia" Version="12.1.1" />
+    <!--
+        Редактор панели XAML и палитра цвета у демо дизайнера интерфейса. Мажор AvaloniaEdit идёт
+        за Avalonia: 12.0.0 просит Avalonia 12.0.0, и 12.1.1 это удовлетворяет — Avalonia в процессе одна.
+    -->
+    <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <PackageVersion Include="Avalonia.Controls.ColorPicker" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.1" />
@@ -18,7 +24,6 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.1" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="3.119.4" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
