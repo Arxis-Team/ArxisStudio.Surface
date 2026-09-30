@@ -73,6 +73,7 @@ src/Surface.UiDesigner/      дизайнер интерфейса
 src/Surface.Nodes/           редактор узлов
 tests/                       headless-тесты всех сборок (Avalonia.Headless.XUnit, xunit v3)
 samples/UiDesigner.Demo/     хост дизайнера интерфейса: конструктор форм на Surface, Markup и ProjectSystem
+  SmartHome/                 проект, который этот хост открывает; с его формы сняты снимки
 samples/Nodes.Demo/          хост редактора узлов: граф данных, 10 000 узлов, волна вычисления
 samples/Nodes.StateMachine/  машина состояний на узлах, ведёт интерфейс Avalonia
 samples/Nodes.Calculator/    калькулятор в духе Blueprint: палитра действий, литералы, «Играть»

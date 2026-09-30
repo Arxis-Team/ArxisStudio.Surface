@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The project UiDesigner.Demo is shown on: an ordinary Avalonia application with one window, opened
+    in the designer rather than compiled into it. The pictures in docs/images were taken from this
+    form.
+
+    It is not part of the demo's own build - UiDesigner.Demo.csproj leaves this folder out of its
+    items - and the designer builds it itself when it opens it. The package versions are the
+    repository's, so the application is built against the same Avalonia the designer runs on.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+
+</Project>

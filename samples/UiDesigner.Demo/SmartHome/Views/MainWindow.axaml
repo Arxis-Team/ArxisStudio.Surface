@@ -1,0 +1,113 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SmartHome.Views.MainWindow"
+        Title="Дом"
+        Width="700" Height="460"
+        Background="#FFFFFF"
+        RequestedThemeVariant="Light">
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="20,18,20,0">
+      <StackPanel Spacing="2">
+        <TextBlock x:Name="Heading" Text="Дом" FontSize="20" FontWeight="SemiBold" Foreground="#16191D" />
+        <TextBlock x:Name="Summary" Text="12 устройств · 4 комнаты" FontSize="11" Foreground="#667085" />
+      </StackPanel>
+      <Border x:Name="AllHomes" Grid.Column="1" Background="#E8F0FE" CornerRadius="14" Padding="12,5"
+              VerticalAlignment="Center">
+        <TextBlock Text="Все дома" FontSize="11" Foreground="#1A56DB" />
+      </Border>
+    </Grid>
+
+    <StackPanel x:Name="Rooms" Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="20,16,20,0">
+      <Border Background="#2F6FED" CornerRadius="13" Padding="14,6">
+        <TextBlock Text="Гостиная" FontSize="11" Foreground="#FFFFFF" />
+      </Border>
+      <Border Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="13" Padding="14,6">
+        <TextBlock Text="Спальня" FontSize="11" Foreground="#667085" />
+      </Border>
+      <Border Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="13" Padding="14,6">
+        <TextBlock Text="Кухня" FontSize="11" Foreground="#667085" />
+      </Border>
+      <Border Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="13" Padding="14,6">
+        <TextBlock Text="Двор" FontSize="11" Foreground="#667085" />
+      </Border>
+    </StackPanel>
+
+    <Canvas x:Name="Tiles" Grid.Row="2" Margin="20,16,20,20">
+
+      <Border x:Name="LightTile" Canvas.Left="0" Canvas.Top="0" Width="200" Height="120"
+              Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <!-- Fluent takes its accent from the system, and every machine has its own. -->
+          <Grid.Resources>
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#2F6FED" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#2F6FED" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#2F6FED" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#2F6FED" />
+          </Grid.Resources>
+          <TextBlock x:Name="LightCaption" Text="Освещение" FontSize="12" Foreground="#667085" />
+          <TextBlock x:Name="LightRoom" Grid.Row="1" Text="Гостиная" FontSize="15" FontWeight="SemiBold"
+                     Foreground="#16191D" VerticalAlignment="Center" />
+          <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+            <TextBlock Text="4 лампы · 80%" FontSize="11" Foreground="#667085" VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1" OnContent="" OffContent="" IsChecked="True" />
+          </Grid>
+        </Grid>
+      </Border>
+
+      <Border x:Name="ClimateTile" Canvas.Left="216" Canvas.Top="0" Width="200" Height="120"
+              Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock x:Name="ClimateCaption" Text="Климат" FontSize="12" Foreground="#667085" />
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="21" FontSize="26" FontWeight="SemiBold" Foreground="#16191D" />
+            <TextBlock Text="°C" FontSize="13" Foreground="#667085" VerticalAlignment="Top" Margin="0,6,0,0" />
+          </StackPanel>
+          <TextBlock Grid.Row="2" Text="Нагрев до 23°" FontSize="11" Foreground="#B45309" />
+        </Grid>
+      </Border>
+
+      <Border x:Name="SecurityTile" Canvas.Left="432" Canvas.Top="0" Width="200" Height="120"
+              Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock x:Name="SecurityCaption" Text="Безопасность" FontSize="12" Foreground="#667085" />
+          <TextBlock Grid.Row="1" Text="Под охраной" FontSize="15" FontWeight="SemiBold"
+                     Foreground="#14804A" VerticalAlignment="Center" />
+          <TextBlock Grid.Row="2" Text="Двери и окна закрыты" FontSize="11" Foreground="#667085" />
+        </Grid>
+      </Border>
+
+      <Border x:Name="UsageTile" Canvas.Left="0" Canvas.Top="136" Width="416" Height="140"
+              Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <TextBlock Text="Потребление за сутки" FontSize="12" Foreground="#667085" />
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,6,0,0">
+            <TextBlock Text="8,4" FontSize="22" FontWeight="SemiBold" Foreground="#16191D" />
+            <TextBlock Text="кВт·ч" FontSize="12" Foreground="#667085" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+          </StackPanel>
+          <StackPanel Grid.Row="2" Spacing="8" Margin="0,10,0,0">
+            <ProgressBar Value="72" Height="6" Foreground="#2F6FED" Background="#DCE1E8" />
+            <ProgressBar Value="45" Height="6" Foreground="#14804A" Background="#DCE1E8" />
+            <ProgressBar Value="28" Height="6" Foreground="#B45309" Background="#DCE1E8" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Border x:Name="ScenesTile" Canvas.Left="432" Canvas.Top="136" Width="200" Height="140"
+              Background="#F4F6F9" BorderBrush="#DCE1E8" BorderThickness="1" CornerRadius="10" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock x:Name="ScenesCaption" Text="Сцены" FontSize="12" Foreground="#667085" />
+          <Button x:Name="MorningScene" Content="Доброе утро" HorizontalAlignment="Stretch" Background="#EEF1F5"
+                  Foreground="#16191D" BorderThickness="0" CornerRadius="8" Padding="10,4" FontSize="12" />
+          <Button x:Name="AwayScene" Content="Ушёл из дома" HorizontalAlignment="Stretch" Background="#EEF1F5"
+                  Foreground="#16191D" BorderThickness="0" CornerRadius="8" Padding="10,4" FontSize="12" />
+          <Button x:Name="NightScene" Content="Ночь" HorizontalAlignment="Stretch" Background="#EEF1F5"
+                  Foreground="#16191D" BorderThickness="0" CornerRadius="8" Padding="10,4" FontSize="12" />
+        </StackPanel>
+      </Border>
+
+    </Canvas>
+  </Grid>
+
+</Window>
