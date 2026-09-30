@@ -22,7 +22,13 @@
         привязка и подпись размера меряют форму, а не форму с заголовком. Наружу её выносит раскладка, а
         не отступ: якорь нулевой высоты прижат к верху, заголовок в нём прижат к низу и потому растёт
         вверх на свою высоту — литерала, производного от высоты заголовка, в шаблоне нет. Рамка носит тему
-        формы (FormThemeVariant), нажатий не берёт и видна только у окна с полным оформлением.
+        формы (FormThemeVariant), нажатий не берёт и видна только у окна с полным оформлением (:titled).
+
+        Окно с заголовком — один прямоугольник из двух частей, и скругление у него одно: CornerRadius
+        элемента. Заголовок берёт верхние углы, форма под ним — нижние, а сходятся они прямой линией.
+        Карточка, фон формы и контур, скруглённые под заголовком сверху, оставляли между ним и формой клин
+        холста, а дуга контура уходила под заголовок. Своего радиуса у заголовка нет: второе число
+        расходилось бы с первым.
     -->
     <ControlTheme x:Key="{x:Type uidesigner:UiDesignerFormItem}"
                   TargetType="uidesigner:UiDesignerFormItem"
@@ -59,7 +65,7 @@
                                     Background="{DynamicResource UiDesigner.Form.TitleBar.Background}"
                                     BorderBrush="{DynamicResource UiDesigner.Form.TitleBar.BorderBrush}"
                                     BorderThickness="{DynamicResource UiDesigner.Form.TitleBar.BorderThickness}"
-                                    CornerRadius="{DynamicResource UiDesigner.Form.TitleBar.CornerRadius}"
+                                    CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static uidesigner:FormCornerRadiusConverter.TitleBar}}"
                                     Padding="{DynamicResource UiDesigner.Form.TitleBar.Padding}"
                                     TextElement.Foreground="{DynamicResource UiDesigner.Form.TitleBar.Foreground}"
                                     TextElement.FontSize="{DynamicResource UiDesigner.Form.TitleBar.FontSize}">
@@ -123,18 +129,28 @@
             <Setter Property="StrokeThickness" Value="1" />
         </Style>
 
-        <!-- Заголовок — у окна; у корня, показанного как есть, и у пустого элемента его нет. -->
-        <Style Selector="^:window /template/ Panel#PART_ChromeAnchor">
+        <!--
+            Заголовок — у окна с полным оформлением. У корня, показанного как есть, у пустого элемента и у
+            окна без системного заголовка (BorderOnly, None) его нет.
+        -->
+        <Style Selector="^:titled /template/ Panel#PART_ChromeAnchor">
             <Setter Property="IsVisible" Value="True" />
         </Style>
 
-        <!-- Окно без системного заголовка показывается без него: стоят после :window и потому сильнее. -->
-        <Style Selector="^[Decorations=BorderOnly] /template/ Panel#PART_ChromeAnchor">
-            <Setter Property="IsVisible" Value="False" />
+        <!-- И под ним форма сверху прямая — все три части, которые носят скругление элемента. -->
+        <Style Selector="^:titled /template/ Border#PART_Border">
+            <Setter Property="CornerRadius"
+                    Value="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static uidesigner:FormCornerRadiusConverter.UnderTitleBar}}" />
         </Style>
 
-        <Style Selector="^[Decorations=None] /template/ Panel#PART_ChromeAnchor">
-            <Setter Property="IsVisible" Value="False" />
+        <Style Selector="^:titled /template/ Border#PART_FormBackground">
+            <Setter Property="CornerRadius"
+                    Value="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static uidesigner:FormCornerRadiusConverter.UnderTitleBar}}" />
+        </Style>
+
+        <Style Selector="^:titled /template/ Border#PART_HoverBorder">
+            <Setter Property="CornerRadius"
+                    Value="{Binding CornerRadius, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static uidesigner:FormCornerRadiusConverter.UnderTitleBar}}" />
         </Style>
 
         <!-- Окно, которому нельзя менять размер, развернуть тоже нельзя. -->

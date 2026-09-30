@@ -48,6 +48,8 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// Вид формы задают псевдоклассы, а не наследник на каждый тип корня: <c>:window</c> — корень окно,
 /// <c>:control</c> — корень показан как есть, <c>:empty</c> — показывать нечего. Корневой тег при
 /// правке меняется, а тип контейнера сменить нельзя, не потеряв место и выбор (ADR 0020).
+/// <c>:titled</c> — окно носит заголовок: корень окно с полным оформлением. По нему тема показывает
+/// заголовок и делает верхние углы формы прямыми — заголовок и форма сходятся одним прямоугольником.
 /// </para>
 /// <para>
 /// Области формы встают в часть шаблона <c>PART_FormHost</c>. Содержимое формы не идёт в
@@ -65,13 +67,14 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// ]]></code>
 /// </example>
 [TemplatePart(FormHostPart, typeof(Decorator))]
-[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass)]
+[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass, TitledPseudoClass)]
 public class UiDesignerFormItem : UiDesignerItem
 {
     private const string FormHostPart = "PART_FormHost";
     private const string WindowPseudoClass = ":window";
     private const string ControlPseudoClass = ":control";
     private const string EmptyPseudoClass = ":empty";
+    private const string TitledPseudoClass = ":titled";
 
     /// <summary>
     /// Идентификатор свойства <see cref="Root"/>.
@@ -417,6 +420,10 @@ public class UiDesignerFormItem : UiDesignerItem
 
             UpdateFormThemeVariant();
         }
+        else if (change.Property == DecorationsProperty)
+        {
+            UpdateKind();
+        }
     }
 
     /// <summary>
@@ -663,5 +670,9 @@ public class UiDesignerFormItem : UiDesignerItem
         PseudoClasses.Set(WindowPseudoClass, _root is Window);
         PseudoClasses.Set(ControlPseudoClass, _root is Control and not TopLevel);
         PseudoClasses.Set(EmptyPseudoClass, !_hasContent);
+
+        // Заголовок есть только у окна с полным оформлением. Решается здесь, а не селекторами темы:
+        // от того же ответа зависят и сам заголовок, и углы трёх частей под ним, и разойтись им нельзя.
+        PseudoClasses.Set(TitledPseudoClass, _root is Window && Decorations == WindowDecorations.Full);
     }
 }

@@ -163,6 +163,7 @@ item.Root = null;            // отпустить корень и вернут�
 | `:window` | корень — окно |
 | `:control` | корень показан как есть |
 | `:empty` | показывать нечего |
+| `:titled` | окно носит заголовок: корень — окно с `WindowDecorations="Full"` |
 
 `ContentMode` у элемента формы по умолчанию `Loaded`. Области формы стоят в части шаблона
 `PART_FormHost`; своя тема элемента обязана её иметь. Корень держит один элемент: второй получает
@@ -176,6 +177,10 @@ item.Root = null;            // отпустить корень и вернут�
 - Есть он только у окна с `WindowDecorations="Full"`; `BorderOnly`, `None` и корень, показанный как
   есть, идут без него. У окна с `CanResize="False"` нет кнопки «развернуть».
 - Кнопки — рисунок: нажатий рамка не берёт. Перетаскивать форму за заголовок пока нельзя.
+- **Скругление у окна одно — `CornerRadius` элемента.** Заголовок берёт из него верхние углы, форма
+  под ним — нижние, и сходятся они прямой линией. Своего радиуса у заголовка нет: второе число
+  расходилось бы с первым, а форма, скруглённая под заголовком сверху, оставляла бы между ними клин
+  холста. Без заголовка форма скруглена со всех четырёх сторон.
 
 ## Координаты: `Layout`
 
@@ -353,7 +358,7 @@ editor.GroupStore = new DocumentGroupStore(document);   // ISurfaceGroupStore: G
 | `UiDesignerItem.OutlineOpacity` | контур контейнера в покое, `0` — только под курсором |
 | `UiDesignerItem.BorderBrush`, `UiDesignerItem.BorderThickness`, `UiDesignerItem.CornerRadius` | контейнер |
 | `UiDesigner.Form.TitleBar.Background`, `…Foreground`, `…BorderBrush` | рамка окна элемента формы; по словарю тем, берутся под темой формы |
-| `UiDesigner.Form.TitleBar.Height`, `…Padding`, `…FontSize`, `…BorderThickness`, `…CornerRadius` | размеры заголовка |
+| `UiDesigner.Form.TitleBar.Height`, `…Padding`, `…FontSize`, `…BorderThickness` | размеры заголовка; скругление — `CornerRadius` элемента |
 | `UiDesigner.Form.TitleBar.IconSize`, `…IconMargin`, `…ButtonWidth`, `…GlyphSize` | значок и кнопки заголовка |
 
 Сетка, рамка выделения, ручки, направляющие и линейки — ключами `Surface.*` ядра и инструментов.

@@ -854,6 +854,58 @@ public class UiDesignerFormItemTests
         Assert.False(Shown(Form("WindowDecorations=\"None\"")));
     }
 
+    private static CornerRadius[] FormCorners(UiDesignerFormItem item) =>
+    [
+        Part<Border>(item, "PART_Border").CornerRadius,
+        Part<Border>(item, "PART_FormBackground").CornerRadius,
+        Part<Border>(item, "PART_HoverBorder").CornerRadius,
+    ];
+
+    [AvaloniaFact]
+    public void A_Form_Meets_Its_Title_Bar_With_Square_Corners()
+    {
+        // Заголовок — верх окна, и низ у него прямой. Карточка, фон формы и контур, скруглённые сверху,
+        // оставляли под ним клин холста и дугу контура, уходящую под заголовок.
+        CornerRadius[] Corners(object? root)
+        {
+            var item = new UiDesignerFormItem { Root = root, CornerRadius = new CornerRadius(10) };
+            Host(item);
+            return FormCorners(item);
+        }
+
+        Assert.All(Corners(Form()), corners => Assert.Equal(new CornerRadius(0, 0, 10, 10), corners));
+
+        // Без заголовка форма — целая карточка, и скруглена она со всех сторон.
+        Assert.All(Corners(View()), corners => Assert.Equal(new CornerRadius(10), corners));
+        Assert.All(Corners(Form("WindowDecorations=\"BorderOnly\"")), corners => Assert.Equal(new CornerRadius(10), corners));
+        Assert.All(Corners(null), corners => Assert.Equal(new CornerRadius(10), corners));
+    }
+
+    [AvaloniaFact]
+    public void The_Corners_Follow_The_Title_Bar_And_The_Items_Own_Radius()
+    {
+        var window = Form();
+        var item = new UiDesignerFormItem { Root = window, CornerRadius = new CornerRadius(10) };
+        Host(item);
+
+        window.WindowDecorations = WindowDecorations.None;
+        Assert.All(FormCorners(item), corners => Assert.Equal(new CornerRadius(10), corners));
+        Assert.DoesNotContain(":titled", item.Classes);
+
+        window.WindowDecorations = WindowDecorations.Full;
+        Assert.All(FormCorners(item), corners => Assert.Equal(new CornerRadius(0, 0, 10, 10), corners));
+        Assert.Contains(":titled", item.Classes);
+
+        item.CornerRadius = new CornerRadius(4, 6, 8, 12);
+        Assert.All(FormCorners(item), corners => Assert.Equal(new CornerRadius(0, 0, 8, 12), corners));
+
+        // Верх того же радиуса носит заголовок: окно — один прямоугольник, и второго числа у него нет.
+        Assert.Equal(new CornerRadius(4, 6, 0, 0), Part<Border>(item, "PART_TitleBar").CornerRadius);
+
+        item.Root = null;
+        Assert.All(FormCorners(item), corners => Assert.Equal(new CornerRadius(4, 6, 8, 12), corners));
+    }
+
     [AvaloniaFact]
     public void A_Window_That_Cannot_Resize_Has_No_Maximize_Button()
     {

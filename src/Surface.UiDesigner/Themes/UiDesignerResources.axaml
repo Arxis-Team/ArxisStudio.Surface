@@ -52,6 +52,5 @@
     <Thickness x:Key="UiDesigner.Form.TitleBar.Padding">10,0,0,0</Thickness>
     <Thickness x:Key="UiDesigner.Form.TitleBar.IconMargin">0,0,8,0</Thickness>
     <Thickness x:Key="UiDesigner.Form.TitleBar.BorderThickness">1,1,1,0</Thickness>
-    <CornerRadius x:Key="UiDesigner.Form.TitleBar.CornerRadius">6,6,0,0</CornerRadius>
 
 </ResourceDictionary>
