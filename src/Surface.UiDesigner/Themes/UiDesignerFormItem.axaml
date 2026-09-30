@@ -12,9 +12,10 @@
         куда элемент ставит свои области формы. Content контейнера здесь не показывается — его занимает
         ItemsControl под модель хоста, а форма приходит через Root.
 
-        Фон — FormBackground, а не Background: фон формы отражает корень, и рисовать его свойством,
-        которое ставят тема и хост, значило бы спорить с ними за одно значение. Background контейнера
-        остаётся Transparent на всю площадь — контейнер отвечает на нажатие и там, где форма пуста.
+        Фонов два, и лежат они слоями. Background контейнера — карточка хоста: им распоряжаются тема и
+        хост, и по умолчанию он Transparent на всю площадь — контейнер отвечает на нажатие и там, где
+        форма пуста. FormBackground — фон самой формы, отражённый от корня; он рисуется поверх карточки.
+        Форма без своего фона показывает карточку, а не холст насквозь — если хост карточку задал.
 
         Рамка окна — заголовок со значком, названием и кнопками — стоит НАД формой, вне границ элемента:
         границы элемента равны клиентской области, то есть Width и Height из документа, и линейки,
@@ -32,12 +33,16 @@
                 <Grid ClipToBounds="False" Background="Transparent">
 
                     <Border Name="PART_Border"
-                            Background="{TemplateBinding FormBackground}"
+                            Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="{TemplateBinding Padding}">
-                        <Decorator Name="PART_FormHost" />
+                        <Border Name="PART_FormBackground"
+                                Background="{TemplateBinding FormBackground}"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <Decorator Name="PART_FormHost" />
+                        </Border>
                     </Border>
 
                     <Panel Name="PART_ChromeAnchor"

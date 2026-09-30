@@ -638,13 +638,24 @@ public class UiDesignerFormItem : UiDesignerItem
     /// Текущим значением, а не привязкой: привязка хоста к размеру контейнера остаётся на месте и
     /// получает то же значение. Обратно в корень не пишется ничего — размер, поставленный элементу,
     /// корня не меняет.
+    /// <para>
+    /// Приходит только объявленное. Корень без ширины или высоты (<see cref="double.NaN"/>) ничего не
+    /// объявил, и размер элемента остаётся тем, что поставил хост: иначе карточка, которой хост дал
+    /// размер по умолчанию, сжималась бы до содержимого у каждой формы без объявленного размера.
+    /// </para>
     /// </remarks>
     private void FollowSize(Control root)
     {
-        _mirrors.Add(root.GetObservable(WidthProperty)
-            .Subscribe(new AnonymousObserver<double>(width => SetCurrentValue(WidthProperty, width))));
-        _mirrors.Add(root.GetObservable(HeightProperty)
-            .Subscribe(new AnonymousObserver<double>(height => SetCurrentValue(HeightProperty, height))));
+        _mirrors.Add(root.GetObservable(WidthProperty).Subscribe(new AnonymousObserver<double>(width =>
+        {
+            if (!double.IsNaN(width))
+                SetCurrentValue(WidthProperty, width);
+        })));
+        _mirrors.Add(root.GetObservable(HeightProperty).Subscribe(new AnonymousObserver<double>(height =>
+        {
+            if (!double.IsNaN(height))
+                SetCurrentValue(HeightProperty, height);
+        })));
     }
 
     private void UpdateKind()

@@ -430,6 +430,38 @@ public class UiDesignerFormItemTests
     }
 
     [AvaloniaFact]
+    public void A_Root_That_Declares_No_Size_Leaves_The_Items_Own()
+    {
+        // Корень без ширины ничего не объявил: размер по умолчанию, который хост дал карточке, остаётся.
+        // Иначе каждая форма без объявленного размера сжимала бы карточку до содержимого.
+        var item = new UiDesignerFormItem { Width = 480, Height = 360, Root = Form("Height=\"200\"") };
+
+        Assert.Equal(480d, item.Width);
+        Assert.Equal(200d, item.Height);
+    }
+
+    [AvaloniaFact]
+    public void The_Hosts_Card_Lies_Under_The_Forms_Own_Background()
+    {
+        // Два фона слоями: карточка хоста — Background контейнера, фон формы — поверх неё. Форма без
+        // своего фона показывает карточку; раньше тема рисовала один FormBackground, и карточки не было.
+        var window = Form();
+        var item = new UiDesignerFormItem { Background = Brushes.DimGray, Root = window };
+        Host(item);
+
+        var card = item.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Border" && b.TemplatedParent == item);
+        var form = item.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_FormBackground" && b.TemplatedParent == item);
+
+        Assert.Equal(Colors.DimGray, ColorOf(card.Background));
+        Assert.Null(form.Background);
+
+        window.Background = Brushes.White;
+
+        Assert.Equal(Colors.DimGray, ColorOf(card.Background));
+        Assert.Equal(Colors.White, ColorOf(form.Background));
+    }
+
+    [AvaloniaFact]
     public void The_Item_Never_Writes_Back_To_The_Root()
     {
         // Писатель у размера один — документ. Два писателя одного значения — это форма, дрожащая на
