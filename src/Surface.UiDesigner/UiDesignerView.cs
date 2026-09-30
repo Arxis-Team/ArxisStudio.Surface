@@ -9,10 +9,12 @@ using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Selection;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Logging;
 using Avalonia.Media;
+using Avalonia.Metadata;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -125,10 +127,87 @@ public partial class UiDesignerView : SurfaceView
     /// <param name="item">Элемент источника данных.</param>
     /// <param name="index">Индекс элемента.</param>
     /// <param name="recycleKey">Ключ повторного использования контейнера.</param>
-    /// <returns>Новый экземпляр <see cref="UiDesignerItem"/>.</returns>
+    /// <returns>Новый <see cref="UiDesignerItem"/>, а с привязкой корня — <see cref="UiDesignerFormItem"/>.</returns>
+    /// <remarks>
+    /// С <see cref="ItemRootBinding"/> контейнер — <see cref="UiDesignerFormItem"/>: элемент коллекции
+    /// называет корень документа, и держать его должен элемент формы (ADR 0020). Свой тип контейнера
+    /// наследник редактора создаёт здесь же; привязку корня получит любой наследник
+    /// <see cref="UiDesignerFormItem"/>.
+    /// </remarks>
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey)
     {
-        return new UiDesignerItem();
+        return ItemRootBinding != null ? new UiDesignerFormItem() : new UiDesignerItem();
+    }
+
+    /// <summary>
+    /// Идентификатор свойства привязки корня документа элемента.
+    /// </summary>
+    public static readonly StyledProperty<BindingBase?> ItemRootBindingProperty =
+        AvaloniaProperty.Register<UiDesignerView, BindingBase?>(nameof(ItemRootBinding));
+
+    /// <summary>
+    /// Получает или задает привязку, дающую контейнеру корень документа его элемента.
+    /// </summary>
+    /// <remarks>
+    /// Тот же приём, что <see cref="SurfaceView.ItemLocationBinding"/>: привязка применяется к
+    /// <see cref="UiDesignerFormItem.Root"/>, когда контейнер готовится, с элементом коллекции в качестве
+    /// контекста данных — <c>ItemRootBinding="{Binding Root}"</c>. Заданная, она же решает, каким быть
+    /// контейнеру: редактор создаёт <see cref="UiDesignerFormItem"/> вместо <see cref="UiDesignerItem"/>,
+    /// и хосту не нужно класть элементы формы в коллекцию самому.
+    /// <para>
+    /// Корень, пересобранный обновлением, модель отдаёт тем же свойством — привязка ставит его элементу
+    /// заново, а элемент остаётся тем же и держит место и выбор. Контейнер, который отпускают, корень
+    /// возвращает: привязка снимается, и всё взятое у корня идёт обратно.
+    /// </para>
+    /// <para>
+    /// Готовый контейнер из коллекции не трогается. Смена привязки действует на контейнеры,
+    /// подготовленные после неё.
+    /// </para>
+    /// </remarks>
+    [AssignBinding]
+    [InheritDataTypeFromItems(nameof(ItemsSource))]
+    public BindingBase? ItemRootBinding
+    {
+        get => GetValue(ItemRootBindingProperty);
+        set => SetValue(ItemRootBindingProperty, value);
+    }
+
+    /// <summary>
+    /// Даёт элементу формы корень его документа привязкой <see cref="ItemRootBinding"/>.
+    /// </summary>
+    /// <param name="container">Контейнер.</param>
+    /// <param name="item">Элемент источника данных.</param>
+    /// <param name="index">Индекс элемента.</param>
+    protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
+    {
+        base.PrepareContainerForItemOverride(container, item, index);
+
+        if (container is not UiDesignerFormItem form || ReferenceEquals(container, item) || ItemRootBinding is not { } root)
+            return;
+
+        form.RootBinding?.Dispose();
+        form.RootBinding = form.Bind(UiDesignerFormItem.RootProperty, root);
+    }
+
+    /// <summary>
+    /// Отпускает контейнер: элемент формы возвращает корню всё взятое.
+    /// </summary>
+    /// <param name="container">Контейнер.</param>
+    /// <remarks>
+    /// Корень, оставленный у отпущенного контейнера, так и стоял бы без содержимого, ресурсов и стилей, а
+    /// следующий элемент формы получил бы от него отказ: корень держит один элемент. Корень, который хост
+    /// поставил контейнеру сам, без привязки, не трогается.
+    /// </remarks>
+    protected override void ClearContainerForItemOverride(Control container)
+    {
+        base.ClearContainerForItemOverride(container);
+
+        if (container is not UiDesignerFormItem { RootBinding: { } binding } form)
+            return;
+
+        binding.Dispose();
+        form.RootBinding = null;
+        form.Root = null;
     }
 
     /// <summary>

@@ -100,6 +100,13 @@ public class UiDesignerFormItem : UiDesignerItem
             nameof(FormBackground), static item => item.FormBackground);
 
     /// <summary>
+    /// Идентификатор свойства <see cref="FormThemeVariant"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, ThemeVariant> FormThemeVariantProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, ThemeVariant>(
+            nameof(FormThemeVariant), static item => item.FormThemeVariant);
+
+    /// <summary>
     /// Идентификатор свойства <see cref="Title"/>.
     /// </summary>
     public static readonly StyledProperty<string?> TitleProperty =
@@ -171,6 +178,7 @@ public class UiDesignerFormItem : UiDesignerItem
     private bool _isTopLevel;
     private bool _hasContent;
     private IBrush? _formBackground;
+    private ThemeVariant _formThemeVariant = ThemeVariant.Default;
 
     /// <summary>Корень, у которого взято содержимое и которому его возвращать.</summary>
     private TopLevel? _donor;
@@ -296,6 +304,26 @@ public class UiDesignerFormItem : UiDesignerItem
     }
 
     /// <summary>
+    /// Получает тему, под которой живёт форма: запрошенную её корнем, а без запроса — тему приложения.
+    /// </summary>
+    /// <remarks>
+    /// Нужна рамке окна: рамка — часть окна и носит его тему, а лежит она в шаблоне элемента, вне областей
+    /// формы, и без этого свойства взяла бы тему инструмента — светлое окно под тёмным заголовком.
+    /// <see cref="ThemeVariant.Default"/> — не решили ни документ, ни хост: наследуется тема инструмента.
+    /// </remarks>
+    public ThemeVariant FormThemeVariant
+    {
+        get => _formThemeVariant;
+        private set => SetAndRaise(FormThemeVariantProperty, ref _formThemeVariant, value);
+    }
+
+    /// <summary>
+    /// Привязка корня, которую контейнеру поставил редактор (<see cref="UiDesignerView.ItemRootBinding"/>);
+    /// снимается, когда контейнер отпускают.
+    /// </summary>
+    internal IDisposable? RootBinding { get; set; }
+
+    /// <summary>
     /// Получает заголовок окна — для рамки, которую рисует тема.
     /// </summary>
     public string? Title
@@ -379,12 +407,24 @@ public class UiDesignerFormItem : UiDesignerItem
         base.OnPropertyChanged(change);
 
         // Хост может узнать тему приложения позже, чем поставил корень.
-        if (change.Property == ApplicationThemeVariantProperty && _donor is { } top)
+        if (change.Property == ApplicationThemeVariantProperty)
         {
-            MirrorApplicationVariant(top);
-            ShowBackground(top);
+            if (_donor is { } top)
+            {
+                MirrorApplicationVariant(top);
+                ShowBackground(top);
+            }
+
+            UpdateFormThemeVariant();
         }
     }
+
+    /// <summary>
+    /// Корень, которого держат, несёт действующую тему сам: свою или одолженную у приложения
+    /// (<see cref="MirrorApplicationVariant"/>). Прочим корням тему даёт только приложение.
+    /// </summary>
+    private void UpdateFormThemeVariant() =>
+        FormThemeVariant = _donor?.RequestedThemeVariant ?? ApplicationThemeVariant;
 
     private void Hold(object? root)
     {
@@ -408,6 +448,7 @@ public class UiDesignerFormItem : UiDesignerItem
         }
 
         HasContent = _scope.Child is not null;
+        UpdateFormThemeVariant();
         UpdateKind();
     }
 
@@ -430,6 +471,7 @@ public class UiDesignerFormItem : UiDesignerItem
         FormBackground = null;
         IsTopLevel = false;
         HasContent = false;
+        UpdateFormThemeVariant();
     }
 
     /// <summary>
@@ -571,6 +613,8 @@ public class UiDesignerFormItem : UiDesignerItem
         _mirrors.Add(_scope.Bind(
             ThemeVariantScope.RequestedThemeVariantProperty,
             top.GetObservable(TopLevel.RequestedThemeVariantProperty)));
+        _mirrors.Add(top.GetObservable(TopLevel.RequestedThemeVariantProperty)
+            .Subscribe(new AnonymousObserver<ThemeVariant?>(_ => UpdateFormThemeVariant())));
 
         // То, что находят последним и принимают за другое. Данные времени разработки стоят на корне —
         // Design.DataContext есть свойство окна, — и вынутое из окна содержимое выходит и из этого

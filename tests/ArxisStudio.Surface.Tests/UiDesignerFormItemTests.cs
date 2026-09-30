@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -765,5 +767,238 @@ public class UiDesignerFormItemTests
         Assert.False(clicked, "Загруженная форма не должна жить своей жизнью.");
         Assert.Same(button, editor.PrimarySelectionTarget!.Target);
         Assert.Same(item, editor.PrimarySelectionTarget.Container);
+    }
+
+    // -- Рамка окна в теме ------------------------------------------------------------------------------
+
+    private static T Part<T>(UiDesignerFormItem item, string name)
+        where T : Control =>
+        item.GetVisualDescendants().OfType<T>().Single(control => control.Name == name && control.TemplatedParent == item);
+
+    [AvaloniaFact]
+    public void The_Title_Bar_Stands_Above_The_Form_And_Outside_The_Items_Bounds()
+    {
+        // Границы элемента — клиентская область, то есть Width и Height из документа: линейки, привязка и
+        // подпись размера меряют форму, а не форму с заголовком.
+        var item = new UiDesignerFormItem { Root = Form("Width=\"400\" Height=\"300\" Title=\"Orders\"") };
+        Host(item);
+
+        var bar = Part<Border>(item, "PART_TitleBar");
+        var height = Assert.IsType<double>(item.FindResource("UiDesigner.Form.TitleBar.Height"));
+
+        Assert.Equal(new Size(400, 300), item.Bounds.Size);
+        Assert.Equal(new Size(400, height), bar.Bounds.Size);
+        Assert.Equal(new Point(0, -height), bar.TranslatePoint(default, item));
+        Assert.Equal("Orders", Part<TextBlock>(item, "PART_Title").Text);
+    }
+
+    [AvaloniaFact]
+    public void The_Title_Bar_Follows_An_Edit_Of_The_Title()
+    {
+        var window = Form("Title=\"Orders\"");
+        var item = new UiDesignerFormItem { Root = window };
+        Host(item);
+
+        window.Title = "Invoices";
+
+        Assert.Equal("Invoices", Part<TextBlock>(item, "PART_Title").Text);
+    }
+
+    [AvaloniaFact]
+    public void Only_A_Window_With_Full_Decorations_Wears_A_Title_Bar()
+    {
+        bool Shown(object? root, Action<UiDesignerFormItem>? arrange = null)
+        {
+            var item = new UiDesignerFormItem { Root = root };
+            arrange?.Invoke(item);
+            Host(item);
+            return Part<Panel>(item, "PART_ChromeAnchor").IsVisible;
+        }
+
+        Assert.True(Shown(Form()));
+        Assert.False(Shown(View()), "Корень, показанный как есть, — не окно.");
+        Assert.False(Shown(null), "У пустого элемента рамки нет.");
+        Assert.False(Shown(Form("WindowDecorations=\"BorderOnly\"")), "Окно без системного заголовка показывается без него.");
+        Assert.False(Shown(Form("WindowDecorations=\"None\"")));
+    }
+
+    [AvaloniaFact]
+    public void A_Window_That_Cannot_Resize_Has_No_Maximize_Button()
+    {
+        var window = Form();
+        var item = new UiDesignerFormItem { Root = window };
+        Host(item);
+        var maximize = Part<Panel>(item, "PART_Maximize");
+        Assert.True(maximize.IsVisible);
+
+        window.CanResize = false;
+
+        Assert.False(maximize.IsVisible);
+        Assert.True(Part<Panel>(item, "PART_Close").IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void The_Title_Bar_Wears_The_Forms_Theme_Not_The_Tools()
+    {
+        // Рамка — часть окна. Она лежит в шаблоне элемента, вне областей формы, и без FormThemeVariant
+        // светлое окно стояло бы под тёмным заголовком тёмного дизайнера.
+        ThemeVariant Worn(Window window, ThemeVariant? application = null)
+        {
+            var item = new UiDesignerFormItem { Root = window };
+            if (application != null)
+                item.ApplicationThemeVariant = application;
+
+            Host(item);
+            return Part<Border>(item, "PART_TitleBar").ActualThemeVariant;
+        }
+
+        Assert.Equal(ThemeVariant.Light, Worn(Form("RequestedThemeVariant=\"Light\"")));
+        Assert.Equal(ThemeVariant.Light, Worn(Form(), ThemeVariant.Light));
+        Assert.Equal(ThemeVariant.Dark, Worn(Form("RequestedThemeVariant=\"Dark\""), ThemeVariant.Light));
+        Assert.Equal(ThemeVariant.Dark, Worn(Form()));
+    }
+
+    [AvaloniaFact]
+    public void The_Form_Theme_Variant_Is_The_Roots_Or_The_Applications()
+    {
+        var item = new UiDesignerFormItem();
+        Assert.Equal(ThemeVariant.Default, item.FormThemeVariant);
+
+        item.ApplicationThemeVariant = ThemeVariant.Light;
+        Assert.Equal(ThemeVariant.Light, item.FormThemeVariant);
+
+        item.Root = Form("RequestedThemeVariant=\"Dark\"");
+        Assert.Equal(ThemeVariant.Dark, item.FormThemeVariant);
+
+        item.Root = View();
+        Assert.Equal(ThemeVariant.Light, item.FormThemeVariant);
+    }
+
+    [AvaloniaFact]
+    public void The_Title_Bar_Takes_No_Presses()
+    {
+        // Перетаскивание за заголовок — отдельное решение (ADR 0020); до него рамка нажатий не берёт, и
+        // нажатие по ней достаётся холсту, а не элементу.
+        var item = new UiDesignerFormItem { Root = Form() };
+        Host(item);
+
+        Assert.False(Part<Panel>(item, "PART_ChromeAnchor").IsHitTestVisible);
+    }
+
+    // -- Привязка корня у редактора -----------------------------------------------------------------------
+
+    private sealed class FormModel(object? root, Point location) : INotifyPropertyChanged
+    {
+        private object? _root = root;
+
+        public object? Root
+        {
+            get => _root;
+            set
+            {
+                _root = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Root)));
+            }
+        }
+
+        public Point Location { get; set; } = location;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
+
+    private static (UiDesignerView Editor, ObservableCollection<FormModel> Forms) Designer(bool withRootBinding, params FormModel[] forms)
+    {
+        var models = new ObservableCollection<FormModel>(forms);
+        var editor = new UiDesignerView
+        {
+            ItemsSource = models,
+            ItemLocationBinding = new Binding(nameof(FormModel.Location)),
+            ItemRootBinding = withRootBinding ? new Binding(nameof(FormModel.Root)) : null
+        };
+
+        var host = new Window { Width = 800, Height = 600, Content = editor };
+        host.Show();
+        host.UpdateLayout();
+        return (editor, models);
+    }
+
+    [AvaloniaFact]
+    public void With_A_Root_Binding_The_Editor_Makes_Form_Items_And_Gives_Them_Their_Roots()
+    {
+        var window = Form("Title=\"Orders\"");
+        var (editor, _) = Designer(withRootBinding: true, new FormModel(window, new Point(40, 60)));
+
+        var item = Assert.IsType<UiDesignerFormItem>(editor.ContainerFromIndex(0));
+
+        Assert.Same(window, item.Root);
+        Assert.Equal("Orders", item.Title);
+        Assert.Equal(new Point(40, 60), item.Location);
+        Assert.True(Find<TextBlock>(window, "Text").Bounds.Width > 0, "Форма обязана быть на экране.");
+    }
+
+    [AvaloniaFact]
+    public void Without_A_Root_Binding_Containers_Stay_Plain()
+    {
+        var (editor, _) = Designer(withRootBinding: false, new FormModel(null, default));
+
+        Assert.Equal(typeof(UiDesignerItem), editor.ContainerFromIndex(0)!.GetType());
+    }
+
+    [AvaloniaFact]
+    public void A_Rebuilt_Root_Comes_Through_The_Binding_To_The_Same_Item()
+    {
+        // Обновление, пересобравшее корень: модель отдаёт новый тем же свойством, элемент остаётся тем же и
+        // держит место и выбор.
+        var first = Form("Title=\"First\"");
+        var second = Form("Title=\"Second\"");
+        var firstContent = first.Content;
+        var (editor, forms) = Designer(withRootBinding: true, new FormModel(first, default));
+        var item = Assert.IsType<UiDesignerFormItem>(editor.ContainerFromIndex(0));
+
+        forms[0].Root = second;
+
+        Assert.Same(item, editor.ContainerFromIndex(0));
+        Assert.Same(second, item.Root);
+        Assert.Equal("Second", item.Title);
+        Assert.Same(firstContent, first.Content);
+    }
+
+    [AvaloniaFact]
+    public void A_Released_Container_Gives_The_Root_Back()
+    {
+        // Корень, оставленный у отпущенного контейнера, так и стоял бы без содержимого, а следующий элемент
+        // формы получил бы от него отказ.
+        var window = Form(declarations: AccentResource);
+        var content = window.Content;
+        var (editor, forms) = Designer(withRootBinding: true, new FormModel(window, default));
+        Assert.Null(window.Content);
+
+        forms.RemoveAt(0);
+
+        Assert.Same(content, window.Content);
+        Assert.True(window.TryFindResource("Accent", out _));
+
+        forms.Add(new FormModel(window, default));
+        editor.UpdateLayout();
+
+        Assert.Same(window, Assert.IsType<UiDesignerFormItem>(editor.ContainerFromIndex(0)).Root);
+    }
+
+    [AvaloniaFact]
+    public void A_Root_The_Host_Set_Itself_Is_Not_Taken_Away_With_The_Container()
+    {
+        // Готовый контейнер из коллекции редактор не трогает: корень ему поставил хост, а не привязка.
+        var window = Form();
+        var item = new UiDesignerFormItem { Root = window };
+        var editor = new UiDesignerView();
+        editor.Items.Add(item);
+        var host = new Window { Width = 800, Height = 600, Content = editor };
+        host.Show();
+        host.UpdateLayout();
+
+        editor.Items.Remove(item);
+
+        Assert.Same(window, item.Root);
+        Assert.Null(window.Content);
     }
 }

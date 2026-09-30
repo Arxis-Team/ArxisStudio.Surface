@@ -15,6 +15,13 @@
         Фон — FormBackground, а не Background: фон формы отражает корень, и рисовать его свойством,
         которое ставят тема и хост, значило бы спорить с ними за одно значение. Background контейнера
         остаётся Transparent на всю площадь — контейнер отвечает на нажатие и там, где форма пуста.
+
+        Рамка окна — заголовок со значком, названием и кнопками — стоит НАД формой, вне границ элемента:
+        границы элемента равны клиентской области, то есть Width и Height из документа, и линейки,
+        привязка и подпись размера меряют форму, а не форму с заголовком. Наружу её выносит раскладка, а
+        не отступ: якорь нулевой высоты прижат к верху, заголовок в нём прижат к низу и потому растёт
+        вверх на свою высоту — литерала, производного от высоты заголовка, в шаблоне нет. Рамка носит тему
+        формы (FormThemeVariant), нажатий не берёт и видна только у окна с полным оформлением.
     -->
     <ControlTheme x:Key="{x:Type uidesigner:UiDesignerFormItem}"
                   TargetType="uidesigner:UiDesignerFormItem"
@@ -32,6 +39,53 @@
                             Padding="{TemplateBinding Padding}">
                         <Decorator Name="PART_FormHost" />
                     </Border>
+
+                    <Panel Name="PART_ChromeAnchor"
+                           Height="0"
+                           VerticalAlignment="Top"
+                           ClipToBounds="False"
+                           IsHitTestVisible="False"
+                           IsVisible="False">
+                        <ThemeVariantScope Name="PART_Chrome"
+                                           VerticalAlignment="Bottom"
+                                           Height="{DynamicResource UiDesigner.Form.TitleBar.Height}"
+                                           RequestedThemeVariant="{TemplateBinding FormThemeVariant}">
+                            <Border Name="PART_TitleBar"
+                                    Background="{DynamicResource UiDesigner.Form.TitleBar.Background}"
+                                    BorderBrush="{DynamicResource UiDesigner.Form.TitleBar.BorderBrush}"
+                                    BorderThickness="{DynamicResource UiDesigner.Form.TitleBar.BorderThickness}"
+                                    CornerRadius="{DynamicResource UiDesigner.Form.TitleBar.CornerRadius}"
+                                    Padding="{DynamicResource UiDesigner.Form.TitleBar.Padding}"
+                                    TextElement.Foreground="{DynamicResource UiDesigner.Form.TitleBar.Foreground}"
+                                    TextElement.FontSize="{DynamicResource UiDesigner.Form.TitleBar.FontSize}">
+                                <DockPanel>
+                                    <StackPanel Name="PART_CaptionButtons" DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Panel Name="PART_Minimize" Width="{DynamicResource UiDesigner.Form.TitleBar.ButtonWidth}">
+                                            <Path Data="M0,5 H10" Classes="caption-glyph" />
+                                        </Panel>
+                                        <Panel Name="PART_Maximize" Width="{DynamicResource UiDesigner.Form.TitleBar.ButtonWidth}">
+                                            <Path Data="M0,0 H10 V10 H0 Z" Classes="caption-glyph" />
+                                        </Panel>
+                                        <Panel Name="PART_Close" Width="{DynamicResource UiDesigner.Form.TitleBar.ButtonWidth}">
+                                            <Path Data="M0,0 L10,10 M10,0 L0,10" Classes="caption-glyph" />
+                                        </Panel>
+                                    </StackPanel>
+                                    <Image Name="PART_Icon"
+                                           DockPanel.Dock="Left"
+                                           Width="{DynamicResource UiDesigner.Form.TitleBar.IconSize}"
+                                           Height="{DynamicResource UiDesigner.Form.TitleBar.IconSize}"
+                                           Margin="{DynamicResource UiDesigner.Form.TitleBar.IconMargin}"
+                                           VerticalAlignment="Center"
+                                           Source="{TemplateBinding Icon, Converter={x:Static uidesigner:WindowIconImageConverter.Instance}}"
+                                           IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    <TextBlock Name="PART_Title"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               Text="{TemplateBinding Title}" />
+                                </DockPanel>
+                            </Border>
+                        </ThemeVariantScope>
+                    </Panel>
 
                     <Border Name="PART_HoverBorder"
                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -53,6 +107,35 @@
                 </Grid>
             </ControlTemplate>
         </Setter>
+
+        <Style Selector="^ /template/ Path.caption-glyph">
+            <Setter Property="Width" Value="{DynamicResource UiDesigner.Form.TitleBar.GlyphSize}" />
+            <Setter Property="Height" Value="{DynamicResource UiDesigner.Form.TitleBar.GlyphSize}" />
+            <Setter Property="Stretch" Value="None" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Stroke" Value="{DynamicResource UiDesigner.Form.TitleBar.Foreground}" />
+            <Setter Property="StrokeThickness" Value="1" />
+        </Style>
+
+        <!-- Заголовок — у окна; у корня, показанного как есть, и у пустого элемента его нет. -->
+        <Style Selector="^:window /template/ Panel#PART_ChromeAnchor">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- Окно без системного заголовка показывается без него: стоят после :window и потому сильнее. -->
+        <Style Selector="^[Decorations=BorderOnly] /template/ Panel#PART_ChromeAnchor">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="^[Decorations=None] /template/ Panel#PART_ChromeAnchor">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <!-- Окно, которому нельзя менять размер, развернуть тоже нельзя. -->
+        <Style Selector="^[CanResize=False] /template/ Panel#PART_Maximize">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
 
         <!-- Загруженная форма не живёт своей жизнью: ввод гасится на хосте формы, как на презентере у контейнера. -->
         <Style Selector="^[ContentMode=Loaded] /template/ Decorator#PART_FormHost">

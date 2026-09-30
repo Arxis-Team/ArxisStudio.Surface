@@ -90,17 +90,28 @@ Forms.Add(new FormViewModel { Root = root, Location = new Point(80, 80), Width =
 Нужен он прежде всего окну: `Window` — `TopLevel`, Avalonia привязывает его к собственному хосту при
 создании, и вложить его во что-либо нельзя — раскладка бросает.
 
+```xml
+<design:UiDesignerView ItemsSource="{Binding Forms}"
+                       ItemLocationBinding="{Binding Location}"
+                       ItemRootBinding="{Binding Root}" />
+```
+
+`ItemRootBinding` — привязка к `UiDesignerFormItem.Root` с элементом коллекции в качестве контекста
+данных, тем же приёмом, что `ItemLocationBinding`. Заданная, она решает и тип контейнера: редактор
+создаёт `UiDesignerFormItem` вместо `UiDesignerItem`. Корень — объект, а не сессия загрузчика: окно,
+`UserControl`, шаблонный контрол. Корень, пересобранный обновлением, модель отдаёт тем же свойством, и
+элемент остаётся тем же; контейнер, который отпускают, возвращает корню всё взятое.
+
+Без привязки элемент кладут в коллекцию сами — готовый контейнер редактор берёт как есть и его корня не
+трогает:
+
 ```csharp
-var item = new UiDesignerFormItem { Location = new Point(40, 40) };
-item.Root = root;            // окно, UserControl, шаблонный контрол — объект, а не сессия загрузчика
+var item = new UiDesignerFormItem { Location = new Point(40, 40), Root = root };
 designer.Items.Add(item);
 
 item.Root = rebuiltRoot;     // после обновления, пересобравшего корень: элемент тот же
 item.Root = null;            // отпустить корень и вернуть ему всё взятое
 ```
-
-`UiDesignerView` создаёт контейнерами только `UiDesignerItem`, поэтому элемент формы хост кладёт в
-`Items` сам: контейнер, переданный элементом, редактор берёт как есть.
 
 | Член | Что даёт |
 | --- | --- |
@@ -109,6 +120,7 @@ item.Root = null;            // отпустить корень и вернут�
 | `HasContent` | есть что показать; `false` у `App.axaml`, словаря ресурсов, окна без содержимого |
 | `FormBackground` | фон формы, каким он был бы при работе; рисует тема элемента |
 | `Title`, `Icon`, `CanResize`, `Decorations` | свойства окна как окна — данные для рамки |
+| `FormThemeVariant` | тема, под которой живёт форма: запрошенная корнем, а без запроса — тема приложения; её носит рамка |
 | `ApplicationThemeVariant` | тема приложения документа, когда хост её знает; по умолчанию наследуется тема инструмента |
 
 Что делает элемент с корнем-окном:
@@ -141,7 +153,14 @@ item.Root = null;            // отпустить корень и вернут�
 `PART_FormHost`; своя тема элемента обязана её иметь. Корень держит один элемент: второй получает
 `InvalidOperationException`. `Root` ставят из потока интерфейса.
 
-Рамки окна в теме пока нет: `Title`, `Icon` и `Decorations` отдаются данными.
+Рамку окна рисует тема элемента: заголовок со значком, названием и кнопками.
+
+- Заголовок стоит над формой, **вне границ элемента**: границы равны клиентской области, и линейки,
+  привязка и подпись размера меряют форму.
+- Заголовок носит тему формы (`FormThemeVariant`), а не инструмента.
+- Есть он только у окна с `WindowDecorations="Full"`; `BorderOnly`, `None` и корень, показанный как
+  есть, идут без него. У окна с `CanResize="False"` нет кнопки «развернуть».
+- Кнопки — рисунок: нажатий рамка не берёт. Перетаскивать форму за заголовок пока нельзя.
 
 ## Координаты: `Layout`
 
@@ -318,6 +337,9 @@ editor.GroupStore = new DocumentGroupStore(document);   // ISurfaceGroupStore: G
 | `UiDesigner.ReorderIndicatorBrush` | индикатор точки вставки |
 | `UiDesignerItem.OutlineOpacity` | контур контейнера в покое, `0` — только под курсором |
 | `UiDesignerItem.BorderBrush`, `UiDesignerItem.BorderThickness`, `UiDesignerItem.CornerRadius` | контейнер |
+| `UiDesigner.Form.TitleBar.Background`, `…Foreground`, `…BorderBrush` | рамка окна элемента формы; по словарю тем, берутся под темой формы |
+| `UiDesigner.Form.TitleBar.Height`, `…Padding`, `…FontSize`, `…BorderThickness`, `…CornerRadius` | размеры заголовка |
+| `UiDesigner.Form.TitleBar.IconSize`, `…IconMargin`, `…ButtonWidth`, `…GlyphSize` | значок и кнопки заголовка |
 
 Сетка, рамка выделения, ручки, направляющие и линейки — ключами `Surface.*` ядра и инструментов.
 `SelectionRectangleStyle` задаёт тему прямоугольника рамки выделения.
