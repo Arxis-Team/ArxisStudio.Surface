@@ -49,6 +49,28 @@ sealed class ArxisStudio.Surface.UiDesigner.SurfaceGroupInfo
     property String Id { get; }
     property String Path { get; }
     property UiDesignerItem Container { get; }
+class ArxisStudio.Surface.UiDesigner.UiDesignerFormItem : UiDesignerItem
+    avalonia ApplicationThemeVariantProperty -> ApplicationThemeVariant : ThemeVariant (styled) = <ThemeVariant>
+    avalonia CanResizeProperty -> CanResize : Boolean (styled) = true
+    avalonia DecorationsProperty -> Decorations : WindowDecorations (styled) = Full
+    avalonia FormBackgroundProperty -> FormBackground : IBrush (direct)
+    avalonia HasContentProperty -> HasContent : Boolean (direct)
+    avalonia IconProperty -> Icon : WindowIcon (styled) = null
+    avalonia IsTopLevelProperty -> IsTopLevel : Boolean (direct)
+    avalonia RootProperty -> Root : Object (direct)
+    avalonia TitleProperty -> Title : String (styled) = null
+    ctor .ctor()
+    method Void OnApplyTemplate(TemplateAppliedEventArgs)
+    method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    property Boolean CanResize { get; }
+    property Boolean HasContent { get; }
+    property Boolean IsTopLevel { get; }
+    property IBrush FormBackground { get; }
+    property Object Root { get; set; }
+    property String Title { get; }
+    property ThemeVariant ApplicationThemeVariant { get; set; }
+    property WindowDecorations Decorations { get; }
+    property WindowIcon Icon { get; }
 class ArxisStudio.Surface.UiDesigner.UiDesignerItem : SurfaceItem
     avalonia ContentModeProperty -> ContentMode : SurfaceContentMode (styled) = Annotated
     ctor .ctor()

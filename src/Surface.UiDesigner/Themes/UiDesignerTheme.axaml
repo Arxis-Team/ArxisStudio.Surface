@@ -11,6 +11,7 @@
         <ResourceInclude Source="avares://ArxisStudio.Surface.Editing/Themes/EditingTheme.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerResources.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerItem.axaml" />
+        <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerFormItem.axaml" />
         <ResourceInclude Source="avares://ArxisStudio.Surface.UiDesigner/Themes/UiDesignerView.axaml" />
     </ResourceDictionary.MergedDictionaries>
 

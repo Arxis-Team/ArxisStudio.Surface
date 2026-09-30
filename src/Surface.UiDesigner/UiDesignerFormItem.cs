@@ -1,0 +1,612 @@
+using System.Runtime.CompilerServices;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
+using Avalonia.Controls.Primitives;
+using Avalonia.Data;
+using Avalonia.Diagnostics;
+using Avalonia.Media;
+using Avalonia.Reactive;
+using Avalonia.Styling;
+using Avalonia.Threading;
+
+namespace ArxisStudio.Surface.UiDesigner;
+
+/// <summary>
+/// Контейнер дизайнера, который держит корень документа — окно, <see cref="UserControl"/>, шаблонный
+/// контрол — и показывает его формой на холсте.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Самый частый документ приложения Avalonia — окно, а <see cref="Window"/> — <see cref="TopLevel"/>:
+/// Avalonia привязывает его к собственному хосту при создании, и вложить его во что-либо нельзя —
+/// раскладка бросает. Элемент встаёт на его место. Корень остаётся корнем: <see cref="Root"/> — само
+/// окно, и правки адресуют его, а не заместителя.
+/// </para>
+/// <para>
+/// <b>Заимствует, а не копирует.</b> Содержимое, словарь ресурсов и стили корня переносятся сюда, пока
+/// корень держат, и возвращаются, когда <see cref="Root"/> сменился или снят: у словаря ресурсов
+/// Avalonia один владелец, а копия потеряла бы вложенные и тематические словари. Ложатся они не на сам
+/// элемент, а на внутреннюю область формы — стили окна иначе красили бы рамку элемента, — поэтому свои
+/// ресурсы и стили элемента заимствование не трогает.
+/// </para>
+/// <para>
+/// <b>Отражает, а не снимает.</b> Фон, размер, тема и контекст данных следуют за корнем: правка свойства
+/// окна видна сразу, без пересборки формы и без потери фокуса внутри неё.
+/// </para>
+/// <para>
+/// <b>В корень не пишет.</b> Истина — документ. Размер элемента — размер формы, и писатель у него один:
+/// жест правит документ через хоста, и новое значение приходит сюда от корня.
+/// </para>
+/// <para>
+/// <b>Рамка окна — данные.</b> <see cref="Title"/>, <see cref="Icon"/>, <see cref="CanResize"/> и
+/// <see cref="Decorations"/> — свойства окна как окна; заголовка у заместителя нет, и рисует его тема
+/// элемента по этим данным. <c>WindowState</c> нет намеренно: окно, которое никогда не показывают,
+/// всегда в обычном состоянии.
+/// </para>
+/// <para>
+/// Вид формы задают псевдоклассы, а не наследник на каждый тип корня: <c>:window</c> — корень окно,
+/// <c>:control</c> — корень показан как есть, <c>:empty</c> — показывать нечего. Корневой тег при
+/// правке меняется, а тип контейнера сменить нельзя, не потеряв место и выбор (ADR 0020).
+/// </para>
+/// <para>
+/// Области формы встают в часть шаблона <c>PART_FormHost</c>. Содержимое формы не идёт в
+/// <see cref="ContentControl.Content"/>: его занимает <see cref="ItemsControl"/> под модель хоста.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code language="csharp"><![CDATA[
+/// var item = new UiDesignerFormItem { Location = new Point(40, 40) };
+/// item.Root = session.RootObject;   // окно, UserControl или что угодно ещё
+/// designer.Items.Add(item);
+///
+/// // После обновления, пересобравшего корень:
+/// item.Root = session.RootObject;
+/// ]]></code>
+/// </example>
+[TemplatePart(FormHostPart, typeof(Decorator))]
+[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass)]
+public class UiDesignerFormItem : UiDesignerItem
+{
+    private const string FormHostPart = "PART_FormHost";
+    private const string WindowPseudoClass = ":window";
+    private const string ControlPseudoClass = ":control";
+    private const string EmptyPseudoClass = ":empty";
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="Root"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, object?> RootProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, object?>(
+            nameof(Root), static item => item.Root, static (item, value) => item.Root = value);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="IsTopLevel"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, bool> IsTopLevelProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, bool>(nameof(IsTopLevel), static item => item.IsTopLevel);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="HasContent"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, bool> HasContentProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, bool>(nameof(HasContent), static item => item.HasContent);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="FormBackground"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, IBrush?> FormBackgroundProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, IBrush?>(
+            nameof(FormBackground), static item => item.FormBackground);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="Title"/>.
+    /// </summary>
+    public static readonly StyledProperty<string?> TitleProperty =
+        AvaloniaProperty.Register<UiDesignerFormItem, string?>(nameof(Title));
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="Icon"/>.
+    /// </summary>
+    public static readonly StyledProperty<WindowIcon?> IconProperty =
+        AvaloniaProperty.Register<UiDesignerFormItem, WindowIcon?>(nameof(Icon));
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="CanResize"/>.
+    /// </summary>
+    public static readonly StyledProperty<bool> CanResizeProperty =
+        AvaloniaProperty.Register<UiDesignerFormItem, bool>(nameof(CanResize), defaultValue: true);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="Decorations"/>.
+    /// </summary>
+    public static readonly StyledProperty<WindowDecorations> DecorationsProperty =
+        AvaloniaProperty.Register<UiDesignerFormItem, WindowDecorations>(
+            nameof(Decorations), defaultValue: WindowDecorations.Full);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="ApplicationThemeVariant"/>.
+    /// </summary>
+    public static readonly StyledProperty<ThemeVariant> ApplicationThemeVariantProperty =
+        AvaloniaProperty.Register<UiDesignerFormItem, ThemeVariant>(
+            nameof(ApplicationThemeVariant), defaultValue: ThemeVariant.Default);
+
+    /// <summary>
+    /// Какой элемент держит какой корень.
+    /// </summary>
+    /// <remarks>
+    /// Корень держит один элемент, и без этой проверки ошибка тихая: второй занял бы то, что оставил
+    /// первый, — пустое содержимое и пустой словарь, — и записал бы себя хозяином. Кто отпустил бы корень
+    /// последним, вернул бы окну эти подмены и опустошил его, а первое отпускание выглядело бы удачным.
+    /// </remarks>
+    private static readonly ConditionalWeakTable<TopLevel, UiDesignerFormItem> StandingIn = new();
+
+    /// <summary>
+    /// Область корня: несёт запрошенную им тему, его контекст данных, его ресурсы и стили.
+    /// </summary>
+    /// <remarks>
+    /// Вариант темы — область, а не значение, и объявляет её <see cref="TopLevel"/> — то самое, чего в
+    /// дереве нет. Без области форма, запросившая светлую тему в тёмном инструменте, показывалась бы
+    /// тёмной. Ресурсы и стили корня ложатся сюда же, а не на элемент: на элементе стили окна красили бы
+    /// его собственную рамку.
+    /// </remarks>
+    private readonly ThemeVariantScope _scope = new();
+
+    /// <summary>
+    /// Стоит там, где у документа стояло бы его приложение.
+    /// </summary>
+    /// <remarks>
+    /// Корень без объявленной темы значит не «темы нет», а «как скажет приложение», и при работе
+    /// приложение — следующая область вверх. В дизайнере следующая область вверх — сам дизайнер, и без
+    /// этого слоя нерешившая форма брала бы тему инструмента. Запрос самого корня привязан к
+    /// <see cref="_scope"/>, внутри, и побеждает, как и при работе.
+    /// </remarks>
+    private readonly ThemeVariantScope _application = new();
+
+    private readonly List<IDisposable> _mirrors = new();
+    private readonly List<IStyle> _borrowedStyles = new();
+
+    private Decorator? _host;
+    private object? _root;
+    private bool _isTopLevel;
+    private bool _hasContent;
+    private IBrush? _formBackground;
+
+    /// <summary>Корень, у которого взято содержимое и которому его возвращать.</summary>
+    private TopLevel? _donor;
+
+    private object? _borrowed;
+    private IResourceDictionary? _borrowedResources;
+    private Control? _authored;
+    private bool _variantMirrored;
+
+    static UiDesignerFormItem()
+    {
+        // Форма пришла целиком: размечать её некому, и жить своей жизнью она не должна.
+        ContentModeProperty.OverrideDefaultValue<UiDesignerFormItem>(SurfaceContentMode.Loaded);
+    }
+
+    /// <summary>
+    /// Инициализирует новый экземпляр <see cref="UiDesignerFormItem"/>.
+    /// </summary>
+    public UiDesignerFormItem()
+    {
+        _application.Child = _scope;
+
+        // На всю жизнь элемента: оба конца — его собственные объекты, утекать нечему.
+        _application.Bind(
+            ThemeVariantScope.RequestedThemeVariantProperty,
+            this.GetObservable(ApplicationThemeVariantProperty));
+
+        UpdateKind();
+    }
+
+    /// <summary>
+    /// Получает или задает корень документа, который элемент держит; <see langword="null"/> отпускает.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Это настоящий корень — само окно, а не заместитель: его адресуют правки, и его берёт инспектор.
+    /// Для корня, пересобранного обновлением, свойство ставят заново; элемент остаётся тем же и держит
+    /// место, размер и выбор.
+    /// </para>
+    /// <para>
+    /// Взять содержимое корня — значит его забрать: контрол не лежит в двух логических деревьях, а у
+    /// словаря ресурсов один владелец. Пока корень держат, он не отдаёт ни содержимого, ни ресурсов, ни
+    /// стилей; документ при этом не меняется и говорит то же, что говорил.
+    /// </para>
+    /// <para>
+    /// Корень, который можно вложить как есть, элемент просто показывает — без заимствований: он в
+    /// дереве и несёт свои ресурсы, стили и тему сам. Объект, который не контрол, — приложение, словарь
+    /// ресурсов — показывать нечем; об этом говорит <see cref="HasContent"/>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// Этот корень уже держит другой элемент, либо вызов пришёл не из потока интерфейса.
+    /// </exception>
+    public object? Root
+    {
+        get => _root;
+        set
+        {
+            // Заимствование и возврат правят объекты Avalonia; спросить поток первым — значит не оставить
+            // корень наполовину возвращённым, когда откажет уже вторая запись.
+            Dispatcher.UIThread.VerifyAccess();
+
+            if (ReferenceEquals(_root, value))
+                return;
+
+            if (value is TopLevel wanted && StandingIn.TryGetValue(wanted, out var holder) && !ReferenceEquals(holder, this))
+            {
+                throw new InvalidOperationException(
+                    "Этот корень уже держит другой UiDesignerFormItem. Корень держит один элемент: сначала "
+                    + "отпустите его там (Root = null).");
+            }
+
+            Release();
+
+            var old = _root;
+            _root = value;
+            Hold(value);
+            RaisePropertyChanged(RootProperty, old, value);
+        }
+    }
+
+    /// <summary>
+    /// Получает признак того, что корень — <see cref="TopLevel"/> и элемент стоит на его месте.
+    /// </summary>
+    /// <remarks>
+    /// <see langword="false"/> — корень вложен как есть; данные рамки тогда молчат, и ничего не
+    /// отражается.
+    /// </remarks>
+    public bool IsTopLevel
+    {
+        get => _isTopLevel;
+        private set => SetAndRaise(IsTopLevelProperty, ref _isTopLevel, value);
+    }
+
+    /// <summary>
+    /// Получает признак того, что есть что показать.
+    /// </summary>
+    /// <remarks>
+    /// Документ не обязан давать контрол: <c>App.axaml</c> даёт приложение, словарь ресурсов — словарь.
+    /// Это повод сказать об этом, а не упасть: без проверки хост рисует пустую карточку и считает, что
+    /// форма показана.
+    /// </remarks>
+    public bool HasContent
+    {
+        get => _hasContent;
+        private set => SetAndRaise(HasContentProperty, ref _hasContent, value);
+    }
+
+    /// <summary>
+    /// Получает фон формы — тот, что был бы у неё при работе; рисует его тема элемента.
+    /// </summary>
+    /// <remarks>
+    /// Фон корня не отражается напрямую. Окно без объявленного фона всё равно его имеет: тему даёт
+    /// приложение, под которым работает сам дизайнер, и показать её — значит покрасить каждую нерешившую
+    /// форму в цвет инструмента, выдав его за цвет формы. Показывается фон, заданный документом, либо
+    /// тематический — когда хост назвал тему приложения (<see cref="ApplicationThemeVariant"/>); иначе
+    /// <see langword="null"/>, и сквозь форму видна карточка хоста.
+    /// </remarks>
+    public IBrush? FormBackground
+    {
+        get => _formBackground;
+        private set => SetAndRaise(FormBackgroundProperty, ref _formBackground, value);
+    }
+
+    /// <summary>
+    /// Получает заголовок окна — для рамки, которую рисует тема.
+    /// </summary>
+    public string? Title
+    {
+        get => GetValue(TitleProperty);
+        private set => SetValue(TitleProperty, value);
+    }
+
+    /// <summary>
+    /// Получает значок окна — для рамки, которую рисует тема.
+    /// </summary>
+    public WindowIcon? Icon
+    {
+        get => GetValue(IconProperty);
+        private set => SetValue(IconProperty, value);
+    }
+
+    /// <summary>
+    /// Получает признак того, что окно объявляет себя изменяемым по размеру.
+    /// </summary>
+    public bool CanResize
+    {
+        get => GetValue(CanResizeProperty);
+        private set => SetValue(CanResizeProperty, value);
+    }
+
+    /// <summary>
+    /// Получает оформление, которое окно просит у системы.
+    /// </summary>
+    public WindowDecorations Decorations
+    {
+        get => GetValue(DecorationsProperty);
+        private set => SetValue(DecorationsProperty, value);
+    }
+
+    /// <summary>
+    /// Получает или задает тему, которую дало бы форме приложение документа, когда хост её знает.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// У действующей темы формы два слоя: что объявил её корень и что запросило её приложение для всего,
+    /// что не объявило ничего. Первый элемент берёт у самого корня; второй знает только хост — это
+    /// сведение о проекте, а не о документе и не об инструменте.
+    /// </para>
+    /// <para>
+    /// По умолчанию <see cref="ThemeVariant.Default"/> — наследуется тема инструмента: честный ответ
+    /// хоста, который не знает. Хост, который знает, даёт тему, к которой пришло бы приложение: для
+    /// приложения, которое само говорит «по умолчанию», это тема платформы, а не инструмента. Тёмный
+    /// дизайнер над светлым приложением показывает светлую форму.
+    /// </para>
+    /// </remarks>
+    public ThemeVariant ApplicationThemeVariant
+    {
+        get => GetValue(ApplicationThemeVariantProperty);
+        set => SetValue(ApplicationThemeVariantProperty, value);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Форма, а не области элемента: области — его служебные части, и выбирать их нечего. Содержимое,
+    /// которое не контрол, показывает обёртка элемента — авторской разметки в ней нет.
+    /// </remarks>
+    internal override Control? AuthoredRoot => _authored;
+
+    /// <inheritdoc />
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+
+        if (_host != null)
+            _host.Child = null;
+
+        _host = e.NameScope.Find<Decorator>(FormHostPart);
+        if (_host != null)
+            _host.Child = _application;
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Хост может узнать тему приложения позже, чем поставил корень.
+        if (change.Property == ApplicationThemeVariantProperty && _donor is { } top)
+        {
+            MirrorApplicationVariant(top);
+            ShowBackground(top);
+        }
+    }
+
+    private void Hold(object? root)
+    {
+        switch (root)
+        {
+            case TopLevel top:
+                IsTopLevel = true;
+                Borrow(top);
+                Project(top);
+                break;
+
+            case Control control:
+                // Корню, вложенному как есть, отражать нечего — ресурсы, стили и тему он несёт сам, — но
+                // изоляция нужна и ему: локальный null обрывает наследование, и модель хоста не придёт
+                // форме её данными через шаблон, привязанный к ней.
+                _scope.DataContext = null;
+                _scope.Child = control;
+                _authored = control;
+                FollowSize(control);
+                break;
+        }
+
+        HasContent = _scope.Child is not null;
+        UpdateKind();
+    }
+
+    /// <summary>
+    /// Отпускает корень и возвращает всё взятое.
+    /// </summary>
+    private void Release()
+    {
+        foreach (var mirror in _mirrors)
+            mirror.Dispose();
+
+        _mirrors.Clear();
+
+        _scope.Child = null;
+        _scope.ClearValue(DataContextProperty);
+        _authored = null;
+
+        Return();
+
+        FormBackground = null;
+        IsTopLevel = false;
+        HasContent = false;
+    }
+
+    /// <summary>
+    /// Берёт то, что Avalonia не даёт держать двоим.
+    /// </summary>
+    private void Borrow(TopLevel top)
+    {
+        _donor = top;
+        StandingIn.Add(top, this);
+
+        _borrowed = top.Content;
+        top.Content = null;
+
+        // Содержимое окна не обязано быть контролом: строку или модель окно показало бы своим
+        // ContentTemplate. Потерять его — нарисовать пустую карточку, неотличимую от пустой формы.
+        _authored = _borrowed as Control;
+        _scope.Child = _borrowed switch
+        {
+            Control control => control,
+            null => null,
+            _ => new ContentControl { Content = _borrowed, ContentTemplate = top.ContentTemplate }
+        };
+
+        // Вливается в словарь области, а не встаёт на его место: второго владельца Avalonia не даёт,
+        // поэтому корень сперва отпускает словарь, — но отпущенный, он вливается целым, с вложенными
+        // и тематическими словарями.
+        _borrowedResources = top.Resources;
+        top.Resources = new ResourceDictionary();
+        _scope.Resources.MergedDictionaries.Add(_borrowedResources);
+
+        _borrowedStyles.AddRange(top.Styles);
+        top.Styles.Clear();
+        foreach (var style in _borrowedStyles)
+            _scope.Styles.Add(style);
+
+        MirrorApplicationVariant(top);
+    }
+
+    /// <summary>
+    /// Даёт корню тему, которую дало бы ему приложение.
+    /// </summary>
+    /// <remarks>
+    /// Пока корень держат, он вне дерева, и тема приложения к нему не приходит ниоткуда: все тематические
+    /// значения, что он ещё несёт, решались бы под темой инструмента. Запись темы приложения на время
+    /// заимствования делает их значениями приложения — тематический фон, показанный ниже, выбран ею.
+    /// Тему, объявленную документом, запись не трогает — документ и при работе старше приложения, — и
+    /// она снимается раньше, чем корень возвращают.
+    /// </remarks>
+    private void MirrorApplicationVariant(TopLevel top)
+    {
+        var documentDecided = !_variantMirrored
+            && top.GetDiagnostic(TopLevel.RequestedThemeVariantProperty).Priority <= BindingPriority.LocalValue;
+
+        if (documentDecided)
+            return;
+
+        if (ApplicationThemeVariant != ThemeVariant.Default)
+        {
+            top.SetValue(TopLevel.RequestedThemeVariantProperty, ApplicationThemeVariant);
+            _variantMirrored = true;
+        }
+        else if (_variantMirrored)
+        {
+            top.ClearValue(TopLevel.RequestedThemeVariantProperty);
+            _variantMirrored = false;
+        }
+    }
+
+    /// <summary>
+    /// Показывает фон, который у формы был бы на самом деле.
+    /// </summary>
+    /// <remarks>
+    /// Вопрос — откуда значение, и <c>IsSet</c> на него не отвечает: он истинен и для тематического, и
+    /// для объявленного. Отвечает приоритет. Одна перемена отсюда не видна: смена приоритета при том же
+    /// значении — документ объявил локально ту самую кисть, которую уже давала тема, — уведомления не
+    /// поднимает, и подписаться на приоритет в Avalonia не на что. Заново поставленный корень её
+    /// перечитывает.
+    /// </remarks>
+    private void ShowBackground(TopLevel top)
+    {
+        var declared = top.GetDiagnostic(TemplatedControl.BackgroundProperty);
+
+        FormBackground =
+            declared.Priority <= BindingPriority.LocalValue || ApplicationThemeVariant != ThemeVariant.Default
+                ? declared.Value as IBrush
+                : null;
+    }
+
+    /// <summary>
+    /// Возвращает всё взятое — в порядке, обратном тому, как брали.
+    /// </summary>
+    private void Return()
+    {
+        if (_donor is null)
+            return;
+
+        if (_variantMirrored)
+        {
+            _donor.ClearValue(TopLevel.RequestedThemeVariantProperty);
+            _variantMirrored = false;
+        }
+
+        // Ровно взятые, и снятые здесь раньше, чем добавленные там: коллекция, у которой забирают
+        // владельца, отпускает первой.
+        foreach (var style in _borrowedStyles)
+        {
+            _scope.Styles.Remove(style);
+            _donor.Styles.Add(style);
+        }
+
+        _borrowedStyles.Clear();
+
+        if (_borrowedResources is not null)
+        {
+            _scope.Resources.MergedDictionaries.Remove(_borrowedResources);
+            _donor.Resources = _borrowedResources;
+            _borrowedResources = null;
+        }
+
+        _donor.Content = _borrowed;
+
+        StandingIn.Remove(_donor);
+
+        _donor = null;
+        _borrowed = null;
+    }
+
+    /// <summary>
+    /// Привязывает всё, что содержимое унаследовало бы от корня.
+    /// </summary>
+    private void Project(TopLevel top)
+    {
+        _mirrors.Add(top.GetPropertyChangedObservable(TemplatedControl.BackgroundProperty)
+            .Subscribe(new AnonymousObserver<AvaloniaPropertyChangedEventArgs>(_ => ShowBackground(top))));
+        ShowBackground(top);
+
+        FollowSize(top);
+
+        _mirrors.Add(_scope.Bind(
+            ThemeVariantScope.RequestedThemeVariantProperty,
+            top.GetObservable(TopLevel.RequestedThemeVariantProperty)));
+
+        // То, что находят последним и принимают за другое. Данные времени разработки стоят на корне —
+        // Design.DataContext есть свойство окна, — и вынутое из окна содержимое выходит и из этого
+        // контекста: привязки пустеют, форма сжимается в ноль и выглядит незагрузившейся, а на место её
+        // данных приходят данные хоста.
+        _mirrors.Add(_scope.Bind(DataContextProperty, top.GetObservable(DataContextProperty)));
+
+        if (top is Window window)
+        {
+            _mirrors.Add(this.Bind(TitleProperty, window.GetObservable(Window.TitleProperty)));
+            _mirrors.Add(this.Bind(IconProperty, window.GetObservable(Window.IconProperty)));
+            _mirrors.Add(this.Bind(CanResizeProperty, window.GetObservable(Window.CanResizeProperty)));
+            _mirrors.Add(this.Bind(DecorationsProperty, window.GetObservable(Window.WindowDecorationsProperty)));
+        }
+    }
+
+    /// <summary>
+    /// Размер элемента — размер формы: объявленные корнем ширина и высота приходят элементу.
+    /// </summary>
+    /// <remarks>
+    /// Текущим значением, а не привязкой: привязка хоста к размеру контейнера остаётся на месте и
+    /// получает то же значение. Обратно в корень не пишется ничего — размер, поставленный элементу,
+    /// корня не меняет.
+    /// </remarks>
+    private void FollowSize(Control root)
+    {
+        _mirrors.Add(root.GetObservable(WidthProperty)
+            .Subscribe(new AnonymousObserver<double>(width => SetCurrentValue(WidthProperty, width))));
+        _mirrors.Add(root.GetObservable(HeightProperty)
+            .Subscribe(new AnonymousObserver<double>(height => SetCurrentValue(HeightProperty, height))));
+    }
+
+    private void UpdateKind()
+    {
+        PseudoClasses.Set(WindowPseudoClass, _root is Window);
+        PseudoClasses.Set(ControlPseudoClass, _root is Control and not TopLevel);
+        PseudoClasses.Set(EmptyPseudoClass, !_hasContent);
+    }
+}

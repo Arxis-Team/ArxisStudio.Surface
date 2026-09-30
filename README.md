@@ -57,7 +57,7 @@ xmlns:surface="https://github.com/Arxis-Team/ArxisStudio.Surface"
 
 ## Публичная поверхность
 
-90 публичных типов: 43 в ядре, 16 в инструментах, 11 в дизайнере интерфейса, 20 в редакторе узлов.
+91 публичный тип: 43 в ядре, 16 в инструментах, 12 в дизайнере интерфейса, 20 в редакторе узлов.
 Слепок каждой сборки — до члена и значения по умолчанию у `AvaloniaProperty` — лежит в
 `tests/ArxisStudio.Surface.Tests/PublicSurface.<сборка>.baseline.txt`; новый публичный член роняет
 `PublicSurfaceTests`, пока слепок не обновлён. Машины состояний, стратегии размещения, резолверы
@@ -119,6 +119,7 @@ dotnet pack ArxisStudio.Surface.sln -c Release -o artifacts
 | [0017](docs/adr/0017-pin-roles-give-the-base-look.md) | Роли пинов — данные, выполнение, делегат: базовый вид из темы, хост сильнее роли, правил у роли нет |
 | [0018](docs/adr/0018-a-wire-dropped-on-empty-canvas-is-the-hosts-cue.md) | Провод, отпущенный в пустоту, — `ConnectDropped` с портом и точкой; меню действий и новый узел — хоста |
 | [0019](docs/adr/0019-a-link-starts-at-the-pin.md) | Связь начинается от штырька, в зоне захвата `PinGrabSize`; подпись порта тянет узел |
+| [0020](docs/adr/0020-the-form-item-holds-the-document-root.md) | Корень документа держит элемент дизайнера `UiDesignerFormItem`; вид по корню — псевдоклассами |
 
 ## Лицензия
 

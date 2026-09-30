@@ -308,8 +308,7 @@ public partial class UiDesignerView
     /// </remarks>
     private static IEnumerable<Control> EnumerateAuthoredContent(UiDesignerItem item)
     {
-        var root = (item.Presenter as Control)?.GetVisualChildren().OfType<Control>().FirstOrDefault()
-                   ?? item.Content as Control;
+        var root = item.AuthoredRoot;
 
         return root == null ? Array.Empty<Control>() : Descend(root);
 

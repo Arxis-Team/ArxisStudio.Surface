@@ -81,6 +81,18 @@ public class UiDesignerItem : SurfaceItem
     internal override bool CanMoveWithoutSurface => this.GetVisualParent() is AbsolutePanel;
 
     /// <summary>
+    /// Корень авторской разметки: с него редактор в режиме <see cref="SurfaceContentMode.Loaded"/>
+    /// начинает обход редактируемых элементов.
+    /// </summary>
+    /// <remarks>
+    /// У обычного контейнера это то, что построил презентер, а до шаблона — само содержимое. Наследник,
+    /// у которого между контейнером и формой лежат его собственные служебные элементы, называет здесь
+    /// форму (ADR 0020): иначе выбираемыми стали бы они.
+    /// </remarks>
+    internal virtual Control? AuthoredRoot =>
+        (Presenter as Control)?.GetVisualChildren().OfType<Control>().FirstOrDefault() ?? Content as Control;
+
+    /// <summary>
     /// Реагирует на изменение свойств контейнера и переносит <see cref="SurfaceItem.Location"/>
     /// в attached-свойства <c>Layout.X</c>/<c>Layout.Y</c>.
     /// </summary>
