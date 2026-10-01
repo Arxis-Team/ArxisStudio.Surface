@@ -2913,7 +2913,154 @@ internal static class StudioCheck
             }
         }
 
+        // 12. Resources, the way the other editor writes them: onto a control, onto the form's
+        //     root, and then the form opened afresh with them still at its root.
+        failures += await ResourcesAsync(designer);
+
         return failures;
+    }
+
+    /// <summary>
+    /// Resources written into an open form from outside, and a form opened with them at its root.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Both failures were seen on the live demo while its README pictures were taken, and both
+    /// were the loader's. A <c>Resources</c> block added to a control from outside was reported as
+    /// reloaded and changed nothing on screen: adding a property element reads as a change to the
+    /// element's content, and rebuilding the content moved the content member across and threw
+    /// the rebuilt copy away with the resources in it. And a form with resources at its root would
+    /// not open at all — "An item with the same key has already been added" — because its class's
+    /// constructor loaded the markup once and the session loaded it again over the same object.
+    /// </para>
+    /// <para>
+    /// Asked last, because the reopen builds the project for a form newer than its assembly, and
+    /// a build that moves the types lights the reload banner the new-form step waits for.
+    /// </para>
+    /// </remarks>
+    private static async Task<int> ResourcesAsync(DesignerViewModel designer)
+    {
+        const string Name = "MainWindow.axaml";
+        const string ControlKey = "StudioCheckControlProbe";
+        const string RootKey = "StudioCheckRootProbe";
+
+        var failures = 0;
+
+        if (!Open(designer, Name)
+            || !await Until(
+                () => designer.ActiveForm is { } shown && shown.Name == Name
+                    && (shown.Session is not null || shown.Problem is not null),
+                300)
+            || designer.ActiveForm is not { Session: not null, Document: not null } form)
+        {
+            return Fail(ref failures, "MainWindow.axaml would not open for the resources: "
+                + (designer.ActiveForm?.Problem ?? "no problem reported"));
+        }
+
+        string file = form.File.Value;
+
+        // 12a. Onto a control inside the form. One change and nothing else: an attribute that
+        //      reads the resource would rebuild the control by itself and prove nothing.
+        if (Find(designer, "TextBox") is not { } box || form.Objects?.GetElement(box) is not { } element)
+        {
+            return Fail(ref failures, "the form has no TextBox to write resources onto");
+        }
+
+        await System.IO.File.WriteAllTextAsync(file, WithResources(Text(form), element, ControlKey));
+
+        if (!await Until(
+            () => Text(form).Contains(ControlKey, StringComparison.Ordinal)
+                && Find(designer, "TextBox") is { } live
+                && live.Resources.ContainsKey(ControlKey),
+            30))
+        {
+            Fail(ref failures, "resources written outside onto a TextBox never reached the one on the canvas");
+        }
+        else if (form.IsDirty)
+        {
+            Fail(ref failures, "a form reloaded with resources still calls itself edited");
+        }
+        else
+        {
+            Say("resources written outside onto a control reached it on the canvas");
+        }
+
+        // 12b. Onto the root, where the card keeps them for everything inside the form.
+        if (form.Document?.Root is not { } root)
+        {
+            return Fail(ref failures, "the form lost its document");
+        }
+
+        await System.IO.File.WriteAllTextAsync(file, WithResources(Text(form), root, RootKey));
+
+        if (!await Until(
+            () => Text(form).Contains(RootKey, StringComparison.Ordinal)
+                && Find(designer, "TextBox") is { } inside
+                && inside.TryFindResource(RootKey, out _),
+            30))
+        {
+            Fail(ref failures, "resources written outside onto the form's root never reached the canvas");
+        }
+        else
+        {
+            Say("resources written outside onto the form's root reached what is inside it");
+        }
+
+        // 12c. And opened afresh with them there: a new session, whose root is built by the
+        //      class's own constructor, which loads the same markup.
+        designer.CloseForm(form);
+
+        await Until(() => !designer.Forms.Contains(form), 30);
+
+        if (!Open(designer, Name)
+            || !await Until(
+                () => designer.ActiveForm is { } back && back.Name == Name && !ReferenceEquals(back, form)
+                    && (back.Session is not null || back.Problem is not null),
+                300))
+        {
+            return Fail(ref failures, "MainWindow.axaml would not open again");
+        }
+
+        if (designer.ActiveForm is not { Session: not null } reopened)
+        {
+            Fail(ref failures, "a form with resources at its root did not open: "
+                + (designer.ActiveForm?.Problem ?? "no problem reported"));
+        }
+        else if (!await Until(
+            () => Find(designer, "TextBox") is { } again
+                && again.TryFindResource(RootKey, out _)
+                && again.Resources.ContainsKey(ControlKey),
+            30))
+        {
+            Fail(ref failures, $"{reopened.Name} opened without the resources its file has");
+        }
+        else
+        {
+            Say("a form with resources at its root opens, and they are there");
+        }
+
+        return failures;
+    }
+
+    /// <summary>
+    /// Writes a resources block into an element as its first child, as somebody typing would.
+    /// </summary>
+    private static string WithResources(string text, ArxisStudio.Markup.Xaml.XamlElement element, string key)
+    {
+        string owner = element.Name.ToString();
+        string block = $"<{owner}.Resources><SolidColorBrush x:Key=\"{key}\" Color=\"#2F6FED\" /></{owner}.Resources>";
+        ArxisStudio.Markup.TextSpan tag = element.StartTagSpan;
+
+        if (!element.IsEmpty)
+        {
+            return text.Insert(tag.End, block);
+        }
+
+        // An empty element gets an end tag: <TextBox Width="160" /> becomes <TextBox Width="160">…</TextBox>.
+        string written = text[tag.Start..tag.End];
+        string opened = written[..written.LastIndexOf("/>", StringComparison.Ordinal)].TrimEnd() + ">";
+
+        return text[..tag.Start] + opened + block + $"</{owner}>" + text[tag.End..];
     }
 
     /// <summary>
