@@ -16,12 +16,6 @@ standard output, so this doubles as a smoke test:
 dotnet run --project samples/UiDesigner.Demo -- C:\src\App\App.csproj MainView.axaml
 ```
 
-There is a project to open in the demo's own folder — `SmartHome/`, one window of a home dashboard:
-
-```bash
-dotnet run --project samples/UiDesigner.Demo -- samples/UiDesigner.Demo/SmartHome/SmartHome.csproj MainWindow.axaml
-```
-
 It needs **both** `ArxisStudio.ProjectSystem` and `ArxisStudio.Markup` checked out beside this
 repository: the demo references ProjectSystem's projects by source, and ProjectSystem's adapter
 references Markup the same way. The project file fails with `SURFDEMO01` and a sentence saying so if
@@ -268,23 +262,10 @@ happens when both change it.
 
 ## Working on an application in it
 
-The demo opens a project and does not make one: bring your own Avalonia application, open the one
-that lies beside the demo, or let the check below write a small one into a folder and open that.
+The demo opens a project and does not make one: bring your own Avalonia application, or let the check
+below write a small one into a folder and open that.
 (`ProjectScaffold` is what writes it — a real application, `csproj`, `Program`, `App`, a window and a
 view model — and the checks are its only caller.)
-
-**`SmartHome/` is the one beside the demo.** An ordinary Avalonia application — a project file, an
-entry point, an `App` and one window, `Views/MainWindow.axaml`: a heading, a row of room chips in a
-`StackPanel`, and five tiles in a `Canvas`. The tiles are in a `Canvas` on purpose: a tile has
-`Canvas.Left` and `Canvas.Top`, so dragging it writes a position and draws the alignment guides and
-the equal-spacing marks, while a chip sits in a flow layout, where the panel owns the position. The
-pictures in the repository's `docs/images` were taken from this form.
-
-It is a project the demo opens, not a part of the demo: `UiDesigner.Demo.csproj` leaves the folder
-out of its own items, and the designer builds the application itself when it opens it. It takes its
-package versions from the repository, so it is built against the same Avalonia the designer runs on,
-and it is in the solution so that a build says when it has stopped compiling. An edit stays in the
-designer until it is saved — `Ctrl+S` writes `MainWindow.axaml`, which is a tracked file.
 
 From there it is the designer: drag controls from the toolbox onto the form, arrange them, edit
 their properties in the inspector, `Ctrl+Z` and `Ctrl+Y`, copy, cut, paste and duplicate, save, and
