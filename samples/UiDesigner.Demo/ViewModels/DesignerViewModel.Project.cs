@@ -558,7 +558,7 @@ public sealed partial class DesignerViewModel
                     context.Assemblies.Select(static a => a.Path.FileName).Take(8)));
             }
 
-            OfferRestartIfTypesAreStale(why);
+            OfferRestartIfTypesAreStale(result.Diagnostics);
 
             return;
         }
@@ -695,14 +695,23 @@ public sealed partial class DesignerViewModel
     } = string.Empty;
 
     /// <summary>Says so, once, when a failure is one only a restart can clear.</summary>
-    private void OfferRestartIfTypesAreStale(string why)
+    /// <remarks>
+    /// Decided by which diagnostic said it rather than by wording alone. A class the assembly does
+    /// not have yet is <c>AXM3020</c>, a warning since Markup stopped failing the load over it, and
+    /// its answer is a build — a restart would only start the same project again. What a restart
+    /// does clear is this run holding a different copy of a type than the one on disk, and Avalonia
+    /// reports that without a code of its own: "Unable to substitute" from its loader, "Could not
+    /// load type" from the runtime. So those words are read only in the diagnostics that carry
+    /// Avalonia's text — a load that failed, an object that could not be created.
+    /// </remarks>
+    private void OfferRestartIfTypesAreStale(IEnumerable<MarkupDiagnostic> diagnostics)
     {
-        // Both spellings of "the types this run holds are not the types on disk": a class the
-        // assembly does not have, and a class it has twice over. Anything else is an ordinary
-        // markup problem and has an ordinary answer.
-        bool stale = why.Contains("Unable to substitute", StringComparison.OrdinalIgnoreCase)
-            || why.Contains("was not found in any assembly", StringComparison.OrdinalIgnoreCase)
-            || why.Contains("Could not load type", StringComparison.OrdinalIgnoreCase);
+        bool stale = diagnostics.Any(static diagnostic =>
+            diagnostic.Code is XamlLoaderDiagnosticCodes.RuntimeLoadFailure
+                or XamlLoaderDiagnosticCodes.ObjectCreationFailure
+                or XamlLoaderDiagnosticCodes.RootInstanceCreationFailure
+            && (diagnostic.Message.Contains("Unable to substitute", StringComparison.OrdinalIgnoreCase)
+                || diagnostic.Message.Contains("Could not load type", StringComparison.OrdinalIgnoreCase)));
 
         if (!stale)
         {
