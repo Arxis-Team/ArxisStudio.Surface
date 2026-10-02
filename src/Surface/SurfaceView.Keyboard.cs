@@ -45,7 +45,9 @@ public partial class SurfaceView
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled)
+
+        // Стоп-кадр не берёт и клавиатурных жестов (ADR 0023); клавиша уходит дальше — окну.
+        if (e.Handled || IsFrozen)
             return;
 
         foreach (var command in KeyCommands.Snapshot())

@@ -43,7 +43,7 @@ public partial class SurfaceView
     /// </remarks>
     private void OnTouchPadMagnify(object? sender, PointerDeltaEventArgs e)
     {
-        if (!InteractionOptions.IsPinchZoomEnabled)
+        if (!InteractionOptions.IsPinchZoomEnabled || IsFrozen)
             return;
 
         var factor = 1 + e.Delta.X;
@@ -66,7 +66,8 @@ public partial class SurfaceView
     /// </remarks>
     private void OnPinch(object? sender, PinchEventArgs e)
     {
-        if (!InteractionOptions.IsPinchZoomEnabled)
+        // Распознаватель видит касания и тогда, когда нажатие взял стоп-кадр.
+        if (!InteractionOptions.IsPinchZoomEnabled || IsFrozen)
             return;
 
         if (!_isPinching)

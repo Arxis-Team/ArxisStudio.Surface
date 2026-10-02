@@ -82,6 +82,11 @@ public partial class SurfaceView : SelectingItemsControl
 
         _states.Push(new EditorIdleState(this));
 
+        // Стоп-кадр не берёт жестов (ADR 0023). Первыми из туннельных: иначе нажатие успели бы
+        // взять упрощённый вид и службы инструментов, которые слушают его там же.
+        AddHandler(PointerPressedEvent, OnFrozenPointerPressed, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, OnFrozenPointerWheel, RoutingStrategies.Tunnel);
+
         // Положение указателя нужно изменению размера, а ручка о нём не сообщает.
         // Туннель и handledEventsToo: во время жеста указатель захвачен ручкой,
         // и она помечает движение обработанным.
@@ -427,6 +432,7 @@ public partial class SurfaceView : SelectingItemsControl
     {
         base.OnApplyTemplate(e);
         Grid = e.NameScope.Find<SurfaceGrid>("PART_Grid");
+        FindFreezeLayer(e.NameScope);
     }
 
     private readonly List<object> _services = new();

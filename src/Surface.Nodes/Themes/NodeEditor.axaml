@@ -145,6 +145,13 @@
                                                 LineDashStyle="{DynamicResource Surface.SnapGuide.DashStyle}"
                                                 UserGuideDashStyle="{DynamicResource Surface.UserGuide.DashStyle}"
                                                 LineThickness="{DynamicResource Surface.SnapGuide.Thickness}" />
+
+                        <!--
+                            Стоп-кадр (ADR 0023): снимок холста поверх всех слоёв, пока хост перестраивает
+                            содержимое. Пиксели, а не контролы, — старое содержимое можно отпустить, пока
+                            кадр на экране. Показывает и прячет его сам холст.
+                        -->
+                        <Image Name="PART_FreezeLayer" IsVisible="False" Stretch="Fill" />
                     </Grid>
                 </Border>
             </ControlTemplate>
