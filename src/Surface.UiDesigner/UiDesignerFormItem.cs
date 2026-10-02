@@ -191,6 +191,15 @@ public class UiDesignerFormItem : UiDesignerItem
     private Control? _authored;
     private bool _variantMirrored;
 
+    /// <summary>Сколько отдач корня ещё не закончено (<see cref="SuspendRoot"/>).</summary>
+    private int _suspendCount;
+
+    /// <summary>Корень, которому отдано взятое, — его и берут заново.</summary>
+    private TopLevel? _suspended;
+
+    /// <summary>Эпоха отдач: растёт со сменой корня, и освобождения прежних эпох ничего не делают.</summary>
+    private int _suspendEpoch;
+
     static UiDesignerFormItem()
     {
         // Форма пришла целиком: размечать её некому, и жить своей жизнью она не должна.
@@ -261,6 +270,86 @@ public class UiDesignerFormItem : UiDesignerItem
             Hold(value);
             RaisePropertyChanged(RootProperty, old, value);
         }
+    }
+
+    /// <summary>
+    /// Возвращает корню всё взятое у него — содержимое, ресурсы и стили — до освобождения результата и
+    /// берёт заново, когда его освобождают.
+    /// </summary>
+    /// <returns>Взятие заново. Повторное освобождение ничего не делает.</returns>
+    /// <remarks>
+    /// <para>
+    /// Для того, кто пишет в дерево корня и читает его, — сессии разметки на время каждой её записи
+    /// (ADR 0025). Пока элемент держит окно, окно пусто: запись ушла бы в окно, которое никто не видит,
+    /// а обход окна нашёл бы окно без детей.
+    /// </para>
+    /// <para>
+    /// <see cref="Root"/> при этом не меняется, и не меняется ничего, что элемент отражает от корня: ни
+    /// размер, ни фон, ни заголовок, ни тема. Берётся заново то, что стоит в корне к моменту
+    /// освобождения, — запись, заменившая содержимое окна, приходит на холст без отдельного шага.
+    /// </para>
+    /// <para>
+    /// Вызовы вкладываются; заимствует заново последнее освобождение. Корень, сменённый за время отдачи,
+    /// заново не заимствуется: элемент уже держит новый. Корню, вложенному как есть, отдавать нечего, и
+    /// результат ничего не делает. Звать и освобождать — из потока интерфейса.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Вызов не из потока интерфейса.</exception>
+    public IDisposable SuspendRoot()
+    {
+        Dispatcher.UIThread.VerifyAccess();
+
+        // Вложенная отдача: взятое уже у корня. Отдача кончается со сменой корня (Release), поэтому
+        // идущая отдача — всегда отдача нынешнего.
+        if (_suspended is not null)
+        {
+            _suspendCount++;
+            return new Suspension(this, _suspendEpoch);
+        }
+
+        if (_donor is not { } top)
+            return Suspension.Nothing;
+
+        _suspended = top;
+        _suspendCount = 1;
+
+        _scope.Child = null;
+        Return();
+
+        return new Suspension(this, _suspendEpoch);
+    }
+
+    /// <summary>
+    /// Заканчивает одну отдачу корня; последняя берёт его заново.
+    /// </summary>
+    /// <remarks>
+    /// Освобождение помнит эпоху, в которой отдавали. Смена <see cref="Root"/> начинает новую
+    /// (<see cref="Release"/>), и освобождение прежней ничего не делает — даже если корень с тех пор
+    /// поставили тот же и отдают снова: иначе прежняя отдача забрала бы корень у новой посреди записи.
+    /// </remarks>
+    private void Resume(int epoch)
+    {
+        Dispatcher.UIThread.VerifyAccess();
+
+        if (epoch != _suspendEpoch || _suspended is not { } top || --_suspendCount > 0)
+            return;
+
+        _suspended = null;
+
+        Borrow(top);
+
+        HasContent = _scope.Child is not null;
+        UpdateKind();
+    }
+
+    /// <summary>Освобождение отдачи корня: срабатывает один раз.</summary>
+    private sealed class Suspension(UiDesignerFormItem? item, int epoch) : IDisposable
+    {
+        public static readonly IDisposable Nothing = new Suspension(null, 0);
+
+        private UiDesignerFormItem? _item = item;
+
+        public void Dispose() => Interlocked.Exchange(ref _item, null)?.Resume(epoch);
     }
 
     /// <summary>
@@ -464,6 +553,11 @@ public class UiDesignerFormItem : UiDesignerItem
     /// </summary>
     private void Release()
     {
+        // Отдача кончается вместе с корнем: взятое у него уже возвращено, и брать его заново некому.
+        _suspendEpoch++;
+        _suspended = null;
+        _suspendCount = 0;
+
         foreach (var mirror in _mirrors)
             mirror.Dispose();
 

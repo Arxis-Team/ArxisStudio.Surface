@@ -78,6 +78,7 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerFormItem : UiDesignerItem
     avalonia RootProperty -> Root : Object (direct)
     avalonia TitleProperty -> Title : String (styled) = null
     ctor .ctor()
+    method IDisposable SuspendRoot()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Boolean CanResize { get; }

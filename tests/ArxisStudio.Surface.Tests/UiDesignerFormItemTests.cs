@@ -1085,4 +1085,143 @@ public class UiDesignerFormItemTests
         Assert.Same(window, item.Root);
         Assert.Null(window.Content);
     }
+
+    // -- Отдача корня на время записи (ADR 0025) ------------------------------------------------------
+
+    [AvaloniaFact]
+    public void SuspendRoot_Gives_Content_Back_And_Borrows_Again()
+    {
+        var window = Form(declarations: AccentResource + TextStyle);
+        var text = Assert.IsType<TextBlock>(window.Content);
+        var item = new UiDesignerFormItem { Root = window };
+        Host(item);
+        Assert.Null(window.Content);
+
+        using (item.SuspendRoot())
+        {
+            // На время отдачи окно — снова окно: пишущий в его дерево видит и содержимое, и словарь, и стили.
+            Assert.Same(text, window.Content);
+            Assert.True(window.Resources.ContainsKey("Accent"));
+            Assert.Single(window.Styles);
+            Assert.Same(window, item.Root);
+            Assert.True(item.HasContent, "Отдача — не смена корня: элемент не гаснет.");
+        }
+
+        Assert.Null(window.Content);
+        Assert.False(window.Resources.ContainsKey("Accent"));
+        Assert.Empty(window.Styles);
+        Assert.True(text.TryFindResource("Accent", out _), "Взятое заново содержимое снова под ресурсами окна.");
+        Assert.Same(item, text.FindAncestorOfType<UiDesignerFormItem>());
+    }
+
+    [AvaloniaFact]
+    public void A_Write_Made_While_The_Root_Is_Given_Back_Reaches_The_Canvas()
+    {
+        var window = Form();
+        var item = new UiDesignerFormItem { Root = window };
+        Host(item);
+
+        var rewritten = new TextBlock { Name = "Rewritten", Text = "rewritten" };
+
+        using (item.SuspendRoot())
+            window.Content = rewritten;
+
+        Assert.Null(window.Content);
+        Assert.Same(item, rewritten.FindAncestorOfType<UiDesignerFormItem>());
+        Assert.Same(rewritten, item.AuthoredRoot);
+    }
+
+    [AvaloniaFact]
+    public void Suspensions_Nest_And_The_Last_Borrows_Again()
+    {
+        var window = Form();
+        var text = window.Content;
+        var item = new UiDesignerFormItem { Root = window };
+        Host(item);
+
+        var outer = item.SuspendRoot();
+        var inner = item.SuspendRoot();
+
+        // Повторное освобождение одной отдачи не заканчивает другую.
+        inner.Dispose();
+        inner.Dispose();
+
+        Assert.Same(text, window.Content);
+
+        outer.Dispose();
+
+        Assert.Null(window.Content);
+
+        // В любом порядке: заимствует заново последнее освобождение, а не внешнее.
+        outer = item.SuspendRoot();
+        inner = item.SuspendRoot();
+
+        outer.Dispose();
+
+        Assert.Same(text, window.Content);
+
+        inner.Dispose();
+
+        Assert.Null(window.Content);
+    }
+
+    [AvaloniaFact]
+    public void A_Root_Replaced_While_Given_Back_Is_Not_Borrowed_Again()
+    {
+        var first = Form("Title=\"First\"");
+        var firstContent = first.Content;
+        var second = Form("Title=\"Second\"");
+        var item = new UiDesignerFormItem { Root = first };
+        Host(item);
+
+        var suspension = item.SuspendRoot();
+        item.Root = second;
+
+        // Новый корень элемент уже держит; отдача нового корня — своя, а не вложенная в старую.
+        using (item.SuspendRoot())
+            Assert.NotNull(second.Content);
+
+        Assert.Null(second.Content);
+
+        suspension.Dispose();
+
+        Assert.Same(firstContent, first.Content);
+        Assert.Null(second.Content);
+        Assert.Same(second, item.Root);
+
+        // Корень, поставленный снова посреди своей отдачи, держится заново, и новая отдача — новая, а не
+        // продолжение той, что кончилась со сменой корня: иначе она решила бы, что всё уже отдано.
+        item.Root = first;
+        var stale = item.SuspendRoot();
+        item.Root = second;
+        item.Root = first;
+
+        Assert.Null(first.Content);
+
+        using (item.SuspendRoot())
+        {
+            Assert.Same(firstContent, first.Content);
+
+            // Освобождение той, прежней отдачи посреди новой не забирает корень у новой.
+            stale.Dispose();
+
+            Assert.Same(firstContent, first.Content);
+        }
+
+        Assert.Null(first.Content);
+        Assert.Same(first, item.Root);
+    }
+
+    [AvaloniaFact]
+    public void A_Root_Hosted_As_Is_Has_Nothing_To_Give_Back()
+    {
+        var view = View();
+        var item = new UiDesignerFormItem { Root = view };
+        Host(item);
+
+        using (item.SuspendRoot())
+            Assert.Same(item, view.FindAncestorOfType<UiDesignerFormItem>());
+
+        Assert.Same(item, view.FindAncestorOfType<UiDesignerFormItem>());
+    }
 }
