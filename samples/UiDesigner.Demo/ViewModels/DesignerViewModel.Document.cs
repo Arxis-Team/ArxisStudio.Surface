@@ -143,14 +143,12 @@ public sealed partial class DesignerViewModel
             return;
         }
 
-        // ElementBehind rather than the map alone, so a project's own control placed on this form
-        // is selectable as itself: the map refuses it — its source stamp names its own document —
-        // and the structural match is what recovers it. Its internals resolve to nothing, so a
-        // click inside it still lands on the control, the same way a template's parts land on
-        // their owner.
+        // The nearest control the map knows. A project's own control placed on this form is the
+        // form's element, and what its own markup built inside it belongs to no element here — so a
+        // click inside it lands on the control, the same way a template's parts land on their owner.
         for (Control? current = control; current is not null; current = current.Parent as Control)
         {
-            if (ElementBehind(map, current) is { } element)
+            if (map.GetElement(current) is { } element)
             {
                 Selected = element;
 
@@ -166,7 +164,7 @@ public sealed partial class DesignerViewModel
 
     /// <summary>Finds the live control an element produced, for the editor to select.</summary>
     public static Control? ControlFor(FormViewModel form, XamlElement element) =>
-        form.Objects is { } map ? ObjectBehind(map, element) : null;
+        form.Objects?.GetObject(element) as Control;
 
     /// <summary>
     /// Applies an edit to the document and to the live objects, in that order.
@@ -232,20 +230,9 @@ public sealed partial class DesignerViewModel
             ? XamlElementPath.Of(element)
             : null;
 
-        // The window gets its content back before the update and lends it again after.
-        //
-        // A window-rooted form is shown by taking the window's content out of it and hosting that,
-        // because a window cannot be a child of anything. An update reads the live tree to work out
-        // what to change — and the live window it reads had no content, so an edit to anything
-        // inside it was applied to nothing: the document gained a control, the canvas did not, and
-        // the object map came back holding the window and its template alone. Every drop after the
-        // first then had no container to land in.
-        //
-        // Letting go of the root is what the card offers for exactly this, and taking it again is
-        // how the new tree is borrowed once the update has built it. RefreshRoot below does the
-        // second half.
-        form.Card.Root = null;
-
+        // A window-rooted form's content is borrowed by the card, and the session asks for it back
+        // around its own write (FormRootAccess) — so the update, and the map it rebuilds, see the
+        // whole window, and the card takes the new tree once the write is over.
         XamlUpdateResult result = await session.ApplyDocumentUpdateAsync(updated, _shutdown.Token);
 
         form.Adopt(session.Document);
@@ -293,65 +280,6 @@ public sealed partial class DesignerViewModel
     }
 
     /// <summary>
-    /// Takes a control off the canvas when the document no longer has anything that made it.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The last hiding place of a deleted control of the project's own. An <c>x:Class</c> root is
-    /// built by its own constructor, which loads the markup that was <em>compiled</em> into the
-    /// assembly — so the placed control arrives with the object, not from the document, and no
-    /// update of the document removes it. Rebuilding the session does not help either: the new root
-    /// is built by the same constructor and arrives carrying the same control.
-    /// </para>
-    /// <para>
-    /// So the rule is stated where it can be checked: a control the canvas is drawing that no
-    /// element of this document accounts for is not part of the form, and is taken off. Only
-    /// controls of the deleted type are considered, and only ones that lead back to no element —
-    /// anything the document still declares stays exactly where it is.
-    /// </para>
-    /// </remarks>
-    private static void TakeOffTheCanvas(FormViewModel form, string typeName)
-    {
-        if (form.Objects is not { } map)
-        {
-            return;
-        }
-
-        Control[] orphans =
-        [
-            .. Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(form.Card)
-                .OfType<Control>()
-                .Where(control => control.GetType().Name == typeName && ElementBehind(map, control) is null),
-        ];
-
-        foreach (Control orphan in orphans)
-        {
-            switch (orphan.Parent)
-            {
-                case Panel panel:
-                    panel.Children.Remove(orphan);
-                    break;
-
-                case ContentControl content when ReferenceEquals(content.Content, orphan):
-                    content.Content = null;
-                    break;
-
-                case Decorator decorator when ReferenceEquals(decorator.Child, orphan):
-                    decorator.Child = null;
-                    break;
-
-                case Avalonia.Controls.Presenters.ContentPresenter presenter
-                    when ReferenceEquals(presenter.Content, orphan):
-                    presenter.Content = null;
-                    break;
-
-                default:
-                    break;
-            }
-        }
-    }
-
-    /// <summary>
     /// Rebuilds a form from the document the session would not take, so the edit is not lost.
     /// </summary>
     /// <remarks>
@@ -377,7 +305,7 @@ public sealed partial class DesignerViewModel
         }
 
         XamlLoadEnvironment environment = EnvironmentFor(snapshot, file.Project);
-        var options = new XamlLoadOptions { Mode = XamlLoadMode.Design };
+        var options = new XamlLoadOptions { Mode = XamlLoadMode.Design, RootAccess = form.RootAccess };
 
         (XamlLoadSession? session, XamlLoadResult result) =
             await XamlLoadSession.TryCreateAsync(updated, environment, options, _shutdown.Token);
@@ -427,13 +355,9 @@ public sealed partial class DesignerViewModel
     /// the form was reopened.
     /// </para>
     /// <para>
-    /// And the card takes the root again whether or not the root object changed, which is the whole
-    /// of what a window-rooted form needs to survive being edited. The card hosts a window by taking
-    /// its content out of it; an update that rebuilds that content puts the new tree into the window,
-    /// where nothing is looking — so the canvas went on showing the tree from before the edit, the
-    /// object map came back holding the window and its template and nothing else, and the next drop
-    /// had no container to land in. <c>Attach</c> gives back what it borrowed before borrowing again,
-    /// so calling it after every update is the supported way to say "the root has new content".
+    /// What a window-rooted form needs to survive being edited is not here: the session lends the
+    /// window its content back for the length of the write and the card takes the rebuilt tree
+    /// afterwards (<see cref="FormRootAccess"/>).
     /// </para>
     /// </remarks>
     private static void RefreshRoot(FormViewModel form, XamlLoadSession session) =>
@@ -727,7 +651,7 @@ public sealed partial class DesignerViewModel
     /// <summary>Answers the editor's delete request. Called by the view.</summary>
     public void DeleteFromCanvas(FormViewModel form, Control control)
     {
-        if (form.Objects is { } map && ElementBehind(map, control) is { } element)
+        if (form.Objects?.GetElement(control) is { } element)
         {
             RunDetached(() => DeleteAsync(form, element));
         }
@@ -735,19 +659,13 @@ public sealed partial class DesignerViewModel
 
     /// <summary>Removes the selected element, which is a structural edit and therefore Markup's.</summary>
     /// <remarks>
-    /// The one edit that has to check whether the session can see what it is removing. A control of
-    /// the project's own was built by its own document, so this session never paired it — and an
-    /// update that removes the element it came from leaves the object exactly where it is. The
-    /// document lost it, the tree lost it, and the canvas went on drawing it. Where there is no
-    /// pair there is nothing to update, so the form is built again from the document instead.
+    /// A control of the project's own is removed like any other: the session pairs it with the
+    /// element that places it, whatever its own markup built inside it, so the update takes it out
+    /// where it stands.
     /// </remarks>
     private async Task DeleteAsync(FormViewModel form, XamlElement element)
     {
-        string typeName = element.Name.LocalName;
-
         await ApplyAsync(form, editor => editor.RemoveElement(element), "delete");
-
-        TakeOffTheCanvas(form, typeName);
 
         Selected = null;
 

@@ -347,7 +347,7 @@ public sealed partial class DesignerViewModel
             (XamlLoadSession? session, XamlLoadResult result) = await XamlLoadSession.TryCreateAsync(
                 memory.Document,
                 environment,
-                new XamlLoadOptions { Mode = XamlLoadMode.Design },
+                new XamlLoadOptions { Mode = XamlLoadMode.Design, RootAccess = form.RootAccess },
                 _shutdown.Token);
 
             form.Assemblies = _assemblies;

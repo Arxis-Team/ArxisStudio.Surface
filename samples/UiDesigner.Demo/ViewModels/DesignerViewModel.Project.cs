@@ -523,7 +523,7 @@ public sealed partial class DesignerViewModel
         // one TextBlock reading {Binding Greeting} -- so loading it the way the application would
         // shows a blank rectangle and nothing to click. Design mode applies what the document says
         // is for looking at: Design.DataContext, d:DesignWidth, the lot.
-        var options = new XamlLoadOptions { Mode = XamlLoadMode.Design };
+        var options = new XamlLoadOptions { Mode = XamlLoadMode.Design, RootAccess = form.RootAccess };
 
         (XamlLoadSession? session, XamlLoadResult result) =
             await XamlLoadSession.TryCreateAsync(document, environment, options, _shutdown.Token);

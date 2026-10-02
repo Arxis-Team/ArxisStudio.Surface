@@ -297,8 +297,78 @@ internal static class StudioCheck
             Fail(ref failures, "the compiler met two copies of one type — the process was not really cleared");
         }
 
+        failures += await HandlerBesideAsync(reborn);
+
         return failures;
     }
+
+    /// <summary>
+    /// Changes the window's panel from outside, beside a button whose handler the window's class
+    /// declares, and checks the change applied in place.
+    /// </summary>
+    /// <remarks>
+    /// The window's class resolved under the successor, so its handlers are real: a panel holding one
+    /// used to be refused as a part — it was built without the instance the handler names — and the
+    /// designer rebuilt the whole form under a new session. Now the panel's content is rebuilt, the
+    /// handler hooked up to the window the session populated, and the session stays.
+    /// </remarks>
+    private static async Task<int> HandlerBesideAsync(FormViewModel form)
+    {
+        var failures = 0;
+
+        if (form.Session is not { } session
+            || form.File.Value is not { Length: > 0 } file
+            || form.Root is not Window window)
+        {
+            return Fail(ref failures, "the reopened window has no session, file or window to change beside a handler");
+        }
+
+        string written = await System.IO.File.ReadAllTextAsync(file);
+
+        await System.IO.File.WriteAllTextAsync(
+            file,
+            written.Replace(
+                "<Button x:Name=\"PingButton\"",
+                "<TextBlock Text=\"Beside\" />\n    <Button x:Name=\"PingButton\"",
+                StringComparison.Ordinal));
+
+        if (!await Until(() => Text(form).Contains("Text=\"Beside\"", StringComparison.Ordinal)
+                && OnCanvasText(form, "Beside"), 30))
+        {
+            return Fail(ref failures, "a change beside a handled button never reached the open window");
+        }
+
+        if (!ReferenceEquals(form.Session, session))
+        {
+            Fail(ref failures, "a change beside a handled button cost the form a new session");
+        }
+
+        if (Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(form.Card)
+                .OfType<Button>()
+                .FirstOrDefault(static button => button.Name == "PingButton") is not { } ping)
+        {
+            return Fail(ref failures, "the handled button is not on the canvas after the change");
+        }
+
+        ping.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        if (window.Title != "Pinged")
+        {
+            Fail(ref failures, "the rebuilt button's handler did not run on the window");
+        }
+        else if (failures == 0)
+        {
+            Say("a change beside a handled button applied in place: same session, and the handler runs on the window");
+        }
+
+        return failures;
+    }
+
+    /// <summary>Whether a text block saying exactly this is drawn on the form.</summary>
+    private static bool OnCanvasText(FormViewModel form, string text) =>
+        Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(form.Card)
+            .OfType<TextBlock>()
+            .Any(block => block.Text == text);
 
     /// <summary>
     /// Builds a generation, uses it as the case says, forgets it, and reports whether it died.
@@ -1025,10 +1095,23 @@ internal static class StudioCheck
             }
             """);
 
-        text = text.Insert(closing, "    <v:ReclaimControl />\n")
+        // And a button the window's class handles, which the last step rebuilds beside: a handler the
+        // class declares is what a part rebuilt on its own could not carry.
+        text = text.Insert(closing, "    <v:ReclaimControl />\n    <Button x:Name=\"PingButton\" Content=\"Ping\" Click=\"Ping\" />\n")
             .Insert(root + "<Window".Length, $" xmlns:v=\"using:{space}\"");
 
         await System.IO.File.WriteAllTextAsync(windowFile, text);
+
+        string codeBehind = windowFile + ".cs";
+        string code = await System.IO.File.ReadAllTextAsync(codeBehind);
+
+        await System.IO.File.WriteAllTextAsync(
+            codeBehind,
+            code.Replace(
+                "public MainWindow() => InitializeComponent();",
+                "public MainWindow() => InitializeComponent();\n\n"
+                    + "    private void Ping(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Title = \"Pinged\";",
+                StringComparison.Ordinal));
 
         return file;
     }

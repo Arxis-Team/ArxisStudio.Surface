@@ -35,6 +35,7 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         File = file;
         Name = file.FileName;
         Location = location;
+        RootAccess = new FormRootAccess(Card);
 
         FollowTheCard();
     }
@@ -181,6 +182,10 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     /// </para>
     /// </remarks>
     public UiDesignerFormItem Card { get; } = new();
+
+    /// <summary>What the form's session asks for the root through, around every write it makes.</summary>
+    /// <remarks>Goes into the options of every session the form gets: opening, rebuilding, swapping.</remarks>
+    internal IXamlRootAccess RootAccess { get; }
 
     /// <summary>Follows what the card reports about the form, which it keeps current.</summary>
     /// <remarks>
