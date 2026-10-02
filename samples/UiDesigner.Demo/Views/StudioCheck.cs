@@ -2670,8 +2670,9 @@ internal static class StudioCheck
 
             designer.Wrap("Border");
 
-            if (!await Until(
-                () => Text(form).Contains("<Border><Button", StringComparison.Ordinal), 30))
+            // Asked of the document's structure, not its spelling: the wrap lays the Button out a
+            // step deeper on a line of its own, the way the file is written.
+            if (!await Until(() => ButtonInBorder(form), 30))
             {
                 Fail(ref failures, "wrap did not put a Border around the Button");
             }
@@ -2683,8 +2684,7 @@ internal static class StudioCheck
             {
                 designer.Unwrap();
 
-                if (!await Until(
-                    () => !Text(form).Contains("<Border>", StringComparison.Ordinal), 30))
+                if (!await Until(() => !ButtonInBorder(form), 30))
                 {
                     Fail(ref failures, "unwrap did not lift the Button back out");
                 }
@@ -2692,14 +2692,13 @@ internal static class StudioCheck
                 {
                     designer.UndoCommand.Execute(null);
 
-                    if (!await Until(
-                        () => Text(form).Contains("<Border><Button", StringComparison.Ordinal), 30))
+                    if (!await Until(() => ButtonInBorder(form), 30))
                     {
                         Fail(ref failures, "undoing the unwrap is not one step");
                     }
 
                     designer.RedoCommand.Execute(null);
-                    await Until(() => !Text(form).Contains("<Border>", StringComparison.Ordinal), 30);
+                    await Until(() => !ButtonInBorder(form), 30);
                 }
             }
 
@@ -3426,6 +3425,13 @@ internal static class StudioCheck
     /// <summary>The document as it stands, which is the text a save would write.</summary>
     private static string Text(FormViewModel form) =>
         form.Document?.SourceText.ToString() ?? string.Empty;
+
+    /// <summary>Whether the document has a Border whose first child is a Button.</summary>
+    private static bool ButtonInBorder(FormViewModel form) =>
+        form.Document?.Root is { } root
+        && root.DescendantElements().Any(static element =>
+            element.Name.LocalName == "Border"
+            && element.ContentElements.FirstOrDefault()?.Name.LocalName == "Button");
 
     /// <summary>How many elements of this name the document has, which is what a drop changes.</summary>
     private static int Count(DesignerViewModel designer, string element) =>

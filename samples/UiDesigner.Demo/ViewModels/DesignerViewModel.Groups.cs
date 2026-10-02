@@ -75,13 +75,6 @@ public sealed partial class DesignerViewModel
             form,
             editor =>
             {
-                // Once for the edit, not once per control. The check reads the document as it was
-                // when the edit began — an editor does not re-parse between calls — so asking it
-                // again for the second control answers "not declared" and writes the declaration a
-                // second time. Two `xmlns:d` on one element is a document that will not parse, and
-                // the form goes blank on the next load.
-                Declare(editor, form.Document?.Root);
-
                 var handled = new HashSet<XamlElement>();
                 var retired = new HashSet<string>(StringComparer.Ordinal);
 
@@ -114,10 +107,13 @@ public sealed partial class DesignerViewModel
                         continue;
                     }
 
+                    // Named in the design namespace the way this document can write it: the
+                    // editor declares the namespace on the root where the document has not, lists
+                    // it in mc:Ignorable in the same edit, and does both once however many controls
+                    // ask — a second xmlns:d on one element would be a document that does not parse.
                     editor.SetAttribute(
                         element,
-                        existing?.Name
-                            ?? XamlQualifiedName.Parse(DesignPrefix(element) + ":" + GroupAttribute),
+                        existing?.Name ?? editor.QualifyAttribute(element, XamlNamespaces.Design, GroupAttribute, "d"),
                         id);
                 }
 
@@ -171,69 +167,4 @@ public sealed partial class DesignerViewModel
         element.Attributes.FirstOrDefault(attribute =>
             attribute.Name.LocalName == name
             && element.NamespaceContext.LookupNamespace(attribute.Name.Prefix) == XamlNamespaces.Design);
-
-    /// <summary>The prefix this document binds the design-time namespace to, or the usual one.</summary>
-    private static string DesignPrefix(XamlElement element) =>
-        element.NamespaceContext.Declarations
-            .Where(declaration => declaration.Value == XamlNamespaces.Design)
-            .Select(declaration => declaration.Key)
-            .FirstOrDefault()
-        ?? "d";
-
-    /// <summary>
-    /// Makes sure the document can carry a design-time attribute at all.
-    /// </summary>
-    /// <remarks>
-    /// Every template writes both declarations already, so this is usually a no-op — but a document
-    /// written by hand may have neither, and an attribute in a namespace the compiler cannot resolve
-    /// is a build error in somebody else's project. The prefix has to be listed in
-    /// <c>mc:Ignorable</c> as well as declared: that list is what tells the compiler to skip it.
-    /// </remarks>
-    private static void Declare(XamlDocumentEditor editor, XamlElement? root)
-    {
-        if (root is null)
-        {
-            return;
-        }
-
-        string prefix = DesignPrefix(root);
-
-        if (root.NamespaceContext.LookupNamespace(prefix) != XamlNamespaces.Design)
-        {
-            editor.SetAttribute(
-                root, XamlQualifiedName.Parse("xmlns:" + prefix), XamlNamespaces.Design);
-        }
-
-        string? compatibility = root.NamespaceContext.Declarations
-            .Where(declaration => declaration.Value == XamlNamespaces.MarkupCompatibility)
-            .Select(declaration => declaration.Key)
-            .FirstOrDefault();
-
-        if (compatibility is null)
-        {
-            compatibility = "mc";
-
-            editor.SetAttribute(
-                root,
-                XamlQualifiedName.Parse("xmlns:" + compatibility),
-                XamlNamespaces.MarkupCompatibility);
-        }
-
-        XamlAttribute? ignorable = root.Attributes.FirstOrDefault(attribute =>
-            attribute.Name.LocalName == "Ignorable"
-            && root.NamespaceContext.LookupNamespace(attribute.Name.Prefix)
-                == XamlNamespaces.MarkupCompatibility);
-
-        string listed = ignorable?.GetValueText() ?? string.Empty;
-
-        if (listed.Split(' ').Contains(prefix))
-        {
-            return;
-        }
-
-        editor.SetAttribute(
-            root,
-            ignorable?.Name ?? XamlQualifiedName.Parse(compatibility + ":Ignorable"),
-            listed.Length == 0 ? prefix : listed + " " + prefix);
-    }
 }

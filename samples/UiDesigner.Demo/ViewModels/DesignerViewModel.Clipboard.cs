@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
+using ArxisStudio.Markup;
 using ArxisStudio.Markup.Xaml;
 
 namespace UiDesigner.Demo.ViewModels;
@@ -52,18 +54,21 @@ public sealed partial class DesignerViewModel
     /// <summary>Whether this element is the document's root, which has no sibling and no parent.</summary>
     private bool IsRoot(XamlElement element) => ReferenceEquals(element, ActiveForm?.Document?.Root);
 
-    /// <summary>The markup an element is written as, which is what the clipboard carries.</summary>
-    private string? MarkupOf(XamlElement element) =>
-        ActiveForm?.Document?.SourceText.ToString() is { } text
-            && element.Span.End <= text.Length
-                ? text[element.Span.Start..element.Span.End]
-                : null;
-
+    /// <summary>
+    /// Puts the selection on the clipboard as markup that stands on its own.
+    /// </summary>
+    /// <remarks>
+    /// The element as the file writes it, with the namespace declarations its names need on its start
+    /// tag (Markup's <see cref="XamlFragment"/>): <c>local:Badge</c> copied without them names whatever
+    /// the receiving document binds <c>local</c> to, which is how a paste turns into a different
+    /// control or into markup that does not load. Pasted into a text editor it is still what a person
+    /// would have typed.
+    /// </remarks>
     private async Task CopyAsync()
     {
-        if (Selected is { } element && MarkupOf(element) is { Length: > 0 } markup && PutOnClipboard is { } put)
+        if (Selected is { } element && PutOnClipboard is { } put)
         {
-            await put(markup);
+            await put(XamlFragment.From(element).ToXamlText());
 
             Log($"Copied {element.Name}.");
         }
@@ -90,59 +95,6 @@ public sealed partial class DesignerViewModel
     /// </remarks>
     private async Task PasteAsync() => await PasteCoreAsync();
 
-    /// <summary>
-    /// The markup of a copy, which is the markup of the original without the names in it.
-    /// </summary>
-    /// <remarks>
-    /// A name identifies one control in one form: two controls called <c>GoButton</c> is not a form
-    /// with two buttons, it is a form the loader refuses — and the refusal arrives as an update the
-    /// live tree could not follow, long after the paste looked like it had worked. Rider drops the
-    /// name for the same reason. Every element in the fragment is stripped, not just its root,
-    /// because a copied panel carries its children's names with it.
-    /// <para>
-    /// Parsed and edited rather than pattern-matched out of the text: <c>x:Name</c> can be written
-    /// with any prefix bound to the XAML namespace, and the editor already knows how to take an
-    /// attribute out without disturbing anything around it.
-    /// </para>
-    /// </remarks>
-    private static string WithoutNames(string markup)
-    {
-        try
-        {
-            XamlDocument fragment = XamlDocument.Parse(markup);
-
-            if (fragment.Root is not { } root)
-            {
-                return markup;
-            }
-
-            XamlDocumentEditor editor = fragment.Edit();
-
-            Strip(root);
-
-            return editor.HasChanges ? editor.Apply().SourceText.ToString() : markup;
-
-            void Strip(XamlElement element)
-            {
-                if (element.GetDirectiveAttribute("Name") is { } named)
-                {
-                    editor.RemoveAttribute(element, named.Name);
-                }
-
-                foreach (XamlElement child in element.ContentElements)
-                {
-                    Strip(child);
-                }
-            }
-        }
-        catch (Exception error) when (error is InvalidOperationException or ArgumentException)
-        {
-            // A fragment this cannot parse is a fragment somebody put on the clipboard by hand. It
-            // goes in as it stands and the loader says what is wrong with it.
-            return markup;
-        }
-    }
-
     private async Task PasteCoreAsync()
     {
         if (ActiveForm is not { Document.Root: { } root } form || TakeFromClipboard is not { } take)
@@ -159,36 +111,46 @@ public sealed partial class DesignerViewModel
 
         (XamlElement parent, int index) = Landing(root);
 
+        XamlFragment fragment = XamlFragment.Parse(text, sourceUri: null);
+        ImmutableArray<MarkupDiagnostic> found = [];
+
+        // Written in this document's namespaces — declared on the root where they are missing,
+        // renamed only where a prefix means something else here — and without the names it carries:
+        // two controls called GoButton is a form the loader refuses, and Rider drops the name too.
         await ApplyAsync(
             form,
-            editor => editor.InsertElement(parent, index, WithoutNames(text.Trim())),
+            editor =>
+            {
+                editor.InsertFragment(parent, index, fragment, XamlDuplicateNames.Remove);
+
+                found = editor.Diagnostics;
+            },
             "paste");
 
-        Log($"Pasted into {parent.Name}.");
+        foreach (MarkupDiagnostic diagnostic in found)
+        {
+            Log(diagnostic.IsError
+                ? $"! {diagnostic.Code}: {diagnostic.Message}"
+                : $"  {diagnostic.Code}: {diagnostic.Message}");
+        }
+
+        if (!found.Any(static diagnostic => diagnostic.IsError))
+        {
+            Log($"Pasted into {parent.Name}.");
+        }
     }
 
     private async Task DuplicateAsync()
     {
-        if (ActiveForm is not { Document.Root: { } root } form
-            || Selected is not { } element
+        if (ActiveForm is not { } form
+            || Selected is not { IsPropertyElementSyntax: false } element
             || IsRoot(element))
         {
             return;
         }
 
-        if (MarkupOf(element) is not { Length: > 0 } markup)
-        {
-            return;
-        }
-
-        XamlElement parent = element.Parent as XamlElement ?? root;
-        int index = element.IndexInContent;
-
-        await ApplyAsync(
-            form,
-            editor => editor.InsertElement(
-                parent, index < 0 ? IndexAtEnd(parent) : index + 1, WithoutNames(markup)),
-            $"duplicate {element.Name}");
+        // Straight after the original, written as it is, with the names inside the copy taken out.
+        await ApplyAsync(form, editor => editor.DuplicateElement(element), $"duplicate {element.Name}");
 
         Log($"Duplicated {element.Name}.");
     }

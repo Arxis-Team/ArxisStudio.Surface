@@ -114,18 +114,17 @@ public sealed partial class DesignerViewModel
         RunDetached(async () =>
         {
             if (ActiveForm is not { } form
-                || Selected is not { } element
-                || IsRoot(element)
-                || MarkupOf(element) is not { Length: > 0 } markup)
+                || Selected is not { IsPropertyElementSyntax: false } element
+                || IsRoot(element))
             {
                 return;
             }
 
-            // One replacement over the element's own span: its position among its siblings and the
-            // whitespace around it stay put, and the wrap is one step of the history.
+            // The element moves in one level deeper, by the step the file already uses, and its
+            // position among its siblings stays put: one step of the history.
             await ApplyAsync(
                 form,
-                editor => editor.ReplaceElement(element, $"<{container}>{markup}</{container}>"),
+                editor => editor.WrapElement(element, $"<{container}></{container}>"),
                 $"wrap in {container}");
 
             Log($"Wrapped in {container}.");
@@ -167,11 +166,8 @@ public sealed partial class DesignerViewModel
                 return;
             }
 
-            string lifted = string.Join(
-                System.Environment.NewLine,
-                children.Select(MarkupOf).Where(static text => text is { Length: > 0 }));
-
-            await ApplyAsync(form, editor => editor.ReplaceElement(element, lifted), "unwrap");
+            // The children move out one level, indented where the container stood.
+            await ApplyAsync(form, editor => editor.UnwrapElement(element), "unwrap");
 
             Log($"Unwrapped {element.Name}.");
         });
