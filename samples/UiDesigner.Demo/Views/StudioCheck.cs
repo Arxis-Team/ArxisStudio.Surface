@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -345,7 +346,10 @@ internal static class StudioCheck
         // resolver was handed this generation's assemblies as a list to search.
         environment = null;
 
+        long reclaiming = Stopwatch.GetTimestamp();
         bool gone = await generation.TryReclaimAsync();
+
+        Say($"timing {what}: reclaim {Stopwatch.GetElapsedTime(reclaiming).TotalMilliseconds:F0} ms");
 
         generation = null;
 
@@ -456,7 +460,11 @@ internal static class StudioCheck
 
         // The designer's own teardown, and then the adapter's own reclaim: a harness that used a
         // second copy of either would be measuring something the studio does not do.
+        long tearingDown = Stopwatch.GetTimestamp();
+
         await RunSwapTeardownAsync(designer);
+
+        Say($"timing {what}: teardown {Stopwatch.GetElapsedTime(tearingDown).TotalMilliseconds:F0} ms");
 
         return await ReclaimStudioGenerationAsync(designer, what);
     }
@@ -575,7 +583,10 @@ internal static class StudioCheck
         Put(designer, "_environment", null);
         Put(designer, "_environmentProject", default(ProjectIdentity));
 
+        long reclaiming = Stopwatch.GetTimestamp();
         bool gone = await generation.TryReclaimAsync();
+
+        Say($"timing {what}: reclaim {Stopwatch.GetElapsedTime(reclaiming).TotalMilliseconds:F0} ms");
 
         generation = null!;
 
@@ -654,6 +665,9 @@ internal static class StudioCheck
         var queue = new Queue<(object Value, string Path)>();
         var fields = new Dictionary<Type, FieldInfo[]>();
 
+        // What the walk spent itself on, so that a walk that gives up says where the graph is big.
+        var spent = new Dictionary<Type, int>();
+
         // Enough to cross a studio with forms open, and not enough to spend minutes doing it. A
         // walk that gives up says so; a walk that runs for five minutes on the UI thread looks
         // like a hang, and a diagnostic nobody waits for answers nothing.
@@ -681,10 +695,10 @@ internal static class StudioCheck
                 continue;
             }
 
-            if (probe.GetName().Name is not { } name
-                || !(name.StartsWith("Avalonia", StringComparison.Ordinal)
-                    || name.StartsWith("ArxisStudio", StringComparison.Ordinal)
-                    || name.StartsWith("UiDesigner.Demo", StringComparison.Ordinal)))
+            // Every assembly but the engines', the runtime's own included: a timer, a thread-pool
+            // queue or a task continuation keeps whatever its delegate closed over, and those live
+            // in the runtime's statics rather than in anything of Avalonia's or the studio's.
+            if (probe.GetName().Name is not { } || IsEngine(probe))
             {
                 continue;
             }
@@ -730,6 +744,14 @@ internal static class StudioCheck
                 ? $"  {what}: the walk ran out of budget before it could say — inconclusive"
                 : $"  {what}: walked {visited.Count} object(s) and none of them holds it — "
                     + "the root is a stack slot, a thread-static, or native");
+
+            if (budget <= 0)
+            {
+                Say($"  {what}: the budget went on " + string.Join(", ", spent
+                    .OrderByDescending(static pair => pair.Value)
+                    .Take(8)
+                    .Select(static pair => $"{pair.Key.Name} ×{pair.Value}")));
+            }
         }
 
         // Breadth first, and with no depth limit. Depth first with a limit answers a different
@@ -741,6 +763,8 @@ internal static class StudioCheck
             while (queue.Count > 0 && budget-- > 0 && reported.Count < 20)
             {
                 (object value, string path) = queue.Dequeue();
+
+                spent[value.GetType()] = spent.GetValueOrDefault(value.GetType()) + 1;
 
                 switch (value)
                 {
@@ -763,16 +787,43 @@ internal static class StudioCheck
                     continue;
                 }
 
-                if (value.GetType().IsPrimitive)
+                Type valueType = value.GetType();
+
+                // An array of numbers holds no references, and enumerating one boxes every element
+                // into an object of its own: a font's or a bitmap's buffer would spend the budget a
+                // byte at a time.
+                if (valueType.IsPrimitive
+                    || (valueType.IsArray && valueType.GetElementType() is { IsPrimitive: true })
+                    || IsEngine(valueType.Assembly))
                 {
                     continue;
                 }
 
-                // A conditional weak table's entries are not roots, and reporting them names
-                // Avalonia's weak-event plumbing for something the collector is perfectly happy with.
+                // A conditional weak table keeps a value alive exactly as long as its key. An entry
+                // keyed by something of the generation is no root of it, and is skipped; one keyed by
+                // something that outlives the generation holds the value as firmly as a field would —
+                // and a walk that skipped every table could not see that.
                 if (value.GetType() is { IsGenericType: true } table
                     && table.GetGenericTypeDefinition() == typeof(ConditionalWeakTable<,>))
                 {
+                    try
+                    {
+                        foreach (object? entry in (System.Collections.IEnumerable)value)
+                        {
+                            if (entry is null
+                                || entry.GetType().GetProperty("Key")?.GetValue(entry) is not { } key
+                                || Suspect(key as Type ?? key.GetType()))
+                            {
+                                continue;
+                            }
+
+                            Seed(entry.GetType().GetProperty("Value")?.GetValue(entry), $"{path}{{weak key {key.GetType().Name}}}");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
                     continue;
                 }
 
@@ -865,14 +916,18 @@ internal static class StudioCheck
             return known;
         }
 
+        // Once per object, types and properties included: a type is reported by the first — the
+        // shortest — path that reaches it, and admitting it again per reference spent a budget of
+        // two million on a few hundred types. A number, an enum or a pointer holds no reference,
+        // and reading a pointer field boxes a new one every time, so none of them is admitted.
         void Seed(object? value, string path)
         {
-            if (value is null)
+            if (value is null or Pointer || value.GetType() is { IsPrimitive: true } or { IsEnum: true })
             {
                 return;
             }
 
-            if (value is Type or AvaloniaProperty or string || visited.Add(value))
+            if (visited.Add(value))
             {
                 queue.Enqueue((value, path));
             }
@@ -882,6 +937,14 @@ internal static class StudioCheck
         // is looking for.
         bool Suspect(Type type) =>
             type.Assembly.GetName().Name is { } name && suspects.Contains(name);
+
+        // MSBuild's and NuGet's object graphs are most of the process once a project is open —
+        // evaluated projects, item caches, the SDK's resolved imports — and none of it can hold a
+        // control. Walking them spent the whole budget before the walk reached anything that can.
+        static bool IsEngine(Assembly assembly) =>
+            assembly.GetName().Name is { } name
+            && (name.StartsWith("Microsoft.Build", StringComparison.Ordinal)
+                || name.StartsWith("NuGet.", StringComparison.Ordinal));
 
         void Report(string path)
         {
