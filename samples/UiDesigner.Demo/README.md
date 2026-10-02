@@ -167,7 +167,7 @@ view of it** — a canvas that could disagree with the file is a designer that l
 | Hierarchy | both directions. The canvas reports a selection through `SurfaceSelectionChanged` and the object map turns the control into an element; the tree returns the favour through `UiDesignerView.SelectTarget`, which the map answers the other way round. That method did not exist until this sample needed it |
 | Rulers | two `SurfaceRuler` controls beside the editor, told only which editor they belong to; they take the zoom and the offset from it. What they produce is a request, so the set of guides lives in the designer and nothing reaches the document |
 | Canvas | one `UiDesignerItem` per open form in `ContentMode="Annotated"`, and the item's content is the form and nothing else. In `ContentMode="Loaded"` the editor offers every control the author wrote as a target and finds them by walking the container's content, so a caption or a title bar put in there is — correctly, and unhelpfully — something the user can select and resize. The card is the container's own `Background`, `BorderBrush` and `CornerRadius`; everything else the designer draws sits in a layer above the canvas, in world coordinates, through the editor's public `ViewportTransform`. What is editable is stated rather than guessed: after every load the object map says which controls have a document element behind them, and those are marked `Layout.IsTracked` |
-| Inspector | the properties a control actually has, offered whether or not the document has written them — a short curated list per group, each name asked of the control first, so a Border is offered `CornerRadius` and a TextBlock is not, plus whatever the parent attaches (`Canvas.Left` inside a Canvas) and anything else the file says. Clearing a field removes the attribute. One editor per kind of value, which the document cannot decide and `XamlMemberDescriptor` can: a `bool` is a checkbox, an enum is its own values (side by side when there are four or fewer, a drop-down when more), a brush shows its colour, a number is a number. `ConvertFromText` is asked before anything is written, so text the load could not have meant is reported instead of saved. A value that is a binding is shown and not edited — typing a literal over one would replace it with whatever the text looked like. Width and Height have a `NaN` button beside the field, which takes the number out: a control with a size of its own cannot stretch, and no size is how Avalonia says the layout decides. Choosing `Stretch` for an alignment lets go of that side's size in the same edit — horizontal of the width, vertical of the height — so it is one step to undo |
+| Inspector | the properties a control actually has, offered whether or not the document has written them — a short curated list per group, each name asked of the control first, so a Border is offered `CornerRadius` and a TextBlock is not, plus whatever the parent attaches (`Canvas.Left` inside a Canvas) and anything else the file says. Clearing a field removes the attribute. One editor per kind of value, which the document cannot decide and `XamlMemberDescriptor` can: a `bool` is a checkbox, an enum is its own values (side by side when there are four or fewer, a drop-down when more), a brush shows its colour, a number is a number. `ConvertFromText` is asked before anything is written, so text the load could not have meant is reported instead of saved. A value that is a binding is shown and not edited — typing a literal over one would replace it with whatever the text looked like. Width and Height have a `NaN` button beside the field, which takes the number out: a control with a size of its own cannot stretch, and no size is how Avalonia says the layout decides. Choosing `Stretch` for an alignment lets go of that side's size in the same edit — horizontal of the width, vertical of the height — so it is one step to undo. Under the properties, a Data section names the data type in scope and the design data the canvas shows bindings with, and lists what a binding can read; a property's row offers the members its type can take and writes `{Binding Member}`, a binding whose path names nothing on the data says *broken*, and *Create* writes `Design.DataContext` when a data type has none. All of it is asked of Markup by name, so the inspector holds no type of the project's code |
 | Resize | `EditCompleted` on release, written to the element the control came from — and for the card itself, to the document's root, because a gesture on the card is a gesture on the form. A control with nothing behind it says so instead of skipping the write in silence |
 | ▶ / ■ | `OutputArtifactKind.Assembly` and `RuntimeConfiguration`, built through `ExecuteAsync` first |
 | Console | everything above, said out loud |
@@ -315,8 +315,12 @@ Events are coalesced over a quarter of a second, and the noise is dropped first:
 `bin` and `obj`, tools keep state in dot-directories, and editors save through temporary files —
 re-evaluating a project for any of those would be a second of nothing, repeatedly.
 
-**It does not overwrite your unsaved work.** A form with edits that are not in the file is not
-reloaded; it says so, and the next save is the person's decision.
+**It does not overwrite your unsaved work, and does not lose the file's.** A form with edits that
+are not in the file is not reloaded behind them: a bar above the canvas says the file changed and
+offers both ways out. *Take the file* shows it and leaves the form saved; *Keep mine* keeps the edits,
+which now read as changed against what the file says. Either answer is a step of the form's history,
+so a file taken over your edits leaves them one undo away. A save of the designer's own, coming back
+through the watcher late, is recognised as its own and asks nothing.
 
 ### The check that says it works
 
@@ -333,6 +337,21 @@ check can write XAML.
 
 It ends with one line: `VERDICT ok — a project was created, laid out, built and run`. Both of the
 window-rooted defects above were found by it.
+
+### The check that it keeps up with an IDE
+
+```bash
+dotnet run --project samples/UiDesigner.Demo -- --live <folder>
+```
+
+Plays the other editor. Writes a project into the folder, opens its window, and saves the form's file
+the way Rider's safe write does: the text to a temporary file, the original renamed away, the
+temporary renamed over it, the original deleted. A save of a clean form has to reach the canvas as
+one undo step and leave the form saved; a save over unsaved edits has to change nothing until it is
+answered, and both answers have to leave the text, the saved state and the canvas agreeing. A member
+bound from the inspector has to show the design data's value, and read as broken once the other
+editor renames it; design data taken out on disk has to be writable back from the inspector. It
+ends with `VERDICT ok — the designer followed an IDE writing its forms`.
 
 ## Five things it demonstrates on purpose
 
@@ -439,4 +458,6 @@ control somebody would place, and sensible initial markup per type.
 **Properties are added by name.** The assembly context is right there and a typed editor per property
 kind could be built on it. A name and a value is enough to show that the edit reaches the file.
 
-**Undo is the file's.** Nothing here stacks edits; save writes the document and that is that.
+**Undo is the form's, not the designer's.** Each form keeps its own history in Markup's live
+document: an edit made here, a save made in the other editor and either answer to a conflict are
+steps of it. Undo in one tab never reaches into another, and there is no history across forms.
