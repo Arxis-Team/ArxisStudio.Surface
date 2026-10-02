@@ -27,6 +27,7 @@ public partial class SurfaceView
         var previous = _states.Count > 0 ? _states.Peek() : null;
         _states.Push(state);
         state.Enter(previous);
+        UpdateIsInteracting();
     }
 
     /// <summary>
@@ -38,8 +39,74 @@ public partial class SurfaceView
         {
             var current = _states.Pop();
             current.Exit();
+            UpdateIsInteracting();
         }
     }
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="IsInteracting"/>.
+    /// </summary>
+    public static readonly DirectProperty<SurfaceView, bool> IsInteractingProperty =
+        AvaloniaProperty.RegisterDirect<SurfaceView, bool>(nameof(IsInteracting), o => o.IsInteracting);
+
+    private bool _isInteracting;
+
+    /// <summary>
+    /// Контейнеры, у которых на стеке жест: перетаскивание, изменение размера, перестановка.
+    /// </summary>
+    /// <remarks>
+    /// Держится только на время жеста. Контейнер помнит, кому сообщил о начале, и о конце сообщает
+    /// тому же, — даже если к этому моменту его уже сняли с холста.
+    /// </remarks>
+    private readonly HashSet<SurfaceItem> _itemGestures = new();
+
+    /// <summary>
+    /// Получает признак того, что жест держит указатель: панорама, рамка выделения,
+    /// перетаскивание, изменение размера, перестановка, протяжка направляющей или связи, щипок.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Для хоста, который меняет то, что лежит на холсте, не по команде человека: перезагружает
+    /// форму после правки в другом редакторе, заменяет сборку проекта. Жест держит контейнер,
+    /// target и открытую единицу правки; сменить их под рукой — значит бросить жест на объекте,
+    /// которого больше нет. Хост откладывает такую перемену, пока свойство истинно, и выполняет её,
+    /// когда оно вернётся в <see langword="false"/> — об этом сообщает уведомление свойства.
+    /// </para>
+    /// <para>
+    /// Нажатие без движения жестом контейнера ещё не стало: перетаскивание начинается за порогом.
+    /// Рамка и панорама начинаются на самом нажатии — они захватывают указатель сразу.
+    /// </para>
+    /// </remarks>
+    public bool IsInteracting
+    {
+        get => _isInteracting;
+        private set => SetAndRaise(IsInteractingProperty, ref _isInteracting, value);
+    }
+
+    /// <summary>
+    /// Отмечает, что контейнер начал или закончил жест своего уровня.
+    /// </summary>
+    internal void OnItemGestureChanged(SurfaceItem item, bool active)
+    {
+        var changed = active ? _itemGestures.Add(item) : _itemGestures.Remove(item);
+        if (changed)
+            UpdateIsInteracting();
+    }
+
+    /// <summary>
+    /// Жест слоя выше, который живёт вне стеков состояний, — например групповое изменение размера.
+    /// </summary>
+    /// <remarks>
+    /// Слой, у которого такой жест есть, переопределяет свойство и зовёт <see cref="UpdateIsInteracting"/>,
+    /// когда жест начинается и кончается.
+    /// </remarks>
+    private protected virtual bool HasInteractionOperation => false;
+
+    /// <summary>
+    /// Пересчитывает <see cref="IsInteracting"/> по всем источникам жеста.
+    /// </summary>
+    private protected void UpdateIsInteracting() =>
+        IsInteracting = _states.Count > 1 || _itemGestures.Count > 0 || _isPinching || HasInteractionOperation;
 
     /// <summary>
     /// Обрабатывает нажатие указателя и маршрутизирует его в active state редактора.

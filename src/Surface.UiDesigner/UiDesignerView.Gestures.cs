@@ -101,6 +101,13 @@ public partial class UiDesignerView
             CompleteGroupResize();
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Групповое изменение размера ведёт операция, а не состояние контейнера: стека у неё нет, и
+    /// о жесте она говорит сама — тем, что существует.
+    /// </remarks>
+    private protected override bool HasInteractionOperation => _groupResizeOperation != null;
+
     // --- Drag & Drop ---
 
     /// <inheritdoc />
@@ -188,6 +195,7 @@ public partial class UiDesignerView
             }
 
             _groupResizeOperation = clusterOperation;
+            UpdateIsInteracting();
 
             if (clusterOperation?.SourceTarget is { } clusterSource)
                 BeginSnapGuides(clusterSource);
@@ -296,6 +304,7 @@ public partial class UiDesignerView
         }
 
         _groupResizeOperation = operation;
+        UpdateIsInteracting();
 
         // У группового resize нет состояния контейнера, поэтому снимок соседей
         // берётся здесь. Исключается всё выделение целиком, а не один target.
@@ -362,6 +371,7 @@ public partial class UiDesignerView
     {
         StopAutoPan();
         CompleteInteractionOperation(ref _groupResizeOperation);
+        UpdateIsInteracting();
         EndSnapGuides();
         UpdateSelectionOverlayState();
         CommitEdit();

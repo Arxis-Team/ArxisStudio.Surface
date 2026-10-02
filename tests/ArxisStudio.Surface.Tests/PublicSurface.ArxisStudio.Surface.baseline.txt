@@ -255,6 +255,7 @@ class ArxisStudio.Surface.SurfaceItem : ContentControl
     field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
     field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
     field RoutedEvent<VectorEventArgs> ResizeStartedEvent
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
@@ -340,6 +341,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     avalonia EstimatedItemSizeProperty -> EstimatedItemSize : Size (styled) = 100, 60
     avalonia InputGesturesProperty -> InputGestures : SurfaceInputGestures (direct)
     avalonia InteractionOptionsProperty -> InteractionOptions : SurfaceInteractionOptions (direct)
+    avalonia IsInteractingProperty -> IsInteracting : Boolean (direct)
     avalonia IsSelectingProperty -> IsSelecting : Boolean (direct)
     avalonia IsSimplifiedProperty -> IsSimplified : Boolean (direct)
     avalonia ItemAccentBindingProperty -> ItemAccentBinding : BindingBase (styled) = null
@@ -403,6 +405,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     method Void ZoomAt(Double, Point)
     property BindingBase ItemAccentBinding { get; set; }
     property BindingBase ItemLocationBinding { get; set; }
+    property Boolean IsInteracting { get; }
     property Boolean IsSelecting { get; set; }
     property Boolean IsSimplified { get; }
     property Boolean ShowGrid { get; set; }

@@ -9,6 +9,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using ArxisStudio.Surface.States;
 
 namespace ArxisStudio.Surface;
@@ -253,6 +254,7 @@ public class SurfaceItem : ContentControl, ISelectable
         _states.Push(state);
         state.Enter(previous);
         UpdatePseudoClassesState(state);
+        ReportGesture();
     }
 
     /// <summary>
@@ -266,6 +268,60 @@ public class SurfaceItem : ContentControl, ISelectable
             current.Exit();
             CurrentState.ReEnter(current);
             UpdatePseudoClassesState(CurrentState);
+            ReportGesture();
+        }
+    }
+
+    /// <summary>
+    /// Поверхность, которой контейнер сообщил о начале жеста.
+    /// </summary>
+    /// <remarks>
+    /// О конце жеста он сообщает ей же, а не той, что найдётся над ним тогда: жест кончается
+    /// и у контейнера, которого уже сняли с холста, — потерей захвата, — и искать предка в этот
+    /// момент поздно.
+    /// </remarks>
+    private SurfaceView? _gestureOwner;
+
+    /// <summary>
+    /// Сообщает поверхности, держит ли контейнер жест (<see cref="SurfaceView.IsInteracting"/>).
+    /// </summary>
+    private void ReportGesture()
+    {
+        var active = _states.Count > 1;
+        if (active == (_gestureOwner != null))
+            return;
+
+        if (active)
+        {
+            _gestureOwner = this.FindAncestorOfType<SurfaceView>();
+            _gestureOwner?.OnItemGestureChanged(this, active: true);
+            return;
+        }
+
+        var owner = _gestureOwner!;
+        _gestureOwner = null;
+        owner.OnItemGestureChanged(this, active: false);
+    }
+
+    /// <summary>
+    /// Снимает отметку о жесте, когда контейнер уходит из дерева.
+    /// </summary>
+    /// <remarks>
+    /// Обычно уход отнимает у контейнера захват, и жест закрывает потеря захвата. Но захват бывает
+    /// не у контейнера: изменение размера держит ручка рамки, а состояние лежит на контейнере.
+    /// Отметка, пережившая контейнер, держала бы <see cref="SurfaceView.IsInteracting"/> навсегда,
+    /// и хост, ждущий конца жеста, не дождался бы его никогда. Сами состояния здесь не
+    /// разбираются: у их выхода свои последствия, и решает их тот, кто ведёт жест.
+    /// </remarks>
+    /// <param name="e">Аргументы ухода из дерева.</param>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        if (_gestureOwner is { } owner)
+        {
+            _gestureOwner = null;
+            owner.OnItemGestureChanged(this, active: false);
         }
     }
 

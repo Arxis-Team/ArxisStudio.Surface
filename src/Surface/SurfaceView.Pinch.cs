@@ -74,6 +74,7 @@ public partial class SurfaceView
             _isPinching = true;
             _pinchStartZoom = ViewportZoom;
             _pinchWorldAnchor = GetWorldPosition(e.ScaleOrigin);
+            UpdateIsInteracting();
         }
 
         if (e.Scale > 0 && !double.IsNaN(e.Scale))
@@ -89,5 +90,6 @@ public partial class SurfaceView
     private void OnPinchEnded(object? sender, PinchEndedEventArgs e)
     {
         _isPinching = false;
+        UpdateIsInteracting();
     }
 }
