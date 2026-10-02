@@ -58,6 +58,9 @@ internal static partial class StudioCheck
     /// </remarks>
     internal static bool NameRootsOnFallback { get; set; }
 
+    /// <summary>Names what holds the open project's old types, on the console — for <c>--probe</c>.</summary>
+    internal static void NameRoots(DesignerViewModel designer) => ProbeRoots("--probe", ProjectAssemblyNames(designer));
+
     public static void RunWhenShown(MainWindow window, DesignerViewModel designer, string folder) =>
         window.Opened += (_, _) => _ = RunAsync(window, designer, folder);
 
@@ -788,6 +791,11 @@ internal static partial class StudioCheck
         // Types repeat and their field lists do not change, so asking reflection once per type
         // rather than once per object is most of the difference between a walk that answers and a
         // walk somebody gives up on.
+        // A type's own fields and every base type's: reflection hands back a base class's private
+        // fields only when asked of that class, and a control keeps nearly everything — its values, its
+        // parent, its children — in the private fields of AvaloniaObject, Visual and StyledElement, as a
+        // task keeps its continuation in Task's. A walk that asked the type alone stopped at the first
+        // control it met and called the generation unheld.
         FieldInfo[] FieldsOf(Type type)
         {
             if (fields.TryGetValue(type, out FieldInfo[]? known))
@@ -797,7 +805,15 @@ internal static partial class StudioCheck
 
             try
             {
-                known = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var all = new List<FieldInfo>();
+
+                for (Type? level = type; level is not null; level = level.BaseType)
+                {
+                    all.AddRange(level.GetFields(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
+                }
+
+                known = [.. all];
             }
             catch (Exception)
             {

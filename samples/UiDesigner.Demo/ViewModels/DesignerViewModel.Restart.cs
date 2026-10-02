@@ -99,6 +99,18 @@ public sealed partial class DesignerViewModel
         RestartReason = e.Message;
         NeedsRestart = true;
 
+        // Under --probe the designer stays exactly here instead of restarting: what holds the old types
+        // can only be named while it still holds them — by the walk below, or by a heap dump of this
+        // process — and a restart takes the evidence with it.
+        if (e.Reason == ProjectDesignRestartReason.GenerationStillHeld && Views.StudioCheck.NameRootsOnFallback)
+        {
+            Log("The old types would not leave this process — holding here so the root can be named (--probe)");
+
+            Views.StudioCheck.NameRoots(this);
+
+            return;
+        }
+
         Log(e.Reason == ProjectDesignRestartReason.GenerationStillHeld
             ? "The old types would not leave this process — the designer restarts when you are back and idle"
             : "A package the types loaded changed — the designer restarts when you are back and idle");
