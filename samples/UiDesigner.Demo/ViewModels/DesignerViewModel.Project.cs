@@ -813,7 +813,8 @@ public sealed partial class DesignerViewModel
 
         NeedsRestart = true;
 
-        Log($"! {because} — press Reload to bring the new types in");
+        // A request to the person, not a failure: said without the "!" errors are marked with.
+        Log($"{because} — press Reload to bring the new types in");
     }
 
     private static async Task<string> ReadAsync(CanonicalPath file) =>

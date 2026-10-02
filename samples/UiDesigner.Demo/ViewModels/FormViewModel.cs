@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ArxisStudio.Markup.Xaml;
 using ArxisStudio.Markup.Xaml.Loader;
@@ -49,7 +50,31 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     }
 
     /// <summary>The file this form was read from and will be written back to.</summary>
-    public CanonicalPath File { get; }
+    /// <remarks>It moves only when the file does, renamed or moved in another editor (<see cref="MoveToAsync"/>).</remarks>
+    public CanonicalPath File
+    {
+        get;
+        private set => Set(ref field, value);
+    }
+
+    /// <summary>
+    /// Follows the file to where it lives now, keeping the history and any unsaved edits.
+    /// </summary>
+    /// <remarks>
+    /// The move is not a step of the history. The session is built again from the new place, because
+    /// what the document includes is found relative to where it lives (Markup's
+    /// <see cref="XamlLiveDocument.RetargetAsync"/>).
+    /// </remarks>
+    internal async Task MoveToAsync(CanonicalPath file, Uri uri, CancellationToken cancellationToken)
+    {
+        File = file;
+        Name = file.FileName;
+
+        if (Live is { } live)
+        {
+            await live.RetargetAsync(uri, cancellationToken);
+        }
+    }
 
     public string Name
     {

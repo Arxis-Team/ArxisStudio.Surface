@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using ArxisStudio.Markup;
 using ArxisStudio.Markup.Xaml;
 using ArxisStudio.Markup.Xaml.Loader;
 using ArxisStudio.ProjectSystem;
+using ArxisStudio.ProjectSystem.MSBuild;
 using Avalonia.Styling;
 using Avalonia.Threading;
 
@@ -23,251 +25,184 @@ namespace UiDesigner.Demo.ViewModels;
 /// tool's work the next time anybody pressed save.
 /// </para>
 /// <para>
-/// Watching is composed by the host, which is what <c>ArxisStudio.ProjectSystem</c>'s ADR 0016 says
-/// and what this is: a watcher, a debounce, and four answers — reload the form, re-register the
-/// document a closed control lives in, re-read the project, or rebuild for changed code. The
-/// workspace is told nothing it could not be told by a person pressing refresh, and the build is
-/// the same build a person could run.
+/// Watching is composed from <c>ArxisStudio.ProjectSystem</c>'s pieces, as its ADRs 0016 and 0025 say:
+/// <see cref="ProjectSourceWatcher"/> reports every change with its kind, <see cref="FileChangeCoalescer"/>
+/// nets a burst into what it amounts to — an editor's save through a temporary file and two renames is
+/// one change of the saved file, a move between folders is a rename — and the snapshot classifies the
+/// batch (<see cref="SolutionSnapshot.Classify"/>). What is left here is what the answers mean to a
+/// designer: a form to read again or to follow, a project to read again, code to build.
 /// </para>
 /// <para>
-/// Editors do not write files the way this would expect. Rider writes a temporary file and renames
-/// it over the original, so what arrives is a rename or a creation rather than a change, and a save
-/// can produce several events for one edit. All of them are taken, coalesced over a quarter of a
-/// second, and acted on once.
+/// None of it filters by name. A build writing <c>bin</c> and <c>obj</c> — this designer's own
+/// included — a tool's state in a dot-directory and an editor's temporary files come to nothing in
+/// the snapshot's answer, because the snapshot knows where its projects build and what they declare.
 /// </para>
 /// </remarks>
 public sealed partial class DesignerViewModel
 {
-    private FileSystemWatcher? _watcher;
+    private ProjectSourceWatcher? _watcher;
+    private FileChangeCoalescer? _coalescer;
 
-    /// <summary>Files that have changed and have not been dealt with yet.</summary>
-    private readonly HashSet<string> _touched = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Code files that have changed, which is what makes a rebuild worth running.</summary>
-    private readonly HashSet<string> _codeTouched = new(StringComparer.OrdinalIgnoreCase);
-
-    private DispatcherTimer? _settle;
-
-    /// <summary>Whether the project needs re-reading rather than a form reloading.</summary>
-    private bool _projectTouched;
+    /// <summary>The batch being dealt with; the next one waits for it.</summary>
+    private Task _settling = Task.CompletedTask;
 
     /// <summary>Whether a rebuild for changed code is already running.</summary>
     private bool _buildingForCode;
 
+    /// <summary>Projects whose code changed while a rebuild ran, built when it finishes.</summary>
+    private readonly HashSet<ProjectIdentity> _codePending = [];
+
     /// <summary>
-    /// Starts watching the folder the project lives in.
+    /// Projects an input of whose restore changed — the project file, an import — restored before
+    /// their next build.
+    /// </summary>
+    private readonly HashSet<ProjectIdentity> _restorePending = [];
+
+    /// <summary>How many batches of changes have been dealt with — what a check waits on.</summary>
+    internal int SettledBatches { get; private set; }
+
+    /// <summary>What the workspace holds now — what a check reads.</summary>
+    internal SolutionSnapshot? CurrentSnapshot => _workspace.CurrentSnapshot;
+
+    /// <summary>
+    /// Starts watching what the open solution is made of.
     /// </summary>
     /// <remarks>
-    /// The entry point's own directory, and everything under it. That is the project for a
-    /// <c>.csproj</c> and the solution folder for a <c>.sln</c>, which is the same thing one level
-    /// up — and either way it is where the files this designer opens are.
+    /// Each project's folder with everything below it, and the files outside them that the snapshot
+    /// names — the solution, imports above the projects, files linked in. Every new snapshot is
+    /// watched as it is (<see cref="Show"/>), so a project that gained a folder hears it.
     /// </remarks>
     private void WatchProject()
     {
         StopWatching();
 
-        if (EntryPoint.IsEmpty || !Directory.Exists(EntryPoint.Directory.Value))
+        if (_workspace.CurrentSnapshot is not { } snapshot)
         {
             return;
         }
 
-        _settle ??= CreateSettleTimer();
-
-        try
-        {
-            _watcher = new FileSystemWatcher(EntryPoint.Directory.Value)
-            {
-                IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
-                InternalBufferSize = 64 * 1024,
-            };
-
-            _watcher.Changed += OnFileTouched;
-            _watcher.Created += OnFileTouched;
-            _watcher.Deleted += OnFileTouched;
-            _watcher.Renamed += OnFileTouched;
-
-            _watcher.EnableRaisingEvents = true;
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            Log($"! the project cannot be watched: {error.Message}");
-        }
-    }
-
-    private DispatcherTimer CreateSettleTimer()
-    {
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-
-        timer.Tick += (_, _) =>
-        {
-            timer.Stop();
-
-            RunDetached(SettleAsync);
-        };
-
-        return timer;
+        _coalescer = FileChangeCoalescer.ForChanges(OnChanges);
+        _watcher = new ProjectSourceWatcher(_coalescer.Add);
+        _watcher.Watch(snapshot);
     }
 
     private void StopWatching()
     {
-        if (_watcher is { } watcher)
-        {
-            watcher.EnableRaisingEvents = false;
-            watcher.Dispose();
+        _watcher?.Dispose();
+        _watcher = null;
 
-            _watcher = null;
-        }
-
-        _settle?.Stop();
+        // Dropped, not delivered: what was pending was about a project this designer is leaving.
+        _coalescer?.Dispose();
+        _coalescer = null;
     }
 
     /// <summary>
-    /// Notes what changed and waits for the writing to stop.
+    /// Takes a batch from the coalescer's thread to the UI thread, behind the one before it.
+    /// </summary>
+    /// <remarks>
+    /// One at a time and in order: a batch is a document reloaded, a project re-read, a build — and
+    /// the second of two overlapping ones would act on a snapshot the first is replacing.
+    /// </remarks>
+    private void OnChanges(ImmutableArray<FileChange> batch) =>
+        Dispatcher.UIThread.Post(() => _settling = SettleAfterAsync(_settling, batch));
+
+    private async Task SettleAfterAsync(Task previous, ImmutableArray<FileChange> batch)
+    {
+        await previous;
+
+        try
+        {
+            await SettleAsync(batch);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            Log($"! {exception.GetType().Name}: {exception.Message}");
+        }
+        finally
+        {
+            SettledBatches++;
+        }
+    }
+
+    /// <summary>
+    /// Deals with one batch of changes.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Three different facts arrive on this one event. A <em>markup</em> file whose contents
-    /// changed moves what a form shows — an open one by reload, a closed one through the placed
-    /// copies of its control. A <em>code</em> file whose contents changed moves what the types
-    /// mean, which only a build can settle. And a file that <em>appeared, went away or was
-    /// renamed</em> changes what the project consists of, whatever its extension is — an SDK
-    /// project takes its items from globs, so a new class is a new item and the panel that lists
-    /// them is stale until the evaluation is done again.
+    /// Forms first, because they are what a person is looking at: a form whose file moved follows it,
+    /// one whose file went away closes, and one whose file was saved elsewhere is read again — a
+    /// document nobody has open still feeds the placed copies of its control, so it is re-registered.
     /// </para>
     /// <para>
-    /// The noise is filtered out first. Builds write under <c>bin</c> and <c>obj</c> — this
-    /// designer's own rebuilds included — tools keep their state in dot-directories, and editors
-    /// save through temporary files whose names they do not intend anybody to see — re-evaluating
-    /// a project for any of those would be a second of nothing, repeatedly.
+    /// Then the project, only when the snapshot says so: an evaluation input changed, a file appeared
+    /// or went away where a project's globs reach, or changes were lost. A saved form or class is none
+    /// of these, and costs no evaluation. Then code, which a build settles — and only a build: nothing
+    /// here guesses what a save meant to the compiler.
     /// </para>
     /// </remarks>
-    private void OnFileTouched(object sender, FileSystemEventArgs e)
+    private async Task SettleAsync(ImmutableArray<FileChange> batch)
     {
-        if (IsNoise(e.FullPath))
+        if (_workspace.CurrentSnapshot is not { } snapshot)
         {
             return;
         }
 
-        // Appearing, going away or being renamed changes what the project consists of. So does a
-        // project file being written to — a reference added by hand in the other editor is a change
-        // to the project and to nothing else, and it arrives as a plain save.
-        bool structural = e.ChangeType is not WatcherChangeTypes.Changed || IsProjectFile(e.FullPath);
+        WorkspaceChangeSet changes = snapshot.Classify(batch);
 
-        string[] paths = e is RenamedEventArgs renamed
-            ? [renamed.FullPath, renamed.OldFullPath]
-            : [e.FullPath];
-
-        Dispatcher.UIThread.Post(() =>
+        if (changes.IsEmpty)
         {
-            var noted = false;
+            return;
+        }
 
-            foreach (string path in paths)
-            {
-                if (IsMarkupPath(path))
-                {
-                    _touched.Add(path);
-
-                    noted = true;
-                }
-
-                // A saved .cs is invisible to the evaluation and everything to the types: the
-                // other editor is where code is written, and a designer that ignored it showed
-                // controls built from code the project has moved past.
-                if (IsCodePath(path))
-                {
-                    _codeTouched.Add(path);
-
-                    noted = true;
-                }
-            }
-
-            // Appearing and disappearing is the project's business; a save is not.
-            if (structural)
-            {
-                _projectTouched = true;
-
-                noted = true;
-            }
-
-            if (!noted)
-            {
-                return;
-            }
-
-            _settle?.Stop();
-            _settle?.Start();
-        });
-    }
-
-    /// <summary>What gets written under a project that nobody is editing.</summary>
-    private static bool IsNoise(string path)
-    {
-        foreach (string part in path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        foreach (FileRename rename in changes.Renames)
         {
-            if (part is "bin" or "obj" || (part.Length > 1 && part[0] == '.'))
+            await FollowIfOpenAsync(snapshot, rename);
+        }
+
+        foreach (FileChange change in batch)
+        {
+            if (change.Kind == FileChangeKind.Deleted)
             {
-                return true;
+                CloseIfOpen(change.Path);
             }
         }
 
-        string name = Path.GetFileName(path);
-
-        // JetBrains saves through these two, and every editor saves through something.
-        return name.Contains("___jb_", StringComparison.Ordinal)
-            || name.EndsWith('~')
-            || name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsProjectFile(string path) =>
-        Path.GetExtension(path).ToUpperInvariant() is ".CSPROJ" or ".SLN" or ".SLNX" or ".PROPS" or ".TARGETS";
-
-    private static bool IsMarkupPath(string path) => IsMarkupExtension(Path.GetExtension(path));
-
-    private static bool IsCodePath(string path) =>
-        Path.GetExtension(path).ToUpperInvariant() is ".CS";
-
-    /// <summary>
-    /// Deals with everything that changed while the writing was going on.
-    /// </summary>
-    /// <remarks>
-    /// A project file means the evaluation is stale — items, references, the lot — so the workspace
-    /// is re-read. A document means whatever shows it is showing something else: a form open on it
-    /// is reloaded, and a document nobody has open still feeds the placed copies of its control, so
-    /// it is re-registered from the disk and the forms placing it are told. Code means the types
-    /// are suspect, which a build settles — and only a build: nothing here guesses what a save
-    /// meant to the compiler.
-    /// </remarks>
-    private async Task SettleAsync()
-    {
-        bool project = _projectTouched;
-        string[] documents = [.. _touched];
-        string[] code = [.. _codeTouched];
-
-        _projectTouched = false;
-        _touched.Clear();
-        _codeTouched.Clear();
-
-        foreach (string path in documents)
+        foreach (ProjectItemChange edited in changes.ItemsEdited)
         {
-            if (File.Exists(path))
-            {
-                if (!await ReloadIfOpenAsync(path))
-                {
-                    await RegisterUnopenedAsync(path);
-                }
+            string path = edited.Item.FullPath.Value;
 
-                RefreshVariantIfApplication(path);
-            }
-            else
+            if (!IsMarkupPath(path))
             {
-                CloseIfOpen(path);
+                continue;
+            }
+
+            if (!await ReloadIfOpenAsync(path))
+            {
+                await RegisterUnopenedAsync(path);
+            }
+
+            RefreshVariantIfApplication(path);
+        }
+
+        if (changes.RequiresRescan)
+        {
+            // Changes were lost, so every open form is read again; one whose file is unchanged says so.
+            foreach (FormViewModel form in Forms.ToArray())
+            {
+                await ReloadIfOpenAsync(form.File.Value);
             }
         }
 
-        if (project && IsLoaded)
+        NoteRestoreInputs(snapshot, changes);
+
+        ImmutableArray<ProjectIdentity> code = CodeChanged(snapshot, changes, batch);
+
+        if (IsLoaded && (changes.RequiresRescan || !changes.Invalidation.IsEmpty || !changes.MembershipChanged.IsEmpty))
         {
-            Log("The project changed on disk — re-reading it.");
+            Log($"The project changed on disk ({changes}) — re-reading it.");
 
             await _workspace.RefreshAsync(_shutdown.Token);
         }
@@ -277,6 +212,89 @@ public sealed partial class DesignerViewModel
             await RebuildForCodeAsync(code);
         }
     }
+
+    private static bool IsMarkupPath(string path) => IsMarkupExtension(Path.GetExtension(path));
+
+    private static bool IsCodePath(string path) =>
+        Path.GetExtension(path).ToUpperInvariant() is ".CS";
+
+    /// <summary>
+    /// The projects whose code changed: a class saved, or one appearing, going away or moving where a
+    /// project's globs reach.
+    /// </summary>
+    /// <remarks>
+    /// The snapshot has already said which projects such a change belongs to — a class written into
+    /// <c>obj</c> by a build is nobody's — so a file counts only for a project the snapshot named, or
+    /// when the snapshot declares it.
+    /// </remarks>
+    private static ImmutableArray<ProjectIdentity> CodeChanged(
+        SolutionSnapshot snapshot,
+        WorkspaceChangeSet changes,
+        ImmutableArray<FileChange> batch)
+    {
+        var projects = new HashSet<ProjectIdentity>();
+
+        foreach (ProjectItemChange edited in changes.ItemsEdited)
+        {
+            if (IsCodePath(edited.Item.FullPath.Value))
+            {
+                projects.Add(edited.Project);
+            }
+        }
+
+        foreach (FileChange change in batch)
+        {
+            if (change.Kind is FileChangeKind.Changed or FileChangeKind.Overflow)
+            {
+                continue;
+            }
+
+            foreach (CanonicalPath path in (CanonicalPath[])[change.OldPath, change.Path])
+            {
+                if (!path.IsEmpty
+                    && IsCodePath(path.Value)
+                    && snapshot.TryGetProjectForFile(path, out ProjectSnapshot? owner)
+                    && (changes.MembershipChanged.Contains(owner.Identity)
+                        || changes.Invalidation.Projects.Contains(owner.Identity)
+                        || snapshot.TryGetItem(path, out _, out _)))
+                {
+                    projects.Add(owner.Identity);
+                }
+            }
+        }
+
+        return [.. snapshot.Projects.Select(static project => project.Identity).Where(projects.Contains)];
+    }
+
+    /// <summary>
+    /// Notes the projects a restore has to run for before their next build.
+    /// </summary>
+    /// <remarks>
+    /// An evaluation input that changed and is not one restore writes itself — the project file, an
+    /// import somebody edits — may have changed what there is to restore. Restore's own output
+    /// changing is a restore having run, the IDE's or this designer's, and restoring again for it
+    /// would never stop (<c>ProjectSnapshot.RestoreOutputs</c>, ProjectSystem ADR 0026).
+    /// </remarks>
+    private void NoteRestoreInputs(SolutionSnapshot snapshot, WorkspaceChangeSet changes)
+    {
+        foreach (ProjectSnapshot project in snapshot.Projects)
+        {
+            if (changes.Invalidation.Causes.Any(cause =>
+                    project.EvaluationInputs.Contains(cause) && !project.RestoreOutputs.Contains(cause)))
+            {
+                _restorePending.Add(project.Identity);
+            }
+        }
+    }
+
+    /// <summary>Whether a project has to be restored before it is built.</summary>
+    /// <remarks>
+    /// Never restored — none of what a restore writes is on disk — or something its restore reads
+    /// changed since. A project whose provider names no restore output has no restore to run.
+    /// </remarks>
+    private bool NeedsRestore(ProjectSnapshot project) =>
+        _restorePending.Remove(project.Identity)
+        || (!project.RestoreOutputs.IsEmpty && !project.RestoreOutputs.Any(static output => File.Exists(output.Value)));
 
     /// <summary>
     /// Follows a save to <c>App.axaml</c>, because the application's variant is every preview's.
@@ -364,53 +382,26 @@ public sealed partial class DesignerViewModel
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The build is the designer's own — into <c>bin/ArxisStudio</c>, so it never fights the other
-    /// editor — and it is narrowed to the projects that own the changed files, which is what keeps
-    /// a save's cost proportionate to the save. Its diagnostics land in the Problems pane the way
-    /// any build's do; a failed build changes nothing and says so.
+    /// The build is the designer's own — into <c>bin/ArxisStudio</c> and <c>obj/ArxisStudio</c>, so it
+    /// never fights the other editor — and it is narrowed to the projects whose code changed, which is
+    /// what keeps a save's cost proportionate to the save. A project is restored first when it has to
+    /// be (<see cref="NeedsRestore"/>). Its diagnostics land in the console the way any build's do; a
+    /// failed build changes nothing and says so.
     /// </para>
     /// <para>
-    /// A successful build is not yet news. <c>IsCurrentOnDisk</c> is what says whether it moved
-    /// the types this run holds — an untouched output means the change was cosmetic to the
-    /// compiler — and only then is the reload requested, which happens at once when the studio is
-    /// in front and clean, and on its next activation otherwise.
+    /// One at a time: code that changes while a build runs is built when it finishes. A successful
+    /// build is not yet news. <c>IsCurrentOnDisk</c> is what says whether it moved the types this run
+    /// holds — an untouched output means the change was cosmetic to the compiler — and only then is
+    /// the reload requested, which happens at once when the studio is in front and clean, and on its
+    /// next activation otherwise.
     /// </para>
     /// </remarks>
-    private async Task RebuildForCodeAsync(IReadOnlyList<string> code)
+    private async Task RebuildForCodeAsync(IReadOnlyCollection<ProjectIdentity> projects)
     {
         if (_buildingForCode)
         {
-            // One at a time; what arrived during this build is kept and retried when the timer
-            // fires again.
-            foreach (string path in code)
-            {
-                _codeTouched.Add(path);
-            }
+            _codePending.UnionWith(projects);
 
-            _settle?.Start();
-
-            return;
-        }
-
-        if (_workspace.CurrentSnapshot is not { } snapshot)
-        {
-            return;
-        }
-
-        var owners = new List<ProjectSnapshot>();
-
-        foreach (string path in code)
-        {
-            if (CanonicalPath.TryCreate(path, out CanonicalPath file)
-                && snapshot.TryGetProjectForFile(file, out ProjectSnapshot? owner)
-                && owners.All(known => known.Identity != owner.Identity))
-            {
-                owners.Add(owner);
-            }
-        }
-
-        if (owners.Count == 0)
-        {
             return;
         }
 
@@ -418,30 +409,14 @@ public sealed partial class DesignerViewModel
 
         try
         {
-            Log($"Code changed on disk — building {string.Join(", ", owners.Select(static o => o.Name))}…");
+            IReadOnlyCollection<ProjectIdentity> next = projects;
 
-            var built = true;
-
-            foreach (ProjectSnapshot owner in owners)
+            while (next.Count > 0)
             {
-                built &= await ExecuteAsync(ProjectOperationKind.Build, owner)
-                    == ProjectOperationStatus.Succeeded;
-            }
+                await BuildChangedCodeAsync(next);
 
-            if (!built)
-            {
-                Log("  ! the code did not build — the previews keep the types they have");
-
-                return;
-            }
-
-            if (_assemblies is { } generation && !generation.IsCurrentOnDisk())
-            {
-                RequestTypeReload("the project's code changed on disk");
-            }
-            else
-            {
-                Log("  the build changed nothing this run holds");
+                next = [.. _codePending];
+                _codePending.Clear();
             }
         }
         finally
@@ -450,28 +425,103 @@ public sealed partial class DesignerViewModel
         }
     }
 
-    /// <summary>
-    /// Closes a form whose file has gone.
-    /// </summary>
-    /// <remarks>
-    /// Deleted in the other editor, or renamed, which arrives as the same thing. A tab editing a
-    /// document with nowhere to save to is worse than no tab: the next save would put the file back,
-    /// which is not what deleting it meant. Unsaved edits go with it — there is nothing left to
-    /// reconcile them against — and the console says so, because a tab that closes itself without a
-    /// word looks like a crash.
-    /// </remarks>
-    private void CloseIfOpen(string path)
+    private async Task BuildChangedCodeAsync(IReadOnlyCollection<ProjectIdentity> projects)
     {
-        if (!CanonicalPath.TryCreate(path, out CanonicalPath file)
-            || Forms.FirstOrDefault(open => open.File == file) is not { } form)
+        if (_workspace.CurrentSnapshot is not { } snapshot)
         {
             return;
         }
 
-        Log($"{form.Name} was deleted outside — closing it"
-            + (form.IsDirty ? ", with unsaved edits" : string.Empty));
+        ProjectSnapshot[] owners =
+        [
+            .. snapshot.Projects.Where(project => projects.Contains(project.Identity)),
+        ];
 
-        CloseForm(form);
+        if (owners.Length == 0)
+        {
+            return;
+        }
+
+        Log($"Code changed on disk — building {string.Join(", ", owners.Select(static o => o.Name))}…");
+
+        var built = true;
+
+        foreach (ProjectSnapshot owner in owners)
+        {
+            if (NeedsRestore(owner)
+                && await ExecuteAsync(ProjectOperationKind.Restore, owner) != ProjectOperationStatus.Succeeded)
+            {
+                built = false;
+
+                continue;
+            }
+
+            built &= await ExecuteAsync(ProjectOperationKind.Build, owner) == ProjectOperationStatus.Succeeded;
+        }
+
+        if (!built)
+        {
+            Log("  ! the code did not build — the previews keep the types they have");
+
+            return;
+        }
+
+        if (_assemblies is { } generation && !generation.IsCurrentOnDisk())
+        {
+            RequestTypeReload("the project's code changed on disk");
+        }
+        else
+        {
+            Log("  the build changed nothing this run holds");
+        }
+    }
+
+    /// <summary>
+    /// Follows a form whose file was renamed or moved, keeping its history and its unsaved edits.
+    /// </summary>
+    /// <remarks>
+    /// A rename in the other editor used to close the form, as if the file had been deleted — which is
+    /// what a rename looked like to a watcher that reported paths. The snapshot says where the file
+    /// went, a folder renamed around it included, and the document moves there: its session is built
+    /// again from the new place, because what it includes is found relative to where it lives.
+    /// </remarks>
+    private async Task FollowIfOpenAsync(SolutionSnapshot snapshot, FileRename rename)
+    {
+        if (Forms.FirstOrDefault(open => open.File == rename.OldPath) is not { } form)
+        {
+            return;
+        }
+
+        Uri uri = snapshot.TryGetProjectForFile(rename.NewPath, out ProjectSnapshot? owner)
+            && AvaresUriFor(snapshot, new FormFile(rename.NewPath.FileName, string.Empty, rename.NewPath, owner.Identity)) is { } avares
+                ? avares
+                : new Uri(rename.NewPath.Value);
+
+        await form.MoveToAsync(rename.NewPath, uri, _shutdown.Token);
+
+        MarkOpenFiles();
+
+        Log($"{rename.OldPath.FileName} was moved outside — the form follows it to {rename.NewPath.FileName}");
+    }
+
+    /// <summary>
+    /// Closes the forms whose file has gone — the file, or a folder it was in.
+    /// </summary>
+    /// <remarks>
+    /// A tab editing a document with nowhere to save to is worse than no tab: the next save would put
+    /// the file back, which is not what deleting it meant. Unsaved edits go with it — there is nothing
+    /// left to reconcile them against — and the console says so, because a tab that closes itself
+    /// without a word looks like a crash. A file moved rather than deleted is followed instead.
+    /// </remarks>
+    private void CloseIfOpen(CanonicalPath path)
+    {
+        foreach (FormViewModel form in Forms.Where(open => open.File.StartsWith(path)).ToArray())
+        {
+            Log($"{form.Name} was deleted outside — closing it"
+                + (form.IsDirty ? ", with unsaved edits" : string.Empty));
+
+            CloseForm(form);
+        }
     }
 
     /// <summary>

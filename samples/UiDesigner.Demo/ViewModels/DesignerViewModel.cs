@@ -477,6 +477,10 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
         Status = $"{snapshot.Name} — v{snapshot.Version}"
             + (snapshot.HasErrors ? ", with errors" : string.Empty);
 
+        // Watched as it is now: a project that gained or lost a folder, a solution that gained a
+        // project, are heard from this snapshot on.
+        _watcher?.Watch(snapshot);
+
         BuildProjectTree(snapshot);
         ShowRunTargets();
         Raise(nameof(StatusLeft));
