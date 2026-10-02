@@ -7,7 +7,11 @@ internal static class Program
     /// <summary>
     /// The automation channel's directory, when the demo was started with <c>--automation</c>.
     /// </summary>
-    public static string? AutomationDirectory { get; private set; }
+    /// <remarks>
+    /// A restart hands it to the new copy. The live check sets it too, before it makes the designer
+    /// restart, so that it can ask the new copy what it took.
+    /// </remarks>
+    public static string? AutomationDirectory { get; internal set; }
 
     [System.STAThread]
     public static void Main(string[] args)

@@ -43,7 +43,8 @@ public static class ProjectScaffold
     /// </remarks>
     public const string AvaloniaVersion = "12.1.1";
 
-    private const string TargetFramework = "net10.0";
+    /// <summary>The target framework of the generated project — and of a library a check writes beside it.</summary>
+    internal const string TargetFramework = "net10.0";
 
     /// <summary>Whether a name can be a project — and therefore a namespace and a directory.</summary>
     public static bool IsUsableName(string name) =>

@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 using ArxisStudio;
 using ArxisStudio.Surface.UiDesigner;
 using ArxisStudio.Surface;
+using UiDesigner.Demo.ViewModels;
 
 namespace UiDesigner.Demo.Automation;
 
@@ -327,8 +328,40 @@ internal sealed class AutomationChannel
         ["isReordering"] = _editor.IsReordering,
         ["marqueeScope"] = _editor.MarqueeScope == null ? null : NameOf(_editor.MarqueeScope),
         ["viewportZoom"] = _editor.ViewportZoom,
-        ["viewportLocation"] = new[] { _editor.ViewportLocation.X, _editor.ViewportLocation.Y }
+        ["viewportLocation"] = new[] { _editor.ViewportLocation.X, _editor.ViewportLocation.Y },
+        ["designer"] = Designer()
     };
+
+    /// <summary>
+    /// Что держит дизайнер: вкладки с текстом документа и выбором каждой, активная, масштаб, типы проекта.
+    /// </summary>
+    /// <remarks>
+    /// Этим отвечает копия, поднятая перезапуском: проверка спрашивает, приняла ли она сессию прежней —
+    /// вкладки, несохранённый текст, выбор и масштаб, — а не «похоже ли окно на прежнее».
+    /// </remarks>
+    private Dictionary<string, object?>? Designer()
+    {
+        if (_window.DataContext is not DesignerViewModel designer)
+            return null;
+
+        return new Dictionary<string, object?>
+        {
+            ["forms"] = designer.Forms.Select(form => new Dictionary<string, object?>
+            {
+                ["file"] = form.File.Value,
+                ["dirty"] = form.IsDirty,
+                ["text"] = form.Document?.SourceText.ToString(),
+                ["selected"] = form.SelectedPath?.ToString()
+            }).ToList(),
+            ["active"] = designer.ActiveForm?.File.Value,
+            ["selected"] = designer.Selected is { IsPropertyElementSyntax: false } element
+                ? ArxisStudio.Markup.Xaml.XamlElementPath.Of(element).ToString()
+                : null,
+            ["zoom"] = designer.Zoom,
+            ["types"] = designer.TypesState.ToString(),
+            ["generation"] = designer.Host?.GenerationName
+        };
+    }
 
     /// <summary>
     /// Дерево контейнеров и их авторских контролов — чтобы адресовать target по имени.

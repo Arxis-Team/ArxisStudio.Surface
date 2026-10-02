@@ -82,6 +82,12 @@ public sealed partial class DesignerViewModel
         private set => Set(ref field, value);
     } = string.Empty;
 
+    /// <summary>
+    /// Awaited once the new copy has taken the session and before this one leaves — for a check that
+    /// asks the new copy what it took, and has to say so before the process it runs in is gone.
+    /// </summary>
+    internal Func<Process, Task>? BeforeLeaving { get; set; }
+
     /// <summary>Called by the view on every pointer and key, to know when the designer is idle.</summary>
     public void NoteInput() => _lastInput = DateTime.UtcNow;
 
@@ -188,6 +194,11 @@ public sealed partial class DesignerViewModel
         if (!File.Exists(handoff))
         {
             Log("  the new copy took the session — leaving");
+
+            if (BeforeLeaving is { } leaving && successor is not null)
+            {
+                await leaving(successor);
+            }
 
             if (Application.Current?.ApplicationLifetime
                 is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)

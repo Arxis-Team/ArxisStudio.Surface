@@ -24,7 +24,9 @@ namespace UiDesigner.Demo.Views;
 /// an outside edit of a clean form (L1), the same over unsaved edits with both answers (L2), a
 /// binding made from the inspector against the form's design data, and undo across an outside edit.
 /// Part 2 is <see cref="BesideTheIdeAsync"/>: a save that reads nothing again, a new file read once,
-/// and the designer's builds beside the IDE's.
+/// and the designer's builds beside the IDE's. Part 3 is <see cref="TypesBesideTheIdeAsync"/>: the
+/// IDE saves code, and the designer swaps the project's types in place — or, when they will not go,
+/// restarts by itself with the session carried across.
 /// </para>
 /// <para>
 /// Every step goes through the view model, as the other runs do; only the IDE's side writes files.
@@ -36,13 +38,31 @@ internal static partial class StudioCheck
     public static void LiveWhenShown(MainWindow window, DesignerViewModel designer, string folder) =>
         window.Opened += (_, _) => _ = LiveRunAsync(window, designer, folder);
 
-    private static async Task LiveRunAsync(Window window, DesignerViewModel designer, string folder)
+    /// <summary>
+    /// Said once the verdict is out — what a restart under way waits on before it lets this process go.
+    /// </summary>
+    private static readonly TaskCompletionSource VerdictSaid = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private static async Task LiveRunAsync(MainWindow window, DesignerViewModel designer, string folder)
     {
         var failures = 0;
 
         try
         {
-            failures = await LiveAsync(window, designer, folder);
+            string project = await ProjectScaffold.CreateAsync(folder, "LiveApp", CancellationToken.None);
+
+            failures = await LiveAsync(window, designer, project);
+
+            // Part 3 only once parts 1 and 2 have returned: the forms they held were built under the types
+            // part 3 replaces, and a frame of theirs still running would hold those types in the process.
+            if (designer.Host is null)
+            {
+                Fail(ref failures, "part 3: no project is open to swap the types of");
+            }
+            else
+            {
+                failures += await TypesBesideTheIdeAsync(window, designer, folder, project);
+            }
         }
         catch (Exception error)
         {
@@ -52,13 +72,15 @@ internal static partial class StudioCheck
         }
 
         Say(failures == 0
-            ? "VERDICT ok — the designer followed an IDE writing its forms"
+            ? "VERDICT ok — the designer followed an IDE writing its forms and its code"
             : $"VERDICT {failures} step(s) failed");
+
+        VerdictSaid.TrySetResult();
 
         window.Close();
     }
 
-    private static async Task<int> LiveAsync(Window window, DesignerViewModel designer, string folder)
+    private static async Task<int> LiveAsync(Window window, DesignerViewModel designer, string project)
     {
         var failures = 0;
 
@@ -66,8 +88,6 @@ internal static partial class StudioCheck
         // then every swap waits, and the designer never restarts itself under the run.
         designer.SwapsHeldFor = "the self-check";
         designer.RestartsByItself = false;
-
-        string project = await ProjectScaffold.CreateAsync(folder, "LiveApp", CancellationToken.None);
 
         designer.OpenAtStartup(project, "MainWindow.axaml");
 
