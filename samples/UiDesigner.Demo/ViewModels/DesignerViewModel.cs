@@ -596,9 +596,17 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 /// </remarks>
 public sealed record DiagnosticRow(ProjectDiagnosticSeverity Severity, string Code, string Message, string Where)
 {
+    /// <summary>The file the diagnostic is about, so a form's rows can be replaced when it is shown again.</summary>
+    public CanonicalPath File { get; init; }
+
     public static DiagnosticRow From(ProjectDiagnostic diagnostic) => new(
         diagnostic.Severity,
         diagnostic.Code,
         diagnostic.Message,
-        diagnostic.FilePath.IsEmpty ? string.Empty : diagnostic.FilePath.FileName);
+        diagnostic.FilePath.IsEmpty
+            ? string.Empty
+            : diagnostic.FilePath.FileName + (diagnostic.Span.IsEmpty ? string.Empty : $":{diagnostic.Span.StartLine}"))
+    {
+        File = diagnostic.FilePath,
+    };
 }

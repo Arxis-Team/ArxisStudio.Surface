@@ -538,8 +538,7 @@ public sealed partial class DesignerViewModel
         // is still this designer's to manage: it must outlive the last form loaded under it.
         form.Assemblies = _assemblies;
 
-        ShowMarkupDiagnostics(attached.Diagnostics, text, form.File);
-
+        // What the load found was said as the form's state was: see ReportState.
         if (live.Session is not { } session)
         {
             string why = FirstError(attached.Diagnostics);
@@ -997,14 +996,40 @@ public sealed partial class DesignerViewModel
         _environment = null;
     }
 
-    /// <summary>Turns Markup's diagnostics into the project model's, so one list shows both.</summary>
+    /// <summary>
+    /// Turns Markup's diagnostics into the project model's, so one list shows both — and says them in
+    /// the console, which is where this designer's diagnostics are read.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A form's rows are replaced rather than added to: what a form says now is what is true now, and
+    /// a list that kept every load's findings grew with every edit made in the other editor.
+    /// </para>
+    /// <para>
+    /// They used to go into the list and nowhere else, and the list has no pane: a form opened with a
+    /// type nothing resolves said "did not load" and kept the reason where nobody could read it.
+    /// </para>
+    /// </remarks>
     private void ShowMarkupDiagnostics(
         IEnumerable<MarkupDiagnostic> diagnostics, string documentText, CanonicalPath file)
     {
+        foreach (DiagnosticRow stale in Diagnostics.Where(row => row.File == file).ToArray())
+        {
+            Diagnostics.Remove(stale);
+        }
+
         foreach (ProjectDiagnostic translated in
             ProjectMarkupDiagnostics.ToProject(diagnostics, documentText, file))
         {
-            Diagnostics.Add(DiagnosticRow.From(translated));
+            DiagnosticRow row = DiagnosticRow.From(translated);
+
+            Diagnostics.Add(row);
+
+            string where = row.Where.Length > 0 ? $" — {row.Where}" : string.Empty;
+
+            Log(row.Severity == ProjectDiagnosticSeverity.Error
+                ? $"  ! {row.Code}: {row.Message}{where}"
+                : $"  {row.Code}: {row.Message}{where}");
         }
     }
 }

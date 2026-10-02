@@ -295,6 +295,11 @@ public sealed partial class DesignerViewModel
     }
 
     /// <summary>Says in the console what the form shows of its text, when that changed.</summary>
+    /// <remarks>
+    /// With every diagnostic the attempt found, not only the first: a form behind its text is waiting
+    /// for its author, and the author is in the other editor, reading this console for line numbers.
+    /// A form that is shown again takes its rows out of the list.
+    /// </remarks>
     private void ReportState(FormViewModel form)
     {
         if (form.Live is not { } live)
@@ -305,11 +310,18 @@ public sealed partial class DesignerViewModel
         switch (live.State)
         {
             case XamlLiveDocumentState.Behind:
-                Log($"  {form.Name} shows the text before the last change — {FirstError(live.Diagnostics)}");
+                Log($"  {form.Name} shows the text before the last change:");
+                ShowMarkupDiagnostics(live.Diagnostics, live.Document.SourceText.ToString(), form.File);
                 break;
 
             case XamlLiveDocumentState.Broken:
-                Log($"  ! {form.Name} cannot be shown — {FirstError(live.Diagnostics)}");
+                Log($"  ! {form.Name} cannot be shown:");
+                ShowMarkupDiagnostics(live.Diagnostics, live.Document.SourceText.ToString(), form.File);
+                break;
+
+            default:
+                // Shown, with whatever warnings the load had — said once, when they change.
+                ShowMarkupDiagnostics(live.Diagnostics, live.Document.SourceText.ToString(), form.File);
                 break;
         }
     }

@@ -545,7 +545,8 @@ public sealed partial class DesignerViewModel
                 // above the canvas offers both ways out.
                 form.PendingDiskText = text;
 
-                Log($"! {form.Name} changed on disk and has unsaved edits here — keep yours or take the file");
+                // A question for the person, not a failure: said without the "!" errors are marked with.
+                Log($"{form.Name} changed on disk under unsaved edits here — keep yours or take the file");
 
                 break;
         }
