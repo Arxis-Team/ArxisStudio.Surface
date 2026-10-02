@@ -394,7 +394,11 @@ public sealed partial class DesignerViewModel
             return;
         }
 
+        Window? replaced = form.Root as Window;
+
         await form.RetireSessionAsync();
+
+        CloseRetiredRoot(replaced);
 
         form.Migrate(session);
         form.Assemblies = _assemblies;

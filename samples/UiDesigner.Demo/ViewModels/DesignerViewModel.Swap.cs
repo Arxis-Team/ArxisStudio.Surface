@@ -122,18 +122,7 @@ public sealed partial class DesignerViewModel
 
             await form.RetireSessionAsync();
 
-            if (window is not null)
-            {
-                try
-                {
-                    window.Close();
-                }
-                catch (Exception error) when (error is InvalidOperationException or NullReferenceException)
-                {
-                    // A window that will not close is a window the platform is still holding, and
-                    // the proof below is what turns that into a restart rather than a guess.
-                }
-            }
+            CloseRetiredRoot(window);
         }
 
         // Nothing may still point at a form that is going. The active one is the easiest to
@@ -169,6 +158,31 @@ public sealed partial class DesignerViewModel
         ClearInputState();
 
         await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Background);
+    }
+
+    /// <summary>Closes the window a retired session's form was rooted in.</summary>
+    /// <remarks>
+    /// Wherever a session is retired, not only in the swap. A window-rooted form's root is a real
+    /// <c>Window</c>, never shown, and the windowing platform holds it until it is closed — on Win32
+    /// one never closed survives every collection, and with it every type of its generation. A
+    /// rebuild retires a session too, and the window it left open used to outlive it.
+    /// </remarks>
+    private static void CloseRetiredRoot(Window? window)
+    {
+        if (window is null)
+        {
+            return;
+        }
+
+        try
+        {
+            window.Close();
+        }
+        catch (Exception error) when (error is InvalidOperationException or NullReferenceException)
+        {
+            // A window that will not close is a window the platform is still holding, and the
+            // proof the swap asks for is what turns that into a restart rather than a guess.
+        }
     }
 
     /// <summary>

@@ -2212,6 +2212,21 @@ internal static class StudioCheck
     private static int CountErrors(DesignerViewModel designer) =>
         designer.Output.Count(line => line.TrimStart().StartsWith('!'));
 
+    /// <summary>The form's root window, held weakly so that asking does not keep it.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference<Window>? RootWindowOf(FormViewModel form) =>
+        form.Root is Window window ? new WeakReference<Window>(window) : null;
+
+    /// <summary>Whether the window is still the form's root.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsRootOf(FormViewModel form, WeakReference<Window> window) =>
+        window.TryGetTarget(out Window? target) && ReferenceEquals(form.Root, target);
+
+    /// <summary>Whether the window still has the platform window that keeps it alive.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsOpen(WeakReference<Window> window) =>
+        window.TryGetTarget(out Window? target) && target.PlatformImpl is not null;
+
     /// <summary>What the last restore or build reported as errors.</summary>
     /// <remarks>
     /// One predicate for every step that asks, typed: the two steps that each spelled the severity
@@ -2633,6 +2648,40 @@ internal static class StudioCheck
             {
                 Say("an edit made outside the designer arrived in the open form");
             }
+        }
+
+        // 5b. Changed from outside where a session cannot follow in place — a directive on the root
+        //     is a new session — so the form is rebuilt from the document. A window-rooted form's root
+        //     is a real Window, which the windowing platform keeps until it is closed, and with it
+        //     every type of the generation: on Win32 a window that is never shown and never closed
+        //     survives every collection, and a closed one goes.
+        if (form.File.Value is { Length: > 0 } rooted)
+        {
+            WeakReference<Window>? replaced = RootWindowOf(form);
+            string asWritten = await System.IO.File.ReadAllTextAsync(rooted);
+
+            await System.IO.File.WriteAllTextAsync(
+                rooted, asWritten.Replace("<Window ", "<Window x:Name=\"Shell\" ", StringComparison.Ordinal));
+
+            if (replaced is null)
+            {
+                Fail(ref failures, "the form's root is not a window, so a rebuild had nothing to close");
+            }
+            else if (!await Until(() => !IsRootOf(form, replaced), 30))
+            {
+                Fail(ref failures, "a form whose root changed outside was never rebuilt");
+            }
+            else if (IsOpen(replaced))
+            {
+                Fail(ref failures, "a form rebuilt for a changed root left the window it replaced open");
+            }
+            else
+            {
+                Say("a form rebuilt for a changed root closed the window it replaced");
+            }
+
+            await System.IO.File.WriteAllTextAsync(rooted, asWritten);
+            await Until(() => !Text(form).Contains("x:Name=\"Shell\"", StringComparison.Ordinal), 30);
         }
 
         // 6. Restored and built, which is the claim that what was laid out is a real application.
