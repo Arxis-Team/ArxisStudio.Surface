@@ -24,13 +24,23 @@ namespace UiDesigner.Demo.ViewModels;
 /// card is not let go and taken again, which used to blink the form on every keystroke typed in the
 /// inspector. A root that is a control stands on the card as it is and has nothing to give back.
 /// </para>
+/// <para>
+/// One per document, not per card. The design host keeps it with the document for every session it
+/// builds, and the card a form is shown on changes when the project's types are swapped: the forms
+/// are let go of and built again, and the new form's card is pointed at here
+/// (<see cref="Card"/>). Between the two it points at nothing, so it holds no card the swap is
+/// letting go of.
+/// </para>
 /// </remarks>
-internal sealed class FormRootAccess(UiDesignerFormItem card) : IXamlRootAccess
+internal sealed class FormRootAccess : IXamlRootAccess
 {
-    public IDisposable Lend(object root) =>
-        ReferenceEquals(card.Root, root) ? card.SuspendRoot() : Nothing.Instance;
+    /// <summary>Gets or sets the card the document is shown on now, or <see langword="null"/> between two.</summary>
+    public UiDesignerFormItem? Card { get; set; }
 
-    /// <summary>The lease of a root the card does not hold any more.</summary>
+    public IDisposable Lend(object root) =>
+        Card is { } card && ReferenceEquals(card.Root, root) ? card.SuspendRoot() : Nothing.Instance;
+
+    /// <summary>The lease of a root no card holds.</summary>
     private sealed class Nothing : IDisposable
     {
         public static Nothing Instance { get; } = new();

@@ -78,6 +78,10 @@ public sealed partial class App : Application
             int reclaim = Array.IndexOf(args, "--reclaim");
             int live = Array.IndexOf(args, "--live");
 
+            // The session the previous copy handed over when it restarted: the project, the forms with
+            // their text, the tab in front and the zoom.
+            int resume = Array.IndexOf(args, "--resume");
+
             // For the one question a fallback cannot answer by itself: what held the old types.
             StudioCheck.NameRootsOnFallback = Array.IndexOf(args, "--probe") >= 0;
 
@@ -117,6 +121,16 @@ public sealed partial class App : Application
                 var window = new MainWindow { DataContext = model };
 
                 StudioCheck.StressWhenShown(window, model, args[stress + 1]);
+
+                desktop.Exit += (_, _) => model.Dispose();
+                desktop.MainWindow = window;
+            }
+            else if (resume >= 0 && resume + 1 < args.Length)
+            {
+                var model = new DesignerViewModel();
+                var window = new MainWindow { DataContext = model };
+
+                model.ResumeAtStartup(args[resume + 1]);
 
                 desktop.Exit += (_, _) => model.Dispose();
                 desktop.MainWindow = window;
@@ -192,7 +206,7 @@ public sealed partial class App : Application
     /// <summary>The arguments that are not a switch and are not a switch's value.</summary>
     /// <remarks>
     /// All but one of this sample's switches take a value: `--shot`, `--verify`, `--stress`,
-    /// `--reclaim`, `--live`, `--view`, `--active`, `--theme` and `--automation` do, and `--probe` does not — so the project path can
+    /// `--reclaim`, `--live`, `--resume`, `--view`, `--active`, `--theme` and `--automation` do, and `--probe` does not — so the project path can
     /// follow it without being read as the thing it turns on.
     /// </remarks>
     private static string[] Positional(string[] args)

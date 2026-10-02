@@ -69,12 +69,12 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
         RestoreCommand = new RelayCommand(() => Run(() => ExecuteAsync(ProjectOperationKind.Restore)), CanOperate);
         BuildCommand = new RelayCommand(() => Run(() => ExecuteAsync(ProjectOperationKind.Build)), CanOperate);
 
-        // The button takes the same route the watcher takes: swap the types in place, and restart
-        // only when they will not go. What it does not take is the activation gate — a press is
-        // somebody asking now.
+        // The design host swaps the types by itself and says when only a new process can show them;
+        // the designer then restarts by itself when the person is back and idle. The button is for
+        // when it will not — three restarts in a row found the types held — and does not wait.
         RestartCommand = new RelayCommand(
-            () => RunDetached(() => _typeSwap = SwapGenerationAsync()),
-            () => NeedsRestart && !EntryPoint.IsEmpty && _typeSwap is not { IsCompleted: false });
+            () => RunDetached(() => RestartAsync(byItself: false)),
+            () => NeedsRestart && !EntryPoint.IsEmpty);
 
         // Every open form says when its document moved — an edit, an undo, the IDE writing the file —
         // and the designer follows from one place, whichever route the change took.
@@ -161,11 +161,11 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 
     public RelayCommand BuildCommand { get; }
 
-    /// <summary>Starts the studio again on the same project, with the same forms open.</summary>
+    /// <summary>Starts the studio again on the same project, with the same forms and their text.</summary>
     /// <remarks>
-    /// The one thing a process can do about types it has already loaded. What it costs is the
-    /// window blinking; what it buys is a designer that never shows a form built from types the
-    /// project has moved past.
+    /// The one thing a process can do about types it cannot let go of. What it costs is the window
+    /// blinking; what it buys is a designer that never shows a form built from types the project has
+    /// moved past.
     /// </remarks>
     public RelayCommand RestartCommand { get; }
 
@@ -318,40 +318,29 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
         StopProject();
         CloseAllForms();
 
-        _ = DisposeWorkspaceAsync();
+        // Exiting: the host reclaims its generation and closes its documents, then the workspace goes.
+        // Nothing waits for it — the process is ending, and waiting here would be waiting on this
+        // thread for work that finishes on it.
+        _ = DisposeProjectAsync();
+    }
+
+    private async Task DisposeProjectAsync()
+    {
+        try
+        {
+            await StopHostAsync();
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine(exception);
+        }
+
+        await DisposeWorkspaceAsync();
 
         _shutdown.Dispose();
     }
 
     private CanonicalPath EntryPoint { get; set; }
-
-    /// <summary>
-    /// What this designer adds to every evaluation, build and run: output folders of its own.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This tool is used beside an IDE, and both build the same project. They cannot both own
-    /// <c>bin\Debug</c>: the moment one of them has the application running, the other's build stops
-    /// with a dozen lines of MSB3026 and then MSB3027 — "the file is locked by .NET Host" — which is
-    /// true, unactionable, and looks like the designer is broken. Nor <c>obj\Debug</c>: Rider saves
-    /// before it runs, this designer hears the save and builds too, and two builds writing one
-    /// intermediate folder fail one of them.
-    /// </para>
-    /// <para>
-    /// So the designer builds into <c>bin\ArxisStudio</c> and <c>obj\ArxisStudio</c> and runs what it
-    /// built there — ProjectSystem's <see cref="MSBuildDesignOutput"/>, its ADR 0026. The properties
-    /// are relative, so every project in the solution resolves them against itself, and they are
-    /// passed to the evaluation as well as to the operations: the run path starts what the evaluation
-    /// says the project produces, and the two would disagree if only one of them knew.
-    /// </para>
-    /// <para>
-    /// The output paths move and the bases do not. The SDK excludes from every glob what lies under the
-    /// bases; this designer once moved <c>BaseOutputPath</c> instead, and the IDE's whole
-    /// <c>bin\Debug</c> became items of the project. With the bases where they are, the restore is
-    /// shared as well — <c>obj\project.assets.json</c> is the file both tools read.
-    /// </para>
-    /// </remarks>
-    private static ProjectMetadata DesignerOutput => MSBuildDesignOutput.GlobalProperties;
 
     private bool CanOperate() => IsLoaded && !IsBusy;
 
@@ -430,29 +419,40 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
     {
         Log($"Opening {EntryPoint.FileName}…");
 
-        WorkspaceLoadResult result = await _workspace.LoadAsync(
-            new WorkspaceLoadRequest
-            {
-                Workspace = _workspace.Identity,
-                EntryPointPath = EntryPoint,
+        // A project already open — the configuration changed, or another was chosen — goes first,
+        // with its forms: they belong to its host. The forms of the same project come back with
+        // their text and are asked of their files again; the undo history does not cross.
+        IReadOnlyList<HandoffForm> reopen = await CloseProjectAsync();
 
-                // The configuration the header is showing, because it is what the evaluation is of:
-                // output paths and conditioned items move with it, and the designer starts what the
-                // evaluation says the project produces.
-                Configuration = Configuration,
-
-                // And an output folder of its own, so that building here never fights the IDE that
-                // has the same project open.
-                GlobalProperties = DesignerOutput,
-
-                // Items are how the Project panel finds the forms, so the designer asks for them.
-                Options = new WorkspaceLoadOptions { IncludeItems = true },
-            },
-            _shutdown.Token);
+        // The configuration the header is showing, because it is what the evaluation is of: output
+        // paths and conditioned items move with it. An output folder of the designer's own, so that
+        // building here never fights the IDE that has the same project open. And what the host and
+        // the inspector read of the evaluation (LoadRequest).
+        WorkspaceLoadResult result = await _workspace.LoadAsync(LoadRequest(), _shutdown.Token);
 
         Log($"  {result.Status} — {result.Diagnostics.Length} diagnostic(s)");
 
+        // Said in the order it happened: what the evaluation found, and then what the host's restore and
+        // build made of it. Said after them, a missing restore the host had just run read as still
+        // missing, and a build's errors were replaced by the evaluation's warnings.
+        ShowDiagnostics(result.Diagnostics);
+
         IsLoaded = result.Snapshot is not null;
+
+        if (IsLoaded)
+        {
+            await StartHostAsync();
+
+            if (_host is { } host)
+            {
+                foreach (HandoffForm form in reopen)
+                {
+                    await ReopenAsync(host, form);
+                }
+
+                ActiveForm ??= Forms.FirstOrDefault();
+            }
+        }
 
         // Watched from here on, because this designer is used beside an IDE and the IDE writes to
         // the same files.
@@ -465,7 +465,6 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 
         await ReadBranchAsync(_shutdown.Token).ConfigureAwait(true);
 
-        ShowDiagnostics(result.Diagnostics);
         RefreshAllCommands();
     }
 

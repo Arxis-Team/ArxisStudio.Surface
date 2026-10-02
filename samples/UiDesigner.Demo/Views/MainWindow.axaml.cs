@@ -37,6 +37,12 @@ public sealed partial class MainWindow : Window
 
         Activated += (_, _) => (DataContext as DesignerViewModel)?.OnStudioActivated();
 
+        // Every pointer and key, heard on the way down and whether or not something took it: what
+        // "idle" means for a restart the designer makes by itself.
+        AddHandler(PointerMovedEvent, (_, _) => Designer?.NoteInput(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerPressedEvent, (_, _) => Designer?.NoteInput(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(KeyDownEvent, (_, _) => Designer?.NoteInput(), RoutingStrategies.Tunnel, handledEventsToo: true);
+
         UiDesignerView surface = this.GetControl<UiDesignerView>("Surface");
         AvaloniaEdit.TextEditor markup = this.GetControl<AvaloniaEdit.TextEditor>("XamlView");
 
@@ -130,10 +136,58 @@ public sealed partial class MainWindow : Window
                 designer.AskToConfirm = AskToConfirmAsync;
                 designer.AskToSave = AskToSaveAsync;
 
-                // The Unity rule: code edited elsewhere is applied the moment this window is the
-                // one being looked at. The model owns whether a reload is due; the window only
-                // says when somebody came back, and whether they are here right now.
+                // Whether the window is in front decides one thing: when the designer restarts by
+                // itself, after the project's types would not leave. Swapping them waits for nothing
+                // but what the designer is in the middle of.
                 designer.IsStudioActive = () => IsActive;
+
+                // The canvas holds its last frame while the types are replaced, so the person sees the
+                // forms rather than an empty surface.
+                designer.FreezeCanvas = surface.Freeze;
+
+                // A gesture holds the pointer and a swap would take the forms off the canvas under it:
+                // held off for as long as the gesture lasts.
+                IDisposable? gesture = null;
+
+                surface.PropertyChanged += (_, changed) =>
+                {
+                    if (changed.Property != ArxisStudio.Surface.SurfaceView.IsInteractingProperty)
+                    {
+                        return;
+                    }
+
+                    if (surface.IsInteracting)
+                    {
+                        gesture ??= designer.Defer("a gesture on the canvas");
+                    }
+                    else
+                    {
+                        gesture?.Dispose();
+                        gesture = null;
+                    }
+                };
+
+                // And a value half typed in the inspector, for as long as the inspector has the keyboard.
+                IDisposable? typing = null;
+                Border inspector = this.GetControl<Border>("InspectorPanel");
+
+                inspector.PropertyChanged += (_, changed) =>
+                {
+                    if (changed.Property != IsKeyboardFocusWithinProperty)
+                    {
+                        return;
+                    }
+
+                    if (inspector.IsKeyboardFocusWithin)
+                    {
+                        typing ??= designer.Defer("a value being typed in the inspector");
+                    }
+                    else
+                    {
+                        typing?.Dispose();
+                        typing = null;
+                    }
+                };
 
                 designer.ZoomToFitRequested += (_, _) => OnZoomToFit(this, new RoutedEventArgs());
 
@@ -698,6 +752,9 @@ public sealed partial class MainWindow : Window
 
         data.Add(DataTransferItem.CreateText(entry.Name));
 
+        // A swap of the project's types would take the forms off the canvas under the drop.
+        using IDisposable? deferral = Designer?.Defer("a drag from the toolbox");
+
         try
         {
             await DragDrop.DoDragDropAsync(e, data, DragDropEffects.Copy);
@@ -859,7 +916,10 @@ public sealed partial class MainWindow : Window
 
         cancel.Click += (_, _) => dialog.Close();
 
-        await dialog.ShowDialog(this);
+        using (Designer?.Defer("a dialog"))
+        {
+            await dialog.ShowDialog(this);
+        }
 
         return answer;
     }
@@ -1009,7 +1069,10 @@ public sealed partial class MainWindow : Window
 
         cancel.Click += (_, _) => dialog.Close();
 
-        await dialog.ShowDialog(this);
+        using (Designer?.Defer("a dialog"))
+        {
+            await dialog.ShowDialog(this);
+        }
 
         return answer;
     }
@@ -1074,7 +1137,10 @@ public sealed partial class MainWindow : Window
 
         no.Click += (_, _) => dialog.Close();
 
-        await dialog.ShowDialog(this);
+        using (Designer?.Defer("a dialog"))
+        {
+            await dialog.ShowDialog(this);
+        }
 
         return answer;
     }

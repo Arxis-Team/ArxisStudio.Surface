@@ -164,39 +164,27 @@ internal static partial class StudioCheck
     /// </summary>
     private static async Task<string?> BuildsAfterACodeSaveAsync(DesignerViewModel designer, string code, string when)
     {
-        int from = designer.Output.Count;
+        int builds = designer.Builds;
 
         await SaveLikeAnIdeAsync(code, Disk(code) + $"// saved {when}\n");
 
-        // The build's own line and the outcome after it: a restore ahead of it says "Succeeded" too.
-        bool settled = await Until(() => BuildOutcome(designer.Output.Skip(from).ToArray()) is not null, 180);
-
-        string[] lines = [.. designer.Output.Skip(from)];
-
-        if (!settled)
+        // The design host's own report of the build that followed, after its quiet moment.
+        if (!await Until(() => designer.Builds > builds, 180) || designer.LastBuild is not { } built)
         {
             return $"no build followed the IDE's save of the code {when}";
         }
 
-        if (lines.FirstOrDefault(static line => line.Contains("MSB3027", StringComparison.Ordinal) || line.Contains("MSB3021", StringComparison.Ordinal)) is { } locked)
+        if (built.Diagnostics.FirstOrDefault(static diagnostic =>
+                diagnostic.Code is "MSB3027" or "MSB3021"
+                || diagnostic.Message.Contains("MSB3027", StringComparison.Ordinal)
+                || diagnostic.Message.Contains("MSB3021", StringComparison.Ordinal)) is { } locked)
         {
-            return $"the designer's build met a locked file {when}: {locked.Trim()}";
+            return $"the designer's build met a locked file {when}: {locked.Message}";
         }
 
-        return BuildOutcome(lines)!.StartsWith("  Succeeded", StringComparison.Ordinal)
+        return built.Status == ProjectOperationStatus.Succeeded
             ? null
-            : $"the designer's build did not pass {when}: {string.Join(" | ", lines.Where(static line => line.TrimStart().StartsWith('!')).Take(3))}";
-    }
-
-    /// <summary>The line that says how the first build in these lines ended, once it has.</summary>
-    private static string? BuildOutcome(string[] lines)
-    {
-        int build = Array.FindIndex(lines, static line => line.StartsWith("Build ", StringComparison.Ordinal));
-
-        return build < 0
-            ? null
-            : lines.Skip(build + 1).FirstOrDefault(static line =>
-                line.StartsWith("  Succeeded", StringComparison.Ordinal) || line.StartsWith("  Failed", StringComparison.Ordinal));
+            : $"the designer's build did not pass {when}: {string.Join(" | ", built.Diagnostics.Where(static d => d.Severity == ProjectDiagnosticSeverity.Error).Select(static d => d.Message).Take(3))}";
     }
 
     /// <summary>The version of what the workspace holds.</summary>

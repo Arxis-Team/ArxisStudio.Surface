@@ -38,14 +38,32 @@ public sealed partial class DesignerViewModel
                 Raise(nameof(TargetName));
                 RefreshAllCommands();
 
-                // A form marked stale while it was hidden is rebuilt now, which is the moment it
-                // is looked at. Rebuilding it earlier would have been work nobody could see.
-                if (value is { IsStale: true } stale)
+                if (value is not null)
                 {
-                    RunDetached(() => RefreshStaleAsync(stale));
+                    ShowTheActiveDocument();
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Tells the design host which document is looked at, and brings it up to date.
+    /// </summary>
+    /// <remarks>
+    /// The canvas shows one form, so a swap of the types attaches its document and leaves the rest
+    /// detached; a form shown again catches up then — attached to the types that are live, and rebuilt
+    /// if a control it places changed while it was hidden. Work nobody could see is not done.
+    /// </remarks>
+    private void ShowTheActiveDocument()
+    {
+        if (_host is not { } host || ActiveForm?.Live is not { } live || !host.Documents.Contains(live))
+        {
+            return;
+        }
+
+        host.SetVisibleDocuments([live]);
+
+        RunDetached(() => host.EnsureLiveAsync(live, _shutdown.Token).AsTask());
     }
 
     /// <summary>
@@ -240,10 +258,10 @@ public sealed partial class DesignerViewModel
     /// <remarks>
     /// <para>
     /// Raised on the UI thread once the change is over and the session has caught up, so the map,
-    /// the root and the text describe one document. The edited document becomes what placed copies
-    /// of this control are drawn from, and every open form that places it is told to catch up —
-    /// unsaved is the point: the other tab shows the control as it is here, not as the file last
-    /// had it.
+    /// the root and the text describe one document. What placed copies of this control are drawn
+    /// from follows the edit by itself — the design host registers the document and rebuilds the
+    /// forms that place it — and unsaved is the point: the other tab shows the control as it is here,
+    /// not as the file last had it.
     /// </para>
     /// <para>
     /// The panels follow only the active form. A form in a background tab keeps its selection as a
@@ -261,15 +279,6 @@ public sealed partial class DesignerViewModel
         if (sender is not FormViewModel form)
         {
             return;
-        }
-
-        if ((e.Changes & XamlLiveDocumentChanges.Text) != 0 && form.Document is { } document)
-        {
-            RunDetached(async () =>
-            {
-                await SetLiveDocumentAsync(document);
-                MarkDependentsStale(document, except: form);
-            });
         }
 
         if ((e.Changes & XamlLiveDocumentChanges.State) != 0)

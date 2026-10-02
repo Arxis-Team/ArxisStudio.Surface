@@ -62,8 +62,10 @@ internal static partial class StudioCheck
     {
         var failures = 0;
 
-        // The IDE's writes touch the project, and a reload of the types is not what this run is about.
-        designer.AutoReloadForCode = false;
+        // The IDE's writes touch the project, and swapping the types is what part 3 is about: until
+        // then every swap waits, and the designer never restarts itself under the run.
+        designer.SwapsHeldFor = "the self-check";
+        designer.RestartsByItself = false;
 
         string project = await ProjectScaffold.CreateAsync(folder, "LiveApp", CancellationToken.None);
 
@@ -84,9 +86,13 @@ internal static partial class StudioCheck
 
         XamlElementPath? selected = designer.Selected is { } before ? XamlElementPath.Of(before) : null;
 
+        // Waited for as a batch the design host has dealt with, not only as text: the host takes the
+        // file off the user interface thread, and the document's text moves before the canvas does.
+        int settled = designer.SettledBatches;
+
         await SaveLikeAnIdeAsync(file, Text(form).Replace("Opacity=\"0.75\"", "Opacity=\"0.5\"", StringComparison.Ordinal));
 
-        if (!await Until(() => Text(form).Contains("Opacity=\"0.5\"", StringComparison.Ordinal), 60))
+        if (!await Until(() => Text(form).Contains("Opacity=\"0.5\"", StringComparison.Ordinal) && designer.SettledBatches > settled, 60))
         {
             Fail(ref failures, "L1: the IDE's save never reached the open form");
         }
@@ -125,9 +131,11 @@ internal static partial class StudioCheck
 
         string mine = Text(form);
 
+        settled = designer.SettledBatches;
+
         await SaveLikeAnIdeAsync(file, Disk(file).Replace("Opacity=\"0.5\"", "Opacity=\"0.25\"", StringComparison.Ordinal));
 
-        if (!await Until(() => form.HasPendingDiskText, 60))
+        if (!await Until(() => form.HasPendingDiskText && designer.SettledBatches > settled, 60))
         {
             Fail(ref failures, "L2: a write over unsaved edits was not put to the person");
         }
@@ -153,9 +161,11 @@ internal static partial class StudioCheck
             Say("L2: keep mine — the edits stay, the form reads as changed against the file");
         }
 
+        settled = designer.SettledBatches;
+
         await SaveLikeAnIdeAsync(file, Disk(file).Replace("Opacity=\"0.25\"", "Opacity=\"0.3\"", StringComparison.Ordinal));
 
-        if (!await Until(() => form.HasPendingDiskText, 60))
+        if (!await Until(() => form.HasPendingDiskText && designer.SettledBatches > settled, 60))
         {
             Fail(ref failures, "L2: the second write over unsaved edits was not put to the person");
         }

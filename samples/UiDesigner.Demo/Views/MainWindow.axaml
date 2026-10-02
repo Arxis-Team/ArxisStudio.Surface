@@ -864,7 +864,7 @@
       <GridSplitter Classes="chrome" Grid.Column="3" />
 
       <!-- Right: inspector -->
-      <Border Classes="chrome" Grid.Column="4" Background="{DynamicResource Bg2}"
+      <Border x:Name="InspectorPanel" Classes="chrome" Grid.Column="4" Background="{DynamicResource Bg2}"
               BorderBrush="{DynamicResource Brd}" BorderThickness="1,0,0,0">
         <Grid RowDefinitions="34,*">
 

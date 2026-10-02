@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ArxisStudio.ProjectSystem;
+using ArxisStudio.ProjectSystem.Markup.Xaml;
+using ArxisStudio.ProjectSystem.MSBuild;
 using Avalonia.Threading;
 
 namespace UiDesigner.Demo.ViewModels;
@@ -70,19 +72,28 @@ public sealed partial class DesignerViewModel
     /// A build that failed stops it. Running the previous build after a failed one is how somebody
     /// spends an afternoon debugging code they did not write.
     /// </para>
+    /// <para>
+    /// The build is the design host's, so it is the designer's own output and a build that moved the
+    /// types swaps them; and the application starts from a copy of that output
+    /// (<see cref="Start"/>), so the next build — the next save of a class in the IDE — writes over
+    /// nothing the running application holds.
+    /// </para>
     /// </remarks>
     private async Task RunProjectAsync()
     {
-        if (Project() is not { } project)
+        if (Project() is not { } project || _host is not { } host)
         {
             return;
         }
 
         Log($"Building {project.Name} before running…");
 
-        if (await ExecuteAsync(ProjectOperationKind.Build) != ProjectOperationStatus.Succeeded)
+        ProjectDesignBuildResult built = await host.BuildAsync("the application is starting", [project.Identity], _shutdown.Token);
+
+        if (built.Status != ProjectOperationStatus.Succeeded)
         {
             Log("  the build failed — not starting anything");
+            ExplainLocks(built.Diagnostics);
 
             return;
         }
@@ -104,6 +115,21 @@ public sealed partial class DesignerViewModel
         Start(assembly.Path, project.Name);
     }
 
+    /// <summary>How many applications this designer has started, which names each copy's folder.</summary>
+    private int _runs;
+
+    /// <summary>The copy of the output the running application started from, deleted when it exits.</summary>
+    private string? _runCopy;
+
+    /// <summary>
+    /// Starts the application from a copy of what the designer built, and deletes the copy when it exits.
+    /// </summary>
+    /// <remarks>
+    /// The application keeps running while the designer goes on building: a running .NET application
+    /// holds its assemblies open, and the next design build — the IDE saving a class — would stop on
+    /// MSB3027 writing over them. A copy under <c>%TEMP%/UiDesigner.Demo/run/&lt;project&gt;/&lt;n&gt;</c>
+    /// is what it runs instead, and nothing builds there.
+    /// </remarks>
     private void Start(CanonicalPath assembly, string name)
     {
         if (!File.Exists(assembly.Value))
@@ -113,11 +139,27 @@ public sealed partial class DesignerViewModel
             return;
         }
 
+        string copy = Path.Combine(
+            Path.GetTempPath(), "UiDesigner.Demo", "run", name, $"{System.Environment.ProcessId}-{++_runs}");
+
+        try
+        {
+            CopyFolder(assembly.Directory.Value, copy);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            Log($"  ! the output could not be copied to run from: {error.Message}");
+
+            return;
+        }
+
+        string started = Path.Combine(copy, assembly.FileName);
+
         var process = new Process
         {
-            StartInfo = new ProcessStartInfo("dotnet", $"\"{assembly.Value}\"")
+            StartInfo = new ProcessStartInfo("dotnet", $"\"{started}\"")
             {
-                WorkingDirectory = assembly.Directory.Value,
+                WorkingDirectory = copy,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -140,18 +182,59 @@ public sealed partial class DesignerViewModel
             StopClock();
 
             process.Dispose();
+            DeleteRunCopy(copy);
         });
 
-        Log($"Running {assembly.FileName}…");
+        Log($"Running {assembly.FileName} from a copy of the design build…");
 
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
         _running = process;
+        _runCopy = copy;
         IsRunning = true;
 
         StartClock();
+    }
+
+    /// <summary>The folder the running application started from — what a check reads.</summary>
+    internal string? RunningFrom => _runCopy;
+
+    /// <summary>The running application's process number — what a check reads.</summary>
+    internal int? RunningProcess => _running is { HasExited: false } process ? process.Id : null;
+
+    /// <summary>Copies a build output, folders included — runtimes, satellite assemblies.</summary>
+    private static void CopyFolder(string from, string to)
+    {
+        Directory.CreateDirectory(to);
+
+        foreach (string file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
+        {
+            string target = Path.Combine(to, Path.GetRelativePath(from, file));
+
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: true);
+        }
+    }
+
+    /// <summary>Deletes the copy an application ran from, once it has exited and let go of it.</summary>
+    private void DeleteRunCopy(string copy)
+    {
+        if (_runCopy == copy)
+        {
+            _runCopy = null;
+        }
+
+        try
+        {
+            Directory.Delete(copy, recursive: true);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // Something still had a file open; the folder is under the temporary one and nobody
+            // builds there.
+        }
     }
 
     private void Mirror(string? line)
@@ -277,16 +360,31 @@ public sealed partial class DesignerViewModel
         }
     }
 
-    /// <summary>Restores or builds through the workspace, which routes it to the provider.</summary>
+    /// <summary>Restores or builds the project the designer is showing.</summary>
     /// <remarks>
-    /// An operation is not a mutation: it changes what is on disk rather than what the workspace
-    /// knows, so nothing is published and the version does not advance. A restore is the exception
-    /// worth refreshing after, because it rewrites an evaluation input.
+    /// A build goes through the design host, which builds the designer's own output and swaps the types
+    /// when the build moved them. A restore goes through the workspace, which routes it to the provider:
+    /// an operation is not a mutation, so nothing is published and the version does not advance, and a
+    /// restore is the one worth refreshing after, because it rewrites an evaluation input.
     /// </remarks>
-    private Task<ProjectOperationStatus> ExecuteAsync(ProjectOperationKind kind) =>
-        Project() is { } project
-            ? ExecuteAsync(kind, project)
-            : Task.FromResult(ProjectOperationStatus.Failed);
+    private async Task<ProjectOperationStatus> ExecuteAsync(ProjectOperationKind kind)
+    {
+        if (Project() is not { } project)
+        {
+            return ProjectOperationStatus.Failed;
+        }
+
+        if (kind == ProjectOperationKind.Build && _host is { } host)
+        {
+            ProjectDesignBuildResult built = await host.BuildAsync("Build pressed", [project.Identity], _shutdown.Token);
+
+            ExplainLocks(built.Diagnostics);
+
+            return built.Status;
+        }
+
+        return await ExecuteAsync(kind, project);
+    }
 
     private async Task<ProjectOperationStatus> ExecuteAsync(
         ProjectOperationKind kind, ProjectSnapshot project)
@@ -303,7 +401,7 @@ public sealed partial class DesignerViewModel
                 Workspace = _workspace.Identity,
                 EntryPointPath = EntryPoint,
                 Configuration = Configuration,
-                GlobalProperties = DesignerOutput,
+                GlobalProperties = MSBuildDesignOutput.GlobalProperties,
 
                 // The one project rather than the whole solution: a designer builds what it is
                 // showing, and waiting for everything else is a wait nobody asked for.

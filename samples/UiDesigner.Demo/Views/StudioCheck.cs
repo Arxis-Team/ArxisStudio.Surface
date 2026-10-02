@@ -114,22 +114,31 @@ internal static partial class StudioCheck
     }
 
     /// <summary>
-    /// The measurement ADR 0021 asked for: whether a superseded generation, given every cleanup
-    /// Avalonia 12.1.1 offers, actually leaves the process — and whether its successor then
-    /// resolves cleanly where "Unable to substitute" used to live.
+    /// The measurement ADR 0021 asked for, taken of the design host that now does the swap: whether the
+    /// studio's generation, let go of in the host's order, leaves the process — and whether its
+    /// successor resolves cleanly where "Unable to substitute" used to live.
     /// </summary>
     /// <remarks>
-    /// This began as the go/no-go gate for the adapter's reclaim API and stayed as its regression
-    /// harness: the teardown and the reclaim are the designer's own and the adapter's own, called
-    /// here rather than copied, so a measurement that passes is a measurement of what the studio
-    /// actually does. It is also the run to repeat against a new Avalonia.
+    /// <para>
+    /// The swap is the host's own (ProjectSystem ADR 0028), asked for here through its public
+    /// <c>SwapAsync</c> and, in the last case, left to the host to start by itself after the IDE saved
+    /// a class — so a measurement that passes is a measurement of what the studio actually does. The
+    /// rungs below the studio — a generation that only loaded, one whose control was created and
+    /// dropped, a window that will not close — are the adapter's tests now, on real Avalonia
+    /// (ProjectSystem ADR 0030).
+    /// </para>
+    /// <para>
+    /// Each case says its phases on a <c>timing</c> line — release, teardown, reclaim, rebuild — to be
+    /// compared with the baselines in this sample's <c>CLAUDE.md</c>.
+    /// </para>
     /// </remarks>
     private static async Task<int> ReclaimAsync(DesignerViewModel designer, string folder)
     {
         var failures = 0;
 
-        // The studio must not restart itself out from under the measurement.
-        designer.AutoReloadForCode = false;
+        // A swap that fails is measured here, not answered with a restart that would take the
+        // evidence with it.
+        designer.RestartsByItself = false;
 
         // A path to something openable measures that project instead of a scaffolded one, which
         // is how a swap that failed on somebody's real application gets its root named rather
@@ -146,27 +155,13 @@ internal static partial class StudioCheck
         // collect trivially and the measurement would prove nothing.
         string? controlFile = scaffolded ? await WriteReclaimControlAsync(project) : null;
 
-        // Loaded without opening anything, so the first cases measure Avalonia and these
-        // libraries rather than the designer's windows.
+        // Opening the project starts the design host, which restores and builds what is out of date
+        // and loads the types.
         designer.OpenAtStartup(project, [], active: null);
 
-        if (!await Until(() => designer.IsLoaded && !designer.IsBusy, 240))
+        if (!await Until(() => designer.IsLoaded && !designer.IsBusy && designer.Host is { GenerationName: not null }, 600))
         {
-            return Fail(ref failures, "the project never loaded");
-        }
-
-        designer.RestoreCommand.Execute(null);
-
-        if (!await Until(() => !designer.IsBusy, 300, settle: true))
-        {
-            return Fail(ref failures, "the restore never finished");
-        }
-
-        designer.BuildCommand.Execute(null);
-
-        if (!await Until(() => !designer.IsBusy, 300, settle: true))
-        {
-            return Fail(ref failures, "the build never finished");
+            return Fail(ref failures, "the project never loaded, or its types never did");
         }
 
         if (Errors(designer).Any())
@@ -176,22 +171,13 @@ internal static partial class StudioCheck
                 Say($"  build error: {row.Message}");
             }
 
-            return Fail(ref failures, "the scaffolded project did not build");
+            return Fail(ref failures, "the project did not build");
         }
-
-        if (Grab(designer, "_workspace") is not ProjectWorkspace workspace
-            || workspace.CurrentSnapshot is not { } snapshot
-            || snapshot.Projects.Length == 0)
-        {
-            return Fail(ref failures, "no snapshot to build a generation from");
-        }
-
-        ProjectIdentity identity = snapshot.Projects[0].Identity;
 
         if (!scaffolded)
         {
-            // A real project measures only the rung that matters for it: the studio's own state,
-            // with whatever forms it has, in the shape a swap will meet.
+            // A real project measures the rungs that matter for it: the studio's own state, with
+            // whatever forms it has, in the shape a swap will meet — and after a click.
             Say("— the studio's own generation, on this project —");
 
             if (!await MeasureStudioAsync(designer, "this project", placed: null))
@@ -199,25 +185,6 @@ internal static partial class StudioCheck
                 Fail(ref failures, "the studio's own state kept the generation alive");
             }
 
-            // And the arrangement the studio is actually in when it swaps: a build has just run,
-            // in this process, over the very assemblies about to be given back.
-            Say("— and again, with a build in between, which is what the studio really does —");
-
-            designer.BuildCommand.Execute(null);
-
-            if (!await Until(() => !designer.IsBusy, 300, settle: true))
-            {
-                return Fail(ref failures, "the build never finished");
-            }
-
-            if (!await MeasureStudioAsync(designer, "after a build", placed: null))
-            {
-                Fail(ref failures, "a build in this process kept the generation alive");
-            }
-
-            // And the arrangement a person is in, which is not the same as the one a script is in:
-            // they clicked something. A selection is the studio holding a live control on purpose,
-            // and holding one of a generation is what a swap has to survive.
             Say("— and once more, after a click on the canvas, which is what a person does —");
 
             if (!await MeasureStudioAsync(designer, "after a click", placed: null, click: true))
@@ -228,59 +195,58 @@ internal static partial class StudioCheck
             return failures;
         }
 
-        // The ladder. Each rung adds one thing to the case below it, so a failure names its own
-        // cause instead of leaving "something in the process" to guess at.
-        Say("— case 1: a generation that only loaded an assembly —");
+        Say("— case 1: the generation the studio opened its forms under —");
 
-        if (!await MeasureGenerationAsync("case 1", snapshot, identity, document: null))
-        {
-            return Fail(ref failures, "a generation that created nothing would not leave the process — "
-                + "the blocker is below Avalonia's own state, and no cleanup here can fix it");
-        }
-
-        Say("— case 2: a generation whose control was created and dropped —");
-
-        if (!await MeasureGenerationAsync("case 2", snapshot, identity, controlFile))
-        {
-            return Fail(ref failures, "a generation that created one control would not leave the "
-                + "process — this is the go/no-go rung: Avalonia roots it and the restart stands");
-        }
-
-        Say("— case 3: the generation the studio itself opened a form under —");
-
-        if (!await MeasureStudioAsync(designer, "case 3"))
+        if (!await MeasureStudioAsync(designer, "case 1"))
         {
             Fail(ref failures, "the studio's own state kept the generation alive");
         }
 
-        await Until(() => designer.Forms.Count == 0, 60);
+        Say("— case 2: the same, after a click on the canvas —");
 
-        // Whatever the ladder said, the other half is worth measuring: a successor built from
-        // newer code, resolving where ADR 0021 measured "Unable to substitute".
+        if (!await MeasureStudioAsync(designer, "case 2", click: true))
+        {
+            Fail(ref failures, "a click on the canvas kept the generation alive");
+        }
+
+        // The arrangement the studio is really in: the IDE saved a class, the host built it after a
+        // quiet moment, and swapped the types by itself with the forms open.
+        Say("— case 3: the IDE saves the control's code, and the host builds and swaps on its own —");
+
+        int swaps = designer.Swaps;
         string source = await System.IO.File.ReadAllTextAsync(controlFile! + ".cs");
 
         await System.IO.File.WriteAllTextAsync(
             controlFile + ".cs", source.Replace("\"First\"", "\"Second\"", StringComparison.Ordinal));
 
-        designer.BuildCommand.Execute(null);
-
-        if (!await Until(() => !designer.IsBusy, 300, settle: true))
+        if (!await Until(() => designer.Swaps > swaps && designer.TypesState == ProjectDesignState.Live, 300))
         {
-            return Fail(ref failures, "the rebuild never finished");
+            return Fail(ref failures, "the host never swapped the types after the code was saved: " + designer.TypesState);
         }
 
-        if (!Open(designer, "MainWindow.axaml")
-            || !await Until(
-                () => designer.ActiveForm is { Session: not null, Problem: null } reopened
-                    && reopened.Name == "MainWindow.axaml"
-                    && OnCanvas(reopened, "ReclaimControl"),
+        if (designer.LastSwap is { } report)
+        {
+            Timing("case 3", report);
+
+            if (!Answered("case 3", report.Reclaimed, ProjectAssemblyNames(designer)))
+            {
+                return Fail(ref failures, "the generation a build replaced kept itself alive");
+            }
+        }
+
+        if (designer.Forms.FirstOrDefault(static open => open.Name == "MainWindow.axaml") is not { } reborn)
+        {
+            return Fail(ref failures, "the window was not built again under the successor");
+        }
+
+        designer.ActiveForm = reborn;
+
+        if (!await Until(
+                () => reborn is { Session: not null, Problem: null } && OnCanvas(reborn, "ReclaimControl"),
                 300))
         {
-            return Fail(ref failures, "the window did not come back under the successor: "
-                + (designer.ActiveForm?.Problem ?? "no form"));
+            return Fail(ref failures, "the window did not come back under the successor: " + (reborn.Problem ?? "no session"));
         }
-
-        FormViewModel reborn = designer.ActiveForm!;
 
         if (!await Until(() => PlacedControlShows(reborn, "Second"), 60))
         {
@@ -300,6 +266,30 @@ internal static partial class StudioCheck
         failures += await HandlerBesideAsync(reborn);
 
         return failures;
+    }
+
+    /// <summary>Says a swap's phases on one line, the way the baselines record them.</summary>
+    private static void Timing(string what, ProjectDesignSwapReport report) => Say(
+        $"timing {what}: release {report.Release.TotalMilliseconds:F0} ms, teardown {report.Teardown.TotalMilliseconds:F0} ms, "
+        + $"reclaim {report.Reclaim.TotalMilliseconds:F0} ms, rebuild {report.Rebuild.TotalMilliseconds:F0} ms");
+
+    /// <summary>The simple names of the assemblies the open solution's projects build — what a probe looks for.</summary>
+    private static HashSet<string> ProjectAssemblyNames(DesignerViewModel designer)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ProjectSnapshot project in designer.CurrentSnapshot?.Projects ?? [])
+        {
+            foreach (OutputArtifact output in project.Outputs)
+            {
+                if (output.Kind == OutputArtifactKind.Assembly)
+                {
+                    names.Add(System.IO.Path.GetFileNameWithoutExtension(output.Path.Value));
+                }
+            }
+        }
+
+        return names;
     }
 
     /// <summary>
@@ -370,62 +360,6 @@ internal static partial class StudioCheck
             .OfType<TextBlock>()
             .Any(block => block.Text == text);
 
-    /// <summary>
-    /// Builds a generation, uses it as the case says, forgets it, and reports whether it died.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Every local naming the generation is nulled before the measurement begins, and that is not
-    /// tidiness: an async method's locals live in a state-machine object that is alive for as long
-    /// as the method is, so a local still naming the context would be measuring this method's own
-    /// frame and would report a live generation forever. The first version of this harness did
-    /// exactly that.
-    /// </para>
-    /// </remarks>
-    private static async Task<bool> MeasureGenerationAsync(
-        string what, SolutionSnapshot snapshot, ProjectIdentity project, string? document)
-    {
-        (XamlLoadEnvironment? environment, ProjectAssemblyContext? generation) =
-            ProjectXamlEnvironment.CreateFor(snapshot, project);
-
-        string? failure = document is null
-            ? LoadOnly(generation, project)
-            : await CreateAndDropAsync(environment, document);
-
-        if (failure is { Length: > 0 })
-        {
-            Say($"! {what}: {failure}");
-
-            generation.Dispose();
-
-            return false;
-        }
-
-        HashSet<string> names = LoadedNames(generation);
-
-        if (names.Count == 0)
-        {
-            Say($"! {what}: the generation loaded nothing collectible — nothing to measure");
-
-            generation.Dispose();
-
-            return false;
-        }
-
-        // The environment first, and the reason is the same one the swap has to respect: its type
-        // resolver was handed this generation's assemblies as a list to search.
-        environment = null;
-
-        long reclaiming = Stopwatch.GetTimestamp();
-        bool gone = await generation.TryReclaimAsync();
-
-        Say($"timing {what}: reclaim {Stopwatch.GetElapsedTime(reclaiming).TotalMilliseconds:F0} ms");
-
-        generation = null;
-
-        return Answered(what, gone, names);
-    }
-
     /// <summary>Says what the reclaim answered, and — when it said no — what still holds it.</summary>
     private static bool Answered(string what, bool gone, HashSet<string> names)
     {
@@ -439,37 +373,7 @@ internal static partial class StudioCheck
         return gone;
     }
 
-    /// <summary>
-    /// The simple names of the assemblies a generation has loaded into its own context.
-    /// </summary>
-    /// <remarks>
-    /// Names rather than the assemblies themselves, because a list of the latter is exactly the
-    /// kind of reference that makes a measurement report its own instrument.
-    /// </remarks>
-    private static HashSet<string> LoadedNames(ProjectAssemblyContext generation)
-    {
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        if (Grab(generation, "_context") is not AssemblyLoadContext context
-            || Grab(generation, "_resolved") is not System.Collections.IDictionary resolved)
-        {
-            return names;
-        }
-
-        foreach (object? value in resolved.Values)
-        {
-            if (value is Assembly assembly
-                && AssemblyLoadContext.GetLoadContext(assembly) == context
-                && assembly.GetName().Name is { Length: > 0 } name)
-            {
-                names.Add(name);
-            }
-        }
-
-        return names;
-    }
-
-    /// <summary>The studio's own generation, retired the way a swap would retire it.</summary>
+    /// <summary>The studio's own generation, replaced by the design host the way a swap replaces it.</summary>
     /// <param name="designer">The studio to measure.</param>
     /// <param name="what">What to call this measurement in the log.</param>
     /// <param name="placed">
@@ -528,15 +432,20 @@ internal static partial class StudioCheck
                 : $"  {what}: nothing of the project's own was drawn to click");
         }
 
-        // The designer's own teardown, and then the adapter's own reclaim: a harness that used a
-        // second copy of either would be measuring something the studio does not do.
-        long tearingDown = Stopwatch.GetTimestamp();
+        // The host's own swap — the designer lets go as it always does, the host in its order — so a
+        // harness that passes measures what the studio does, not a copy of it.
+        if (designer.Host is not { } host)
+        {
+            Say($"! {what}: no design host to swap the types");
 
-        await RunSwapTeardownAsync(designer);
+            return false;
+        }
 
-        Say($"timing {what}: teardown {Stopwatch.GetElapsedTime(tearingDown).TotalMilliseconds:F0} ms");
+        ProjectDesignSwapReport report = await host.SwapAsync($"--reclaim {what}");
 
-        return await ReclaimStudioGenerationAsync(designer, what);
+        Timing(what, report);
+
+        return Answered(what, report.Reclaimed, ProjectAssemblyNames(designer));
     }
 
     /// <summary>
@@ -624,45 +533,6 @@ internal static partial class StudioCheck
     private static bool IsTheProjectsOwn(Type type) =>
         AssemblyLoadContext.GetLoadContext(type.Assembly) is { IsCollectible: true };
 
-    /// <summary>Runs the swap's own release step, whatever it is called this week.</summary>
-    private static async Task RunSwapTeardownAsync(DesignerViewModel designer)
-    {
-        if (designer.GetType().GetMethod(
-            "LetGoOfEverythingAsync", BindingFlags.Instance | BindingFlags.NonPublic) is { } release)
-        {
-            await (Task)release.Invoke(designer, null)!;
-        }
-    }
-
-    /// <summary>
-    /// Asks the adapter to reclaim the studio's generation, in the order the swap asks in.
-    /// </summary>
-    private static async Task<bool> ReclaimStudioGenerationAsync(DesignerViewModel designer, string what)
-    {
-        if (Grab(designer, "_assemblies") is not ProjectAssemblyContext generation)
-        {
-            Say($"! {what}: no generation to reclaim");
-
-            return false;
-        }
-
-        HashSet<string> names = LoadedNames(generation);
-
-        // Fields first, environment included — see the swap, and ADR 0023.
-        Put(designer, "_assemblies", null);
-        Put(designer, "_environment", null);
-        Put(designer, "_environmentProject", default(ProjectIdentity));
-
-        long reclaiming = Stopwatch.GetTimestamp();
-        bool gone = await generation.TryReclaimAsync();
-
-        Say($"timing {what}: reclaim {Stopwatch.GetElapsedTime(reclaiming).TotalMilliseconds:F0} ms");
-
-        generation = null!;
-
-        return Answered(what, gone, names);
-    }
-
     /// <summary>Whether the placed control's type is in the registry, holding no type afterwards.</summary>
     /// <remarks>
     /// A method of its own because a <see cref="Type"/> of the dying generation held in a local
@@ -672,53 +542,6 @@ internal static partial class StudioCheck
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool PlacedTypeIsRegistered(FormViewModel form) =>
         Drawn(form, "ReclaimControl")?.GetType() is { } placed && RegistryHolds(placed);
-
-    /// <summary>Loads the project's own output and creates nothing from it.</summary>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static string? LoadOnly(ProjectAssemblyContext generation, ProjectIdentity project)
-    {
-        string name = System.IO.Path.GetFileNameWithoutExtension(project.ProjectFilePath.FileName);
-
-        return generation.Resolve(new AssemblyName(name)) is null
-            ? $"the generation could not load {name}"
-            : null;
-    }
-
-    /// <summary>
-    /// Creates the document's objects, touches them, and lets go of every one of them.
-    /// </summary>
-    /// <remarks>
-    /// A method of its own so that the session, the root object and the load result are locals of
-    /// a frame that has ended by the time anything is measured.
-    /// </remarks>
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string?> CreateAndDropAsync(XamlLoadEnvironment environment, string document)
-    {
-        string text = await System.IO.File.ReadAllTextAsync(document);
-
-        (XamlLoadSession? session, XamlLoadResult result) = await XamlLoadSession.TryCreateAsync(
-            XamlDocument.Parse(text, new XamlParseOptions { DocumentUri = new Uri(document) }),
-            environment,
-            new XamlLoadOptions { Mode = XamlLoadMode.Design });
-
-        if (session is null)
-        {
-            return string.Join(
-                "; ",
-                result.Diagnostics.Where(static d => d.IsError).Select(static d => d.Message)
-                    .DefaultIfEmpty("no diagnostic said why"));
-        }
-
-        // Registering a styled property is what roots a type in Avalonia's registry, and creating
-        // one instance is what runs the static constructor that does it.
-        string? note = RegistryHolds(session.RootObject.GetType())
-            ? null
-            : "the created control's type never reached the property registry";
-
-        await session.DisposeAsync();
-
-        return note;
-    }
 
     /// <summary>
     /// Names what still mentions a dying generation, by sweeping the process's static state.
@@ -1123,12 +946,6 @@ internal static partial class StudioCheck
                 .OfType<TextBlock>()
                 .Any(block => block.Text == text);
 
-    private static object? Grab(object target, string field) =>
-        target.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(target);
-
-    private static void Put(object target, string field, object? value) =>
-        target.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(target, value);
-
     private static IEnumerable<Type> SafeTypes(Assembly assembly)
     {
         try
@@ -1193,9 +1010,10 @@ internal static partial class StudioCheck
 
         var failures = 0;
 
-        // A studio that replaced itself mid-story would take the story with it. The reload's
-        // detection still runs; what is asserted is the banner, not the act.
-        designer.AutoReloadForCode = false;
+        // A studio that swapped its forms or replaced itself mid-story would take the story with it:
+        // the run holds every swap off, and asserts the types waiting rather than the act.
+        designer.SwapsHeldFor = "the self-check";
+        designer.RestartsByItself = false;
 
         // The blank template's window: a Window root, a StackPanel, and two TextBlocks bound to
         // Title and Greeting — data bindings from the first minute, which is the point.
@@ -2391,8 +2209,9 @@ internal static partial class StudioCheck
     {
         var failures = 0;
 
-        // Same reason as the stress run: the story needs the process it started in.
-        designer.AutoReloadForCode = false;
+        // Same reason as the stress run: the story needs the forms and the process it started with.
+        designer.SwapsHeldFor = "the self-check";
+        designer.RestartsByItself = false;
 
         string name = "StudioCheckApp";
 
@@ -2958,25 +2777,21 @@ internal static partial class StudioCheck
                 Say("the new form is a window with a class and a code-behind");
             }
 
-            // And what happens when it is opened, which is the honest half of one generation per
-            // run: the class was compiled after this run loaded its types, so the studio cannot
-            // show it — and must say so and offer the reload rather than fail quietly.
+            // And what happens when it is opened: the class was written after the types were loaded,
+            // so the design host builds it and has new types waiting — waiting, because this run holds
+            // every swap off. Showing it is the swap's business, which --live and --reclaim measure.
             if (!await Until(
                 () => designer.Forms.Any(open => open.Name == "SecondForm.axaml"), 240))
             {
                 Fail(ref failures, "the new window never opened at all");
             }
-            else if (!await Until(() => designer.NeedsRestart, 240))
+            else if (!await Until(() => designer.TypesState == ProjectDesignState.SwapPending, 240))
             {
-                Fail(ref failures, "a form whose class is newer than this run said nothing about it");
-            }
-            else if (!designer.RestartCommand.CanExecute(null))
-            {
-                Fail(ref failures, "the studio said a reload was needed and would not perform one");
+                Fail(ref failures, "a form whose class is newer than the types did not make new types wait: " + designer.TypesState);
             }
             else
             {
-                Say("a form newer than this run's types offers the reload that would show it");
+                Say("a form newer than the types: the host built its class, and the new types wait for the swap");
             }
 
             designer.AskToConfirm = (_, _) => Task.FromResult(true);

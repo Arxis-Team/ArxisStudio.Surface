@@ -37,43 +37,42 @@ namespace UiDesigner.Demo.ViewModels;
 /// document: where a designer parked a window is not a fact about the window.
 /// </para>
 /// </remarks>
-public sealed class FormViewModel : Observable, IAsyncDisposable
+public sealed class FormViewModel : Observable
 {
     public FormViewModel(CanonicalPath file, Point location)
+        : this(file, location, rootAccess: null)
+    {
+    }
+
+    /// <summary>A form over a document another form showed before it, whose root access it takes over.</summary>
+    internal FormViewModel(CanonicalPath file, Point location, FormRootAccess? rootAccess)
     {
         File = file;
         Name = file.FileName;
         Location = location;
-        RootAccess = new FormRootAccess(Card);
+        RootAccess = rootAccess ?? new FormRootAccess();
+        RootAccess.Card = Card;
 
         FollowTheCard();
     }
 
     /// <summary>The file this form was read from and will be written back to.</summary>
-    /// <remarks>It moves only when the file does, renamed or moved in another editor (<see cref="MoveToAsync"/>).</remarks>
+    /// <remarks>It moves only when the file does, renamed or moved in another editor (<see cref="MovedTo"/>).</remarks>
     public CanonicalPath File
     {
         get;
         private set => Set(ref field, value);
     }
 
-    /// <summary>
-    /// Follows the file to where it lives now, keeping the history and any unsaved edits.
-    /// </summary>
+    /// <summary>Says where the file lives now, once the document followed it there.</summary>
     /// <remarks>
-    /// The move is not a step of the history. The session is built again from the new place, because
-    /// what the document includes is found relative to where it lives (Markup's
-    /// <see cref="XamlLiveDocument.RetargetAsync"/>).
+    /// The design host moves the document — the move is not a step of its history, and the session is
+    /// built again from the new place — and the form only takes the new name.
     /// </remarks>
-    internal async Task MoveToAsync(CanonicalPath file, Uri uri, CancellationToken cancellationToken)
+    internal void MovedTo(CanonicalPath file)
     {
         File = file;
         Name = file.FileName;
-
-        if (Live is { } live)
-        {
-            await live.RetargetAsync(uri, cancellationToken);
-        }
     }
 
     public string Name
@@ -178,9 +177,10 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     /// The document with its history and the session over it, from the moment the file is read.
     /// </summary>
     /// <remarks>
-    /// Outlives the form object across a swap of the project's types: detached, it holds nothing of
-    /// the generation it was shown under, so it is handed to the form built on the far side (see
-    /// <see cref="FormMemory"/>), and the history and the unsaved edits go with it.
+    /// The design host's, not this form's: the host opens it, keeps it attached to the project's types
+    /// and closes it. It outlives the form object across a swap of those types — detached, it holds
+    /// nothing of the generation it was shown under — and is handed to the form built on the far side
+    /// (see <see cref="FormMemory"/>), with its history and unsaved edits.
     /// </remarks>
     internal XamlLiveDocument? Live { get; private set; }
 
@@ -259,8 +259,11 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     public UiDesignerFormItem Card { get; } = new();
 
     /// <summary>What the form's session asks for the root through, around every write it makes.</summary>
-    /// <remarks>Goes into the options of every session the form gets: opening, rebuilding, swapping.</remarks>
-    internal IXamlRootAccess RootAccess { get; }
+    /// <remarks>
+    /// The document's, handed from form to form across a swap: the design host keeps it for every
+    /// session it builds, and it points at the card of whichever form shows the document now.
+    /// </remarks>
+    internal FormRootAccess RootAccess { get; }
 
     /// <summary>Follows what the card reports about the form, which it keeps current.</summary>
     /// <remarks>
@@ -322,7 +325,8 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     /// created beside it would be a second copy of every type. So the form is remembered, closed,
     /// and built again on the far side, which is what makes a swap something other than a reopen:
     /// the place on the canvas is here, and the text, the history and the unsaved edits are the
-    /// live document's, detached so that it holds nothing of the generation it leaves.
+    /// live document's, which the design host detaches so that it holds nothing of the generation it
+    /// leaves.
     /// </remarks>
     internal sealed record FormMemory(
         CanonicalPath File,
@@ -330,33 +334,35 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         double Width,
         double Height,
         XamlLiveDocument? Live,
-        XamlElementPath? SelectedPath);
+        XamlElementPath? SelectedPath,
+        string? PendingDiskText,
+        FormRootAccess RootAccess);
 
     /// <summary>
-    /// Detaches the live document and hands it over with the form's place, for the form built on
-    /// the far side of a swap.
+    /// Lets go of the live document and hands it over with the form's place, for the form built on the
+    /// far side of a swap.
     /// </summary>
     /// <remarks>
-    /// The session goes — the canvas is told, and the card gives the root back — and the document,
-    /// its history and what is saved stay in the memory. This form keeps nothing of either.
+    /// The card gives the root back and the root access stops pointing at it; the document, its
+    /// history and what is saved go into the memory. This form keeps nothing of either.
     /// </remarks>
-    internal async ValueTask<FormMemory> RememberAsync()
+    internal FormMemory Remember()
     {
         XamlLiveDocument? live = Live;
 
         if (live is not null)
         {
-            await live.DetachAsync();
-
             Let(live);
         }
 
-        Assemblies = null;
+        Card.Root = null;
+        Root = null;
+        RootAccess.Card = null;
 
-        return new FormMemory(File, Location, Width, Height, live, SelectedPath);
+        return new FormMemory(File, Location, Width, Height, live, SelectedPath, PendingDiskText, RootAccess);
     }
 
-    /// <summary>Puts a remembered form back, before its document is attached again.</summary>
+    /// <summary>Puts a remembered form back: its place, its selection, and the document it showed.</summary>
     internal void Recall(FormMemory memory)
     {
         ArgumentNullException.ThrowIfNull(memory);
@@ -365,6 +371,7 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         Width = memory.Width;
         Height = memory.Height;
         SelectedPath = memory.SelectedPath;
+        PendingDiskText = memory.PendingDiskText;
 
         if (memory.Live is { } live)
         {
@@ -522,17 +529,6 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         internal set => Set(ref field, value);
     }
 
-    /// <summary>
-    /// Whether a control this form places has changed since the form was last built.
-    /// </summary>
-    /// <remarks>
-    /// Population reaches instances made from now on, never ones already on screen — so a form
-    /// showing yesterday's control is marked rather than rebuilt on the spot, and the rebuild
-    /// happens when the form is next looked at. The form's own document is not stale; what it
-    /// placed is.
-    /// </remarks>
-    internal bool IsStale { get; set; }
-
     /// <summary>What the tab and the canvas label show.</summary>
     public string Title => IsDirty ? Name + " •" : Name;
 
@@ -550,14 +546,6 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     }
 
     internal XamlLoadSession? Session => Live?.Session;
-
-    /// <summary>The assembly generation this form was loaded under.</summary>
-    /// <remarks>
-    /// The compilation scope travels with the environment, so nothing here enters it — this exists
-    /// for lifetime: a superseded generation must stay alive until the last form loaded under it
-    /// closes, and this is how the designer knows which forms those are.
-    /// </remarks>
-    internal ArxisStudio.ProjectSystem.Markup.Xaml.ProjectAssemblyContext? Assemblies { get; set; }
 
     /// <summary>
     /// Works out what to show from what the document produced.
@@ -740,29 +728,21 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         }
     }
 
-    /// <summary>Closes the form for good, the document with it.</summary>
+    /// <summary>Takes the form off the card for good, and stops showing its document.</summary>
     /// <remarks>
-    /// A form handed on by <see cref="RememberAsync"/> holds no document by now, and disposes nothing
-    /// but its card. The root a disposed session built is the host's to take down, so a window is
-    /// closed here as it is on any other replacement.
+    /// The document is not closed here: it is the design host's, which disposes its session and closes
+    /// a window the session built (<c>ProjectDesignHost.CloseDocumentAsync</c>). A form handed on by
+    /// <see cref="Remember"/> holds no document by now and lets go of nothing but its card.
     /// </remarks>
-    public async ValueTask DisposeAsync()
+    internal void Close()
     {
-        object? root = Card.Root ?? Session?.RootObject;
-
-        Card.Root = null;
-        Root = null;
-
         if (Live is { } live)
         {
             Let(live);
-
-            await live.DisposeAsync();
         }
 
-        if (root is Window window)
-        {
-            CloseQuietly(window);
-        }
+        Card.Root = null;
+        Root = null;
+        RootAccess.Card = null;
     }
 }
