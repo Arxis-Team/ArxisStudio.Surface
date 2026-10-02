@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using ArxisStudio.Markup;
 using ArxisStudio.Markup.Xaml;
 using ArxisStudio.Markup.Xaml.Loader;
-using Avalonia;
+using ArxisStudio.Surface.UiDesigner;
 using Avalonia.Controls;
 
 namespace UiDesigner.Demo.ViewModels;
@@ -28,6 +30,84 @@ namespace UiDesigner.Demo.ViewModels;
 /// </param>
 public sealed record ToolboxEntry(string Group, string Name, string Xaml, string? Package = null)
 {
+    /// <summary>
+    /// The XML namespace the snippet's names are written in.
+    /// </summary>
+    /// <remarks>
+    /// Said rather than assumed. A snippet without one means whatever the receiving document's default
+    /// namespace means — Avalonia's in every template, but not in a document that binds Avalonia to a
+    /// prefix — and both the check that the type resolves and the insert ask in this namespace, so a
+    /// document that would read the snippet as something else refuses it with a reason instead of
+    /// taking a different control.
+    /// </remarks>
+    public string XmlNamespace { get; init; } = DesignerViewModel.AvaloniaNamespace;
+
+    /// <summary>
+    /// The snippet as a fragment in <see cref="XmlNamespace"/>, with the place written on its root where
+    /// the parent reads one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The place is set on the fragment's root element through Markup's editor, before the fragment is
+    /// inserted. The snippet used to be edited as text — the attributes went in front of its last
+    /// <c>/&gt;</c> — and a snippet with children, a TabControl's pages or an Expander's content, closes
+    /// its last child that way, so the position landed on a nested TextBlock.
+    /// </para>
+    /// <para>
+    /// A Canvas reads <c>Canvas.Left</c> and <c>Canvas.Top</c>, a Grid reads <c>Grid.Row</c> and
+    /// <c>Grid.Column</c> — written only when not zero, as a person would leave them out. Every other
+    /// parent decides the place by its own layout, and nothing is written: an attribute the layout
+    /// ignores is a file that lies about the layout.
+    /// </para>
+    /// </remarks>
+    public XamlFragment FragmentFor(SurfaceDropPlacement placement)
+    {
+        string open = "<" + Name;
+
+        if (!Xaml.StartsWith(open, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"The {Name} snippet does not start with its own element.");
+        }
+
+        XamlFragment fragment = XamlFragment.Parse(Xaml.Insert(open.Length, $" xmlns=\"{XmlNamespace}\""));
+
+        if (fragment.Root is not { } root)
+        {
+            return fragment;
+        }
+
+        XamlDocumentEditor editor = fragment.Document.Edit();
+
+        switch (placement)
+        {
+            case { Kind: SurfaceDropKind.Position, Parent: Canvas }:
+                Set("Canvas.Left", placement.Position.X);
+                Set("Canvas.Top", placement.Position.Y);
+                break;
+
+            case { Kind: SurfaceDropKind.Cell }:
+                if (placement.Row > 0)
+                {
+                    Set("Grid.Row", placement.Row);
+                }
+
+                if (placement.Column > 0)
+                {
+                    Set("Grid.Column", placement.Column);
+                }
+
+                break;
+        }
+
+        return editor.HasChanges && editor.Apply().Root is { } placed ? XamlFragment.From(placed) : fragment;
+
+        void Set(string attached, double value) =>
+            editor.SetAttribute(
+                root,
+                editor.Qualify(root, DesignerViewModel.AvaloniaNamespace, attached),
+                Math.Round(value).ToString(CultureInfo.InvariantCulture));
+    }
+
     /// <summary>The design's glyph for this control, and the hue it is drawn in.</summary>
     public Avalonia.Media.Geometry Glyph => Glyphs.For(Name);
 
@@ -120,8 +200,10 @@ public sealed partial class DesignerViewModel
         Add("Layout", "Canvas", """<Canvas Width="200" Height="140" Background="#11FFFFFF" />""");
         Add("Layout", "Border", """<Border Width="160" Height="90" Background="#22FFFFFF" />""");
         Add("Layout", "ScrollViewer", """<ScrollViewer Width="200" Height="140" />""");
-        Add("Layout", "TabControl", """<TabControl Width="220" Height="150"><TabItem Header="One"><TextBlock Text="First page" /></TabItem><TabItem Header="Two"><TextBlock Text="Second page" /></TabItem></TabControl>""");
-        Add("Layout", "Expander", """<Expander Header="Expander" IsExpanded="True"><TextBlock Text="Content" /></Expander>""");
+        // Pages that hold a panel, so a control dropped onto a page goes into it: a page holding only
+        // its text could take nothing without losing the text.
+        Add("Layout", "TabControl", """<TabControl Width="220" Height="150"><TabItem Header="One"><StackPanel><TextBlock Text="First page" /></StackPanel></TabItem><TabItem Header="Two"><StackPanel><TextBlock Text="Second page" /></StackPanel></TabItem></TabControl>""");
+        Add("Layout", "Expander", """<Expander Header="Expander" IsExpanded="True"><StackPanel><TextBlock Text="Content" /></StackPanel></Expander>""");
 
         Add("Input", "Button", """<Button Content="Button" />""");
         Add("Input", "TextBox", """<TextBox Width="160" />""");
@@ -154,25 +236,27 @@ public sealed partial class DesignerViewModel
     }
 
     /// <summary>
-    /// Drops a control onto a form at a point on that form.
+    /// Drops a control onto a form, where the editor said it lands.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The parent is decided by what is under the pointer rather than by what is selected, which is
-    /// what makes dropping into a panel work the way a person expects: hover over the Canvas inside
-    /// the form and the control lands in the Canvas, hover over the form itself and it lands there.
+    /// The place is the editor's answer (<see cref="UiDesignerView.TryResolveDropPlacement"/>), the one its
+    /// indicator showed while the drag was over the form: the parent under the pointer that can take a
+    /// child, and where in it — between two neighbours of a StackPanel by the rule the canvas reorders
+    /// by, in the cell of a Grid, at the point of a Canvas, as the content of an empty Border or tab page.
+    /// This only writes it. Deciding it here used to drop every control at the end of a StackPanel and
+    /// into the first cell of a Grid, whatever the pointer said.
     /// </para>
     /// <para>
-    /// A position is written only when the parent is one that honours it. Dropping into a
-    /// <see cref="StackPanel"/> puts the control at the end and says nothing about coordinates,
-    /// because the panel is what decides them — writing <c>Canvas.Left</c> there would produce an
-    /// attribute that does nothing and a file that lies about the layout.
+    /// The placement names live controls and the document holds elements: the form's object map turns
+    /// one into the other, and the neighbour the control goes in front of is asked for its element rather
+    /// than trusting an index measured against the live panel.
     /// </para>
     /// </remarks>
-    public void Drop(FormViewModel form, ToolboxEntry entry, Control? over, Point at) =>
-        RunDetached(() => DropAsync(form, entry, over, at));
+    public void Drop(FormViewModel form, ToolboxEntry entry, SurfaceDropPlacement placement) =>
+        RunDetached(() => DropAsync(form, entry, placement));
 
-    private async Task DropAsync(FormViewModel form, ToolboxEntry entry, Control? over, Point at)
+    private async Task DropAsync(FormViewModel form, ToolboxEntry entry, SurfaceDropPlacement placement)
     {
         if (form.Objects is not { } map || form.Document?.Root is not { } root)
         {
@@ -184,7 +268,7 @@ public sealed partial class DesignerViewModel
         // empty canvas — a drop that looks like it did nothing. The session can answer "would
         // this resolve" up front, so the refusal names the package while the document stays
         // exactly as it was. Adding the package is the project's business, not this demo's.
-        if (!await ResolvesAsync(form, root, entry.Name).ConfigureAwait(true))
+        if (!await ResolvesAsync(form, root, entry).ConfigureAwait(true))
         {
             Log(entry.Package is { Length: > 0 } package
                 ? $"{entry.Name} needs the {package} package — add it to the project, then drop it again."
@@ -193,61 +277,44 @@ public sealed partial class DesignerViewModel
             return;
         }
 
-        (XamlElement parent, Control? parentControl) = ParentFor(map, root, over);
-
-        string xaml = entry.Xaml;
-
-        // Only a Canvas positions its children by Canvas.Left and Canvas.Top, so only a Canvas gets
-        // them written. The root used to count too, and a form rooted at a UserControl or a
-        // StackPanel therefore collected attached properties that mean nothing where they landed —
-        // noise in the user's file that the layout ignores and a reader has to puzzle over.
-        if (parentControl is Canvas)
+        if (map.GetElement(placement.Parent) is not { } parent)
         {
-            // Into the parent's own coordinates. The point arrives in the card's, and the two
-            // coincide only while the parent happens to sit at the form's origin — so a canvas
-            // nested anywhere else would take the control and put it at the wrong place, by exactly
-            // the parent's offset.
-            Point local = parentControl is not null
-                && form.Card.TranslatePoint(at, parentControl) is { } inParent
-                ? inParent
-                : at;
+            Log($"! {entry.Name}: what it was dropped into has no element in the document");
 
-            xaml = WithPosition(entry, local);
+            return;
         }
+
+        int index = placement switch
+        {
+            { Kind: SurfaceDropKind.Content } => 0,
+            { Anchor: { } anchor } when map.GetElement(anchor) is { IndexInContent: >= 0 } next => next.IndexInContent,
+            _ => IndexAtEnd(parent),
+        };
+
+        XamlFragment fragment = entry.FragmentFor(placement);
+        ImmutableArray<MarkupDiagnostic> found = [];
 
         await ApplyAsync(
             form,
-            editor => editor.InsertElement(parent, IndexAtEnd(parent), xaml),
+            editor =>
+            {
+                editor.InsertFragment(parent, index, fragment);
+
+                found = editor.Diagnostics;
+            },
             $"add {entry.Name}");
 
-        Log($"  {entry.Name} added to {parent.Name}");
-    }
-
-    /// <summary>
-    /// The element that should receive the drop, walking up from whatever was under the pointer.
-    /// </summary>
-    /// <remarks>
-    /// Only a control that can hold children is a candidate: dropping onto a Button means dropping
-    /// beside it, not inside it, because a Button's content is one thing and replacing it silently
-    /// would delete what was there.
-    /// </remarks>
-    private static (XamlElement Parent, Control? Control) ParentFor(
-        XamlObjectMap map, XamlElement root, Control? over)
-    {
-        for (Control? current = over; current is not null; current = current.Parent as Control)
+        foreach (MarkupDiagnostic diagnostic in found)
         {
-            if (current is not Panel and not ContentControl and not Decorator)
-            {
-                continue;
-            }
-
-            if (map.GetElement(current) is { } element && CanHoldChildren(current))
-            {
-                return (element, current);
-            }
+            Log(diagnostic.IsError
+                ? $"! {diagnostic.Code}: {diagnostic.Message}"
+                : $"  {diagnostic.Code}: {diagnostic.Message}");
         }
 
-        return (root, null);
+        if (!found.Any(static diagnostic => diagnostic.IsError))
+        {
+            Log($"  {entry.Name} added to {parent.Name}");
+        }
     }
 
     private static bool CanHoldChildren(Control control) => control switch
@@ -262,21 +329,23 @@ public sealed partial class DesignerViewModel
     /// Whether the entry's type would resolve in this form's project, asked of the session's own
     /// resolver — the same one the load will use, so the answer cannot disagree with the outcome.
     /// </summary>
-    private static async Task<bool> ResolvesAsync(FormViewModel form, XamlElement root, string name)
+    /// <remarks>
+    /// Asked in the entry's own namespace, not in whatever the document's default namespace happens to
+    /// be: the insert writes the snippet in that namespace too.
+    /// </remarks>
+    private static async Task<bool> ResolvesAsync(FormViewModel form, XamlElement root, ToolboxEntry entry)
     {
         if (form.Session is not { } session)
         {
             return true;
         }
 
-        // The snippet's root is unprefixed, so it means whatever the document's default namespace
-        // means — resolve it exactly there. A resolver that cannot answer is not a refusal: the
-        // drop proceeds and the ordinary diagnostics have their say.
+        // A resolver that cannot answer is not a refusal: the drop proceeds and the ordinary
+        // diagnostics have their say.
         try
         {
             XamlTypeResolution resolution = await session.Environment.TypeResolver.ResolveAsync(
-                new XamlTypeName(
-                    root.NamespaceContext.LookupNamespace(string.Empty) ?? string.Empty, name),
+                new XamlTypeName(entry.XmlNamespace, entry.Name),
                 root.NamespaceContext,
                 System.Threading.CancellationToken.None).ConfigureAwait(true);
 
@@ -286,20 +355,6 @@ public sealed partial class DesignerViewModel
         {
             return true;
         }
-    }
-
-    /// <summary>Adds a position to a snippet, for a parent that honours one.</summary>
-    private static string WithPosition(ToolboxEntry entry, Point at)
-    {
-        string position = string.Create(
-            CultureInfo.InvariantCulture,
-            $" Canvas.Left=\"{Math.Round(at.X)}\" Canvas.Top=\"{Math.Round(at.Y)}\"");
-
-        int close = entry.Xaml.LastIndexOf("/>", StringComparison.Ordinal);
-
-        return close < 0
-            ? entry.Xaml
-            : entry.Xaml[..close] + position.TrimEnd() + " " + entry.Xaml[close..];
     }
 
     private static int IndexAtEnd(XamlElement parent) => parent.ContentElements.Count();

@@ -67,7 +67,7 @@ internal static partial class StudioCheck
 
         try
         {
-            failures = await CheckAsync(designer, folder);
+            failures = await CheckAsync(window, designer, folder);
         }
         catch (Exception error)
         {
@@ -1243,7 +1243,12 @@ internal static partial class StudioCheck
                     continue;
                 }
 
-                designer.Drop(form, tool, over: Find(designer, "StackPanel"), at: new Point(40, 40));
+                if (!await DropIntoAsync(window, designer, form, tool, () => Find(designer, "StackPanel")))
+                {
+                    Fail(ref failures, $"cycle {cycle}: the editor found no place for {control} in the panel");
+
+                    continue;
+                }
 
                 if (!await Until(() => Count(designer, control) > before, 30))
                 {
@@ -1410,7 +1415,7 @@ internal static partial class StudioCheck
         //     words, with the file untouched.
         if (designer.Toolbox.FirstOrDefault(entry => entry.Name == "Grid") is { } gridTool)
         {
-            designer.Drop(form, gridTool, over: Find(designer, "StackPanel"), at: new Point(20, 20));
+            await DropIntoAsync(window, designer, form, gridTool, () => Find(designer, "StackPanel"));
 
             if (!await Until(() => Find(designer, "Grid") is not null, 30))
             {
@@ -1444,7 +1449,7 @@ internal static partial class StudioCheck
 
         if (designer.Toolbox.FirstOrDefault(entry => entry.Name == "ComboBox") is { } comboTool)
         {
-            designer.Drop(form, comboTool, over: Find(designer, "StackPanel"), at: new Point(20, 20));
+            await DropIntoAsync(window, designer, form, comboTool, () => Find(designer, "StackPanel"));
 
             if (!await Until(
                 () => Text(form).Contains("<ComboBoxItem", StringComparison.Ordinal)
@@ -1463,7 +1468,7 @@ internal static partial class StudioCheck
         {
             string beforeRefusal = Text(form);
 
-            designer.Drop(form, gridlessTool, over: Find(designer, "StackPanel"), at: new Point(20, 20));
+            await DropIntoAsync(window, designer, form, gridlessTool, () => Find(designer, "StackPanel"));
 
             if (!await Until(
                 () => designer.Output.Any(line =>
@@ -2382,7 +2387,7 @@ internal static partial class StudioCheck
     private static IEnumerable<DiagnosticRow> Errors(DesignerViewModel designer) =>
         designer.Diagnostics.Where(static row => row.Severity == ProjectDiagnosticSeverity.Error);
 
-    private static async Task<int> CheckAsync(DesignerViewModel designer, string folder)
+    private static async Task<int> CheckAsync(Window window, DesignerViewModel designer, string folder)
     {
         var failures = 0;
 
@@ -2511,7 +2516,12 @@ internal static partial class StudioCheck
                 continue;
             }
 
-            designer.Drop(form, tool, over: Find(designer, "StackPanel"), at: new Point(60, y));
+            if (!await DropIntoAsync(window, designer, form, tool, () => Find(designer, "StackPanel")))
+            {
+                Fail(ref failures, $"the editor found no place for {control} in the form's panel");
+
+                continue;
+            }
 
             if (!await Until(() => Count(designer, control) > before, 30))
             {
@@ -2520,6 +2530,10 @@ internal static partial class StudioCheck
         }
 
         Say($"document now: {Summary(designer)}");
+
+        // 3a. Dropped where the indicator stood: between two neighbours, onto a tab page, into a cell
+        //     and at a point — each one undone again, so the steps below see the form step 3 left.
+        failures += await DropsAsync(window, designer, form);
 
         // 4. Edited: the button's own text, written through the inspector's row rather than around it.
         if (Find(designer, "Button") is { } button)

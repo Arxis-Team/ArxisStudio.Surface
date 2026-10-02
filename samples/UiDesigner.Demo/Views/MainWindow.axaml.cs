@@ -105,6 +105,7 @@ public sealed partial class MainWindow : Window
         DragDrop.SetAllowDrop(surface, true);
 
         surface.AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        surface.AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
         surface.AddHandler(DragDrop.DropEvent, OnDrop);
 
         DataContextChanged += (_, _) =>
@@ -707,136 +708,59 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnDragOver(object? sender, DragEventArgs e) =>
-        e.DragEffects = _dragging is null ? DragDropEffects.None : DragDropEffects.Copy;
+    /// <summary>
+    /// Shows where the entry being dragged would land, as the editor resolves it.
+    /// </summary>
+    /// <remarks>
+    /// The editor answers where — the parent under the pointer that can take a child, and the place in
+    /// it — and draws it; this window answers whether, which for the palette is only "is it ours". The
+    /// place shown is the place the drop writes: the drop asks the same question at the same point.
+    /// </remarks>
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        UiDesignerView editor = this.GetControl<UiDesignerView>("Surface");
+
+        if (_dragging is not null
+            && Designer is not null
+            && editor.TryResolveDropPlacement(e.GetPosition(editor), out SurfaceDropPlacement? placement))
+        {
+            editor.ShowDropIndicator(placement);
+            e.DragEffects = DragDropEffects.Copy;
+        }
+        else
+        {
+            editor.HideDropIndicator();
+            e.DragEffects = DragDropEffects.None;
+        }
+    }
+
+    private void OnDragLeave(object? sender, DragEventArgs e) =>
+        this.GetControl<UiDesignerView>("Surface").HideDropIndicator();
 
     /// <summary>
-    /// Turns a drop into an insert, at the point on the form the pointer was over.
+    /// Drops a toolbox entry where the indicator stood.
     /// </summary>
     /// <remarks>
-    /// The position is asked for in the form's own coordinates rather than the window's, because the
-    /// surface is panned and zoomed and a screen point means nothing in a file. Avalonia walks the
-    /// whole chain of transforms, which is the part that would otherwise be wrong at every zoom but
-    /// one.
-    /// </remarks>
-    /// <summary>
-    /// Drops a toolbox entry onto whatever is under the pointer.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Resolved geometrically rather than from <c>e.Source</c>, because a loaded form does not take
-    /// input: it must not live its own life under the pointer, so nothing inside it is hit-testable
-    /// and the event source is the card, whatever the pointer is actually over. Asking the source
-    /// therefore answered "the form" for every drop, and every control landed at the root.
-    /// </para>
-    /// <para>
-    /// This is the same trade the editor makes for selection, and it settles it the same way: a
-    /// geometric hit test, which does not care whether a control accepts input. What comes back is
-    /// the deepest control the document owns at that point; <c>Drop</c> walks up from it to the
-    /// nearest one that can hold a child, so a control lands inside the panel it was dropped on
-    /// rather than at the top of the form.
-    /// </para>
+    /// Resolved by the editor geometrically rather than from <c>e.Source</c>: a loaded form does not
+    /// take input, so nothing inside it is hit-testable and the event source is the card whatever the
+    /// pointer is over. The editor measures rectangles, as it does to decide what a click selected.
     /// </remarks>
     private void OnDrop(object? sender, DragEventArgs e)
     {
-        if (_dragging is not { } entry || Designer is not { } designer)
-        {
-            return;
-        }
-
         UiDesignerView editor = this.GetControl<UiDesignerView>("Surface");
+        editor.HideDropIndicator();
 
-        if (FormUnder(editor, designer, e.GetPosition(editor)) is not { } form)
+        if (_dragging is not { } entry
+            || Designer is not { } designer
+            || !editor.TryResolveDropPlacement(e.GetPosition(editor), out SurfaceDropPlacement? placement)
+            || editor.ItemFromContainer(placement.Container) is not FormViewModel form)
         {
             return;
         }
 
-        Point inForm = e.GetPosition(form.Card);
-
-        designer.Drop(form, entry, DeepestAt(form, inForm), inForm);
+        designer.Drop(form, entry, placement);
 
         e.Handled = true;
-    }
-
-    /// <summary>The form whose card is under a point on the canvas.</summary>
-    private static FormViewModel? FormUnder(UiDesignerView editor, DesignerViewModel designer, Point at)
-    {
-        foreach (FormViewModel form in designer.Forms)
-        {
-            if (editor.ContainerFromItem(form) is Control card
-                && card.TranslatePoint(default, editor) is { } origin
-                && new Rect(origin, card.Bounds.Size).Contains(at))
-            {
-                return form;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>The smallest control the document owns whose rectangle contains a point.</summary>
-    /// <remarks>
-    /// By rectangle rather than by rendering, which is the same rule the editor uses to decide what
-    /// a click landed on and for the same reason: a panel that paints no background renders nothing
-    /// to hit, so a geometric hit test walks straight past the very containers a drop most wants to
-    /// find. A form's empty area belongs to the panel that occupies it, and dropping there should
-    /// put the control in that panel rather than at the top of the form.
-    /// </remarks>
-    private static Control? DeepestAt(FormViewModel form, Point at)
-    {
-        if (form.Objects is not { } map)
-        {
-            return null;
-        }
-
-        Control? best = null;
-        int deepest = -1;
-        double smallest = double.PositiveInfinity;
-
-        foreach (object produced in map.Objects)
-        {
-            if (produced is not Control control
-                || map.GetElement(control) is null
-                || control.TranslatePoint(default, form.Card) is not { } origin)
-            {
-                continue;
-            }
-
-            var rectangle = new Rect(origin, control.Bounds.Size);
-
-            if (!rectangle.Contains(at))
-            {
-                continue;
-            }
-
-            int depth = DepthIn(control, form.Card);
-            double area = rectangle.Width * rectangle.Height;
-
-            // Deeper wins, and area only settles a tie. A panel that fills its parent has the same
-            // rectangle as the parent, so area alone would hand every drop on an empty form to the
-            // root — which is the one container least likely to accept it.
-            if (depth > deepest || (depth == deepest && area < smallest))
-            {
-                best = control;
-                deepest = depth;
-                smallest = area;
-            }
-        }
-
-        return best;
-    }
-
-    /// <summary>How far a control sits below the control hosting the form.</summary>
-    private static int DepthIn(Visual control, Visual host)
-    {
-        int depth = 0;
-
-        for (Visual? current = control; current is not null && current != host; current = current.GetVisualParent())
-        {
-            depth++;
-        }
-
-        return depth;
     }
 
     private async Task<string?> PickEntryPointAsync()

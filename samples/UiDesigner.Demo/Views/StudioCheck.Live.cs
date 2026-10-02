@@ -40,7 +40,7 @@ internal static partial class StudioCheck
 
         try
         {
-            failures = await LiveAsync(designer, folder);
+            failures = await LiveAsync(window, designer, folder);
         }
         catch (Exception error)
         {
@@ -56,7 +56,7 @@ internal static partial class StudioCheck
         window.Close();
     }
 
-    private static async Task<int> LiveAsync(DesignerViewModel designer, string folder)
+    private static async Task<int> LiveAsync(Window window, DesignerViewModel designer, string folder)
     {
         var failures = 0;
 
@@ -215,7 +215,7 @@ internal static partial class StudioCheck
         }
         else
         {
-            designer.Drop(form, tool, over: panel, at: new Point(40, 40));
+            await DropIntoAsync(window, designer, form, tool, () => panel);
 
             await Until(() => TextBlocks(form).Length == 3, 30);
         }

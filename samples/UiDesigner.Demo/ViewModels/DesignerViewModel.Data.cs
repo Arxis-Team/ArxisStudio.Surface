@@ -323,6 +323,6 @@ public sealed partial class DesignerViewModel
         Log($"  design data written: {target.TypeName}");
     }
 
-    /// <summary>Avalonia's XAML namespace, which <c>Design.DataContext</c> is written in.</summary>
-    private const string AvaloniaNamespace = "https://github.com/avaloniaui";
+    /// <summary>Avalonia's XAML namespace: what <c>Design.DataContext</c> and the toolbox's controls are written in.</summary>
+    internal const string AvaloniaNamespace = "https://github.com/avaloniaui";
 }
