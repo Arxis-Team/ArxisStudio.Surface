@@ -161,6 +161,58 @@
                                     </MultiBinding>
                                 </Rectangle.Height>
                             </Rectangle>
+
+                            <!--
+                                Место броска (ADR 0024). Линия — место между соседями в потоке, нулевой толщины
+                                в мировых координатах, как индикатор перестановки; область — то, что примет
+                                контрол: панель, ячейка, пустой хост. Рамка области тонкая на любом масштабе.
+                                Показывает их хост через ShowDropIndicator.
+                            -->
+                            <Rectangle Name="PART_DropLine"
+                                       Fill="{DynamicResource UiDesigner.DropIndicatorBrush}"
+                                       MinWidth="2"
+                                       MinHeight="2"
+                                       RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseScaleConverter}}"
+                                       RenderTransformOrigin="0,0"
+                                       Canvas.Top="{Binding DropLine.Y, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Canvas.Left="{Binding DropLine.X, RelativeSource={RelativeSource TemplatedParent}}"
+                                       IsVisible="{TemplateBinding HasDropLine}">
+                                <Rectangle.Width>
+                                    <MultiBinding Converter="{StaticResource ScaleDoubleConverter}">
+                                        <Binding Path="DropLine.Width" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Width>
+                                <Rectangle.Height>
+                                    <MultiBinding Converter="{StaticResource ScaleDoubleConverter}">
+                                        <Binding Path="DropLine.Height" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Height>
+                            </Rectangle>
+
+                            <Rectangle Name="PART_DropArea"
+                                       Stroke="{DynamicResource UiDesigner.DropIndicatorBrush}"
+                                       StrokeThickness="{DynamicResource Surface.Selection.StrokeThickness}"
+                                       Fill="{DynamicResource UiDesigner.DropAreaBrush}"
+                                       RenderTransform="{Binding ViewportZoom, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseScaleConverter}}"
+                                       RenderTransformOrigin="0,0"
+                                       Canvas.Top="{Binding DropArea.Y, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Canvas.Left="{Binding DropArea.X, RelativeSource={RelativeSource TemplatedParent}}"
+                                       IsVisible="{TemplateBinding HasDropArea}">
+                                <Rectangle.Width>
+                                    <MultiBinding Converter="{StaticResource ScaleDoubleConverter}">
+                                        <Binding Path="DropArea.Width" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Width>
+                                <Rectangle.Height>
+                                    <MultiBinding Converter="{StaticResource ScaleDoubleConverter}">
+                                        <Binding Path="DropArea.Height" RelativeSource="{RelativeSource TemplatedParent}" />
+                                        <Binding Path="ViewportZoom" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    </MultiBinding>
+                                </Rectangle.Height>
+                            </Rectangle>
                         </Canvas>
 
                         <!--

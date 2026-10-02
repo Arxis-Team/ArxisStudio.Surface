@@ -298,8 +298,8 @@ public partial class UiDesignerView
     /// </summary>
     /// <remarks>
     /// Обход идёт по тем связям, которые автор задал сам: дети панели, ребёнок
-    /// декоратора, контент — если это контрол. У кнопки с текстовым контентом
-    /// спускаться некуда, поэтому она остаётся листом.
+    /// декоратора, контент и элементы списка — если это контролы. У кнопки с
+    /// текстовым контентом спускаться некуда, поэтому она остаётся листом.
     /// <para>
     /// Проверки <c>TemplatedParent</c> здесь недостаточно: презентер порождает
     /// из строкового контента <c>AccessText</c>, у которого <c>TemplatedParent</c>
@@ -343,6 +343,18 @@ public partial class UiDesignerView
 
             case ContentPresenter { Content: Control presented }:
                 yield return presented;
+                break;
+
+            // Элементы, написанные в разметке, — вкладки TabControl, строки ListBox, пункты меню. Данные
+            // из ItemsSource контролами не являются, и обход их не берёт. Вкладка — ContentControl, и её
+            // страница идёт следом; невыбранная страница вне дерева, рамки у неё нет, и выбрать её нельзя.
+            case ItemsControl items:
+                foreach (var item in items.Items)
+                {
+                    if (item is Control element)
+                        yield return element;
+                }
+
                 break;
         }
     }

@@ -280,6 +280,63 @@ editor.ReorderRequested += (_, e) =>
   отклоняется, а не подгоняется.
 - Перестановка — структурная правка, в `EditCompleted` она не попадает; её отмена — дело хоста.
 
+## Бросок
+
+Контрол, принесённый тягой — из тулбокса, из дерева проекта, с холста, — кладёт хост. Куда, говорит
+редактор (ADR 0024). Протокол тяги и её данные остаются хосту: системная тяга, служба студии, своя.
+
+```csharp
+void OnDragOver(object? sender, DragEventArgs e)
+{
+    if (editor.TryResolveDropPlacement(e.GetPosition(editor), out var placement) && CanTake(e, placement))
+    {
+        editor.ShowDropIndicator(placement);           // линия между соседями или область
+        e.DragEffects = DragDropEffects.Copy;
+    }
+    else
+    {
+        editor.HideDropIndicator();
+        e.DragEffects = DragDropEffects.None;
+    }
+}
+
+void OnDrop(object? sender, DragEventArgs e)
+{
+    editor.HideDropIndicator();
+    if (editor.TryResolveDropPlacement(e.GetPosition(editor), out var placement))
+        document.Insert(placement);                    // разметку пишет её владелец
+}
+```
+
+`SurfaceDropPlacement`:
+
+| Поле | Смысл |
+| --- | --- |
+| `Container` | контейнер формы |
+| `Parent` | кто примет: панель, пустой хост, страница `TabControl`, корень-окно без содержимого |
+| `Kind` | `Position`, `Insert`, `Content`, `Cell` — по раскладке родителя |
+| `Index`, `Anchor` | место в `Children`: перед `Anchor`, без него — в конец; хосту надёжнее `Anchor` |
+| `Position` | точка броска в координатах родителя; место для `Position` |
+| `Row`, `Column` | ячейка `Grid` |
+| `Indicator`, `IsLine` | что показать, в координатах поверхности: линия нулевой толщины или область |
+
+| Родитель | `Kind` |
+| --- | --- |
+| `Canvas`, `AbsolutePanel` | `Position` |
+| `StackPanel`, `WrapPanel` | `Insert` по правилу перестановки |
+| `Grid` | `Cell`; промежуток между дорожками — следующей |
+| прочие панели | `Insert` в конец |
+| пустые `Decorator`, `ContentControl`, пустая выбранная страница `TabControl`, окно без содержимого | `Content` |
+
+- Родитель — самый глубокий контрол формы под точкой, который может принять ребёнка. Кандидаты и
+  попадание — как у выбора, по прямоугольникам. Контрол с содержимым — кнопка с текстом, рамка с
+  ребёнком — ребёнка не примет, и бросок уходит его родителю.
+- Правило потока общее с перестановкой: тягой и мышью контрол встаёт в одно место.
+- `dragged` — контрол формы, который несут. Ни он, ни его содержимое не примут сами себя. Якорем он
+  не становится: место рядом с ним называется соседом за ним.
+- `ShowDropIndicator` зовут на каждом движении: равное размещение уведомления `DropIndicator` не
+  поднимает. Стоп-кадр бросков не принимает.
+
 ## Порядок перекрытия и распределение
 
 `BringToFront()`, `SendToBack()`, `BringForward()`, `SendBackward()` меняют `ZIndex` выбранных среди
@@ -357,6 +414,7 @@ editor.GroupStore = new DocumentGroupStore(document);   // ISurfaceGroupStore: G
 | Ключ | Назначение |
 | --- | --- |
 | `UiDesigner.ReorderIndicatorBrush` | индикатор точки вставки |
+| `UiDesigner.DropIndicatorBrush`, `UiDesigner.DropAreaBrush` | индикатор броска: линия и рамка области, заливка области |
 | `UiDesignerItem.OutlineOpacity` | контур контейнера в покое, `0` — только под курсором |
 | `UiDesignerItem.BorderBrush`, `UiDesignerItem.BorderThickness`, `UiDesignerItem.CornerRadius` | контейнер |
 | `UiDesigner.Form.TitleBar.Background`, `…Foreground`, `…BorderBrush` | рамка окна элемента формы; по словарю тем, берутся под темой формы |

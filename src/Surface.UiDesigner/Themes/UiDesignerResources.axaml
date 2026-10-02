@@ -2,11 +2,14 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Ресурсы дизайнера интерфейса: контейнер формы и индикатор точки вставки при перестановке.
+        Ресурсы дизайнера интерфейса: контейнер формы, индикатор точки вставки при перестановке и
+        индикатор места броска — линия и область (ADR 0024).
     -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="UiDesigner.ReorderIndicatorBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="UiDesigner.DropIndicatorBrush" Color="#0F6CBD" />
+            <SolidColorBrush x:Key="UiDesigner.DropAreaBrush" Color="#0F6CBD" Opacity="0.12" />
 
             <SolidColorBrush x:Key="UiDesignerItem.BorderBrush" Color="#0F6CBD" />
             <SolidColorBrush x:Key="UiDesignerItem.HighlightBrush" Color="#0F6CBD" Opacity="0.16" />
@@ -18,6 +21,8 @@
 
         <ResourceDictionary x:Key="Dark">
             <SolidColorBrush x:Key="UiDesigner.ReorderIndicatorBrush" Color="#1E90FF" />
+            <SolidColorBrush x:Key="UiDesigner.DropIndicatorBrush" Color="#1E90FF" />
+            <SolidColorBrush x:Key="UiDesigner.DropAreaBrush" Color="#1E90FF" Opacity="0.16" />
 
             <SolidColorBrush x:Key="UiDesignerItem.BorderBrush" Color="DodgerBlue" />
             <SolidColorBrush x:Key="UiDesignerItem.HighlightBrush" Color="DodgerBlue" Opacity="0.2" />

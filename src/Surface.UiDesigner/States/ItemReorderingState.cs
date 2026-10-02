@@ -2,10 +2,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Layout;
 using Avalonia.VisualTree;
 using ArxisStudio.Surface;
 using ArxisStudio.Surface.States;
+using ArxisStudio.Surface.UiDesigner.Placement;
 
 namespace ArxisStudio.Surface.UiDesigner.States;
 
@@ -104,105 +104,24 @@ internal sealed class ItemReorderingState : SurfaceItemState
     }
 
     /// <summary>
-    /// Расстояние от точки до прямоугольника; ноль, если точка внутри.
+    /// Ставит точку вставки и её линию по положению указателя.
     /// </summary>
     /// <remarks>
-    /// По прямоугольнику, а не по центру: тогда поперечная ось лишь отсекает чужие
-    /// ряды, а внутри ряда выбор идёт вдоль потока — как и задумано. По центрам
-    /// поперечная ось начинала соревноваться с продольной, и ширина соседа влияла
-    /// на то, между какими элементами встанет перетаскиваемый.
+    /// Правило общее с броском (<see cref="FlowInsertion"/>): элемент, переставленный мышью, обязан
+    /// вставать туда же, куда встал бы такой же, принесённый тягой.
     /// </remarks>
-    private static double DistanceTo(Rect bounds, Point point)
-    {
-        var dx = Math.Max(0, Math.Max(bounds.X - point.X, point.X - bounds.Right));
-        var dy = Math.Max(0, Math.Max(bounds.Y - point.Y, point.Y - bounds.Bottom));
-        return Math.Sqrt((dx * dx) + (dy * dy));
-    }
-
     private void UpdateIndicator(UiDesignerView editor, Point pointerInEditor)
     {
         if (_panel == null || _panel.Children.Count == 0)
             return;
 
         var world = editor.GetWorldPosition(pointerInEditor);
-        var vertical = IsVertical(_panel);
-
-        // Ближайший сосед ищется по обеим осям, а не по одной вдоль потока.
-        // В панели с переносом одной оси мало: точка в нижнем ряду сравнивалась бы
-        // с серединами верхнего, и элемент уезжал в чужой ряд. В однорядной
-        // раскладке вторая ось у всех детей общая и на выбор не влияет,
-        // поэтому правило остаётся одно на оба случая.
-        //
-        // Расстояние считается до прямоугольника ребёнка, а не до его центра.
-        // По центрам ответ зависел от того, за какое место схватили элемент:
-        // в колонке из широких строк узкая кнопка внизу прижата влево, её центр
-        // по X близок к левому краю строк — и указатель у левого края оказывался
-        // ближе к ней, чем к центрам самих строк. Точка вставки прыгала в конец
-        // списка, стоило взять элемент слева, и вела себя верно, если взять справа.
-        var nearest = -1;
-        var nearestDistance = double.PositiveInfinity;
-        var nearestBounds = default(Rect);
-
-        for (var i = 0; i < _panel.Children.Count; i++)
-        {
-            if (!editor.TryGetTargetBounds(_panel.Children[i], out var childBounds))
-                continue;
-
-            var distance = DistanceTo(childBounds, world);
-            if (distance >= nearestDistance)
-                continue;
-
-            nearest = i;
-            nearestDistance = distance;
-            nearestBounds = childBounds;
-        }
-
-        if (nearest < 0)
+        if (!FlowInsertion.TryResolve(editor, _panel, world, out var insertBefore, out var indicator))
             return;
 
-        // Сторона выбирается уже вдоль потока: до середины соседа — перед ним,
-        // после — за ним.
-        var position = vertical ? world.Y : world.X;
-        var middle = vertical
-            ? nearestBounds.Y + (nearestBounds.Height / 2)
-            : nearestBounds.X + (nearestBounds.Width / 2);
+        _insertBefore = insertBefore;
 
-        _insertBefore = position < middle ? nearest : nearest + 1;
-
-        if (TryGetIndicatorBounds(editor, vertical, out var indicator))
-            editor.UpdateReorderIndicator(indicator);
+        if (indicator is { } line)
+            editor.UpdateReorderIndicator(line);
     }
-
-    private bool TryGetIndicatorBounds(UiDesignerView editor, bool vertical, out Rect bounds)
-    {
-        bounds = default;
-
-        if (_panel == null)
-            return false;
-
-        var atEnd = _insertBefore >= _panel.Children.Count;
-        var anchor = atEnd ? _panel.Children.Count - 1 : _insertBefore;
-
-        if (anchor < 0 || !editor.TryGetTargetBounds(_panel.Children[anchor], out var anchorBounds))
-            return false;
-
-        // Линия натянута по соседу, а не по всей панели: в раскладке с переносом
-        // она обязана оставаться в своём ряду, иначе показывает точку вставки
-        // сразу во всех. В однорядной раскладке сосед занимает всю ширину,
-        // поэтому видимо ничего не меняется.
-        // Толщина нулевая: видимую задаёт шаблон, поэтому линия остаётся
-        // одинаково тонкой на любом масштабе.
-        bounds = vertical
-            ? new Rect(anchorBounds.X, atEnd ? anchorBounds.Bottom : anchorBounds.Y, anchorBounds.Width, 0)
-            : new Rect(atEnd ? anchorBounds.Right : anchorBounds.X, anchorBounds.Y, 0, anchorBounds.Height);
-
-        return true;
-    }
-
-    private static bool IsVertical(Panel panel) => panel switch
-    {
-        StackPanel stack => stack.Orientation == Orientation.Vertical,
-        WrapPanel wrap => wrap.Orientation == Orientation.Vertical,
-        _ => true
-    };
 }

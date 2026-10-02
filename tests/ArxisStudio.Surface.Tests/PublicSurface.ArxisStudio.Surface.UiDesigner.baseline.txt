@@ -33,6 +33,23 @@ static class ArxisStudio.Surface.UiDesigner.Layout
 enum ArxisStudio.Surface.UiDesigner.SurfaceContentMode
     value Annotated = 0
     value Loaded = 1
+enum ArxisStudio.Surface.UiDesigner.SurfaceDropKind
+    value Cell = 3
+    value Content = 2
+    value Insert = 1
+    value Position = 0
+sealed class ArxisStudio.Surface.UiDesigner.SurfaceDropPlacement
+    ctor .ctor(UiDesignerItem, Control, SurfaceDropKind, Int32, Point, Int32, Int32, Control, Rect)
+    property Boolean IsLine { get; }
+    property Control Anchor { get; set; }
+    property Control Parent { get; set; }
+    property Int32 Column { get; set; }
+    property Int32 Index { get; set; }
+    property Int32 Row { get; set; }
+    property Point Position { get; set; }
+    property Rect Indicator { get; set; }
+    property SurfaceDropKind Kind { get; set; }
+    property UiDesignerItem Container { get; set; }
 static class ArxisStudio.Surface.UiDesigner.SurfaceGroup
     avalonia IdProperty -> Id : String (attached) = null
     method String GetId(AvaloniaObject)
@@ -86,6 +103,7 @@ sealed class ArxisStudio.Surface.UiDesigner.UiDesignerReorderRequestedEventArgs 
     property Int32 NewIndex { get; }
     property Int32 OldIndex { get; }
 class ArxisStudio.Surface.UiDesigner.UiDesignerView : SurfaceView
+    avalonia DropIndicatorProperty -> DropIndicator : SurfaceDropPlacement (direct)
     avalonia GroupStoreProperty -> GroupStore : ISurfaceGroupStore (direct)
     avalonia GuidePreviewProperty -> GuidePreview : Nullable<SurfaceGuide> (attached) = null
     avalonia GuidesProperty -> Guides : IEnumerable<SurfaceGuide> (attached) = null
@@ -122,6 +140,7 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerView : SurfaceView
     method Boolean RenameGroup(UiDesignerItem, String, String)
     method Boolean SendBackward()
     method Boolean SendToBack()
+    method Boolean TryResolveDropPlacement(Point, SurfaceDropPlacement&, Control)
     method Boolean UngroupSelection()
     method Control CreateContainerForItemOverride(Object, Int32, Object)
     method IReadOnlyList<Control> GetGroupMembers(UiDesignerItem, String)
@@ -130,8 +149,10 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerView : SurfaceView
     method Void CenterOnSelection()
     method Void ClearContainerForItemOverride(Control)
     method Void FitSelectionToView()
+    method Void HideDropIndicator()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
     method Void PrepareContainerForItemOverride(Control, Object, Int32)
+    method Void ShowDropIndicator(SurfaceDropPlacement)
     property BindingBase ItemRootBinding { get; set; }
     property Boolean HasGroupSelection { get; }
     property Boolean HasMultipleContainerSelection { get; }
@@ -154,3 +175,4 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerView : SurfaceView
     property Rect SelectionBounds { get; }
     property ResizePolicy PrimarySelectionResizePolicy { get; }
     property String PrimarySelectionPlacement { get; }
+    property SurfaceDropPlacement DropIndicator { get; }
