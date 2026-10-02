@@ -489,9 +489,9 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 
             string where = row.Where.Length > 0 ? $" — {row.Where}" : string.Empty;
 
-            Log(row.Severity == "Error"
+            Log(row.Severity == ProjectDiagnosticSeverity.Error
                 ? $"  ! {row.Code}: {row.Message}{where}"
-                : $"  {row.Severity.ToLowerInvariant()} {row.Code}: {row.Message}{where}");
+                : $"  {row.Severity.ToString().ToLowerInvariant()} {row.Code}: {row.Message}{where}");
         }
     }
 
@@ -563,10 +563,15 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 }
 
 /// <summary>A diagnostic flattened for a list.</summary>
-public sealed record DiagnosticRow(string Severity, string Code, string Message, string Where)
+/// <remarks>
+/// The severity stays the library's enum rather than its name. As a string it was compared with
+/// "Error" in one check and with "ERROR" in another, and the second one — the self-check's "the
+/// project did not build" — could not fail on any project.
+/// </remarks>
+public sealed record DiagnosticRow(ProjectDiagnosticSeverity Severity, string Code, string Message, string Where)
 {
     public static DiagnosticRow From(ProjectDiagnostic diagnostic) => new(
-        diagnostic.Severity.ToString(),
+        diagnostic.Severity,
         diagnostic.Code,
         diagnostic.Message,
         diagnostic.FilePath.IsEmpty ? string.Empty : diagnostic.FilePath.FileName);

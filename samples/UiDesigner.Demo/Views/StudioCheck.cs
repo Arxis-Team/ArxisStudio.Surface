@@ -168,9 +168,9 @@ internal static class StudioCheck
             return Fail(ref failures, "the build never finished");
         }
 
-        if (designer.Diagnostics.Any(static row => row.Severity == "Error"))
+        if (Errors(designer).Any())
         {
-            foreach (DiagnosticRow row in designer.Diagnostics.Where(static r => r.Severity == "Error").Take(5))
+            foreach (DiagnosticRow row in Errors(designer).Take(5))
             {
                 Say($"  build error: {row.Message}");
             }
@@ -1233,7 +1233,7 @@ internal static class StudioCheck
             Fail(ref failures, "the final build never finished");
         }
 
-        if (designer.Diagnostics.Any(row => row.Severity == "Error"))
+        if (Errors(designer).Any())
         {
             Fail(ref failures, "the final build failed");
         }
@@ -2212,6 +2212,15 @@ internal static class StudioCheck
     private static int CountErrors(DesignerViewModel designer) =>
         designer.Output.Count(line => line.TrimStart().StartsWith('!'));
 
+    /// <summary>What the last restore or build reported as errors.</summary>
+    /// <remarks>
+    /// One predicate for every step that asks, typed: the two steps that each spelled the severity
+    /// out disagreed on its case, and the one that got it wrong passed on a project that does not
+    /// compile.
+    /// </remarks>
+    private static IEnumerable<DiagnosticRow> Errors(DesignerViewModel designer) =>
+        designer.Diagnostics.Where(static row => row.Severity == ProjectDiagnosticSeverity.Error);
+
     private static async Task<int> CheckAsync(DesignerViewModel designer, string folder)
     {
         var failures = 0;
@@ -2641,14 +2650,48 @@ internal static class StudioCheck
             Fail(ref failures, "build never finished");
         }
 
-        if (designer.Diagnostics.Any(row => row.Severity == "ERROR"))
+        if (Errors(designer).Any())
         {
-            foreach (DiagnosticRow row in designer.Diagnostics.Where(row => row.Severity == "ERROR").Take(5))
+            foreach (DiagnosticRow row in Errors(designer).Take(5))
             {
                 Say($"  build error: {row.Message}");
             }
 
             Fail(ref failures, "the project did not build");
+        }
+
+        // And a build that cannot succeed is reported as one. The check above passes on every project
+        // whose errors it cannot see, so it is asked about a project that certainly has one: a source
+        // file that does not compile, written beside the window and taken away again.
+        string broken = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(made)!, "Broken.cs");
+
+        await System.IO.File.WriteAllTextAsync(
+            broken, "namespace StudioCheckApp;\n\ninternal static class Broken\n{\n    internal static int Value => ;\n}\n");
+
+        await Until(() => !designer.IsBusy, 60, settle: true);
+        designer.BuildCommand.Execute(null);
+
+        if (!await Until(() => !designer.IsBusy, 300, settle: true))
+        {
+            Fail(ref failures, "the broken build never finished");
+        }
+        else if (!Errors(designer).Any())
+        {
+            Fail(ref failures, "a build that cannot succeed was not reported as failed");
+        }
+        else
+        {
+            Say("a build that cannot succeed is reported as failed");
+        }
+
+        System.IO.File.Delete(broken);
+
+        await Until(() => !designer.IsBusy, 60, settle: true);
+        designer.BuildCommand.Execute(null);
+
+        if (!await Until(() => !designer.IsBusy, 300, settle: true) || Errors(designer).Any())
+        {
+            Fail(ref failures, "the project did not build again once the broken file was gone");
         }
 
         // 7. Run: the application it just laid out, started for real and then stopped.
