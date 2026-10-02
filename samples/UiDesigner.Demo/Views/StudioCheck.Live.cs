@@ -23,6 +23,8 @@ namespace UiDesigner.Demo.Views;
 /// write over unsaved edits is a question rather than a loss. Part 1 of the plan's <c>--live</c>:
 /// an outside edit of a clean form (L1), the same over unsaved edits with both answers (L2), a
 /// binding made from the inspector against the form's design data, and undo across an outside edit.
+/// Part 2 is <see cref="BesideTheIdeAsync"/>: a save that reads nothing again, a new file read once,
+/// and the designer's builds beside the IDE's.
 /// </para>
 /// <para>
 /// Every step goes through the view model, as the other runs do; only the IDE's side writes files.
@@ -312,6 +314,10 @@ internal static partial class StudioCheck
                 }
             }
         }
+
+        // Part 2: the IDE writes the project and builds it, and the designer keeps up without getting
+        // in its way.
+        failures += await BesideTheIdeAsync(designer, form, project);
 
         int errors = CountErrors(designer);
 
