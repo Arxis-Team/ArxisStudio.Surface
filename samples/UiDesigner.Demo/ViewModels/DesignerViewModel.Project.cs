@@ -525,23 +525,24 @@ public sealed partial class DesignerViewModel
         // is for looking at: Design.DataContext, d:DesignWidth, the lot.
         var options = new XamlLoadOptions { Mode = XamlLoadMode.Design, RootAccess = form.RootAccess };
 
-        (XamlLoadSession? session, XamlLoadResult result) =
-            await XamlLoadSession.TryCreateAsync(document, environment, options, _shutdown.Token);
+        // The file as read is the document, its history starts here, and opening is not a step of
+        // it. The session it builds puts its root on the card through the form.
+        var live = XamlLiveDocument.Open(document.Uri ?? new Uri(form.File.Value), document.SourceText);
+
+        form.Take(live);
+
+        XamlLiveEditResult attached = await live.AttachAsync(environment, options, _shutdown.Token);
 
         // Which generation the form now belongs to. The compilation scope travels with the
         // environment — the session brackets every compile itself — but the generation's lifetime
         // is still this designer's to manage: it must outlive the last form loaded under it.
         form.Assemblies = _assemblies;
 
-        ShowMarkupDiagnostics(result.Diagnostics, text, form.File);
+        ShowMarkupDiagnostics(attached.Diagnostics, text, form.File);
 
-        if (session is null)
+        if (live.Session is not { } session)
         {
-            string why = string.Join(
-                "; ",
-                result.Diagnostics.Where(static d => d.Severity == MarkupDiagnosticSeverity.Error)
-                    .Select(static d => d.Message)
-                    .DefaultIfEmpty("no diagnostic said why"));
+            string why = FirstError(attached.Diagnostics);
 
             form.Fail(why);
 
@@ -558,12 +559,10 @@ public sealed partial class DesignerViewModel
                     context.Assemblies.Select(static a => a.Path.FileName).Take(8)));
             }
 
-            OfferRestartIfTypesAreStale(result.Diagnostics);
+            OfferRestartIfTypesAreStale(attached.Diagnostics);
 
             return;
         }
-
-        await form.AdoptAsync(session);
 
         SizeToContent(form);
         RebuildHierarchy();
@@ -975,7 +974,11 @@ public sealed partial class DesignerViewModel
     {
         foreach (FormViewModel form in Forms.ToArray())
         {
-            CloseFormForSwap(form);
+            Forms.Remove(form);
+
+            // Shutting down, and nothing waits for a form's document to finish: blocking this thread
+            // on it would be waiting for work that finishes on this thread.
+            _ = form.DisposeAsync().AsTask();
         }
 
         foreach ((ProjectAssemblyContext context, ProjectXamlPopulation? population) in _retired)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ArxisStudio.Markup;
 using ArxisStudio.Markup.Xaml;
+using ArxisStudio.Markup.Xaml.Loader;
 using ArxisStudio.ProjectSystem;
 using ArxisStudio.ProjectSystem.Markup.Xaml;
 
@@ -223,27 +224,23 @@ public sealed partial class DesignerViewModel
     /// <remarks>
     /// The document has not changed — the control's has — so this is a rebuild rather than an
     /// edit: the history is untouched, the dirty flag keeps whatever it said, and the selection is
-    /// put back by path when the form is the one in front.
+    /// put back by path when the form is the one in front (the form's document says the session
+    /// was replaced, and the designer follows as it follows any change).
     /// </remarks>
     private async Task RefreshStaleAsync(FormViewModel form)
     {
-        if (!form.IsStale || form.Document is not { } document)
+        if (!form.IsStale || form.Live is not { } live)
         {
             return;
         }
 
         form.IsStale = false;
 
-        XamlElementPath? selection =
-            ReferenceEquals(form, ActiveForm) && Selected is { IsPropertyElementSyntax: false } element
-                ? XamlElementPath.Of(element)
-                : null;
+        XamlLiveEditResult rebuilt = await live.RebuildAsync(_shutdown.Token);
 
-        await RebuildFromAsync(form, document, "refresh");
-
-        if (selection is not null && form.Document is { } updated)
+        if (rebuilt.State != XamlLiveDocumentState.Live)
         {
-            Reselect(form, selection.Resolve(updated) ?? selection.Parent?.Resolve(updated));
+            Log($"  ! {form.Name} could not be refreshed — {FirstError(rebuilt.Diagnostics)}");
         }
     }
 

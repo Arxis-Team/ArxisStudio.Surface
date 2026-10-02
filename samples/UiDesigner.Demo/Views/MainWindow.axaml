@@ -450,7 +450,7 @@
       <GridSplitter Classes="chrome" Grid.Column="1" />
 
       <!-- Centre -->
-      <Grid Grid.Column="2" RowDefinitions="36,32,*,4,212" Background="{DynamicResource Bg1}">
+      <Grid Grid.Column="2" RowDefinitions="36,32,Auto,*,4,212" Background="{DynamicResource Bg1}">
 
         <Border Classes="chrome" Grid.Row="0" Background="{DynamicResource Bg2}"
                 BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="6,0">
@@ -523,12 +523,45 @@
         </Border>
 
         <!--
+          What the canvas cannot say about itself. The file changed on disk while this form had edits
+          the file does not: held rather than applied — whoever is typing here has work that is not in
+          the file — and the person says which text to keep, the file's with theirs one undo away, or
+          theirs, which the next save writes over the file. And a form showing the last text that could
+          be shown, because the one the IDE saved is halfway through a sentence.
+        -->
+        <StackPanel Grid.Row="2">
+          <Border Classes="chrome" Background="{DynamicResource Bg2}"
+                  BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="12,6"
+                  IsVisible="{Binding ActiveForm.HasPendingDiskText, FallbackValue=False}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12"
+                         Foreground="{DynamicResource RedText}"
+                         Text="The file changed on disk, and your edits here are not in it." />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0">
+                <Button Classes="tool" Height="24" Padding="10,0" FontSize="11" Content="Take the file"
+                        AutomationProperties.Name="Take the file"
+                        Command="{Binding TakeDiskTextCommand}" />
+                <Button Classes="tool" Height="24" Padding="10,0" FontSize="11" Content="Keep mine"
+                        AutomationProperties.Name="Keep mine"
+                        Command="{Binding KeepMyTextCommand}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+          <Border Classes="chrome" Background="{DynamicResource Bg2}"
+                  BorderBrush="{DynamicResource Brd}" BorderThickness="0,0,0,1" Padding="12,6"
+                  IsVisible="{Binding ActiveForm.IsBehind, FallbackValue=False}">
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource Fg2}"
+                       Text="{Binding ActiveForm.BehindReason, FallbackValue=''}" />
+          </Border>
+        </StackPanel>
+
+        <!--
           The columns are dealt by the code-behind on every view change, because two of the three
           arrangements cannot be said in markup: XAML-only needs the editor to take the star and
           the canvas to take nothing, and a splitter drag writes local widths that would otherwise
           outlive the mode that made them.
         -->
-        <Grid Grid.Row="2" x:Name="CentreColumns" ColumnDefinitions="*,Auto,0">
+        <Grid Grid.Row="3" x:Name="CentreColumns" ColumnDefinitions="*,Auto,0">
 
           <!--
             The clip lives here, on the pane, because this is the one thing the viewport transform
@@ -690,10 +723,10 @@
 
         </Grid>
 
-        <GridSplitter Classes="chrome" Grid.Row="3" Height="4" />
+        <GridSplitter Classes="chrome" Grid.Row="4" Height="4" />
 
         <!-- The dock: text tabs with a two-pixel underline, as designed. -->
-        <Border Classes="chrome" Grid.Row="4" Background="{DynamicResource Bg2}"
+        <Border Classes="chrome" Grid.Row="5" Background="{DynamicResource Bg2}"
                 BorderBrush="{DynamicResource Brd}" BorderThickness="0,1,0,0">
           <Grid RowDefinitions="32,*">
 

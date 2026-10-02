@@ -25,7 +25,12 @@ public sealed partial class DesignerViewModel
             {
                 ShowOnlyTheActiveForm();
 
-                Selected = null;
+                // The selection this form had when it was last looked at, found again in its
+                // document as it reads now — never the element another form had selected.
+                Selected = value?.SelectedPath is { } path && value.Document is { } shown
+                    ? path.Resolve(shown) ?? path.Parent?.Resolve(shown)
+                    : null;
+
                 RebuildHierarchy();
                 Raise(nameof(CanvasCaption));
                 Raise(nameof(CanvasSize));
@@ -88,6 +93,14 @@ public sealed partial class DesignerViewModel
         {
             if (Set(ref field, value))
             {
+                // Remembered on the form as a position, which is what survives the next edit.
+                if (ActiveForm is { } form)
+                {
+                    form.SelectedPath = value is { IsPropertyElementSyntax: false }
+                        ? XamlElementPath.Of(value)
+                        : null;
+                }
+
                 Raise(nameof(SelectedName));
                 BuildInspector();
                 SyncHierarchySelection();
@@ -167,201 +180,139 @@ public sealed partial class DesignerViewModel
         form.Objects?.GetObject(element) as Control;
 
     /// <summary>
-    /// Applies an edit to the document and to the live objects, in that order.
+    /// Records an edit in the form's document, which shows it.
     /// </summary>
     /// <remarks>
     /// <para>
     /// One route for every change, which is what keeps the canvas incapable of disagreeing with the
-    /// file. The editor builds the new document, the session works out what that means for the
-    /// objects already on screen, and only what actually changed is rebuilt — a property set on one
-    /// button does not tear down the form around it.
+    /// file. The edit lands in the text and the form's history first, and the session works out what
+    /// that means for the objects already on screen — only what changed is rebuilt, and a change it
+    /// cannot follow builds the form again from the text (Markup's <see cref="XamlLiveDocument"/>).
+    /// What follows on screen — the tree, the inspector, the selection put back by path — is
+    /// <see cref="OnFormDocumentChanged"/>, which every route a change takes ends in: an edit here,
+    /// an undo, a file written by the IDE.
     /// </para>
     /// <para>
-    /// The document is adopted whatever the outcome, because the edit is real either way: a change
-    /// the live tree could not follow is still a change to the file, and pretending otherwise would
-    /// silently drop the user's work.
+    /// The edit is kept whatever the objects make of it, because it is real either way: a change the
+    /// live tree could not follow is still a change to the file. The form then shows the last text
+    /// it could, and says why.
+    /// </para>
+    /// <para>
+    /// The callback runs inside the document's turn. An element found before an earlier edit landed
+    /// belongs to the text that edit replaced, and the editor refuses it rather than writing where it
+    /// no longer is — nothing is recorded, and the console says so.
     /// </para>
     /// </remarks>
     private async Task ApplyAsync(FormViewModel form, Action<XamlDocumentEditor> edit, string what)
     {
-        if (form.Document is not { } document || form.Session is not { } session)
+        if (form.Live is not { } live)
         {
             return;
         }
 
-        XamlDocumentEditor editor = document.Edit();
+        XamlLiveEditResult result;
 
-        edit(editor);
-
-        if (!editor.HasChanges)
+        try
         {
+            result = await live.EditAsync(edit, what, _shutdown.Token);
+        }
+        catch (InvalidOperationException refused)
+        {
+            Log($"  ! {what} was not recorded: {refused.Message}");
+
             return;
         }
 
-        XamlDocument updated = editor.Apply();
-
-        form.Remember(document);
-
-        await ApplyDocumentAsync(form, updated, what);
+        if (result.TextChanged && result.State != XamlLiveDocumentState.Live)
+        {
+            Log($"  {what}: the form shows the text before it — {FirstError(result.Diagnostics)}");
+        }
     }
 
+    /// <summary>The first error a load or an update reported, for a line in the console.</summary>
+    private static string FirstError(IEnumerable<MarkupDiagnostic> diagnostics) =>
+        diagnostics.FirstOrDefault(static diagnostic => diagnostic.IsError)?.Message
+            ?? "no diagnostic said why";
+
     /// <summary>
-    /// Puts a document in place of the one the form is showing.
+    /// Brings what the designer shows in line with a form whose document moved, whatever moved it.
     /// </summary>
     /// <remarks>
-    /// The half of an edit that is not about what changed: the session rebuilds what it must, the
-    /// canvas is told, the tree and the inspector are rebuilt, and the form finds out whether it now
-    /// differs from its file. Undo and redo are edits by this definition — they hand over a document
-    /// somebody was holding rather than one an editor just produced.
+    /// <para>
+    /// Raised on the UI thread once the change is over and the session has caught up, so the map,
+    /// the root and the text describe one document. The edited document becomes what placed copies
+    /// of this control are drawn from, and every open form that places it is told to catch up —
+    /// unsaved is the point: the other tab shows the control as it is here, not as the file last
+    /// had it.
+    /// </para>
+    /// <para>
+    /// The panels follow only the active form. A form in a background tab keeps its selection as a
+    /// path and finds it again when it is shown — following every form put the inspector into the
+    /// document of a tab the IDE had just saved.
+    /// </para>
+    /// <para>
+    /// And the card follows the document, always: an undone resize rolls the document back, the
+    /// design sizes are applied to the live window again, and a card left at the size from before
+    /// the undo was a form overflowing its own frame the moment somebody edited a Title.
+    /// </para>
     /// </remarks>
-    private async Task ApplyDocumentAsync(FormViewModel form, XamlDocument updated, string what)
+    private void OnFormDocumentChanged(object? sender, XamlLiveDocumentChangedEventArgs e)
     {
-        if (form.Session is not { } session)
+        if (sender is not FormViewModel form)
         {
             return;
         }
 
-        // Where the selection is, said in a way that survives the edit. Elements belong to the parse
-        // they came from, so after this there is no "the same element" to hold on to — only the same
-        // position. Re-resolving through the live control instead worked until the control was
-        // replaced as well, and then the walk found nothing mapped and fell back to the root: edit a
-        // button and the inspector was suddenly describing the window.
-        XamlElementPath? selection = Selected is { IsPropertyElementSyntax: false } element
-            ? XamlElementPath.Of(element)
-            : null;
-
-        // A window-rooted form's content is borrowed by the card, and the session asks for it back
-        // around its own write (FormRootAccess) — so the update, and the map it rebuilds, see the
-        // whole window, and the card takes the new tree once the write is over.
-        XamlUpdateResult result = await session.ApplyDocumentUpdateAsync(updated, _shutdown.Token);
-
-        form.Adopt(session.Document);
-        form.Restated();
-
-        // The edited document becomes what placed copies of this control are drawn from, and
-        // every open form that places it is told to catch up. Unsaved is the point: the other
-        // tab shows the control as it is here, not as the file last had it.
-        if (form.Document is { } current)
+        if ((e.Changes & XamlLiveDocumentChanges.Text) != 0 && form.Document is { } document)
         {
-            await SetLiveDocumentAsync(current);
-            MarkDependentsStale(current, except: form);
+            RunDetached(async () =>
+            {
+                await SetLiveDocumentAsync(document);
+                MarkDependentsStale(document, except: form);
+            });
         }
 
-        RebuildHierarchy();
-
-        // The root object can be replaced outright when a change reaches far enough, and the canvas
-        // is holding the old one until it is told.
-        RefreshRoot(form, session);
-
-        // And the card follows the document, always. The document is the truth and the card is a
-        // view of it, but nothing was putting the two back together after an update — so any
-        // divergence, however it arose, was permanent and surfaced on the next unrelated edit. An
-        // undone resize is the everyday case: undo rolls the document back, the design sizes are
-        // applied to the live window again, and the card was left holding the size from before the
-        // undo — a form overflowing its own frame the moment somebody edited a Title.
-        SizeToContent(form);
-
-        // And the inspector is put back on the same position in the new document — or, when what was
-        // selected has just been deleted, on what it was inside, which is the answer a path gives
-        // for free and the friendlier of the two.
-        if (selection is not null && form.Document is { } document)
+        if ((e.Changes & XamlLiveDocumentChanges.State) != 0)
         {
-            Reselect(form, selection.Resolve(document) ?? selection.Parent?.Resolve(document));
+            ReportState(form);
         }
 
-        if (!result.Applied)
+        if (ReferenceEquals(form, ActiveForm)
+            && (e.Changes & (XamlLiveDocumentChanges.Text | XamlLiveDocumentChanges.State | XamlLiveDocumentChanges.Uri)) != 0)
         {
-            Log($"  {what}: the live tree needed {result.Outcome}");
+            SizeToContent(form);
+            RebuildHierarchy();
 
-            await RebuildFromAsync(form, updated, what);
+            if (form.Document is { } shown)
+            {
+                Reselect(
+                    form,
+                    form.SelectedPath is { } path ? path.Resolve(shown) ?? path.Parent?.Resolve(shown) : null);
+            }
         }
 
         RefreshAllCommands();
     }
 
-    /// <summary>
-    /// Rebuilds a form from the document the session would not take, so the edit is not lost.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A session refuses an update it cannot express in the objects it is holding, and keeps the
-    /// document it had. That is the right answer for the session and the wrong one for a designer:
-    /// <c>Adopt(session.Document)</c> then quietly rolled the user's edit back, and the clearest
-    /// case of it is deleting a control of the project's own — the session never paired that object
-    /// with an element, so it cannot be told to remove it, and the delete simply did not happen.
-    /// </para>
-    /// <para>
-    /// The edit is real either way, so it is kept and the form is built again from it. That costs
-    /// the incremental update — the whole tree is rebuilt rather than the part that changed — and
-    /// buys an edit that always lands. The history is untouched, because a rebuild is not an edit.
-    /// </para>
-    /// </remarks>
-    private async Task RebuildFromAsync(FormViewModel form, XamlDocument updated, string what)
+    /// <summary>Says in the console what the form shows of its text, when that changed.</summary>
+    private void ReportState(FormViewModel form)
     {
-        if (_workspace.CurrentSnapshot is not { } snapshot
-            || ProjectForms.FirstOrDefault(file => file.Path == form.File) is not { } file)
+        if (form.Live is not { } live)
         {
             return;
         }
 
-        XamlLoadEnvironment environment = EnvironmentFor(snapshot, file.Project);
-        var options = new XamlLoadOptions { Mode = XamlLoadMode.Design, RootAccess = form.RootAccess };
-
-        (XamlLoadSession? session, XamlLoadResult result) =
-            await XamlLoadSession.TryCreateAsync(updated, environment, options, _shutdown.Token);
-
-        if (session is null)
+        switch (live.State)
         {
-            Log($"  ! {what} could not be shown: "
-                + string.Join(
-                    "; ",
-                    result.Diagnostics.Where(static d => d.Severity == MarkupDiagnosticSeverity.Error)
-                        .Select(static d => d.Message)
-                        .DefaultIfEmpty("no diagnostic said why")));
+            case XamlLiveDocumentState.Behind:
+                Log($"  {form.Name} shows the text before the last change — {FirstError(live.Diagnostics)}");
+                break;
 
-            return;
+            case XamlLiveDocumentState.Broken:
+                Log($"  ! {form.Name} cannot be shown — {FirstError(live.Diagnostics)}");
+                break;
         }
-
-        Window? replaced = form.Root as Window;
-
-        await form.RetireSessionAsync();
-
-        CloseRetiredRoot(replaced);
-
-        form.Migrate(session);
-        form.Assemblies = _assemblies;
-        form.Restated();
-
-        SizeToContent(form);
-        RebuildHierarchy();
-
-        Log($"  {what}: the form was rebuilt from the document");
     }
-
-    /// <summary>
-    /// Brings the canvas back in line with a session an update has just changed.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Two different questions, and answering only the first is what made an edited form go dead.
-    /// The root is republished when the update replaced it — which, since <c>RootObject</c> is
-    /// fixed for the life of a session, is only when the root is not a Control at all.
-    /// </para>
-    /// <para>
-    /// The marking is not conditional on that, because an update need not touch the root to build
-    /// new objects: an insert rebuilds the parent's children, and in <c>ContentMode="Annotated"</c>
-    /// a control nobody marked is a control the editor will not offer. A Button dropped from the
-    /// toolbox appeared, got a row in the tree, and could not be clicked, resized or deleted until
-    /// the form was reopened.
-    /// </para>
-    /// <para>
-    /// What a window-rooted form needs to survive being edited is not here: the session lends the
-    /// window its content back for the length of the write and the card takes the rebuilt tree
-    /// afterwards (<see cref="FormRootAccess"/>).
-    /// </para>
-    /// </remarks>
-    private static void RefreshRoot(FormViewModel form, XamlLoadSession session) =>
-        form.AdoptRoot(session);
 
     /// <summary>
     /// Writes a control's geometry into the document after the editor has moved or resized it.
@@ -624,27 +575,28 @@ public sealed partial class DesignerViewModel
 
     /// <summary>Goes back one edit, and forward again.</summary>
     /// <remarks>
-    /// Both go through the same path every other change goes through, so an undone insert takes its
-    /// control off the canvas, out of the tree and out of the inspector exactly the way deleting it
-    /// would — there is no second definition of what applying a document means.
+    /// The form's own history, kept by its live document: every step a person took here, and every
+    /// time the IDE wrote the file under the form, which is a step that can be taken back too. Both go
+    /// the way every change goes, so an undone insert takes its control off the canvas, out of the
+    /// tree and out of the inspector exactly the way deleting it would.
     /// </remarks>
     private void StepHistory(bool back)
     {
-        if (ActiveForm is not { Document: { } current } form)
-        {
-            return;
-        }
-
-        if ((back ? form.StepBack(current) : form.StepForward(current)) is not { } document)
+        if (ActiveForm is not { Live: { } live })
         {
             return;
         }
 
         RunDetached(async () =>
         {
-            await ApplyDocumentAsync(form, document, back ? "undo" : "redo");
+            XamlLiveEditResult result = back
+                ? await live.UndoAsync(_shutdown.Token)
+                : await live.RedoAsync(_shutdown.Token);
 
-            Log(back ? "Undone." : "Redone.");
+            if (result.TextChanged)
+            {
+                Log(back ? "Undone." : "Redone.");
+            }
         });
     }
 
@@ -688,14 +640,19 @@ public sealed partial class DesignerViewModel
     /// <summary>Writes one form back to its file.</summary>
     private async Task SaveAsync(FormViewModel? which)
     {
-        if (which is not { Document: { } document } form)
+        if (which is not { Live: { } live } form)
         {
             return;
         }
 
-        await System.IO.File.WriteAllTextAsync(form.File.Value, document.SourceText.ToString(), _shutdown.Token);
+        // The text read once, written, and named as what was written: an edit that lands in between
+        // is not in the file, and the form goes on saying so.
+        SourceText written = live.Document.SourceText;
 
-        form.MarkSaved();
+        await System.IO.File.WriteAllTextAsync(form.File.Value, written.ToString(), _shutdown.Token);
+        await live.MarkSavedAsync(written, _shutdown.Token);
+
+        form.PendingDiskText = null;
 
         Log($"Saved {form.Name}");
 

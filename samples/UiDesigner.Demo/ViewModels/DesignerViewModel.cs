@@ -60,6 +60,9 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
         UndoCommand = new RelayCommand(() => StepHistory(back: true), () => ActiveForm is { CanUndo: true });
         RedoCommand = new RelayCommand(() => StepHistory(back: false), () => ActiveForm is { CanRedo: true });
 
+        TakeDiskTextCommand = new RelayCommand(() => Run(TakeDiskTextAsync), () => ActiveForm is { HasPendingDiskText: true });
+        KeepMyTextCommand = new RelayCommand(() => Run(KeepMyTextAsync), () => ActiveForm is { HasPendingDiskText: true });
+
         RestoreCommand = new RelayCommand(() => Run(() => ExecuteAsync(ProjectOperationKind.Restore)), CanOperate);
         BuildCommand = new RelayCommand(() => Run(() => ExecuteAsync(ProjectOperationKind.Build)), CanOperate);
 
@@ -69,6 +72,21 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
         RestartCommand = new RelayCommand(
             () => RunDetached(() => _typeSwap = SwapGenerationAsync()),
             () => NeedsRestart && !EntryPoint.IsEmpty && _typeSwap is not { IsCompleted: false });
+
+        // Every open form says when its document moved — an edit, an undo, the IDE writing the file —
+        // and the designer follows from one place, whichever route the change took.
+        Forms.CollectionChanged += (_, e) =>
+        {
+            foreach (FormViewModel gone in e.OldItems?.OfType<FormViewModel>() ?? [])
+            {
+                gone.DocumentChanged -= OnFormDocumentChanged;
+            }
+
+            foreach (FormViewModel added in e.NewItems?.OfType<FormViewModel>() ?? [])
+            {
+                added.DocumentChanged += OnFormDocumentChanged;
+            }
+        };
 
         InitialiseHeader();
         InitialiseGuides();
@@ -129,6 +147,12 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 
     /// <summary>And forward again.</summary>
     public RelayCommand RedoCommand { get; }
+
+    /// <summary>Takes the file's text over the active form's unsaved edits, which stay one undo away.</summary>
+    public RelayCommand TakeDiskTextCommand { get; }
+
+    /// <summary>Keeps the active form's edits over the file's text.</summary>
+    public RelayCommand KeepMyTextCommand { get; }
 
     public RelayCommand RestoreCommand { get; }
 
@@ -508,6 +532,8 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
         SaveAllCommand.RaiseCanExecuteChanged();
         UndoCommand.RaiseCanExecuteChanged();
         RedoCommand.RaiseCanExecuteChanged();
+        TakeDiskTextCommand.RaiseCanExecuteChanged();
+        KeepMyTextCommand.RaiseCanExecuteChanged();
         CopyCommand.RaiseCanExecuteChanged();
         CutCommand.RaiseCanExecuteChanged();
         PasteCommand.RaiseCanExecuteChanged();

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ArxisStudio.Markup;
 using ArxisStudio.Markup.Xaml;
+using ArxisStudio.Markup.Xaml.Loader;
 using ArxisStudio.ProjectSystem;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -511,29 +513,83 @@ public sealed partial class DesignerViewModel
             return true;
         }
 
-        if (form.Document?.SourceText.ToString() == text)
+        if (form.Live is not { } live)
         {
-            // Our own save, or a write that changed nothing. Either way there is nothing to show.
             return true;
         }
 
-        if (form.IsDirty)
+        XamlExternalTextResult result = await live.AcceptExternalTextAsync(
+            SourceText.From(text), ChangedOutside, XamlExternalTextPolicy.ApplyIfClean, _shutdown.Token);
+
+        switch (result.Outcome)
         {
-            Log($"! {form.Name} changed on disk and has unsaved edits here — the edits are kept");
+            case XamlExternalTextOutcome.AlreadyCurrent or XamlExternalTextOutcome.AlreadySaved:
+                // Our own save, reported now or late — or the file put back as it was. A question
+                // asked about an earlier write has nothing left to be about.
+                form.PendingDiskText = null;
 
-            return true;
+                break;
+
+            case XamlExternalTextOutcome.Taken:
+                form.PendingDiskText = null;
+
+                Log($"{form.Name} was changed outside — shown"
+                    + (result.Edit is { State: not XamlLiveDocumentState.Live } edit
+                        ? $", though the form shows the text before it ({FirstError(edit.Diagnostics)})"
+                        : string.Empty));
+
+                break;
+
+            case XamlExternalTextOutcome.Conflict:
+                // Held for the person rather than applied: the edits here are not in the file. The bar
+                // above the canvas offers both ways out.
+                form.PendingDiskText = text;
+
+                Log($"! {form.Name} changed on disk and has unsaved edits here — keep yours or take the file");
+
+                break;
         }
-
-        await ApplyDocumentAsync(
-            form,
-            XamlDocument.Parse(text, new XamlParseOptions { DocumentUri = form.Document?.Uri }),
-            "reload");
-
-        // It is the file again, whatever the update thought.
-        form.MarkSaved();
-
-        Log($"{form.Name} was changed outside — reloaded.");
 
         return true;
+    }
+
+    /// <summary>What a change the IDE made is called in a form's history.</summary>
+    private const string ChangedOutside = "Changed outside the designer";
+
+    /// <summary>
+    /// Takes the file's text over the form's unsaved edits, which stay one undo away.
+    /// </summary>
+    private async Task TakeDiskTextAsync()
+    {
+        if (ActiveForm is not { Live: { } live, PendingDiskText: { } disk } form)
+        {
+            return;
+        }
+
+        XamlExternalTextResult result = await live.AcceptExternalTextAsync(
+            SourceText.From(disk), ChangedOutside, XamlExternalTextPolicy.TakeTheirs, _shutdown.Token);
+
+        form.PendingDiskText = null;
+
+        Log($"{form.Name}: the file's text is shown — undo brings your edits back"
+            + (result.Outcome == XamlExternalTextOutcome.AlreadyCurrent ? " (it was already the same)" : string.Empty));
+    }
+
+    /// <summary>
+    /// Keeps the form's edits over the file's text; the form reads as changed, and saving writes it.
+    /// </summary>
+    private async Task KeepMyTextAsync()
+    {
+        if (ActiveForm is not { Live: { } live, PendingDiskText: { } disk } form)
+        {
+            return;
+        }
+
+        await live.AcceptExternalTextAsync(
+            SourceText.From(disk), ChangedOutside, XamlExternalTextPolicy.KeepMine, _shutdown.Token);
+
+        form.PendingDiskText = null;
+
+        Log($"{form.Name}: your edits are kept — saving writes them over the file");
     }
 }

@@ -22,6 +22,14 @@ namespace UiDesigner.Demo.ViewModels;
 /// button into the element in the file that produced it.
 /// </para>
 /// <para>
+/// Keeping them in step is Markup's <see cref="XamlLiveDocument"/>, not this class's: the document's
+/// history, whether it differs from the file, the session over it and what to do when the session
+/// cannot follow a change all live there (Markup ADR 0025). This class holds one, shows the root its
+/// session built, and says when anything moved. It kept an undo stack of whole documents of its own
+/// until then, beside a workspace whose history nothing stepped through, and decided whether a form
+/// was changed by comparing documents by reference — so undoing back to the file left it changed.
+/// </para>
+/// <para>
 /// <see cref="Location"/>, <see cref="Width"/> and <see cref="Height"/> are the form's place on the
 /// designer's infinite surface and have nothing to do with the form's own layout. They belong here
 /// because the editor binds its container to them, and they are deliberately not written to the
@@ -139,11 +147,53 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     }
 
     /// <summary>The document, which is the only thing any edit touches.</summary>
-    public XamlDocument? Document
+    public XamlDocument? Document => Live?.Document;
+
+    /// <summary>
+    /// The document with its history and the session over it, from the moment the file is read.
+    /// </summary>
+    /// <remarks>
+    /// Outlives the form object across a swap of the project's types: detached, it holds nothing of
+    /// the generation it was shown under, so it is handed to the form built on the far side (see
+    /// <see cref="FormMemory"/>), and the history and the unsaved edits go with it.
+    /// </remarks>
+    internal XamlLiveDocument? Live { get; private set; }
+
+    /// <summary>Raised on the UI thread once the live document's text, saved state or session moved.</summary>
+    internal event EventHandler<XamlLiveDocumentChangedEventArgs>? DocumentChanged;
+
+    /// <summary>
+    /// Where the selection is on this form, said in a way that survives an edit.
+    /// </summary>
+    /// <remarks>
+    /// Per form, because a selection belongs to the document it was made in. Held by the designer
+    /// as a single element, it was put back after every change of every form — and an external save
+    /// of a tab in the background moved the inspector into that tab's document.
+    /// </remarks>
+    internal XamlElementPath? SelectedPath { get; set; }
+
+    /// <summary>
+    /// What the file says now, when it changed on disk while this form had edits the file does not.
+    /// </summary>
+    /// <remarks>
+    /// Held rather than applied: whoever is typing here has work that is not in the file. The form
+    /// says so above the canvas, and the person decides — take the file, which keeps their edits one
+    /// undo away, or keep theirs, which leaves the form changed against the file.
+    /// </remarks>
+    public string? PendingDiskText
     {
         get;
-        private set => Set(ref field, value);
+        internal set
+        {
+            if (Set(ref field, value))
+            {
+                Raise(nameof(HasPendingDiskText));
+            }
+        }
     }
+
+    /// <summary>Whether the file changed under unsaved edits and the person has not said what to keep.</summary>
+    public bool HasPendingDiskText => PendingDiskText is not null;
 
     /// <summary>The live control tree the document produced.</summary>
     /// <remarks>
@@ -234,59 +284,9 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     /// <summary>The map between the two, in both directions.</summary>
     public XamlObjectMap? Objects => Session?.Objects;
 
-    /// <summary>
-    /// What the document was before each edit, and what it was before each undo.
-    /// </summary>
-    /// <remarks>
-    /// Documents rather than a list of what changed, because a document already is one: every edit
-    /// produces a whole new immutable one, so remembering the previous is remembering everything,
-    /// and going back is applying it the same way any other change is applied. An editor that
-    /// recorded inverse operations would have to be right about each of them; this cannot be wrong
-    /// about what the file said, because it is what the file said.
-    /// </remarks>
-    private readonly System.Collections.Generic.Stack<XamlDocument> _undo = new();
+    internal bool CanUndo => Live?.CanUndo == true;
 
-    private readonly System.Collections.Generic.Stack<XamlDocument> _redo = new();
-
-    /// <summary>The document as the file has it, for telling an edited form from a returned one.</summary>
-    private XamlDocument? _saved;
-
-    internal bool CanUndo => _undo.Count > 0;
-
-    internal bool CanRedo => _redo.Count > 0;
-
-    /// <summary>Records where an edit started from. A new edit is the end of any redo path.</summary>
-    internal void Remember(XamlDocument before)
-    {
-        _undo.Push(before);
-        _redo.Clear();
-    }
-
-    /// <summary>The document to go back to, if there is one.</summary>
-    internal XamlDocument? StepBack(XamlDocument current)
-    {
-        if (_undo.Count == 0)
-        {
-            return null;
-        }
-
-        _redo.Push(current);
-
-        return _undo.Pop();
-    }
-
-    /// <summary>And the one to come forward to.</summary>
-    internal XamlDocument? StepForward(XamlDocument current)
-    {
-        if (_redo.Count == 0)
-        {
-            return null;
-        }
-
-        _undo.Push(current);
-
-        return _redo.Pop();
-    }
+    internal bool CanRedo => Live?.CanRedo == true;
 
     /// <summary>
     /// Everything about a form that outlives the objects built from a generation of types.
@@ -296,27 +296,42 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     /// off the canvas — keeps the generation it was built under in the process, and a successor
     /// created beside it would be a second copy of every type. So the form is remembered, closed,
     /// and built again on the far side, which is what makes a swap something other than a reopen:
-    /// the text, the history and the place on the canvas are all here.
+    /// the place on the canvas is here, and the text, the history and the unsaved edits are the
+    /// live document's, detached so that it holds nothing of the generation it leaves.
     /// </remarks>
     internal sealed record FormMemory(
         CanonicalPath File,
         Point Location,
         double Width,
         double Height,
-        XamlDocument? Document,
-        XamlDocument[] Undone,
-        XamlDocument[] Redone,
-        XamlDocument? Saved);
+        XamlLiveDocument? Live,
+        XamlElementPath? SelectedPath);
 
-    /// <summary>Remembers what a swap must carry across.</summary>
-    internal FormMemory Remember() =>
-        new(File, Location, Width, Height, Document, [.. _undo], [.. _redo], _saved);
-
-    /// <summary>Puts a remembered form back, before its session is built again.</summary>
+    /// <summary>
+    /// Detaches the live document and hands it over with the form's place, for the form built on
+    /// the far side of a swap.
+    /// </summary>
     /// <remarks>
-    /// The stacks are pushed back in reverse, because a stack enumerates from its top and this
-    /// has to end where the other began — an undo history restored upside down is worse than none.
+    /// The session goes — the canvas is told, and the card gives the root back — and the document,
+    /// its history and what is saved stay in the memory. This form keeps nothing of either.
     /// </remarks>
+    internal async ValueTask<FormMemory> RememberAsync()
+    {
+        XamlLiveDocument? live = Live;
+
+        if (live is not null)
+        {
+            await live.DetachAsync();
+
+            Let(live);
+        }
+
+        Assemblies = null;
+
+        return new FormMemory(File, Location, Width, Height, live, SelectedPath);
+    }
+
+    /// <summary>Puts a remembered form back, before its document is attached again.</summary>
     internal void Recall(FormMemory memory)
     {
         ArgumentNullException.ThrowIfNull(memory);
@@ -324,49 +339,151 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         Location = memory.Location;
         Width = memory.Width;
         Height = memory.Height;
-        Document = memory.Document;
+        SelectedPath = memory.SelectedPath;
 
-        _undo.Clear();
-        _redo.Clear();
-
-        for (int index = memory.Undone.Length - 1; index >= 0; index--)
+        if (memory.Live is { } live)
         {
-            _undo.Push(memory.Undone[index]);
+            Take(live);
         }
-
-        for (int index = memory.Redone.Length - 1; index >= 0; index--)
-        {
-            _redo.Push(memory.Redone[index]);
-        }
-
-        _saved = memory.Saved;
-
-        IsDirty = !ReferenceEquals(Document, _saved);
     }
 
-    /// <summary>A form freshly loaded or freshly saved has nothing behind it and nothing pending.</summary>
-    internal void MarkSaved()
+    /// <summary>Starts showing a live document: its session's root on the card, its state in the tab.</summary>
+    internal void Take(XamlLiveDocument live)
     {
-        _saved = Document;
+        ArgumentNullException.ThrowIfNull(live);
 
-        IsDirty = false;
+        if (Live is not null)
+        {
+            throw new InvalidOperationException($"{Name} already shows a document.");
+        }
+
+        Live = live;
+
+        live.SessionReplaced += OnSessionReplaced;
+        live.Changed += OnDocumentChanged;
+
+        if (live.Session is { } session)
+        {
+            Publish(session);
+        }
+
+        RaiseDocumentState();
     }
 
-    /// <summary>Whether the document differs from what the file holds, which an undo can undo.</summary>
-    internal void Restated() => IsDirty = !ReferenceEquals(Document, _saved);
-
-    /// <summary>Whether the document has edits the file does not have yet.</summary>
-    public bool IsDirty
+    /// <summary>Stops listening to a live document that is being handed on or closed.</summary>
+    private void Let(XamlLiveDocument live)
     {
-        get;
-        set
+        live.SessionReplaced -= OnSessionReplaced;
+        live.Changed -= OnDocumentChanged;
+
+        Live = null;
+    }
+
+    /// <summary>
+    /// Puts the root of the session the live document now has on the card, closing a window the
+    /// previous one built.
+    /// </summary>
+    /// <remarks>
+    /// Raised while the previous session is still open, on the UI thread. A window-rooted form's root
+    /// is a real <c>Window</c>, never shown, and the windowing platform holds it until it is closed —
+    /// on Win32 one never closed survives every collection, and with it every type of its generation.
+    /// Nothing else will close it: the session's objects are the host's.
+    /// </remarks>
+    private void OnSessionReplaced(object? sender, XamlSessionReplacedEventArgs e)
+    {
+        if (e.Previous?.RootObject is { } previous && !ReferenceEquals(previous, e.Current?.RootObject))
         {
-            if (Set(ref field, value))
+            if (ReferenceEquals(Card.Root, previous))
             {
-                Raise(nameof(Title));
+                Card.Root = null;
+            }
+
+            Root = null;
+
+            if (previous is Window window)
+            {
+                CloseQuietly(window);
             }
         }
+
+        if (e.Current is { } session)
+        {
+            Publish(session);
+        }
+
+        RaiseDocumentState();
     }
+
+    /// <summary>Republishes after a change and says what moved.</summary>
+    /// <remarks>
+    /// After every change of the text, not only when the session was replaced: an update that keeps
+    /// the session still builds new objects — an insert rebuilds its parent's children — and in
+    /// <c>ContentMode="Annotated"</c> a control nobody marked is a control the editor will not offer.
+    /// </remarks>
+    private void OnDocumentChanged(object? sender, XamlLiveDocumentChangedEventArgs e)
+    {
+        if ((e.Changes & (XamlLiveDocumentChanges.Text | XamlLiveDocumentChanges.State)) != 0
+            && Session is { } session)
+        {
+            Publish(session);
+        }
+
+        RaiseDocumentState();
+
+        DocumentChanged?.Invoke(this, e);
+    }
+
+    /// <summary>Says that what is derived from the live document may have moved.</summary>
+    private void RaiseDocumentState()
+    {
+        Problem = ProblemOf(Live);
+
+        Raise(nameof(Document));
+        Raise(nameof(Objects));
+        Raise(nameof(IsDirty));
+        Raise(nameof(Title));
+        Raise(nameof(IsBehind));
+        Raise(nameof(BehindReason));
+    }
+
+    /// <summary>What the canvas says instead of the form, when there is no form to show.</summary>
+    /// <remarks>
+    /// <c>Behind</c> is not a problem to show over the canvas: the form there is the last text that
+    /// could be shown, and the person is usually halfway through typing the next one in the other
+    /// editor. The bar above the canvas says it; the canvas keeps showing what it can.
+    /// </remarks>
+    private string? ProblemOf(XamlLiveDocument? live)
+    {
+        if (live is not { State: XamlLiveDocumentState.Broken })
+        {
+            return live?.Session is { RootObject: not Control } session
+                ? $"The document's root is {session.RootObject.GetType().Name}, which is not a Control."
+                : null;
+        }
+
+        return string.Join(
+            "; ",
+            live.Diagnostics
+                .Where(static diagnostic => diagnostic.IsError)
+                .Select(static diagnostic => diagnostic.Message)
+                .DefaultIfEmpty("The document could not be shown, and nothing said why."));
+    }
+
+    /// <summary>Whether the document has edits the file does not have yet.</summary>
+    public bool IsDirty => Live?.IsDirty == true;
+
+    /// <summary>
+    /// Whether the canvas shows an earlier text than the document's — the IDE saved the file halfway
+    /// through a sentence, or named a type nothing has built yet.
+    /// </summary>
+    public bool IsBehind => Live?.State == XamlLiveDocumentState.Behind;
+
+    /// <summary>What the bar above the canvas says while the form is behind its text.</summary>
+    public string? BehindReason => Live is { State: XamlLiveDocumentState.Behind } live
+        ? "Showing the last text that could be shown — "
+            + (live.Diagnostics.FirstOrDefault(static diagnostic => diagnostic.IsError)?.Message
+                ?? "the current one could not be, and nothing said why.")
+        : null;
 
     /// <summary>Whether this is the form the canvas is showing.</summary>
     /// <remarks>
@@ -407,7 +524,7 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         private set => Set(ref field, value);
     }
 
-    internal XamlLoadSession? Session { get; private set; }
+    internal XamlLoadSession? Session => Live?.Session;
 
     /// <summary>The assembly generation this form was loaded under.</summary>
     /// <remarks>
@@ -416,97 +533,6 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
     /// closes, and this is how the designer knows which forms those are.
     /// </remarks>
     internal ArxisStudio.ProjectSystem.Markup.Xaml.ProjectAssemblyContext? Assemblies { get; set; }
-
-    /// <summary>
-    /// Puts a freshly loaded session in place of whatever was there.
-    /// </summary>
-    /// <remarks>
-    /// The old session is disposed after the new root is published rather than before, so the canvas
-    /// never has a moment with nothing in it — and because disposing a session tears down objects the
-    /// visual tree may still be walking.
-    /// </remarks>
-    internal async ValueTask AdoptAsync(XamlLoadSession session)
-    {
-        XamlLoadSession? previous = Session;
-
-        Session = session;
-        Document = session.Document;
-
-        Publish(session);
-
-        Problem = Root is null
-            ? $"The document's root is {session.RootObject.GetType().Name}, which is not a Control."
-            : null;
-
-        // A form that has just been loaded is the file, and has no history behind it.
-        _undo.Clear();
-        _redo.Clear();
-
-        MarkSaved();
-
-        if (previous is not null)
-        {
-            await previous.DisposeAsync();
-        }
-    }
-
-    /// <summary>
-    /// Republishes the root after an update replaced it.
-    /// </summary>
-    /// <remarks>
-    /// An update that reaches far enough rebuilds the root object rather than patching it, and the
-    /// canvas is holding the previous one until it is told otherwise.
-    /// </remarks>
-    internal void AdoptRoot(XamlLoadSession session) => Publish(session);
-
-    /// <summary>
-    /// Lets go of the session and everything built from it, keeping the document and the history.
-    /// </summary>
-    /// <remarks>
-    /// The first half of moving a form to a new generation. Everything the old assemblies produced
-    /// is released — the surface gives back what it borrowed, the root is dropped, the session is
-    /// disposed — so the collectible context that made them can actually collect. The document is
-    /// text and owes the assemblies nothing, which is why it and the undo history stay.
-    /// </remarks>
-    internal async ValueTask RetireSessionAsync()
-    {
-        if (Session is not { } session)
-        {
-            return;
-        }
-
-        Session = null;
-
-        Card.Root = null;
-        Root = null;
-
-        // And the generation itself, or the sweep would find this form still using it and keep it
-        // alive — which is the whole thing this retirement exists to end.
-        Assemblies = null;
-
-        await session.DisposeAsync();
-    }
-
-    /// <summary>
-    /// Adopts a session created over the same document under a new generation.
-    /// </summary>
-    /// <remarks>
-    /// The other half. Unlike <see cref="AdoptAsync"/> this is not an opening: the form was already
-    /// open, its history is real, and its unsaved edits are in the document the new session was
-    /// built from — so nothing is cleared and nothing is marked saved. The elements even survive,
-    /// because the session keeps the document instance it was given.
-    /// </remarks>
-    internal void Migrate(XamlLoadSession session)
-    {
-        Session = session;
-        Document = session.Document;
-
-        Publish(session);
-
-        Problem = Root is null
-            ? $"The document's root is {session.RootObject.GetType().Name}, which is not a Control."
-            : null;
-    }
 
     /// <summary>
     /// Works out what to show from what the document produced.
@@ -675,28 +701,43 @@ public sealed class FormViewModel : Observable, IAsyncDisposable
         Root = null;
     }
 
-    /// <summary>Replaces the document without rebuilding the live tree.</summary>
-    /// <remarks>
-    /// Used after an edit the session applied itself: the session already holds the new document and
-    /// the live objects to match, so re-reading either would be undoing work that is already correct.
-    /// </remarks>
-    internal void Adopt(XamlDocument document)
+    /// <summary>Closes a window a session built, which the platform would otherwise keep.</summary>
+    private static void CloseQuietly(Window window)
     {
-        Document = document;
-        Raise(nameof(Objects));
+        try
+        {
+            window.Close();
+        }
+        catch (Exception error) when (error is InvalidOperationException or NullReferenceException)
+        {
+            // A window that will not close is a window the platform is still holding, and the proof
+            // a swap asks for is what turns that into a restart rather than a guess.
+        }
     }
 
+    /// <summary>Closes the form for good, the document with it.</summary>
+    /// <remarks>
+    /// A form handed on by <see cref="RememberAsync"/> holds no document by now, and disposes nothing
+    /// but its card. The root a disposed session built is the host's to take down, so a window is
+    /// closed here as it is on any other replacement.
+    /// </remarks>
     public async ValueTask DisposeAsync()
     {
-        if (Session is { } session)
-        {
-            Session = null;
-
-            await session.DisposeAsync();
-        }
+        object? root = Card.Root ?? Session?.RootObject;
 
         Card.Root = null;
-
         Root = null;
+
+        if (Live is { } live)
+        {
+            Let(live);
+
+            await live.DisposeAsync();
+        }
+
+        if (root is Window window)
+        {
+            CloseQuietly(window);
+        }
     }
 }

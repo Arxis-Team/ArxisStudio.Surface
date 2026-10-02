@@ -30,9 +30,10 @@ namespace UiDesigner.Demo.ViewModels;
 /// <para>
 /// What a swap keeps is the point of doing it: the tabs, their order, the active one, the
 /// documents including unsaved edits, the undo history, the place and size on the canvas, and the
-/// selection. What it cannot keep is the form objects themselves — a form left open holds the
-/// generation it was built under, measured, so each one is remembered, closed, and built again on
-/// the far side.
+/// selection. The documents are the forms' live documents, detached for the swap — a detached one
+/// holds nothing of the generation it was shown under — and attached again to the successor. What
+/// a swap cannot keep is the form objects themselves — a form left open holds the generation it
+/// was built under, measured, so each one is remembered, closed, and built again on the far side.
 /// </para>
 /// <para>
 /// When the proof fails — a user control that started a timer, a subscription nothing released —
@@ -57,14 +58,17 @@ public sealed partial class DesignerViewModel
 
         Log("The project's code changed — swapping the types in place…");
 
-        // Where everything was, said in a way that survives losing the objects that held it.
-        FormViewModel.FormMemory[] memories = [.. Forms.Select(static form => form.Remember())];
+        // Where everything was, said in a way that survives losing the objects that held it: each
+        // form's document is detached — its session gone, its root off the card, a window it built
+        // closed — and handed over with the form's place and its selection.
+        var memories = new List<FormViewModel.FormMemory>();
+
+        foreach (FormViewModel form in Forms.ToArray())
+        {
+            memories.Add(await form.RememberAsync());
+        }
+
         CanonicalPath active = ActiveForm?.File ?? default;
-
-        XamlElementPath? selection = Selected is { IsPropertyElementSyntax: false } element
-            ? XamlElementPath.Of(element)
-            : null;
-
         double zoom = Zoom;
 
         await LetGoOfEverythingAsync();
@@ -96,7 +100,7 @@ public sealed partial class DesignerViewModel
 
         Log("  the old types are gone — building the new ones");
 
-        await RestoreAsync(memories, active, selection, zoom);
+        await RestoreAsync(memories, active, zoom);
     }
 
     /// <summary>
@@ -116,15 +120,6 @@ public sealed partial class DesignerViewModel
 
         CanvasSelectionCleared?.Invoke(this, EventArgs.Empty);
 
-        foreach (FormViewModel form in Forms.ToArray())
-        {
-            Window? window = form.Root as Window;
-
-            await form.RetireSessionAsync();
-
-            CloseRetiredRoot(window);
-        }
-
         // Nothing may still point at a form that is going. The active one is the easiest to
         // forget and the most expensive to leave: a form the panels are still holding holds the
         // surface it was shown on, and a surface holds the window it borrowed from — which is a
@@ -134,7 +129,7 @@ public sealed partial class DesignerViewModel
 
         foreach (FormViewModel form in Forms.ToArray())
         {
-            CloseFormForSwap(form);
+            await CloseFormForSwapAsync(form);
         }
 
         Shown.Clear();
@@ -158,31 +153,6 @@ public sealed partial class DesignerViewModel
         ClearInputState();
 
         await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Background);
-    }
-
-    /// <summary>Closes the window a retired session's form was rooted in.</summary>
-    /// <remarks>
-    /// Wherever a session is retired, not only in the swap. A window-rooted form's root is a real
-    /// <c>Window</c>, never shown, and the windowing platform holds it until it is closed — on Win32
-    /// one never closed survives every collection, and with it every type of its generation. A
-    /// rebuild retires a session too, and the window it left open used to outlive it.
-    /// </remarks>
-    private static void CloseRetiredRoot(Window? window)
-    {
-        if (window is null)
-        {
-            return;
-        }
-
-        try
-        {
-            window.Close();
-        }
-        catch (Exception error) when (error is InvalidOperationException or NullReferenceException)
-        {
-            // A window that will not close is a window the platform is still holding, and the
-            // proof the swap asks for is what turns that into a restart rather than a guess.
-        }
     }
 
     /// <summary>
@@ -310,11 +280,18 @@ public sealed partial class DesignerViewModel
     private async Task RestoreAsync(
         IReadOnlyList<FormViewModel.FormMemory> memories,
         CanonicalPath active,
-        XamlElementPath? selection,
         double zoom)
     {
         if (_workspace.CurrentSnapshot is not { } snapshot)
         {
+            foreach (FormViewModel.FormMemory memory in memories)
+            {
+                if (memory.Live is { } orphan)
+                {
+                    await orphan.DisposeAsync();
+                }
+            }
+
             return;
         }
 
@@ -322,9 +299,14 @@ public sealed partial class DesignerViewModel
 
         foreach (FormViewModel.FormMemory memory in memories)
         {
-            if (memory.Document is null
+            if (memory.Live is not { } live
                 || !snapshot.TryGetProjectForFile(memory.File, out ProjectSnapshot? owner))
             {
+                if (memory.Live is { } orphan)
+                {
+                    await orphan.DisposeAsync();
+                }
+
                 continue;
             }
 
@@ -342,23 +324,20 @@ public sealed partial class DesignerViewModel
                 await registering;
             }
 
-            await SetLiveDocumentAsync(memory.Document);
+            await SetLiveDocumentAsync(live.Document);
 
-            (XamlLoadSession? session, XamlLoadResult result) = await XamlLoadSession.TryCreateAsync(
-                memory.Document,
+            // The form was already open: its history is real and its unsaved edits are in the text
+            // this session is built from. Attaching shows that text under the successor's types.
+            XamlLiveEditResult attached = await live.AttachAsync(
                 environment,
                 new XamlLoadOptions { Mode = XamlLoadMode.Design, RootAccess = form.RootAccess },
                 _shutdown.Token);
 
             form.Assemblies = _assemblies;
 
-            if (session is null)
+            if (live.Session is null)
             {
-                string why = string.Join(
-                    "; ",
-                    result.Diagnostics.Where(static d => d.Severity == MarkupDiagnosticSeverity.Error)
-                        .Select(static d => d.Message)
-                        .DefaultIfEmpty("no diagnostic said why"));
+                string why = FirstError(attached.Diagnostics);
 
                 form.Fail(why);
 
@@ -367,26 +346,17 @@ public sealed partial class DesignerViewModel
                 continue;
             }
 
-            // Migrate rather than adopt: the form was already open, so its history is real and
-            // its unsaved edits are in the document this session was built from.
-            form.Migrate(session);
-            form.Restated();
-
             SizeToContent(form);
 
             rebuilt++;
         }
 
+        // Each form puts its own selection back, by path, as it becomes the active one.
         ActiveForm = Forms.FirstOrDefault(form => form.File == active) ?? Forms.FirstOrDefault();
         Zoom = zoom;
 
         MarkOpenFiles();
         RebuildHierarchy();
-
-        if (selection is not null && ActiveForm is { Document: { } document } shown)
-        {
-            Reselect(shown, selection.Resolve(document) ?? selection.Parent?.Resolve(document));
-        }
 
         ClearRestartAsk();
 
@@ -403,10 +373,12 @@ public sealed partial class DesignerViewModel
     /// are wrong in the middle of a swap, where every form is going and coming back, and equally
     /// wrong when the project is closing and every form is going for good. Both use this.
     /// </remarks>
-    private void CloseFormForSwap(FormViewModel form)
+    private async Task CloseFormForSwapAsync(FormViewModel form)
     {
         Forms.Remove(form);
 
-        form.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        // Awaited rather than waited on: a form's document finishes what it is doing on this
+        // thread, and blocking the thread on it would be waiting for itself.
+        await form.DisposeAsync();
     }
 }
