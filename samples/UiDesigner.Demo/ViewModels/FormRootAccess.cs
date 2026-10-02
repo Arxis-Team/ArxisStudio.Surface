@@ -1,7 +1,6 @@
 using System;
 using ArxisStudio.Markup.Xaml.Loader;
 using ArxisStudio.Surface.UiDesigner;
-using Avalonia.Controls;
 
 namespace UiDesigner.Demo.ViewModels;
 
@@ -18,49 +17,20 @@ namespace UiDesigner.Demo.ViewModels;
 /// first had no container to land in.
 /// </para>
 /// <para>
-/// The session asks for the root around every write it makes, on the objects' thread, and this
-/// answers by letting the card give everything back for exactly that long. Taking it again is what
-/// borrows the tree the write has just built. A root that is a control stands on the card as it is —
-/// nothing is borrowed from it, so nothing is given back.
+/// The session asks for the root around every write it makes, on the objects' thread, and the card
+/// answers with <see cref="UiDesignerFormItem.SuspendRoot"/>: it gives back exactly what it borrowed
+/// and takes whatever the window holds when the lease ends, so a write that replaced the content
+/// reaches the canvas by itself. The root, the size, the title and the theme stay as they are — the
+/// card is not let go and taken again, which used to blink the form on every keystroke typed in the
+/// inspector. A root that is a control stands on the card as it is and has nothing to give back.
 /// </para>
 /// </remarks>
 internal sealed class FormRootAccess(UiDesignerFormItem card) : IXamlRootAccess
 {
-    public IDisposable Lend(object root)
-    {
-        if (root is not TopLevel || !ReferenceEquals(card.Root, root))
-        {
-            return Nothing.Instance;
-        }
+    public IDisposable Lend(object root) =>
+        ReferenceEquals(card.Root, root) ? card.SuspendRoot() : Nothing.Instance;
 
-        card.Root = null;
-
-        return new Lease(card, root);
-    }
-
-    /// <summary>Borrows the root again once the session has written it.</summary>
-    private sealed class Lease(UiDesignerFormItem card, object root) : IDisposable
-    {
-        private bool _returned;
-
-        public void Dispose()
-        {
-            if (_returned)
-            {
-                return;
-            }
-
-            _returned = true;
-
-            // Unless somebody has put another root on the card meanwhile — the newer truth.
-            if (card.Root is null)
-            {
-                card.Root = root;
-            }
-        }
-    }
-
-    /// <summary>The lease of a root nothing was borrowed from.</summary>
+    /// <summary>The lease of a root the card does not hold any more.</summary>
     private sealed class Nothing : IDisposable
     {
         public static Nothing Instance { get; } = new();
