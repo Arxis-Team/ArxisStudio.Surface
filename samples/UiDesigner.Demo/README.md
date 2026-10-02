@@ -296,24 +296,30 @@ The designer is meant to sit next to Rider or Visual Studio: the layout is done 
 written there, and the same files are open in both. Three things follow from that, and all three
 were reported as bugs before they were features.
 
-**It builds into `bin/ArxisStudio`.** Two tools cannot own `bin/Debug`: the moment one of them has
-the application running, the other's build stops with a dozen lines of MSB3026 and then MSB3027 —
-"the file is locked by .NET Host" — which is true, unactionable, and looks like the designer is
-broken. The property is passed to the evaluation as well as to the build, because the run path
-starts what the evaluation says the project produces. The intermediate folder stays shared, so the
-restore is not done twice.
+**It builds into `bin/ArxisStudio` and `obj/ArxisStudio`.** Two tools cannot own `bin/Debug`: the
+moment one of them has the application running, the other's build stops with a dozen lines of
+MSB3026 and then MSB3027 — "the file is locked by .NET Host" — which is true, unactionable, and looks
+like the designer is broken. Nor `obj/Debug`: Rider saves before it runs, the designer hears the save
+and builds too, and two builds writing one intermediate folder fail one of them. The properties are
+ProjectSystem's `MSBuildDesignOutput`, passed to the evaluation as well as to the build, because the
+run path starts what the evaluation says the project produces. The output paths move and the base
+paths do not: the SDK keeps everything under them out of the project's globs, so the IDE's output is
+never an item here, and the restore — `obj/project.assets.json` — is the one both tools read. The
+designer restores first only when it has to: a project never restored, or one whose project file or
+imports changed; a restore's own output changing is a restore having run.
 
-**It follows the files.** A change to an open `.axaml` is applied to the form as a document update,
-so the session, the canvas and the tabs survive and the change joins the undo history — an edit made
-in the other editor can be taken back here. A file appearing, going away or being renamed re-reads
-the workspace whatever its extension is, because an SDK project takes its items from globs: a class
-added in Rider is a new item, and the panel that lists them is stale until the evaluation is done
-again. A file merely saved is not, because that changes no glob. And a form deleted while it is open
-here closes its tab, rather than leaving one editing a document with nowhere to save to.
-
-Events are coalesced over a quarter of a second, and the noise is dropped first: builds write under
-`bin` and `obj`, tools keep state in dot-directories, and editors save through temporary files —
-re-evaluating a project for any of those would be a second of nothing, repeatedly.
+**It follows the files.** Watching is ProjectSystem's: its source watcher reports each change with
+its kind, a coalescer nets a burst into what it amounts to — Rider's save through a temporary file
+and two renames is one change of the saved file, a move between folders is a rename — and the
+snapshot classifies the batch. A saved form is applied to its tab as a document update, so the
+session, the canvas and the tabs survive and the change joins the undo history — an edit made in the
+other editor can be taken back here. A saved class is built. A file appearing or going away where a
+project's globs reach re-reads the workspace, once, because an SDK project takes its items from
+globs; a file merely saved does not. A form renamed or moved in the other editor — a folder renamed
+around it included — follows its file and keeps its history; a form deleted while it is open here
+closes its tab, rather than leaving one editing a document with nowhere to save to. A build writing
+`bin` and `obj`, a tool's state in a dot-directory and an editor's temporary files come to nothing,
+and not by name: the snapshot knows where its projects build and what they declare.
 
 **It does not overwrite your unsaved work, and does not lose the file's.** A form with edits that
 are not in the file is not reloaded behind them: a bar above the canvas says the file changed and
@@ -352,8 +358,12 @@ temporary renamed over it, the original deleted. A save of a clean form has to r
 one undo step and leave the form saved; a save over unsaved edits has to change nothing until it is
 answered, and both answers have to leave the text, the saved state and the canvas agreeing. A member
 bound from the inspector has to show the design data's value, and read as broken once the other
-editor renames it; design data taken out on disk has to be writable back from the inspector. It
-ends with `VERDICT ok — the designer followed an IDE writing its forms`.
+editor renames it; design data taken out on disk has to be writable back from the inspector. Then
+the project: a save of the form must not read the project again, a file the IDE writes must read it
+once, and after an ordinary `dotnet build` has filled `obj/Debug` the designer's own build — set off
+by the IDE saving the window's code — has to pass, and pass again while the application that build
+produced runs from `bin/Debug`. It ends with `VERDICT ok — the designer followed an IDE writing its
+forms`.
 
 ## Five things it demonstrates on purpose
 
