@@ -150,7 +150,7 @@ The division is the whole point, and none of the three knows about the others.
 
 | | Responsibility |
 | --- | --- |
-| `ArxisStudio.ProjectSystem` | which project is open, which files it contains, what it resolves to, restore, build, run |
+| `ArxisStudio.ProjectSystem` | which project is open, which files it contains, what it resolves to, restore, build, run — and, through its adapter's design host, the project's types: built after a saved class, swapped in place, a restart asked for when they will not go |
 | `ArxisStudio.Markup` | the document: parsing it, **every** edit to it, and building the live objects |
 | `ArxisStudio.Surface` | the surface: viewport, grid, selection, handles, gestures — the form designer is `ArxisStudio.Surface.UiDesigner` |
 
@@ -169,7 +169,7 @@ view of it** — a canvas that could disagree with the file is a designer that l
 | Canvas | one `UiDesignerItem` per open form in `ContentMode="Annotated"`, and the item's content is the form and nothing else. In `ContentMode="Loaded"` the editor offers every control the author wrote as a target and finds them by walking the container's content, so a caption or a title bar put in there is — correctly, and unhelpfully — something the user can select and resize. The card is the container's own `Background`, `BorderBrush` and `CornerRadius`; everything else the designer draws sits in a layer above the canvas, in world coordinates, through the editor's public `ViewportTransform`. What is editable is stated rather than guessed: after every load the object map says which controls have a document element behind them, and those are marked `Layout.IsTracked` |
 | Inspector | the properties a control actually has, offered whether or not the document has written them — a short curated list per group, each name asked of the control first, so a Border is offered `CornerRadius` and a TextBlock is not, plus whatever the parent attaches (`Canvas.Left` inside a Canvas) and anything else the file says. Clearing a field removes the attribute. One editor per kind of value, which the document cannot decide and `XamlMemberDescriptor` can: a `bool` is a checkbox, an enum is its own values (side by side when there are four or fewer, a drop-down when more), a brush shows its colour, a number is a number. `ConvertFromText` is asked before anything is written, so text the load could not have meant is reported instead of saved. A value that is a binding is shown and not edited — typing a literal over one would replace it with whatever the text looked like. Width and Height have a `NaN` button beside the field, which takes the number out: a control with a size of its own cannot stretch, and no size is how Avalonia says the layout decides. Choosing `Stretch` for an alignment lets go of that side's size in the same edit — horizontal of the width, vertical of the height — so it is one step to undo. Under the properties, a Data section names the data type in scope and the design data the canvas shows bindings with, and lists what a binding can read; a property's row offers the members its type can take and writes `{Binding Member}`, a binding whose path names nothing on the data says *broken*, and *Create* writes `Design.DataContext` when a data type has none. All of it is asked of Markup by name, so the inspector holds no type of the project's code |
 | Resize | `EditCompleted` on release, written to the element the control came from — and for the card itself, to the document's root, because a gesture on the card is a gesture on the form. A control with nothing behind it says so instead of skipping the write in silence |
-| ▶ / ■ | `OutputArtifactKind.Assembly` and `RuntimeConfiguration`, built through `ExecuteAsync` first |
+| ▶ / ■ | `OutputArtifactKind.Assembly` and `RuntimeConfiguration`, built through the design host first and started from a copy of what it built |
 | Console | everything above, said out loud |
 
 ## The gestures
@@ -280,9 +280,9 @@ tools sitting side by side.
 Two things had to be true for that to work at all, and both are about a window-rooted form — which
 is what an application's main form is:
 
-**A project that has never been restored cannot be built**, and the designer builds before opening a
-form whose `x:Class` names a type. So the restore comes first, and only when the build was going to
-happen anyway.
+**A project that has never been restored cannot be built**, and the designer builds what is out of
+date when it opens a project, before any form names a type. So the restore comes first, and only when
+the build was going to happen anyway.
 
 **A window is whole while it is being updated.** The card shows a window by taking its content
 out of it; an update reads the live tree to work out what to change, and a live window with no
@@ -293,7 +293,7 @@ borrowed again afterwards.
 ### Beside another IDE
 
 The designer is meant to sit next to Rider or Visual Studio: the layout is done here, the code is
-written there, and the same files are open in both. Three things follow from that, and all three
+written there, and the same files are open in both. Six things follow from that, and the first three
 were reported as bugs before they were features.
 
 **It builds into `bin/ArxisStudio` and `obj/ArxisStudio`.** Two tools cannot own `bin/Debug`: the
@@ -327,6 +327,39 @@ offers both ways out. *Take the file* shows it and leaves the form saved; *Keep 
 which now read as changed against what the file says. Either answer is a step of the form's history,
 so a file taken over your edits leaves them one undo away. A save of the designer's own, coming back
 through the watcher late, is recognised as its own and asks nothing.
+
+**A saved class is built, and its types are swapped in place.** The project's types are
+ProjectSystem's design host's (its ADR 0028), and this designer is a thin host over it (ADR 0026
+here). The IDE saves a class; the host waits for the code to be quiet for 400 ms, builds the top
+project of what changed — the application, for a change to the library it references — and
+replaces the types this process holds with what the build wrote, without a restart. An application
+and its libraries are one generation, every assembly loaded once. Nothing outside the designer
+holds a swap off: not the window being behind the IDE's, and not the application started from
+here running — the types replaced are the designer's, not the application's. What does hold one off
+is the designer's own unfinished business — a gesture on the canvas, a value half typed in the
+inspector, a dialog, a drag from the toolbox — and the swap runs the moment the last of them lets
+go. Meanwhile the canvas holds the frame it last drew (`SurfaceView.Freeze`), and afterwards every
+form is back as it was: the tabs, the one in front, its unsaved text and its history, the
+selection and the zoom.
+
+**The application runs from a copy.** ▶ builds through the host and starts what it built from a
+copy under `%TEMP%/UiDesigner.Demo/run/<project>/<n>`, deleted when the application exits. The
+next build — the next class the IDE saves — writes over nothing the running application holds, so
+it builds, the types are swapped, and the application goes on running through both.
+
+**When the old types will not go, it restarts itself, with what was open.** A swap proves the old
+types have left the process before it makes the new ones, and a project whose code keeps them — a
+control subscribing to something the process keeps, most often — gets a restart instead, with the
+canvas holding its frame until then. Behind another window the designer waits: a designer that
+vanished and came back under the hands of somebody working in the IDE would be deciding something
+that is theirs. In front, and with nobody touching it for a second, it starts its next copy
+(`--resume`) and hands it the session as text: the project, every open form's text and what its
+file held, its place and selection, the tab in front and the zoom. The new copy opens the forms
+with that text, asks each file whether it moved on meanwhile — a conflict if it did, never an
+overwrite — and confirms by deleting the handoff; only then does the old copy leave. A copy that
+does not confirm leaves the old one where it was, with its forms back so that what was typed can be
+saved. The undo history does not cross. Three restarts in a row that each found the types held stop
+it restarting by itself, and the Restart button stays.
 
 ### The check that says it works
 
@@ -362,8 +395,18 @@ editor renames it; design data taken out on disk has to be writable back from th
 the project: a save of the form must not read the project again, a file the IDE writes must read it
 once, and after an ordinary `dotnet build` has filled `obj/Debug` the designer's own build — set off
 by the IDE saving the window's code — has to pass, and pass again while the application that build
-produced runs from `bin/Debug`. It ends with `VERDICT ok — the designer followed an IDE writing its
-forms`.
+produced runs from `bin/Debug`. Then the code: the view model saved in the IDE has to be built and
+swapped in by itself, with no activation of the window between the build and the swap, the tabs,
+the unsaved text and its history, the selection and the zoom kept, and the canvas frozen for the
+swap alone; a gesture held on the canvas has to hold the swap off and get it the moment it lets go;
+and the application started from the designer has to run on through a build and a swap. Then a
+solution of an application and the library it references: one generation, the library loaded
+once, and the library's saved class built through the application and swapped in. Last, a control
+that subscribes to the process: the swap is found held, the designer waits while it is behind
+another window, and in front it restarts by itself — the new copy, asked through its automation
+channel, has to have the tabs, the unsaved text, the selection and the zoom. Each swap says its
+phases on a `timing` line. It ends with `VERDICT ok — the designer followed an IDE writing its
+forms and its code`.
 
 ## Five things it demonstrates on purpose
 
@@ -406,11 +449,10 @@ parent is the answer.
 
 ## What it is not
 
-**A form is built before it is opened, once, when it has to be.** A document naming an `x:Class`
-names a type, and a type in a project nobody has compiled does not exist — so opening a form in a
-freshly created application used to fail with "unable to resolve type", which is true and
-unactionable. The designer builds instead, and says so. A document with no `x:Class` needs nothing
-built and waits for nothing.
+**A project is built when it is opened, as far as it is out of date.** A document naming an
+`x:Class` names a type, and a type in a project nobody has compiled does not exist — so opening a form
+in a freshly created application used to fail with "unable to resolve type", which is true and
+unactionable. The design host builds what is out of date before it loads the types, and says so.
 
 **A document is parsed with the `avares` URI it will be embedded under.** Without one a relative URI
 means nothing, and a new Avalonia window says `Icon="/Assets/avalonia-logo.ico"` on its second line.
@@ -472,4 +514,5 @@ kind could be built on it. A name and a value is enough to show that the edit re
 
 **Undo is the form's, not the designer's.** Each form keeps its own history in Markup's live
 document: an edit made here, a save made in the other editor and either answer to a conflict are
-steps of it. Undo in one tab never reaches into another, and there is no history across forms.
+steps of it. Undo in one tab never reaches into another, and there is no history across forms. A
+swap of the types keeps it; a restart does not carry it across.
