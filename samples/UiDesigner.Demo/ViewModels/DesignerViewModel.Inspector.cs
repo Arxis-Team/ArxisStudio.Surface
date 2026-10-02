@@ -230,6 +230,7 @@ public sealed partial class DesignerViewModel
     {
         Properties.Clear();
         PropertyGroups.Clear();
+        ClearData();
 
         Raise(nameof(SelectedType));
         Raise(nameof(SelectedQualifier));
@@ -351,6 +352,13 @@ public sealed partial class DesignerViewModel
                 PropertyGroups.Add(new PropertyGroup(heading, rows));
             }
         }
+
+        // What the bindings read is asked of the session, which answers asynchronously; the rows
+        // just built are what the answer fills.
+        if (ActiveForm is { } form)
+        {
+            RunDetached(() => FillDataAsync(form, element));
+        }
     }
 
     /// <summary>
@@ -427,7 +435,9 @@ public sealed partial class DesignerViewModel
         }
 
         string text = attribute?.GetValueText() ?? string.Empty;
-        bool isDirective = attribute?.IsDirective ?? false;
+        // The name is offered whether or not the file writes it, and unwritten it has no attribute to
+        // say it is a directive — but it is one either way, and nothing binds to a directive.
+        bool isDirective = attribute?.IsDirective ?? name == NameDirective;
 
         // An expression is not a value, and a row that let one be typed over would replace a
         // binding with whatever the text happened to look like.

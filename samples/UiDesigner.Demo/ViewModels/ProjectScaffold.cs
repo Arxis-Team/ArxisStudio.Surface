@@ -278,6 +278,12 @@ public static class ProjectScaffold
         """);
 
     /// <summary>The form itself, which is what the designer opens first.</summary>
+    /// <remarks>
+    /// With <c>Design.DataContext</c> beside its <c>x:DataType</c>, as Avalonia's own template writes
+    /// it. The data type is what the bindings are compiled against; the design data is what the
+    /// designer shows them with — without it a form of bindings is a form of empty text blocks, and
+    /// the data section of the inspector has nothing to say about the design instance.
+    /// </remarks>
     private static string Window(string name) => string.Create(
         CultureInfo.InvariantCulture,
         $$"""
@@ -288,6 +294,11 @@ public static class ProjectScaffold
                 x:DataType="vm:MainWindowViewModel"
                 Title="{{name}}"
                 Width="900" Height="600">
+
+              <Design.DataContext>
+                <!-- What the designer shows the bindings with; the application sets its own in App.axaml.cs. -->
+                <vm:MainWindowViewModel />
+              </Design.DataContext>
 
               <StackPanel Margin="24" Spacing="10" VerticalAlignment="Center">
                 <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" />

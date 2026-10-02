@@ -49,6 +49,9 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
 
     public DesignerViewModel()
     {
+        // First, because the inspector empties the data section whenever it is rebuilt.
+        InitialiseData();
+
         OpenCommand = new RelayCommand(() => Run(OpenAsync));
         SaveCommand = new RelayCommand(() => Run(SaveAsync), () => CanSave);
         NewFormCommand = new RelayCommand(() => Run(NewFormAsync), () => IsLoaded);

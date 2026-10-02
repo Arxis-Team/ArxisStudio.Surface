@@ -58,6 +58,34 @@ public sealed class ChoiceOption : Observable
     internal void Refresh() => Raise(nameof(IsChosen));
 }
 
+/// <summary>What a binding written on a property was found to read.</summary>
+public enum BindingState
+{
+    /// <summary>The row holds no binding, or nothing has been asked about it.</summary>
+    None,
+
+    /// <summary>Every step of the binding's path is a member of the data it reads.</summary>
+    Resolved,
+
+    /// <summary>A step names nothing on the data — a member renamed or removed in the code.</summary>
+    Broken,
+
+    /// <summary>The binding reads something types cannot answer for, and is not checked.</summary>
+    NotChecked,
+}
+
+/// <summary>A member of the data a property can be bound to, offered on the property's row.</summary>
+/// <param name="Name">The member's name, as the binding's path writes it.</param>
+/// <param name="TypeName">The member's type, as a reader writes it.</param>
+/// <param name="Command">Writes the binding.</param>
+public sealed record BindOption(string Name, string TypeName, RelayCommand Command);
+
+/// <summary>A member of the data in scope, as the data section lists it.</summary>
+/// <param name="Name">The member's name.</param>
+/// <param name="TypeName">The member's type, as a reader writes it.</param>
+/// <param name="Note">What else is worth knowing about it — writable, a collection, a command.</param>
+public sealed record DataMember(string Name, string TypeName, string Note);
+
 /// <summary>
 /// One editable property of the selected element.
 /// </summary>
@@ -198,6 +226,54 @@ public sealed class PropertyRow : Observable
     }
 
     public bool HasError => Error is { Length: > 0 };
+
+    /// <summary>
+    /// The members of the data in scope this property can be bound to, filled once the data section
+    /// has asked the session what the element's bindings read.
+    /// </summary>
+    /// <remarks>
+    /// Names and a command each, never a type: a row lives as long as the selection does, and a
+    /// <see cref="Type"/> held here would hold the generation of the project's code it came from.
+    /// </remarks>
+    public IReadOnlyList<BindOption> BindOptions
+    {
+        get;
+        internal set
+        {
+            if (Set(ref field, value))
+            {
+                Raise(nameof(CanBind));
+            }
+        }
+    } = [];
+
+    /// <summary>Whether the row offers to bind the property to a member of the data.</summary>
+    public bool CanBind => BindOptions.Count > 0 && !IsReadOnly && !IsDirective && !IsExpression;
+
+    /// <summary>What the binding this row shows was found to read.</summary>
+    public BindingState Binding
+    {
+        get;
+        internal set
+        {
+            if (Set(ref field, value))
+            {
+                Raise(nameof(IsBindingBroken));
+                Raise(nameof(IsBindingNotChecked));
+            }
+        }
+    }
+
+    /// <summary>Why the binding is broken or not checked, for the row's tooltip.</summary>
+    public string? BindingMessage
+    {
+        get;
+        internal set => Set(ref field, value);
+    }
+
+    public bool IsBindingBroken => Binding == BindingState.Broken;
+
+    public bool IsBindingNotChecked => Binding == BindingState.NotChecked;
 
     private string _value;
 
