@@ -44,7 +44,7 @@ namespace UiDesigner.Demo.Views;
 /// under <c>tests/</c>, which are forbidden from sleeping precisely because they have something.
 /// </para>
 /// </remarks>
-internal static class StudioCheck
+internal static partial class StudioCheck
 {
     /// <summary>
     /// Whether a swap that could not reclaim should stay put instead of restarting.
