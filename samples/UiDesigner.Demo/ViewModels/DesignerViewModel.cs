@@ -326,32 +326,32 @@ public sealed partial class DesignerViewModel : Observable, IDisposable
     private CanonicalPath EntryPoint { get; set; }
 
     /// <summary>
-    /// What this designer adds to every evaluation, build and run: an output folder of its own.
+    /// What this designer adds to every evaluation, build and run: output folders of its own.
     /// </summary>
     /// <remarks>
     /// <para>
     /// This tool is used beside an IDE, and both build the same project. They cannot both own
     /// <c>bin\Debug</c>: the moment one of them has the application running, the other's build stops
     /// with a dozen lines of MSB3026 and then MSB3027 — "the file is locked by .NET Host" — which is
-    /// true, unactionable, and looks like the designer is broken.
+    /// true, unactionable, and looks like the designer is broken. Nor <c>obj\Debug</c>: Rider saves
+    /// before it runs, this designer hears the save and builds too, and two builds writing one
+    /// intermediate folder fail one of them.
     /// </para>
     /// <para>
-    /// So the designer builds into <c>bin\ArxisStudio</c> and runs what it built there. The property
-    /// is relative, so every project in the solution resolves it against itself, and it is passed to
-    /// the evaluation as well as to the operations — the run path starts what the evaluation says the
-    /// project produces, and the two would disagree if only one of them knew.
+    /// So the designer builds into <c>bin\ArxisStudio</c> and <c>obj\ArxisStudio</c> and runs what it
+    /// built there — ProjectSystem's <see cref="MSBuildDesignOutput"/>, its ADR 0026. The properties
+    /// are relative, so every project in the solution resolves them against itself, and they are
+    /// passed to the evaluation as well as to the operations: the run path starts what the evaluation
+    /// says the project produces, and the two would disagree if only one of them knew.
     /// </para>
     /// <para>
-    /// The intermediate folder is deliberately left shared. That is where the restore writes its
-    /// assets file, and a second copy of it would mean restoring the same packages twice for no
-    /// benefit — the file both tools read is the same file, and neither writes it while the other is
-    /// building.
+    /// The output paths move and the bases do not. The SDK excludes from every glob what lies under the
+    /// bases; this designer once moved <c>BaseOutputPath</c> instead, and the IDE's whole
+    /// <c>bin\Debug</c> became items of the project. With the bases where they are, the restore is
+    /// shared as well — <c>obj\project.assets.json</c> is the file both tools read.
     /// </para>
     /// </remarks>
-    private static readonly ProjectMetadata DesignerOutput = ProjectMetadata.Create(
-    [
-        new System.Collections.Generic.KeyValuePair<string, string>("BaseOutputPath", "bin/ArxisStudio/"),
-    ]);
+    private static ProjectMetadata DesignerOutput => MSBuildDesignOutput.GlobalProperties;
 
     private bool CanOperate() => IsLoaded && !IsBusy;
 
