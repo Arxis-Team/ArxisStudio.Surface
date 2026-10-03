@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using ArxisStudio.Markup.Xaml.Loader;
 using ArxisStudio.ProjectSystem;
 using ArxisStudio.ProjectSystem.Markup.Xaml;
+using ArxisStudio.Surface.UiDesigner;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using UiDesigner.Demo.ViewModels;
@@ -23,7 +25,8 @@ namespace UiDesigner.Demo.Views;
 /// chosen as a view's data type, design data made of it, a text bound to its member and showing the
 /// design instance's value; the IDE renames the member, and the binding reads as broken after the swap.
 /// L10 — a window with a class, a handler and a data type changes structurally in place: its session
-/// stays, the handler runs on it, and the platform holds no window more than before.
+/// stays, the handler runs on it, and the platform holds no window more than before. L11 — a user control
+/// the IDE writes with nothing in it takes a control from the palette as its content.
 /// </para>
 /// <para>
 /// As in part 3, nothing of a generation is kept across a swap: forms are found again by file name,
@@ -42,6 +45,7 @@ internal static partial class StudioCheck
             () => PlaceANewControlAsync(window, designer, solution),
             () => BindToTheProjectsDataAsync(designer, solution),
             () => ChangeAFormWithAClassInPlaceAsync(designer, solution),
+            () => DropIntoAnEmptyControlAsync(window, designer, solution),
         })
         {
             failures += await step();
@@ -104,6 +108,12 @@ internal static partial class StudioCheck
             if (!await Until(() => designer.ProjectEntryFor(badgeFile) is { Control.IsBuilt: false }, 60))
             {
                 return Fail(ref failures, "L6: the palette does not offer the new control as not built yet");
+            }
+
+            // App.axaml declares a class too, and an application is no control to place.
+            if (designer.Toolbox.Any(static entry => entry.Control is { Name: "App" }))
+            {
+                Fail(ref failures, "L6: the palette offers the application's class as a control");
             }
 
             if (!await DropOntoAsync(window, designer, "MainWindow.axaml", designer.ProjectEntryFor(badgeFile)!))
@@ -531,6 +541,120 @@ internal static partial class StudioCheck
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
     private static extern bool IsWindowVisible(IntPtr handle);
 #pragma warning restore SYSLIB1054
+
+    /// <summary>
+    /// L11: a user control the IDE writes with nothing in it takes a control from the palette as its
+    /// content, and undo gives the file's text back.
+    /// </summary>
+    /// <remarks>
+    /// The designer leaves a form's root unmarked — the card stands for it — and the editor looked for a
+    /// place only among marked controls, asking the card for its root only when the root was a window: an
+    /// empty user control took no drop at all, with nothing in the console to say why.
+    /// </remarks>
+    private static async Task<int> DropIntoAnEmptyControlAsync(MainWindow window, DesignerViewModel designer, string solution)
+    {
+        string? inFront = designer.ActiveForm?.Name;
+        var failures = 0;
+
+        try
+        {
+            failures += await DropIntoTheEmptyControlAsync(window, designer, solution);
+        }
+        finally
+        {
+            // The steps after this one expect the form they left in front, whatever this one came to.
+            if (inFront is not null && !await ShowFormAsync(designer, inFront))
+            {
+                Fail(ref failures, $"L11: {inFront} would not come back to the front");
+            }
+        }
+
+        return failures;
+    }
+
+    /// <summary>What <see cref="DropIntoAnEmptyControlAsync"/> checks, with the form in front left to it.</summary>
+    private static async Task<int> DropIntoTheEmptyControlAsync(MainWindow window, DesignerViewModel designer, string solution)
+    {
+        var failures = 0;
+        string empty = Path.Combine(Path.GetDirectoryName(solution)!, "SuiteApp", "Views", "EmptyView.axaml");
+        int swaps = designer.Swaps;
+
+        await File.WriteAllTextAsync(empty + ".cs", EmptyViewCode);
+        await File.WriteAllTextAsync(empty, EmptyViewMarkup);
+
+        // Its class is built and swapped in before it is opened, as a form a person opens after the build.
+        if (!await Until(() => designer.Swaps > swaps && designer.TypesState == ProjectDesignState.Live, 300)
+            || !await Until(() => designer.ProjectForms.Any(static form => form.Name == "EmptyView.axaml"), 60)
+            || await designer.OpenByNameAsync("EmptyView.axaml") is not null
+            || designer.Forms.FirstOrDefault(static form => form.Name == "EmptyView.axaml") is not { } form)
+        {
+            return Fail(ref failures, $"L11: the IDE's empty user control did not open ({designer.TypesState})");
+        }
+
+        string start = Text(form);
+
+        if (window.FindControl<UiDesignerView>("Surface") is not { } editor
+            || await PlaceAtAsync(
+                editor,
+                form,
+                () => LiveOf<Control>(form, form.Document?.Root),
+                static root => new Point(root.Bounds.Width / 2, root.Bounds.Height / 2)) is not
+                { Kind: SurfaceDropKind.Content } placement)
+        {
+            return Fail(ref failures, "L11: over an empty user control the editor offers no place");
+        }
+
+        if (!await DropAtAsync(editor, designer, form, "Button", placement))
+        {
+            Fail(ref failures, "L11: the Button dropped onto the empty user control never reached the document");
+        }
+        else if (form.Document?.Root?.ContentElements.SingleOrDefault() is not { Name.LocalName: "Button" } written)
+        {
+            Fail(ref failures, "L11: the Button is not the user control's content in the document");
+        }
+        else if (!await Until(() => CaughtUp(form) && LiveOf<Button>(form, written) is { Bounds.Height: > 0 }, 30))
+        {
+            Fail(ref failures, "L11: the canvas does not show the Button in the user control");
+        }
+        else
+        {
+            Say("L11: a user control the IDE wrote with nothing in it takes a control from the palette as its content");
+        }
+
+        if (!await UndoToAsync(designer, form, start))
+        {
+            Fail(ref failures, "L11: undoing the drop did not give the user control's text back");
+        }
+
+        return failures;
+    }
+
+    /// <summary>A user control as an IDE leaves one emptied: a class, a size, nothing inside.</summary>
+    private const string EmptyViewMarkup =
+        """
+        <UserControl xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     x:Class="SuiteApp.Views.EmptyView"
+                     Width="480" Height="300">
+
+
+        </UserControl>
+
+        """;
+
+    private const string EmptyViewCode =
+        """
+        using Avalonia.Controls;
+        using Avalonia.Markup.Xaml;
+
+        namespace SuiteApp.Views;
+
+        public partial class EmptyView : UserControl
+        {
+            public EmptyView() => AvaloniaXamlLoader.Load(this);
+        }
+
+        """;
 
     private static string BadgeMarkup(string text) =>
         $$"""
