@@ -95,6 +95,36 @@ public class UiDesignerFormApplicationTests
         Assert.NotEqual(42, Text(view).FontSize);
     }
 
+    /// <summary>
+    /// Тема типа, которую даёт приложение документа, достаётся и форме, вставшей раньше приложения.
+    /// </summary>
+    /// <remarks>
+    /// Хост показывает корень, как только документ построен, а приложение строит после — оно грузится
+    /// своей очередью. Контрол формы ищет тему своего типа, входя в дерево, и находит тему инструмента
+    /// или ничего; стиль, пришедший потом, переприменяется сам, а тема типа — нет. В студии поле ввода
+    /// формы так и стояло без шаблона, нулевой высоты, хотя Fluent приложения уже лежал на области.
+    /// </remarks>
+    [AvaloniaFact]
+    public void A_Theme_The_Application_Gives_A_Type_Reaches_A_Form_Shown_Before_It()
+    {
+        const string ButtonTheme =
+            "<Styles><Styles.Resources>" +
+            "<ControlTheme x:Key=\"{x:Type Button}\" TargetType=\"Button\">" +
+            "<Setter Property=\"Tag\" Value=\"document\" />" +
+            "</ControlTheme>" +
+            "</Styles.Resources></Styles>";
+
+        var view = View("<Button x:Name=\"Go\" Content=\"go\" />");
+        var item = new UiDesignerFormItem { Root = view };
+
+        Host(item);
+
+        item.ApplicationRoot = App(ButtonTheme);
+        item.UpdateLayout();
+
+        Assert.Equal("document", Assert.IsType<Button>(view.FindControl<Control>("Go")).Tag);
+    }
+
     [AvaloniaFact]
     public void Another_Application_Replaces_The_First_And_The_First_Gets_Its_Own_Back()
     {

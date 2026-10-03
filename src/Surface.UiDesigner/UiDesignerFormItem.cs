@@ -562,6 +562,7 @@ public class UiDesignerFormItem : UiDesignerItem
             var old = _applicationRoot;
             _applicationRoot = value;
             BorrowApplication(value);
+            Reenter();
             RaisePropertyChanged(ApplicationRootProperty, old, value);
         }
     }
@@ -990,6 +991,25 @@ public class UiDesignerFormItem : UiDesignerItem
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Ставит содержимое формы в дерево заново, когда сменилось приложение.
+    /// </summary>
+    /// <remarks>
+    /// Тему своего типа контрол ищет, входя в дерево, и помнит найденное. Стили приложения, пришедшего
+    /// после корня, переприменяются сами, а тема типа — нет: хост показывает корень, как только документ
+    /// построен, а приложение строит после, и поле ввода формы оставалось при теме инструмента или вовсе
+    /// без шаблона, хотя тема приложения уже лежала на области. Вошедшее заново содержимое ищет тему под
+    /// приложением, которое стоит сейчас; ушедшее приложение тем же входом отдаёт свою.
+    /// </remarks>
+    private void Reenter()
+    {
+        if (_scope.Child is not { } content)
+            return;
+
+        _scope.Child = null;
+        _scope.Child = content;
     }
 
     /// <summary>Возвращает приложению документа всё взятое — в порядке, обратном тому, как брали.</summary>
