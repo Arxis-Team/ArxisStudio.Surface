@@ -37,7 +37,13 @@ public class DropPlacementTests
         (Window)AvaloniaRuntimeXamlLoader.Parse(
             $"<Window xmlns=\"{Avalonia}\" xmlns:x=\"{Xaml}\" Width=\"400\" Height=\"300\">{content}</Window>");
 
-    private static (UiDesignerView Editor, UiDesignerFormItem Item) Designer(Window form)
+    private static UserControl ControlForm(string content) =>
+        (UserControl)AvaloniaRuntimeXamlLoader.Parse(
+            $"<UserControl xmlns=\"{Avalonia}\" xmlns:x=\"{Xaml}\" Width=\"400\" Height=\"300\">{content}</UserControl>");
+
+    private static (UiDesignerView Editor, UiDesignerFormItem Item) Designer(
+        Control form,
+        SurfaceContentMode mode = SurfaceContentMode.Loaded)
     {
         var editor = new UiDesignerView
         {
@@ -50,7 +56,24 @@ public class DropPlacementTests
         host.Show();
         host.UpdateLayout();
 
-        return (editor, Assert.IsType<UiDesignerFormItem>(editor.ContainerFromIndex(0)));
+        var item = Assert.IsType<UiDesignerFormItem>(editor.ContainerFromIndex(0));
+        item.ContentMode = mode;
+        host.UpdateLayout();
+
+        return (editor, item);
+    }
+
+    /// <summary>
+    /// Помечает контролы формы, как помечает хост, который знает, что редактируемо: всё, кроме корня, —
+    /// за корень стоит карточка.
+    /// </summary>
+    private static void MarkAllButTheRoot(Control root)
+    {
+        foreach (var control in root.GetVisualDescendants().OfType<Control>())
+        {
+            if (control.TemplatedParent is null)
+                Layout.SetIsTracked(control, true);
+        }
     }
 
     private static T Named<T>(UiDesignerFormItem item, string name) where T : Control =>
@@ -109,6 +132,75 @@ public class DropPlacementTests
         Assert.Equal(3, end.Index);
         Assert.Null(end.Anchor);
         Assert.Equal(WorldBounds(editor, c).Bottom, end.Indicator.Top, 3);
+    }
+
+    [AvaloniaFact]
+    public void A_User_Control_Form_Takes_A_Drop_Into_Its_Panel()
+    {
+        var (editor, item) = Designer(ControlForm(Stack));
+        var stack = Named<StackPanel>(item, "Stack");
+        var b = Named<Button>(item, "B");
+
+        var placement = Resolve(editor, At(editor, b, 10, 5));
+
+        Assert.Equal(SurfaceDropKind.Insert, placement.Kind);
+        Assert.Same(stack, placement.Parent);
+        Assert.Equal(1, placement.Index);
+        Assert.Same(b, placement.Anchor);
+    }
+
+    [AvaloniaFact]
+    public void An_Empty_User_Control_Takes_The_Drop_As_Its_Content()
+    {
+        var form = ControlForm(string.Empty);
+        var (editor, item) = Designer(form);
+
+        var placement = Resolve(editor, At(editor, item, 200, 150));
+
+        Assert.Equal(SurfaceDropKind.Content, placement.Kind);
+        Assert.Same(form, placement.Parent);
+    }
+
+    [AvaloniaFact]
+    public void An_Unmarked_Empty_User_Control_Root_Takes_The_Drop_As_Its_Content()
+    {
+        // Хост с пометками корень не помечает — за него стоит карточка, — и обход кандидатов его не видит.
+        var form = ControlForm(string.Empty);
+        var (editor, item) = Designer(form, SurfaceContentMode.Annotated);
+
+        var placement = Resolve(editor, At(editor, item, 200, 150));
+
+        Assert.Equal(SurfaceDropKind.Content, placement.Kind);
+        Assert.Same(form, placement.Parent);
+        Assert.Equal(new Rect(100, 100, 400, 300), placement.Indicator);
+        Assert.Equal(new Point(200, 150), placement.Position);
+    }
+
+    [AvaloniaFact]
+    public void An_Unmarked_User_Control_Root_Gives_The_Drop_To_Its_Marked_Panel()
+    {
+        var form = ControlForm(Stack);
+        var (editor, item) = Designer(form, SurfaceContentMode.Annotated);
+        MarkAllButTheRoot(form);
+        editor.UpdateLayout();
+
+        var placement = Resolve(editor, At(editor, Named<Button>(item, "B"), 10, 5));
+
+        Assert.Equal(SurfaceDropKind.Insert, placement.Kind);
+        Assert.Same(Named<StackPanel>(item, "Stack"), placement.Parent);
+        Assert.Equal(1, placement.Index);
+    }
+
+    [AvaloniaFact]
+    public void A_User_Control_Root_Holding_A_Control_Takes_No_Drop()
+    {
+        // Содержимое у корня одно, и оно занято: заменять его молча значило бы удалить то, что там было.
+        var form = ControlForm("""<TextBlock x:Name="Label" Text="Hello" />""");
+        var (editor, item) = Designer(form, SurfaceContentMode.Annotated);
+        MarkAllButTheRoot(form);
+        editor.UpdateLayout();
+
+        Assert.False(editor.TryResolveDropPlacement(At(editor, item, 200, 150), out _));
     }
 
     [AvaloniaFact]

@@ -113,6 +113,11 @@ public partial class UiDesignerView
     /// Контрол с содержимым ребёнка не примет: кнопка с текстом, рамка с ребёнком. Бросок на них уходит
     /// родителю, рядом с ними. Заменять содержимое молча значило бы удалить то, что там было.
     /// </para>
+    /// <para>
+    /// Корень формы спрашивается последним, когда внутри него не принял никто, — и тогда, когда хост его
+    /// для выбора не помечает: за корень стоит карточка, а пустой корень принимает ребёнка, как всякий
+    /// контрол.
+    /// </para>
     /// </remarks>
     public bool TryResolveDropPlacement(
         Point positionInEditor,
@@ -128,24 +133,16 @@ public partial class UiDesignerView
         if (FindContainerAtWorldPoint(world) is not UiDesignerItem container)
             return false;
 
-        if (!TryFindDropHost(container, world, dragged, out var host))
+        if (!TryFindDropHost(container, world, dragged, out var host)
+            && (container is not UiDesignerFormItem form || !TryGetRootDropHost(form, world, dragged, out host)))
         {
-            // Окно без содержимого не даёт формы, в которой искать: принимает оно само. Спрашивается
-            // элемент, а не окно: пока элемент держит окно, содержимое окна занято им, и Content пуст
-            // у всякого окна.
-            if (container is UiDesignerFormItem { Root: ContentControl root, IsTopLevel: true, HasContent: false }
-                && TryGetContainerWorldBounds(container, out var form)
-                && form.Contains(world))
-            {
-                placement = new SurfaceDropPlacement(
-                    container, root, SurfaceDropKind.Content, 0, default, 0, 0, null, form);
-                return true;
-            }
-
             return false;
         }
 
-        var position = this.TranslatePoint(positionInEditor, host.Parent) ?? default;
+        // Окно, которое держит элемент, в дереве не стоит, и точку в его координатах у него не спросить.
+        var position = host.Parent is TopLevel
+            ? default
+            : this.TranslatePoint(positionInEditor, host.Parent) ?? default;
 
         placement = host.Kind switch
         {
@@ -227,6 +224,46 @@ public partial class UiDesignerView
         }
 
         return found;
+    }
+
+    /// <summary>
+    /// Корень формы как родитель броска, когда внутри него бросок не принял никто.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// За корень стоит карточка: хост, который помечает выбираемое, корень не помечает, чтобы у формы не
+    /// было второй рамки внутри карточки, — и обход кандидатов корня не встречает. А принимает корень так
+    /// же, как всякий контрол: пустой пользовательский элемент — содержимым, корень-панель — по своей
+    /// раскладке. Поэтому корень спрашивается последним, здесь, в любом режиме содержимого. Прежде здесь
+    /// спрашивалось только окно, и пустой <see cref="UserControl"/> под хостом с пометками броска не
+    /// принимал вовсе.
+    /// </para>
+    /// <para>
+    /// Окно спрашивается у элемента: пока элемент держит окно, содержимое окна занято им и
+    /// <c>Content</c> пуст у всякого окна, а само окно в дереве не стоит. Область у обоих — область
+    /// элемента: размер элемента — размер формы.
+    /// </para>
+    /// </remarks>
+    private bool TryGetRootDropHost(UiDesignerFormItem item, Point world, Control? dragged, out DropHost host)
+    {
+        host = default;
+
+        if (!TryGetContainerWorldBounds(item, out var area) || !area.Contains(world))
+            return false;
+
+        switch (item.Root)
+        {
+            case TopLevel window when !item.HasContent:
+                host = new DropHost(window, SurfaceDropKind.Content, area);
+                return true;
+
+            case Control root when root is not TopLevel && !IsCarried(root, dragged) && DropKindOf(root) is { } kind:
+                host = new DropHost(root, kind, area);
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     /// <summary>Несут ли этот контрол или то, в чём он лежит.</summary>
