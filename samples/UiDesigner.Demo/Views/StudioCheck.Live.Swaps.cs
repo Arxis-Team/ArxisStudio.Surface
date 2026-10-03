@@ -51,14 +51,21 @@ internal static partial class StudioCheck
 
             failures += library;
 
+            // Part 4 in the solution L7 opened: the project's own controls and data.
+            if (solution is not null)
+            {
+                failures += await ControlsAndDataBesideTheIdeAsync(window, designer, solution);
+            }
+
             if (complaints.Lines.Count > 0)
             {
                 Fail(ref failures, $"part 3: {complaints.Lines.Count} error line(s) in the console — see above");
             }
         }
 
-        // Last, because the process this check runs in ends with it.
-        if (solution is not null)
+        // Last, because the process this check runs in ends with it — and only over types that can
+        // still be swapped, because its first step is a swap.
+        if (solution is not null && designer.TypesState != ProjectDesignState.RestartRequired)
         {
             failures += await RestartWhenHeldAsync(window, designer, solution, folder);
         }

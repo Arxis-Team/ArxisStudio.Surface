@@ -304,6 +304,7 @@ internal static partial class StudioCheck
         using System;
         using Avalonia.Controls;
         using Avalonia.Markup.Xaml;
+        using Avalonia.Threading;
 
         namespace SuiteApp.Views;
 
@@ -318,7 +319,8 @@ internal static partial class StudioCheck
                 AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             }
 
-            private void OnProcessExit(object? sender, EventArgs e) => IsVisible = false;
+            // The process raises this on a thread of its own, and a control belongs to the UI thread.
+            private void OnProcessExit(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() => IsVisible = false);
         }
 
         """;
