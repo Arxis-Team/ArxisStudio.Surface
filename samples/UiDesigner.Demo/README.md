@@ -527,7 +527,9 @@ the controls its documents can place — creatable, a control, not a window — 
 projects build and declare, and each is placed as an empty element: what it shows is what its own
 markup says. A package ships its templated parts and helpers as controls too, and offering those
 would need a rule for what somebody places and initial markup per type, which is a different
-feature.
+feature. A control is refused inside its own form; a cycle through other controls — one placed
+into a form whose class its own markup places — is not looked for, and builds without end, as it
+would in the application.
 
 **Properties are added by name.** The assembly context is right there and a typed editor per property
 kind could be built on it. A name and a value is enough to show that the edit reaches the file.
