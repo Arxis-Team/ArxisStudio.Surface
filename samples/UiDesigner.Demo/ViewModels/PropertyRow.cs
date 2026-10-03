@@ -80,6 +80,12 @@ public enum BindingState
 /// <param name="Command">Writes the binding.</param>
 public sealed record BindOption(string Name, string TypeName, RelayCommand Command);
 
+/// <summary>A data type of the project, offered as the selected element's <c>x:DataType</c>.</summary>
+/// <param name="Name">The type's name.</param>
+/// <param name="Detail">Its CLR namespace, to tell two of one name apart.</param>
+/// <param name="Command">Writes it as the data type.</param>
+public sealed record DataTypeOption(string Name, string Detail, RelayCommand Command);
+
 /// <summary>A member of the data in scope, as the data section lists it.</summary>
 /// <param name="Name">The member's name.</param>
 /// <param name="TypeName">The member's type, as a reader writes it.</param>
@@ -132,6 +138,9 @@ public sealed class PropertyRow : Observable
         Options = [.. System.Linq.Enumerable.Select(choices, choice => new ChoiceOption(this, choice))];
 
         ResetCommand = new RelayCommand(() => Value = string.Empty, () => _value.Length > 0 && !IsReadOnly);
+
+        // A binding is not typed over, but it can be taken out: the property goes back to unwritten.
+        UnbindCommand = new RelayCommand(() => _commit(this, string.Empty), () => IsExpression);
     }
 
     public string Name { get; }
@@ -191,6 +200,9 @@ public sealed class PropertyRow : Observable
 
     /// <summary>Takes the value out of the document, which puts the property back to its default.</summary>
     public RelayCommand ResetCommand { get; }
+
+    /// <summary>Takes an expression — a binding — out of the document, leaving the property unwritten.</summary>
+    public RelayCommand UnbindCommand { get; }
 
     /// <summary>What the reset beside a size says it does.</summary>
     public string ResetTip =>

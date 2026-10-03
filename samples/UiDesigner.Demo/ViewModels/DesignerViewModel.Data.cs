@@ -1,4 +1,7 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -52,6 +55,24 @@ public sealed partial class DesignerViewModel
     /// <summary>The members of the data in scope.</summary>
     public ObservableCollection<DataMember> DataMembers { get; } = [];
 
+    /// <summary>
+    /// The project's data types, offered as the selected element's <c>x:DataType</c> — names from the
+    /// design host's catalog, read once per generation.
+    /// </summary>
+    public ObservableCollection<DataTypeOption> DataTypeOptions { get; } = [];
+
+    /// <summary>Whether the project has data types to offer.</summary>
+    public bool HasDataTypeOptions
+    {
+        get;
+        private set => Set(ref field, value);
+    }
+
+    /// <summary>The project's data types as the last generation named them, and which generation that was.</summary>
+    private ImmutableArray<XamlTypeEntry> _dataTypes = [];
+
+    private string? _dataTypesOf;
+
     /// <summary>Whether the data in scope has members to list.</summary>
     public bool HasDataMembers
     {
@@ -94,8 +115,26 @@ public sealed partial class DesignerViewModel
         DesignDataText = string.Empty;
         DataMembers.Clear();
         HasDataMembers = false;
+        DataTypeOptions.Clear();
+        HasDataTypeOptions = false;
 
         CreateDesignDataCommand.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>Fills the data section: what the bindings read, then the data types the project offers.</summary>
+    /// <remarks>
+    /// Two methods awaited one after the other, not one awaiting the other at its end. The first reads
+    /// types of the live generation — the data type, the design data's, what each path holds — and an
+    /// async method keeps its locals until it returns; the second asks the design host for its catalog,
+    /// which waits its turn behind a swap. Awaited from inside the first, the types would be held
+    /// through the very swap the request waited behind, and the swap would find its generation held.
+    /// </remarks>
+    private async Task FillDataSectionAsync(FormViewModel form, XamlElement element)
+    {
+        if (await FillDataAsync(form, element))
+        {
+            await FillDataTypeOptionsAsync(element);
+        }
     }
 
     /// <summary>
@@ -107,7 +146,8 @@ public sealed partial class DesignerViewModel
     /// answer is for are the ones current when it arrives — an inspector rebuilt in the meantime is a
     /// different selection or a different text, and the answer is dropped.
     /// </remarks>
-    private async Task FillDataAsync(FormViewModel form, XamlElement element)
+    /// <returns>Whether the section speaks for this element now.</returns>
+    private async Task<bool> FillDataAsync(FormViewModel form, XamlElement element)
     {
         _dataFor = element;
 
@@ -119,14 +159,14 @@ public sealed partial class DesignerViewModel
         {
             ClearData();
 
-            return;
+            return false;
         }
 
         XamlDataContextInfo info = await session.GetDataContextAsync(element, _shutdown.Token);
 
         if (!ReferenceEquals(_dataFor, element) || !ReferenceEquals(Selected, element))
         {
-            return;
+            return false;
         }
 
         XamlMemberResolver members = session.Environment.MemberResolver;
@@ -164,13 +204,27 @@ public sealed partial class DesignerViewModel
         // Offered only where a binding would load: compiled bindings need the data type written.
         bool canBind = source is not null && (info.DataType is not null || !info.CompilesBindings);
 
-        // What each member holds, read now and let go when this method returns: a row keeps names.
-        Dictionary<string, Type?> held = source is null
-            ? []
-            : bindable.ToDictionary(
-                static member => member.Name,
-                member => members.ResolveBindingPath(source, member.Name).ResultType,
-                StringComparer.Ordinal);
+        // What a binding can name: each member, and one step into each that is an object of its own —
+        // Customer.Name is as common a binding as Title. What each path holds is read now and let go
+        // when this method returns: a row keeps names.
+        var paths = new List<(string Path, string TypeName, Type? Held)>();
+
+        foreach (XamlBindableMember member in bindable)
+        {
+            Type? held = members.ResolveBindingPath(source!, member.Name).ResultType;
+
+            paths.Add((member.Name, member.TypeName, held));
+
+            if (held is not null && IsObject(held))
+            {
+                foreach (XamlBindableMember inner in members.EnumerateBindable(held))
+                {
+                    string path = member.Name + "." + inner.Name;
+
+                    paths.Add((path, inner.TypeName, members.ResolveBindingPath(source!, path).ResultType));
+                }
+            }
+        }
 
         Control? shown = LiveSelection();
 
@@ -198,14 +252,16 @@ public sealed partial class DesignerViewModel
 
             row.BindOptions =
             [
-                .. bindable
-                    .Where(member => Accepts(target, held.GetValueOrDefault(member.Name)))
-                    .Select(member => new BindOption(
-                        member.Name,
-                        member.TypeName,
-                        new RelayCommand(() => Run(() => SetPropertyAsync(element, row.Name, $"{{Binding {member.Name}}}"))))),
+                .. paths
+                    .Where(path => Accepts(target, path.Held))
+                    .Select(path => new BindOption(
+                        path.Path,
+                        path.TypeName,
+                        new RelayCommand(() => Run(() => SetPropertyAsync(element, row.Name, $"{{Binding {path.Path}}}"))))),
             ];
         }
+
+        return true;
 
         static string Note(XamlBindableMember member) =>
             string.Join(
@@ -216,6 +272,94 @@ public sealed partial class DesignerViewModel
                     member.IsCollection ? "collection" : null,
                     member.IsCommand ? "command" : null,
                 }.OfType<string>());
+    }
+
+    /// <summary>Whether a member's value is an object of its own, whose members a path can step into.</summary>
+    private static bool IsObject(Type type) =>
+        type.IsClass
+        && type != typeof(string)
+        && !typeof(IEnumerable).IsAssignableFrom(type)
+        && !typeof(Delegate).IsAssignableFrom(type)
+        && !typeof(System.Windows.Input.ICommand).IsAssignableFrom(type);
+
+    /// <summary>
+    /// Offers the project's data types for the selected element, read from the design host once per
+    /// generation, by name.
+    /// </summary>
+    private async Task FillDataTypeOptionsAsync(XamlElement element)
+    {
+        if (_host is { GenerationName: { } generation } host
+            && generation != _dataTypesOf
+            && ToolboxProject() is { } project)
+        {
+            try
+            {
+                XamlTypeCatalog catalog = await host.GetTypeCatalogAsync(project, _shutdown.Token);
+
+                _dataTypes = [.. catalog.Entries.Where(static entry => (entry.Kinds & XamlTypeKinds.Data) != 0)];
+                _dataTypesOf = generation;
+            }
+            catch (Exception error) when (error is ObjectDisposedException or InvalidOperationException)
+            {
+                _dataTypes = [];
+            }
+        }
+
+        if (!ReferenceEquals(_dataFor, element) || !ReferenceEquals(Selected, element))
+        {
+            return;
+        }
+
+        XamlElementPath scope = XamlElementPath.Of(element);
+
+        DataTypeOptions.Clear();
+
+        foreach (XamlTypeEntry type in _dataTypes)
+        {
+            DataTypeOptions.Add(new DataTypeOption(
+                type.Name,
+                type.ClrNamespace,
+                new RelayCommand(() => Run(() => SetDataTypeAsync(scope, type)))));
+        }
+
+        HasDataTypeOptions = DataTypeOptions.Count > 0;
+    }
+
+    /// <summary>
+    /// Writes <c>x:DataType</c> on an element: the type in the namespace the catalog says, under the prefix
+    /// the document already has for it or one declared on the root.
+    /// </summary>
+    private async Task SetDataTypeAsync(XamlElementPath scope, XamlTypeEntry type)
+    {
+        if (ActiveForm is not { } form)
+        {
+            return;
+        }
+
+        string? written = null;
+
+        await ApplyAsync(
+            form,
+            editor =>
+            {
+                if (scope.Resolve(editor.Document) is not { } element)
+                {
+                    return;
+                }
+
+                XamlQualifiedName directive = editor.QualifyAttribute(element, XamlNamespaces.Xaml, "DataType", "x");
+                XamlQualifiedName named = editor.Qualify(element, type.XmlNamespace, type.Name, type.SuggestedPrefix ?? "vm");
+
+                written = named.ToString();
+
+                editor.SetAttribute(element, directive, written);
+            },
+            $"set the data type {type.Name}");
+
+        if (written is not null)
+        {
+            Log($"  data type: {written}");
+        }
     }
 
     /// <summary>Whether a member's value is worth offering to a property of a type.</summary>
