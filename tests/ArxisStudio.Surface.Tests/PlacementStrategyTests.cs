@@ -129,4 +129,45 @@ public class PlacementStrategyTests
         Assert.Equal(40, Canvas.GetLeft(child), 1);
         Assert.Equal(35, Canvas.GetTop(child), 1);
     }
+
+    /// <summary>
+    /// Позиция, присланная тягой, ставит ребёнка <see cref="Canvas"/> туда, куда прислана, сколько бы
+    /// шагов ни пришло между проходами раскладки.
+    /// </summary>
+    /// <remarks>
+    /// Тяга присылает положение на каждый шаг указателя, а шаги приходят чаще раскладки. Сдвиг, посчитанный
+    /// от места, где ребёнка поставила прошлая раскладка, и прибавленный к уже записанному
+    /// <c>Canvas.Left</c>, складывался: в студии двенадцать шагов тяги на 55 точек увели заметку на 342.
+    /// </remarks>
+    [AvaloniaFact]
+    public void Canvas_Child_Lands_Where_A_Drag_Outpacing_Layout_Puts_It()
+    {
+        var harness = EditorHarness.Create();
+        var editor = harness.Editor;
+
+        var canvas = new Canvas { Width = 200, Height = 200 };
+        var child = new Border { Name = "CanvasChild", Width = 40, Height = 40, Margin = new Thickness(3, 4, 0, 0) };
+        Canvas.SetLeft(child, 10);
+        Canvas.SetTop(child, 20);
+        canvas.Children.Add(child);
+
+        var container = harness.PlaceContainer(0, new Point(100, 100), new Size(300, 300));
+        container.GetVisualDescendants().OfType<AbsolutePanel>().First().Children.Add(canvas);
+        harness.RunLayout();
+
+        var before = editor.GetTargetPosition(child);
+
+        editor.SetTargetPosition(child, before + new Vector(10, 5));
+        editor.SetTargetPosition(child, before + new Vector(20, 10));
+        editor.SetTargetPosition(child, before + new Vector(30, 15));
+
+        // До раскладки позиция — та, что прислана последней: жест, читающий её между шагами, видит своё.
+        Assert.Equal(before + new Vector(30, 15), editor.GetTargetPosition(child));
+
+        harness.RunLayout();
+
+        Assert.Equal(40, Canvas.GetLeft(child), 1);
+        Assert.Equal(35, Canvas.GetTop(child), 1);
+        Assert.Equal(before + new Vector(30, 15), editor.GetTargetPosition(child));
+    }
 }

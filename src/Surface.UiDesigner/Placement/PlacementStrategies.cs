@@ -57,9 +57,18 @@ internal sealed class AbsolutePlacementStrategy : ISurfacePlacementStrategy
 /// Позиционирование в <see cref="Canvas"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// <see cref="Canvas"/> не читает <c>Layout.X</c>/<c>Y</c> — ему нужны собственные
 /// <c>Canvas.Left</c>/<c>Canvas.Top</c>. Раньше он проходил гейт перетаскивания
 /// наравне с <see cref="AbsolutePanel"/> и после этого молча ничего не делал.
+/// </para>
+/// <para>
+/// Перевод между поверхностью и Canvas берётся из одной раскладки: где ребёнок стоит на поверхности
+/// и с каким <c>Canvas.Left</c>/<c>Top</c> его туда поставили (<see cref="Arranged"/>). Записанное
+/// после неё раскладка ещё не видела, и тяга, присылающая положение на каждый шаг указателя, приходит
+/// чаще прохода раскладки: сдвиг, посчитанный от поставленного места и прибавленный к записанному,
+/// складывался бы с прошлым шагом, и ребёнок уходил бы вперёд указателя.
+/// </para>
 /// </remarks>
 internal sealed class CanvasPlacementStrategy : ISurfacePlacementStrategy
 {
@@ -76,10 +85,24 @@ internal sealed class CanvasPlacementStrategy : ISurfacePlacementStrategy
     public SurfaceMoveSemantics MoveSemantics => SurfaceMoveSemantics.Reposition;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Место, куда ребёнка поставит следующая раскладка: записанное, но ещё не разложенное, видно
+    /// сразу — жест, читающий позицию между шагами, видит своё.
+    /// </remarks>
     public Point GetPosition(Control target, UiDesignerView editor)
     {
         if (editor.TryGetTargetBounds(target, out var bounds))
-            return bounds.Position;
+        {
+            var arranged = Arranged(target);
+            var left = Canvas.GetLeft(target);
+            var top = Canvas.GetTop(target);
+
+            // Не заданная сторона — место, которое выбрал сам Canvas (у правого края, если задан
+            // Canvas.Right), и раскладка ещё не отстала от неё.
+            return bounds.Position + new Vector(
+                double.IsNaN(left) ? 0d : left - arranged.X,
+                double.IsNaN(top) ? 0d : top - arranged.Y);
+        }
 
         return new Point(SurfaceLayout.GetSurfaceX(target), SurfaceLayout.GetSurfaceY(target));
     }
@@ -89,17 +112,36 @@ internal sealed class CanvasPlacementStrategy : ISurfacePlacementStrategy
     {
         // Координаты поверхности считаются от поверхности дизайна, а Canvas.Left/Top —
         // от самого Canvas, поэтому позицию нужно перевести в его пространство.
-        var current = GetPosition(target, editor);
-        var delta = surfacePosition - current;
+        if (editor.TryGetTargetBounds(target, out var bounds))
+        {
+            var arranged = Arranged(target);
+            var delta = surfacePosition - bounds.Position;
 
-        var left = Canvas.GetLeft(target);
-        var top = Canvas.GetTop(target);
+            Canvas.SetLeft(target, arranged.X + delta.X);
+            Canvas.SetTop(target, arranged.Y + delta.Y);
+        }
+        else
+        {
+            var delta = surfacePosition - GetPosition(target, editor);
+            var left = Canvas.GetLeft(target);
+            var top = Canvas.GetTop(target);
 
-        Canvas.SetLeft(target, (double.IsNaN(left) ? 0d : left) + delta.X);
-        Canvas.SetTop(target, (double.IsNaN(top) ? 0d : top) + delta.Y);
+            Canvas.SetLeft(target, (double.IsNaN(left) ? 0d : left) + delta.X);
+            Canvas.SetTop(target, (double.IsNaN(top) ? 0d : top) + delta.Y);
+        }
 
         UiDesignerView.EnsureTracked(target);
     }
+
+    /// <summary>
+    /// <c>Canvas.Left</c>/<c>Top</c>, с которыми ребёнка поставила последняя раскладка.
+    /// </summary>
+    /// <remarks>
+    /// Canvas даёт ребёнку место его желаемого размера с полями в точке <c>Left</c>/<c>Top</c>, и рамка
+    /// ребёнка — это место без полей: выравнивать в нём нечего.
+    /// </remarks>
+    private static Point Arranged(Control target)
+        => new(target.Bounds.X - target.Margin.Left, target.Bounds.Y - target.Margin.Top);
 }
 
 /// <summary>
