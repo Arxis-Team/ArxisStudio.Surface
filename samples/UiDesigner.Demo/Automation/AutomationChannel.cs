@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -43,6 +44,9 @@ internal sealed class AutomationChannel
     private readonly Window _window;
     private readonly List<Dictionary<string, object?>> _events = new();
     private DispatcherTimer? _timer;
+
+    /// <summary>Команда ещё исполняется: следующую читают, когда она ответит.</summary>
+    private bool _busy;
 
     private AutomationChannel(string directory, ArxisStudio.Surface.UiDesigner.UiDesignerView editor, Window window)
     {
@@ -118,10 +122,14 @@ internal sealed class AutomationChannel
         _timer.Start();
     }
 
-    private void Poll()
+    /// <remarks>
+    /// Команды дизайнера ждут того, что начали — открытия формы, сборки, замены типов, — поэтому опрос
+    /// асинхронный, а следующая команда не читается, пока предыдущая не ответила.
+    /// </remarks>
+    private async void Poll()
     {
         var path = Path.Combine(_directory, CommandFile);
-        if (!File.Exists(path))
+        if (_busy || !File.Exists(path))
             return;
 
         string text;
@@ -137,12 +145,14 @@ internal sealed class AutomationChannel
 
         File.Delete(path);
 
+        _busy = true;
+
         Dictionary<string, object?> response;
         try
         {
             using var document = JsonDocument.Parse(text);
-            response = Execute(document.RootElement);
-            response["ok"] = true;
+            response = await ExecuteAsync(document.RootElement.Clone());
+            response["ok"] = !response.ContainsKey("error");
         }
         catch (Exception exception)
         {
@@ -152,9 +162,99 @@ internal sealed class AutomationChannel
                 ["error"] = exception.GetType().Name + ": " + exception.Message
             };
         }
+        finally
+        {
+            _busy = false;
+        }
 
         File.WriteAllText(Path.Combine(_directory, ResponseFile), JsonSerializer.Serialize(response, Json));
     }
+
+    /// <summary>
+    /// Команды дизайнера: по именам — форма по имени файла, элемент по <c>x:Name</c>, элемент палитры по
+    /// контролу, который он ставит. Каждая ждёт того, что начала, и отвечает состоянием после.
+    /// </summary>
+    private async Task<Dictionary<string, object?>> ExecuteAsync(JsonElement command)
+    {
+        var name = command.TryGetProperty("name", out var nameElement) ? nameElement.GetString() : null;
+
+        string Text(string key, string fallback = "") =>
+            command.TryGetProperty(key, out var value) ? value.GetString() ?? fallback : fallback;
+
+        string? Optional(string key) =>
+            command.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+
+        if (_window.DataContext is DesignerViewModel designer)
+        {
+            switch (name)
+            {
+                case "open":
+                    return Designed(await designer.OpenByNameAsync(Text("form")));
+
+                case "drop":
+                    return Designed(await designer.PutAsync(
+                        Text("entry"),
+                        Optional("parent"),
+                        command.TryGetProperty("index", out var index) && index.TryGetInt32(out var at) ? at : null));
+
+                case "edit":
+                    return Designed(await designer.SetByNameAsync(Optional("target"), Text("property"), Text("value")));
+
+                case "bind":
+                    return Designed(await designer.SetByNameAsync(
+                        Optional("target"), Text("property"), "{Binding " + Text("path") + "}"));
+
+                case "undo":
+                    return Ran(designer.UndoCommand);
+
+                case "redo":
+                    return Ran(designer.RedoCommand);
+
+                case "save":
+                    return Ran(designer.SaveCommand);
+
+                case "reload":
+                    return Answered(await designer.ReloadActiveAsync());
+
+                case "build":
+                    return Answered(await designer.BuildByRequestAsync());
+
+                case "swap":
+                    return Answered(await designer.SwapByRequestAsync());
+
+                case "handoff":
+                    return new Dictionary<string, object?> { ["handoff"] = JsonDocument.Parse(designer.HandoffText()).RootElement.Clone() };
+            }
+        }
+
+        return Execute(command);
+    }
+
+    /// <summary>Ответ команды дизайнера: что пошло не так, если пошло, и состояние после.</summary>
+    private Dictionary<string, object?> Designed(string? error)
+    {
+        var response = new Dictionary<string, object?> { ["designer"] = Designer() };
+
+        if (error is not null)
+            response["error"] = error;
+
+        return response;
+    }
+
+    /// <summary>Ответ команды, которую дизайнер мог и не исполнить: исполнил ли.</summary>
+    private Dictionary<string, object?> Ran(RelayCommand command)
+    {
+        bool can = command.CanExecute(null);
+
+        if (can)
+            command.Execute(null);
+
+        return new Dictionary<string, object?> { ["executed"] = can, ["designer"] = Designer() };
+    }
+
+    /// <summary>Ответ команды, которая говорит, чем кончилась.</summary>
+    private Dictionary<string, object?> Answered(string result) =>
+        new() { ["result"] = result, ["designer"] = Designer() };
 
     private Dictionary<string, object?> Execute(JsonElement command)
     {
