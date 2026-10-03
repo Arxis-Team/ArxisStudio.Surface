@@ -3,10 +3,13 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using ArxisStudio.Markup;
 using ArxisStudio.Markup.Xaml;
 using ArxisStudio.Markup.Xaml.Loader;
+using ArxisStudio.ProjectSystem;
+using ArxisStudio.ProjectSystem.Markup.Xaml;
 using ArxisStudio.Surface.UiDesigner;
 using Avalonia.Controls;
 
@@ -43,6 +46,41 @@ public sealed record ToolboxEntry(string Group, string Name, string Xaml, string
     public string XmlNamespace { get; init; } = DesignerViewModel.AvaloniaNamespace;
 
     /// <summary>
+    /// The prefix the snippet's element is written with, or nothing for a snippet written unprefixed.
+    /// </summary>
+    /// <remarks>
+    /// A fragment's default namespace has to mean the same where it is inserted — Markup refuses one that
+    /// does not (<c>AXM1043</c>), because a default namespace cannot be renamed. A prefix can be, and is
+    /// declared on the form's root where it is missing. So a control from outside Avalonia's namespace
+    /// travels prefixed — with the prefix its library suggests, or <c>local</c>, as a project's views are
+    /// written — and the fragment's default namespace stays Avalonia's, the one the place a drop writes on
+    /// it is named in. A prefixed snippet is a single element.
+    /// </remarks>
+    public string? Prefix { get; init; }
+
+    /// <summary>
+    /// The project's own control this entry places, as the design host listed it — or nothing for one
+    /// of Avalonia's.
+    /// </summary>
+    /// <remarks>
+    /// Names only (<see cref="ProjectControlInfo"/>): the palette is on screen across every swap of the
+    /// project's types, and a type held here would hold the generation it came from.
+    /// </remarks>
+    public ProjectControlInfo? Control { get; init; }
+
+    /// <summary>The heading the project's own controls are listed under, first in the palette.</summary>
+    internal const string ProjectGroup = "Project";
+
+    /// <summary>An entry for one of the project's own controls, written in the namespace its listing gives.</summary>
+    public static ToolboxEntry For(ProjectControlInfo control) =>
+        new(ProjectGroup, control.Name, $"<{control.Name} />")
+        {
+            XmlNamespace = control.XmlNamespace,
+            Prefix = control.SuggestedPrefix ?? "local",
+            Control = control,
+        };
+
+    /// <summary>
     /// The snippet as a fragment in <see cref="XmlNamespace"/>, with the place written on its root where
     /// the parent reads one.
     /// </summary>
@@ -62,14 +100,7 @@ public sealed record ToolboxEntry(string Group, string Name, string Xaml, string
     /// </remarks>
     public XamlFragment FragmentFor(SurfaceDropPlacement placement)
     {
-        string open = "<" + Name;
-
-        if (!Xaml.StartsWith(open, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException($"The {Name} snippet does not start with its own element.");
-        }
-
-        XamlFragment fragment = XamlFragment.Parse(Xaml.Insert(open.Length, $" xmlns=\"{XmlNamespace}\""));
+        XamlFragment fragment = Fragment();
 
         if (fragment.Root is not { } root)
         {
@@ -108,6 +139,24 @@ public sealed record ToolboxEntry(string Group, string Name, string Xaml, string
                 Math.Round(value).ToString(CultureInfo.InvariantCulture));
     }
 
+    /// <summary>
+    /// The snippet as a fragment in <see cref="XmlNamespace"/> — under <see cref="Prefix"/> when it has
+    /// one — with no place written on it.
+    /// </summary>
+    public XamlFragment Fragment()
+    {
+        string open = "<" + Name;
+
+        if (!Xaml.StartsWith(open, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"The {Name} snippet does not start with its own element.");
+        }
+
+        return XamlFragment.Parse(Prefix is { } prefix
+            ? $"<{prefix}:{Name} xmlns=\"{DesignerViewModel.AvaloniaNamespace}\" xmlns:{prefix}=\"{XmlNamespace}\"{Xaml[open.Length..]}"
+            : Xaml.Insert(open.Length, $" xmlns=\"{XmlNamespace}\""));
+    }
+
     /// <summary>The design's glyph for this control, and the hue it is drawn in.</summary>
     public Avalonia.Media.Geometry Glyph => Glyphs.For(Name);
 
@@ -117,9 +166,11 @@ public sealed record ToolboxEntry(string Group, string Name, string Xaml, string
     /// What the tooltip shows: the whole snippet when it is a line, its opening tag when a snippet
     /// with children would stretch a tooltip across the screen.
     /// </summary>
-    public string Tip => Xaml.Length <= 80 || Xaml.IndexOf('>') is < 0
-        ? Xaml
-        : Xaml[..(Xaml.IndexOf('>') + 1)] + " …";
+    public string Tip => Control is { } control
+        ? control.ClassName + (control.IsBuilt ? string.Empty : " — not built yet; dropping it builds the project first")
+        : Xaml.Length <= 80 || Xaml.IndexOf('>') is < 0
+            ? Xaml
+            : Xaml[..(Xaml.IndexOf('>') + 1)] + " …";
 
     public override string ToString() => Name;
 }
@@ -130,14 +181,20 @@ public sealed record ToolboxGroup(string Name, System.Collections.Generic.IReadO
 public sealed partial class DesignerViewModel
 {
     /// <summary>
-    /// The palette.
+    /// The palette: the project's own controls first, then Avalonia's.
     /// </summary>
     /// <remarks>
-    /// Avalonia's own controls, and deliberately only those. A toolbox built by reflecting over the
-    /// project's assemblies is a real feature and a different one: it needs the project built, it
-    /// needs a rule for which types are controls somebody would place, and it needs a sensible
-    /// initial markup per type. This palette is the part that demonstrates the drop reaching the
-    /// file, which is the thing worth showing.
+    /// <para>
+    /// The project's are what ProjectSystem's design host lists by name for the project of the form in
+    /// front (<see cref="ProjectDesignHost.GetPlaceableControlsAsync"/>) — what the live generation built,
+    /// and the forms the IDE has written that no build has produced yet, marked as such. They are listed
+    /// again whenever that can change: the types swapped, a file came or went, another project's form
+    /// came to the front.
+    /// </para>
+    /// <para>
+    /// Avalonia's are snippets rather than types: what gets dropped is a line of a file, and the snippet
+    /// already says what a sensible new one says.
+    /// </para>
     /// </remarks>
     public ObservableCollection<ToolboxEntry> Toolbox { get; } = [];
 
@@ -253,8 +310,33 @@ public sealed partial class DesignerViewModel
     /// than trusting an index measured against the live panel.
     /// </para>
     /// </remarks>
-    public void Drop(FormViewModel form, ToolboxEntry entry, SurfaceDropPlacement placement) =>
+    public void Drop(FormViewModel form, ToolboxEntry entry, SurfaceDropPlacement placement)
+    {
+        if (entry.Control is { } control)
+        {
+            // What the drop meant, as names, before anything waits: the parent the editor named is a
+            // control of a generation a build may be about to replace, and a frame that held it across
+            // the wait would hold that generation.
+            if (IntentOf(form, entry, placement) is { } intent)
+            {
+                Place(control, intent);
+            }
+
+            return;
+        }
+
         RunDetached(() => DropAsync(form, entry, placement));
+    }
+
+    /// <summary>Places a control of the project from names alone, once it is built.</summary>
+    /// <remarks>
+    /// A method of its own, not a lambda in <see cref="Drop"/>: the lambdas of one method share its
+    /// closure, and the one for an Avalonia control captures the placement — live controls of the
+    /// generation the wait is for a swap to replace. Written there, this one held them, and the
+    /// generation with them, for as long as the build and the swap took, and the swap found its
+    /// types still held.
+    /// </remarks>
+    private void Place(ProjectControlInfo control, DropIntent intent) => RunDetached(() => PlaceAsync(control, intent));
 
     private async Task DropAsync(FormViewModel form, ToolboxEntry entry, SurfaceDropPlacement placement)
     {
@@ -262,6 +344,10 @@ public sealed partial class DesignerViewModel
         {
             return;
         }
+
+        // The placement names controls of the live generation, and this writes after a wait: a swap in
+        // the meantime would find them held here.
+        using IDisposable writing = Defer("a drop being written");
 
         // Refused before the file is touched, not diagnosed after. A DataGrid lives in its own
         // package, and a project without it would take the drop, resolve nothing, and show an
@@ -284,12 +370,7 @@ public sealed partial class DesignerViewModel
             return;
         }
 
-        int index = placement switch
-        {
-            { Kind: SurfaceDropKind.Content } => 0,
-            { Anchor: { } anchor } when map.GetElement(anchor) is { IndexInContent: >= 0 } next => next.IndexInContent,
-            _ => IndexAtEnd(parent),
-        };
+        int index = IndexFor(placement, map, parent);
 
         XamlFragment fragment = entry.FragmentFor(placement);
         ImmutableArray<MarkupDiagnostic> found = [];
@@ -358,4 +439,220 @@ public sealed partial class DesignerViewModel
     }
 
     private static int IndexAtEnd(XamlElement parent) => parent.ContentElements.Count();
+
+    /// <summary>Where among the parent's content a placement puts the new element.</summary>
+    private static int IndexFor(SurfaceDropPlacement placement, XamlObjectMap map, XamlElement parent) => placement switch
+    {
+        { Kind: SurfaceDropKind.Content } => 0,
+        { Anchor: { } anchor } when map.GetElement(anchor) is { IndexInContent: >= 0 } next => next.IndexInContent,
+        _ => IndexAtEnd(parent),
+    };
+
+    /// <summary>What a drop meant, in names a swap of the project's types does not take away.</summary>
+    /// <param name="File">The form's file.</param>
+    /// <param name="Parent">Where the new element goes, as a path in the form's document.</param>
+    /// <param name="Index">Where among the parent's content.</param>
+    /// <param name="Fragment">The markup, with its place written on it where the parent reads one.</param>
+    private sealed record DropIntent(CanonicalPath File, XamlElementPath Parent, int Index, XamlFragment Fragment);
+
+    /// <summary>What a drop onto a form meant, read off the live controls and kept as names.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private DropIntent? IntentOf(FormViewModel form, ToolboxEntry entry, SurfaceDropPlacement placement)
+    {
+        if (form.Objects is not { } map || map.GetElement(placement.Parent) is not { } parent)
+        {
+            Log($"! {entry.Name}: what it was dropped into has no element in the document");
+
+            return null;
+        }
+
+        // A control placed inside its own markup would construct itself without end.
+        if (entry.Control is { Document.IsEmpty: false } control && control.Document == form.File)
+        {
+            Log($"{entry.Name} cannot be placed inside its own form");
+
+            return null;
+        }
+
+        return new DropIntent(form.File, XamlElementPath.Of(parent), IndexFor(placement, map, parent), entry.FragmentFor(placement));
+    }
+
+    /// <summary>
+    /// Places one of the project's own controls where a drop meant it — building it first when no build
+    /// has produced its class yet.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A control the IDE has just written has no class until the project builds, and a document holding
+    /// an element nothing can build shows nothing. So the design host builds it, and the drop waits for
+    /// the generation that has it (<see cref="ProjectDesignHost.EnsureBuiltAsync"/>) — through the gate:
+    /// a drop made while a gesture holds the swap off is placed when the gesture lets go.
+    /// </para>
+    /// <para>
+    /// The swap builds every form again, so the drop waits as names and is found again afterwards: the
+    /// form by its file, the parent by its path in the document, which the host kept across the swap.
+    /// The element is written in the namespace the listing gives — <c>using:</c> the CLR namespace for a
+    /// control not built yet — and the editor declares it on the root.
+    /// </para>
+    /// </remarks>
+    private async Task PlaceAsync(ProjectControlInfo control, DropIntent intent)
+    {
+        if (_host is not { } host)
+        {
+            return;
+        }
+
+        if (!control.IsBuilt)
+        {
+            Log($"Building {ProjectNameOf(control.Project)} to place {control.Name}…");
+        }
+
+        bool placeable;
+
+        try
+        {
+            placeable = await host.EnsureBuiltAsync(control, _shutdown.Token);
+        }
+        catch (ObjectDisposedException)
+        {
+            // The project was closed while it was being built.
+            return;
+        }
+
+        if (!placeable)
+        {
+            Log($"! {control.Name} could not be placed: the project's build has no {control.ClassName} — see the build above");
+
+            return;
+        }
+
+        if (Forms.FirstOrDefault(open => open.File == intent.File) is not { } form)
+        {
+            Log($"! {control.Name}: {intent.File.FileName} was closed while it was being built");
+
+            return;
+        }
+
+        ImmutableArray<MarkupDiagnostic> found = [];
+        string? into = null;
+
+        await ApplyAsync(
+            form,
+            editor =>
+            {
+                if (intent.Parent.Resolve(editor.Document) is not { } parent)
+                {
+                    return;
+                }
+
+                editor.InsertFragment(parent, Math.Min(intent.Index, parent.ContentElements.Count()), intent.Fragment);
+
+                found = editor.Diagnostics;
+                into = parent.Name.ToString();
+            },
+            $"add {control.Name}");
+
+        foreach (MarkupDiagnostic diagnostic in found)
+        {
+            Log(diagnostic.IsError
+                ? $"! {diagnostic.Code}: {diagnostic.Message}"
+                : $"  {diagnostic.Code}: {diagnostic.Message}");
+        }
+
+        if (into is null)
+        {
+            Log($"! {control.Name}: what it was dropped into is no longer in the document");
+        }
+        else if (!found.Any(static diagnostic => diagnostic.IsError))
+        {
+            Log($"  {control.Name} added to {into}");
+        }
+    }
+
+    /// <summary>A project's name, for the console.</summary>
+    private string ProjectNameOf(ProjectIdentity project) =>
+        _workspace.CurrentSnapshot is { } snapshot && snapshot.TryGetProject(project, out ProjectSnapshot? found)
+            ? found.Name
+            : "the project";
+
+    /// <summary>Which listing of the project's controls is the latest asked for, so an older answer is dropped.</summary>
+    private int _projectListing;
+
+    /// <summary>The project the palette's Project heading was last listed for.</summary>
+    private ProjectIdentity _listedProject;
+
+    /// <summary>The palette entry that places the control a form's file declares, if it is one.</summary>
+    internal ToolboxEntry? ProjectEntryFor(CanonicalPath file) =>
+        Toolbox.FirstOrDefault(entry => entry.Control is { Document.IsEmpty: false } control && control.Document == file);
+
+    /// <summary>
+    /// Lists the project's own controls again under the palette's Project heading — after the types
+    /// moved, a file came or went, or another project's form came to the front.
+    /// </summary>
+    private void RefreshProjectToolbox() => RunDetached(RefreshProjectToolboxAsync);
+
+    /// <summary>Lists them again only when the form in front is of another project than the last listing.</summary>
+    private void RefreshProjectToolboxForTheFormInFront()
+    {
+        if (ToolboxProject() is not { } project || project != _listedProject)
+        {
+            RefreshProjectToolbox();
+        }
+    }
+
+    private async Task RefreshProjectToolboxAsync()
+    {
+        int listing = ++_projectListing;
+        ImmutableArray<ProjectControlInfo> controls = [];
+        ProjectIdentity listed = default;
+
+        if (_host is { } host && ToolboxProject() is { } project)
+        {
+            listed = project;
+
+            try
+            {
+                controls = await host.GetPlaceableControlsAsync(project, _shutdown.Token);
+            }
+            catch (Exception error) when (error is ObjectDisposedException or InvalidOperationException)
+            {
+                // Closed, or not started yet: there is nothing to list until it is.
+            }
+        }
+
+        if (listing != _projectListing)
+        {
+            return;
+        }
+
+        _listedProject = listed;
+
+        foreach (ToolboxEntry old in Toolbox.Where(static entry => entry.Control is not null).ToArray())
+        {
+            Toolbox.Remove(old);
+        }
+
+        for (int at = 0; at < controls.Length; at++)
+        {
+            Toolbox.Insert(at, ToolboxEntry.For(controls[at]));
+        }
+
+        GroupToolbox();
+    }
+
+    /// <summary>The project whose controls the palette offers: the one the form in front is in, or the design set's first.</summary>
+    private ProjectIdentity? ToolboxProject()
+    {
+        if (_workspace.CurrentSnapshot is not { } snapshot)
+        {
+            return null;
+        }
+
+        if (ActiveForm is { } form && snapshot.TryGetProjectForFile(form.File, out ProjectSnapshot? owner))
+        {
+            return owner.Identity;
+        }
+
+        return _host?.DesignSet is { IsDefaultOrEmpty: false } set ? set[0] : null;
+    }
 }

@@ -63,6 +63,14 @@ public sealed partial class MainWindow : Window
         // it handled, so a handler written on the list in markup never hears it.
         this.GetControl<ListBox>("FileTiles").AddHandler(KeyDownEvent, OnProjectFileKeyDown, RoutingStrategies.Tunnel);
 
+        // A control's form dragged out of the project panel places the control, as the toolbox does —
+        // heard on the way down, because the list takes the press for its selection.
+        ListBox tiles = this.GetControl<ListBox>("FileTiles");
+
+        tiles.AddHandler(PointerPressedEvent, OnTilePressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        tiles.AddHandler(PointerMovedEvent, OnTileMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
+        tiles.AddHandler(PointerReleasedEvent, (_, _) => _tilePress = null, RoutingStrategies.Tunnel, handledEventsToo: true);
+
         // The channel that answers "what does a live host get from the editor's public API" in
         // numbers rather than in a screenshot. Nothing starts without --automation.
         Automation.AutomationChannel.TryStart(Program.AutomationDirectory, surface, this);
@@ -1166,6 +1174,75 @@ public sealed partial class MainWindow : Window
     /// selecting it, and the list selects it on this same Enter — after this handler has run.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// A press on a file tile that may become a drag: the tile, where it was, and the press itself —
+    /// which the platform's drag starts from, and which a drag that waits for the pointer to move has
+    /// to keep until then.
+    /// </summary>
+    private (FileTile Tile, Point At, PointerPressedEventArgs Press)? _tilePress;
+
+    private void OnTilePressed(object? sender, PointerPressedEventArgs e) =>
+        _tilePress = sender is ListBox tiles
+            && e.GetCurrentPoint(tiles).Properties.IsLeftButtonPressed
+            && (e.Source as Control)?.DataContext is FileTile tile
+                ? (tile, e.GetPosition(tiles), e)
+                : null;
+
+    /// <summary>
+    /// Starts dragging a file tile once the pointer has moved further than a tap, and only for a file
+    /// that declares one of the project's controls.
+    /// </summary>
+    /// <remarks>
+    /// A press alone is a selection and a double click an open, so the drag waits for the pointer to
+    /// leave the platform's tap area. The drop is the toolbox's: the same entry, the same indicator, the
+    /// same build first for a control no build has produced. A window's form is not a control to place,
+    /// and saying so beats a drag that lands nowhere.
+    /// </remarks>
+    private async void OnTileMoved(object? sender, PointerEventArgs e)
+    {
+        if (_tilePress is not { } press
+            || sender is not ListBox tiles
+            || !e.GetCurrentPoint(tiles).Properties.IsLeftButtonPressed
+            || Designer is not { } designer)
+        {
+            return;
+        }
+
+        Size tap = tiles.GetPlatformSettings()?.GetTapSize(PointerType.Mouse) ?? new Size(4, 4);
+        Vector moved = e.GetPosition(tiles) - press.At;
+
+        if (Math.Abs(moved.X) <= tap.Width / 2 && Math.Abs(moved.Y) <= tap.Height / 2)
+        {
+            return;
+        }
+
+        _tilePress = null;
+
+        if (designer.ProjectEntryFor(press.Tile.Path) is not { } entry)
+        {
+            designer.Log($"{press.Tile.Name} is not a control's form — only a control can be placed into a form");
+
+            return;
+        }
+
+        _dragging = entry;
+
+        var data = new DataTransfer();
+
+        data.Add(DataTransferItem.CreateText(entry.Name));
+
+        using IDisposable deferral = designer.Defer("a drag from the project");
+
+        try
+        {
+            await DragDrop.DoDragDropAsync(press.Press, data, DragDropEffects.Copy);
+        }
+        finally
+        {
+            _dragging = null;
+        }
+    }
+
     private void OnProjectFileKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key is Key.Enter && e.Source is ListBoxItem { DataContext: FileTile file })

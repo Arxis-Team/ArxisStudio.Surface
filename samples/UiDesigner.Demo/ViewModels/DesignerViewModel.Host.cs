@@ -134,6 +134,8 @@ public sealed partial class DesignerViewModel
         Log(host.GenerationName is { } generation
             ? $"  the project's types are loaded — generation “{generation}”, {Describe(host.DesignSet.Length, "project")}"
             : "  the project's types could not be loaded in this process — see above");
+
+        RefreshProjectToolbox();
     }
 
     /// <summary>Stops the host: its documents are closed and its generation reclaimed.</summary>
@@ -164,6 +166,8 @@ public sealed partial class DesignerViewModel
         host.OperationFailed -= OnHostFailed;
 
         await host.DisposeAsync();
+
+        RefreshProjectToolbox();
     }
 
     /// <summary>The deferral <see cref="SwapsHeldFor"/> keeps on the current host.</summary>
@@ -267,6 +271,9 @@ public sealed partial class DesignerViewModel
 
         LastSwap = report;
         Swaps++;
+
+        // What the generation built is what the palette lists as built.
+        RefreshProjectToolbox();
     }
 
     /// <summary>The last swap of the types, as the host reported it — what a check reads.</summary>
@@ -344,6 +351,9 @@ public sealed partial class DesignerViewModel
 
         SettledBatches++;
         RefreshAllCommands();
+
+        // A form the IDE wrote is a control to offer, built or not.
+        RefreshProjectToolbox();
     }
 
     private void OnPopulationFailed(object? sender, XamlLivePopulationFailedEventArgs e) => Log(

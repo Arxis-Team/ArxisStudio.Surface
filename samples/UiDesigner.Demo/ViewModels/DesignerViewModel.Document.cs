@@ -42,6 +42,8 @@ public sealed partial class DesignerViewModel
                 {
                     ShowTheActiveDocument();
                 }
+
+                RefreshProjectToolboxForTheFormInFront();
             }
         }
     }
