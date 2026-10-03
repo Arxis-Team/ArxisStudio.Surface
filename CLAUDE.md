@@ -38,7 +38,7 @@ dotnet run --project samples/Nodes.Calculator  # калькулятор в ду�
 printf '%s' '{"name":"select","target":"GoButton"}' > "$A/command.json"; sleep 0.5; cat "$A/response.json"
 ```
 
-Команды: `state`, `tree`, `select`, `selectContainer`, `clearSelection`, `setSelectedIndex`, `addSelectedItem`, `nudge`, `zorder`, `viewport`, `guides`, `group`, `groups`, `events`. Ответ несёт оба слоя выделения и точные числа, поэтому проверяется не «похоже на правильное» по скриншоту, а конкретное значение. Запускать нужно **собранный exe**, а не `dotnet run` из шелла: процесс, породивший его, умирает вместе с командой и уносит демо.
+Команды редактора: `state`, `tree`, `select`, `selectContainer`, `clearSelection`, `setSelectedIndex`, `addSelectedItem`, `nudge`, `zorder`, `viewport`, `guides`, `group`, `groups`, `events`. Команды дизайнера — по именам форм, `x:Name` и элементов палитры, каждая ждёт того, что начала: `open`, `drop`, `edit`, `bind`, `undo`, `redo`, `save`, `reload`, `build`, `swap`, `handoff`; поля и ответы — в `CLAUDE.md` демо. Ответ несёт оба слоя выделения и точные числа, поэтому проверяется не «похоже на правильное» по скриншоту, а конкретное значение. Запускать нужно **собранный exe**, а не `dotnet run` из шелла: процесс, породивший его, умирает вместе с командой и уносит демо.
 
 Чем это отличается от двух других способов проверки: headless-тест закрепляет поведение, скриншот проверяет рендер, канал отвечает на вопрос, что получает живой хост, вызывая публичный API. Все четыре дефекта выделения из этапа 2 плана были воспроизведены именно им — с числами, а не по картинке.
 

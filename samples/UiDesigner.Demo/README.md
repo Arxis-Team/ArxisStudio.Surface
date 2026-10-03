@@ -162,12 +162,12 @@ view of it** — a canvas that could disagree with the file is a designer that l
 
 | Panel | The API behind it |
 | --- | --- |
-| Project | folders on the left, the folder's files on the right; **double-click a file to open it, or stop on it with the arrows and press Enter**. The tree is every item the project compiles, so a `.cs` file is there and says why it does not open; the forms are `ProjectSnapshot.Items` filtered to markup, and a file the project does not compile is correctly absent |
-| Toolbox | markup snippets, dragged with Avalonia's own drag-and-drop. Where a drop lands is the editor's answer, `UiDesignerView.TryResolveDropPlacement`, shown under the pointer while dragging by `ShowDropIndicator` — a line between two neighbours of a StackPanel, by the rule the canvas reorders by; a Grid's cell; a Canvas's area; an empty Border, content control or tab page. The window only says whether, and the drop writes the same answer: the snippet becomes a Markup fragment in Avalonia's namespace, its place is set on the fragment's root (`Canvas.Left`, `Grid.Row`) and it goes in front of the neighbour the editor named. By rectangle rather than by hit-testing, for the same reason the editor decides selection that way: a loaded form takes no input, and a panel that paints no background renders nothing to hit |
+| Project | folders on the left, the folder's files on the right; **double-click a file to open it, or stop on it with the arrows and press Enter**. The tree is every item the project compiles, so a `.cs` file is there and says why it does not open; the forms are `ProjectSnapshot.Items` filtered to markup, and a file the project does not compile is correctly absent. **A control's form dragged from the files onto a form places that control** — the palette's entry for it, through the drop the palette takes; a window's form says it cannot be placed |
+| Toolbox | markup snippets, dragged with Avalonia's own drag-and-drop. First, under *Project*, the controls of the project in front and the projects it references, as the design host lists them (`ProjectDesignHost.GetPlaceableControlsAsync`): the ones the generation built, and the forms whose `x:Class` the IDE has written and nobody has built, marked *not built*. Where a drop lands is the editor's answer, `UiDesignerView.TryResolveDropPlacement`, shown under the pointer while dragging by `ShowDropIndicator` — a line between two neighbours of a StackPanel, by the rule the canvas reorders by; a Grid's cell; a Canvas's area; an empty Border, content control or tab page. The window only says whether, and the drop writes the same answer: the snippet becomes a Markup fragment — in Avalonia's namespace, or for a project's control under a prefix, the one its library suggests or `local`, declared on the form's root where it is missing — its place is set on the fragment's root (`Canvas.Left`, `Grid.Row`) and it goes in front of the neighbour the editor named. A control not built yet is built first (`EnsureBuiltAsync`) and placed after the swap brings its class in — from names alone, the form's file, the parent's path and an index, because the controls the editor named are of the generation the swap replaces. By rectangle rather than by hit-testing, for the same reason the editor decides selection that way: a loaded form takes no input, and a panel that paints no background renders nothing to hit |
 | Hierarchy | both directions. The canvas reports a selection through `SurfaceSelectionChanged` and the object map turns the control into an element; the tree returns the favour through `UiDesignerView.SelectTarget`, which the map answers the other way round. That method did not exist until this sample needed it |
 | Rulers | two `SurfaceRuler` controls beside the editor, told only which editor they belong to; they take the zoom and the offset from it. What they produce is a request, so the set of guides lives in the designer and nothing reaches the document |
 | Canvas | one `UiDesignerItem` per open form in `ContentMode="Annotated"`, and the item's content is the form and nothing else. In `ContentMode="Loaded"` the editor offers every control the author wrote as a target and finds them by walking the container's content, so a caption or a title bar put in there is — correctly, and unhelpfully — something the user can select and resize. The card is the container's own `Background`, `BorderBrush` and `CornerRadius`; everything else the designer draws sits in a layer above the canvas, in world coordinates, through the editor's public `ViewportTransform`. What is editable is stated rather than guessed: after every load the object map says which controls have a document element behind them, and those are marked `Layout.IsTracked` |
-| Inspector | the properties a control actually has, offered whether or not the document has written them — a short curated list per group, each name asked of the control first, so a Border is offered `CornerRadius` and a TextBlock is not, plus whatever the parent attaches (`Canvas.Left` inside a Canvas) and anything else the file says. Clearing a field removes the attribute. One editor per kind of value, which the document cannot decide and `XamlMemberDescriptor` can: a `bool` is a checkbox, an enum is its own values (side by side when there are four or fewer, a drop-down when more), a brush shows its colour, a number is a number. `ConvertFromText` is asked before anything is written, so text the load could not have meant is reported instead of saved. A value that is a binding is shown and not edited — typing a literal over one would replace it with whatever the text looked like. Width and Height have a `NaN` button beside the field, which takes the number out: a control with a size of its own cannot stretch, and no size is how Avalonia says the layout decides. Choosing `Stretch` for an alignment lets go of that side's size in the same edit — horizontal of the width, vertical of the height — so it is one step to undo. Under the properties, a Data section names the data type in scope and the design data the canvas shows bindings with, and lists what a binding can read; a property's row offers the members its type can take and writes `{Binding Member}`, a binding whose path names nothing on the data says *broken*, and *Create* writes `Design.DataContext` when a data type has none. All of it is asked of Markup by name, so the inspector holds no type of the project's code |
+| Inspector | the properties a control actually has, offered whether or not the document has written them — a short curated list per group, each name asked of the control first, so a Border is offered `CornerRadius` and a TextBlock is not, plus whatever the parent attaches (`Canvas.Left` inside a Canvas) and anything else the file says. Clearing a field removes the attribute. One editor per kind of value, which the document cannot decide and `XamlMemberDescriptor` can: a `bool` is a checkbox, an enum is its own values (side by side when there are four or fewer, a drop-down when more), a brush shows its colour, a number is a number. `ConvertFromText` is asked before anything is written, so text the load could not have meant is reported instead of saved. A value that is a binding is shown and not edited — typing a literal over one would replace it with whatever the text looked like. Width and Height have a `NaN` button beside the field, which takes the number out: a control with a size of its own cannot stretch, and no size is how Avalonia says the layout decides. Choosing `Stretch` for an alignment lets go of that side's size in the same edit — horizontal of the width, vertical of the height — so it is one step to undo. Under the properties, a Data section names the data type in scope and the design data the canvas shows bindings with, and lists what a binding can read; a property's row offers the members its type can take and writes `{Binding Member}`, a binding whose path names nothing on the data says *broken*, and *Create* writes `Design.DataContext` when a data type has none. *Choose* offers the types of the project and its references as data types, from the design host's catalog (`GetTypeCatalogAsync`), and writes `x:DataType` under the prefix the form already has for the namespace or one declared on the root. A member that is an object of its own offers its members one level in (`Customer.Name`), and *Unbind* beside a binding takes the attribute out. The name row writes `x:Name`, refusing a name that is not an identifier or that another element has: a named element is a field of the form's class, and the console says that code using the old name stops compiling at the next build. All of it is asked of Markup by name, so the inspector holds no type of the project's code |
 | Resize | `EditCompleted` on release, written to the element the control came from — and for the card itself, to the document's root, because a gesture on the card is a gesture on the form. A control with nothing behind it says so instead of skipping the write in silence |
 | ▶ / ■ | `OutputArtifactKind.Assembly` and `RuntimeConfiguration`, built through the design host first and started from a copy of what it built |
 | Console | everything above, said out loud |
@@ -293,7 +293,7 @@ borrowed again afterwards.
 ### Beside another IDE
 
 The designer is meant to sit next to Rider or Visual Studio: the layout is done here, the code is
-written there, and the same files are open in both. Six things follow from that, and the first three
+written there, and the same files are open in both. Seven things follow from that, and the first three
 were reported as bugs before they were features.
 
 **It builds into `bin/ArxisStudio` and `obj/ArxisStudio`.** Two tools cannot own `bin/Debug`: the
@@ -341,6 +341,16 @@ inspector, a dialog, a drag from the toolbox — and the swap runs the moment th
 go. Meanwhile the canvas holds the frame it last drew (`SurfaceView.Freeze`), and afterwards every
 form is back as it was: the tabs, the one in front, its unsaved text and its history, the
 selection and the zoom.
+
+**A control the IDE writes can be placed before anybody builds it.** The palette's *Project* heading
+is read again whenever the project's files or types change and when a form of another project comes
+to the front, and a
+`UserControl` the IDE has just written is on it, *not built*. Dropping it builds the project, and
+the control lands once the swap has brought its class in; the drop holds nothing of the form's
+controls across the wait. When the IDE then saves the control's own markup, every form placing it
+builds again just the elements that place it — the session, the root and every other object stay
+(`XamlLiveDocument.RebuildAsync`, chosen by the host) — and a placed control is deleted in place
+like any other.
 
 **The application runs from a copy.** ▶ builds through the host and starts what it built from a
 copy under `%TEMP%/UiDesigner.Demo/run/<project>/<n>`, deleted when the application exits. The
@@ -401,12 +411,19 @@ the unsaved text and its history, the selection and the zoom kept, and the canva
 swap alone; a gesture held on the canvas has to hold the swap off and get it the moment it lets go;
 and the application started from the designer has to run on through a build and a swap. Then a
 solution of an application and the library it references: one generation, the library loaded
-once, and the library's saved class built through the application and swapped in. Last, a control
-that subscribes to the process: the swap is found held, the designer waits while it is behind
-another window, and in front it restarts by itself — the new copy, asked through its automation
-channel, has to have the tabs, the unsaved text, the selection and the zoom. Each swap says its
-phases on a `timing` line. It ends with `VERDICT ok — the designer followed an IDE writing its
-forms and its code`.
+once, and the library's saved class built through the application and swapped in. Then the
+project's own controls: a `UserControl` the IDE writes has to be offered *not built*, and dropped on
+the window it has to wait for its build's swap and land; its markup saved in the IDE has to show on
+the window with the window's session kept, and deleting it has to happen in place. A view model has
+to be choosable as a view's data type, `Text` bound to it has to show the design instance, and the
+member renamed in the IDE has to make the binding read as broken. A window with a class, a handler
+and `x:DataType`, changed structurally from outside — inside its panel, then at its root — has to
+stay the same session, the handler has to run on the window, and the platform must list no window
+more. Last, a control that subscribes to the process: the swap is found held, the designer waits
+while it is behind another window, and in front it restarts by itself — the new copy, asked through
+its automation channel, has to have the tabs, the unsaved text, the selection and the zoom. Each
+swap says its phases on a `timing` line. It ends with `VERDICT ok — the designer followed an IDE
+writing its forms and its code`.
 
 ## Five things it demonstrates on purpose
 
@@ -505,9 +522,12 @@ container's `Background`, under the form's: a form that declares none shows the 
 at rest; the Avalonia template's window is one `TextBlock` reading `{Binding Greeting}`. Design mode
 is what applies `Design.DataContext` and the `d:` attributes the document supplies for exactly this.
 
-**The toolbox is Avalonia's controls, not the project's.** Reflecting over the project's assemblies
-for placeable types is a real feature and a different one: it needs a rule for what counts as a
-control somebody would place, and sensible initial markup per type.
+**The toolbox is Avalonia's controls and the project's, not its packages'.** The project's own are
+the controls its documents can place — creatable, a control, not a window — read from what its
+projects build and declare, and each is placed as an empty element: what it shows is what its own
+markup says. A package ships its templated parts and helpers as controls too, and offering those
+would need a rule for what somebody places and initial markup per type, which is a different
+feature.
 
 **Properties are added by name.** The assembly context is right there and a typed editor per property
 kind could be built on it. A name and a value is enough to show that the edit reaches the file.
