@@ -51,6 +51,15 @@
                         </Border>
                     </Border>
 
+                    <TextBlock Name="PART_Fault"
+                               Margin="{DynamicResource UiDesigner.Form.Fault.Margin}"
+                               FontSize="{DynamicResource UiDesigner.Form.Fault.FontSize}"
+                               Foreground="{DynamicResource UiDesigner.Form.Fault.Foreground}"
+                               TextWrapping="Wrap"
+                               Text="{TemplateBinding FaultMessage}"
+                               IsHitTestVisible="False"
+                               IsVisible="False" />
+
                     <Panel Name="PART_ChromeAnchor"
                            Height="0"
                            VerticalAlignment="Top"
@@ -158,9 +167,15 @@
             <Setter Property="IsVisible" Value="False" />
         </Style>
 
+        <!-- Форма упала на замере или раскладке (ADR 0028): на её месте — причина. -->
+        <Style Selector="^:faulted /template/ TextBlock#PART_Fault">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
         <!-- Загруженная форма не живёт своей жизнью: ввод гасится на хосте формы, как на презентере у контейнера. -->
         <Style Selector="^[ContentMode=Loaded] /template/ Decorator#PART_FormHost">
             <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="KeyboardNavigation.TabNavigation" Value="None" />
         </Style>
 
     </ControlTheme>

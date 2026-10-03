@@ -71,6 +71,50 @@ public class UiDesignerItem : SurfaceItem
     /// </summary>
     public UiDesignerItem()
     {
+        // Всплытием, и обработанное тоже: фокус уходит в форму и тогда, когда содержимое само зовёт
+        // Focus() — из своего Loaded, из обработчика, — и об этом никто, кроме контейнера, не узнает.
+        AddHandler(GettingFocusEvent, OnGettingFocus, RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
+    /// <summary>
+    /// Часть, в которой показано содержимое: в режиме <see cref="SurfaceContentMode.Loaded"/> фокус дальше
+    /// неё не заходит.
+    /// </summary>
+    /// <remarks>
+    /// У обычного контейнера это презентер содержимого. Наследник, у которого форма стоит в своей части
+    /// шаблона, называет здесь её (ADR 0027): иначе фокус проходил бы мимо границы.
+    /// </remarks>
+    internal virtual Visual? ContentHost => Presenter;
+
+    /// <summary>
+    /// Не даёт загруженной форме взять клавиатуру.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Указатель до формы не доходит: его гасит тема на презентере. Клавиатура доходила — Tab гулял по
+    /// полям и кнопкам макета, набранный текст шёл в его поля, а Delete и Ctrl+A редактора съедало поле,
+    /// в котором стояла каретка (ADR 0027). Обход Tab тема снимает той же записью, что и попадание, а
+    /// фокус, пришедший иначе — программно, из кода самого контрола, — отменяется здесь.
+    /// </para>
+    /// <para>
+    /// Свои части контейнера — панель инструментов над ним — фокус брать могут: граница проходит по
+    /// <see cref="ContentHost"/>, а не по контейнеру.
+    /// </para>
+    /// </remarks>
+    private void OnGettingFocus(object? sender, FocusChangingEventArgs e)
+    {
+        if (ContentMode != SurfaceContentMode.Loaded
+            || ContentHost is not { } host
+            || e.NewFocusedElement is not Visual target
+            || !host.IsVisualAncestorOf(target))
+        {
+            return;
+        }
+
+        // Отменить можно не всякую перемену фокуса; неотменимую уводят в сам контейнер — он в фокусе
+        // ничего не печатает, а редактор над ним клавиатуру слышит.
+        if (!e.TryCancel())
+            e.TrySetNewFocusedElement(this);
     }
 
     /// <inheritdoc />

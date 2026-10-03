@@ -81,6 +81,11 @@
         -->
         <Style Selector="^[ContentMode=Loaded] /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="IsHitTestVisible" Value="False"/>
+            <!--
+                И клавиатуры она не берёт (ADR 0027): Tab обходит форму стороной, а фокус, пришедший
+                в неё программно, контейнер отменяет сам.
+            -->
+            <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
         </Style>
 
     </ControlTheme>

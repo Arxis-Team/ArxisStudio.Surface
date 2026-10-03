@@ -1,8 +1,10 @@
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Diagnostics;
 using Avalonia.Media;
@@ -67,7 +69,7 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// ]]></code>
 /// </example>
 [TemplatePart(FormHostPart, typeof(Decorator))]
-[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass, TitledPseudoClass)]
+[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass, TitledPseudoClass, FaultedPseudoClass)]
 public class UiDesignerFormItem : UiDesignerItem
 {
     private const string FormHostPart = "PART_FormHost";
@@ -75,6 +77,34 @@ public class UiDesignerFormItem : UiDesignerItem
     private const string ControlPseudoClass = ":control";
     private const string EmptyPseudoClass = ":empty";
     private const string TitledPseudoClass = ":titled";
+    private const string FaultedPseudoClass = ":faulted";
+
+    /// <summary>
+    /// Свойства текста, которые содержимое наследует от окна, — и которые в дизайнере оно унаследовало бы
+    /// от инструмента.
+    /// </summary>
+    private static readonly AvaloniaProperty[] InheritedText =
+    [
+        TextElement.FontFamilyProperty,
+        TextElement.FontSizeProperty,
+        TextElement.FontStyleProperty,
+        TextElement.FontWeightProperty,
+        TextElement.FontStretchProperty,
+        TextElement.ForegroundProperty,
+    ];
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="ApplicationRoot"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, Application?> ApplicationRootProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, Application?>(
+            nameof(ApplicationRoot), static item => item.ApplicationRoot, static (item, value) => item.ApplicationRoot = value);
+
+    /// <summary>
+    /// Идентификатор свойства <see cref="FaultMessage"/>.
+    /// </summary>
+    public static readonly DirectProperty<UiDesignerFormItem, string?> FaultMessageProperty =
+        AvaloniaProperty.RegisterDirect<UiDesignerFormItem, string?>(nameof(FaultMessage), static item => item.FaultMessage);
 
     /// <summary>
     /// Идентификатор свойства <see cref="Root"/>.
@@ -176,6 +206,21 @@ public class UiDesignerFormItem : UiDesignerItem
     private readonly List<IDisposable> _mirrors = new();
     private readonly List<IStyle> _borrowedStyles = new();
 
+    /// <summary>Граница, за которой сбой раскладки формы остаётся сбоем формы, а не холста.</summary>
+    private readonly FaultBarrier _barrier;
+
+    /// <summary>Что взято у приложения документа и стоит на <see cref="_application"/>.</summary>
+    private readonly List<IStyle> _applicationStyles = new();
+
+    private readonly List<IDataTemplate> _applicationTemplates = new();
+
+    /// <summary>Наследуемый текст из темы окна приложения: привязки и значения уровня стиля, снимаемые освобождением.</summary>
+    private readonly List<IDisposable> _applicationText = new();
+
+    private Application? _applicationRoot;
+    private ApplicationResources? _applicationResources;
+    private string? _faultMessage;
+
     private Decorator? _host;
     private object? _root;
     private bool _isTopLevel;
@@ -212,6 +257,7 @@ public class UiDesignerFormItem : UiDesignerItem
     public UiDesignerFormItem()
     {
         _application.Child = _scope;
+        _barrier = new FaultBarrier(this) { Child = _application };
 
         // На всю жизнь элемента: оба конца — его собственные объекты, утекать нечему.
         _application.Bind(
@@ -473,12 +519,80 @@ public class UiDesignerFormItem : UiDesignerItem
         set => SetValue(ApplicationThemeVariantProperty, value);
     }
 
+    /// <summary>
+    /// Получает или задает приложение документа — то, во что программа одевает свои формы, —
+    /// когда хост его загрузил; <see langword="null"/> отпускает.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Форма сама не говорит, как выглядит: тему задаёт её приложение — <c>Application.Styles</c> в
+    /// <c>App.axaml</c>, — и ресурсы, которые она называет, объявлены там же. В дизайнере над формой
+    /// стоит приложение инструмента, и без этого слоя форма одевалась бы им (ADR 0020, дополнение).
+    /// </para>
+    /// <para>
+    /// <b>Заимствует, а не копирует</b>, как и корень-окно: стили и шаблоны данных приложения ложатся на
+    /// область, стоящую на месте приложения, и возвращаются ему, когда свойство сменили или сняли. У стиля
+    /// один владелец, поэтому приложение — своё на каждую форму. Словарь ресурсов остаётся приложению:
+    /// ссылка <c>{DynamicResource}</c> в его разметке ищет ключ от него самого, и область спрашивает его
+    /// ресурсы через приложение.
+    /// </para>
+    /// <para>
+    /// Наследуемые свойства текста — шрифт, кегль, начертание, цвет — область берёт у темы окна этого
+    /// приложения: при работе их задаёт окну тема, и содержимое наследует их от окна. Содержимое,
+    /// вынутое из окна, унаследовало бы их от инструмента.
+    /// </para>
+    /// <para>
+    /// Вариант темы приложения хост задаёт отдельно (<see cref="ApplicationThemeVariant"/>): он известен
+    /// и без загруженного приложения.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Вызов не из потока интерфейса.</exception>
+    public Application? ApplicationRoot
+    {
+        get => _applicationRoot;
+        set
+        {
+            Dispatcher.UIThread.VerifyAccess();
+
+            if (ReferenceEquals(_applicationRoot, value))
+                return;
+
+            ReturnApplication();
+
+            var old = _applicationRoot;
+            _applicationRoot = value;
+            BorrowApplication(value);
+            RaisePropertyChanged(ApplicationRootProperty, old, value);
+        }
+    }
+
+    /// <summary>
+    /// Получает сообщение сбоя, с которым содержимое формы упало на замере или раскладке, или
+    /// <see langword="null"/>, пока оно не падало.
+    /// </summary>
+    /// <remarks>
+    /// Контрол формы — код проекта, и упасть в своём <c>MeasureOverride</c> он вправе. Без границы его
+    /// исключение уносило бы весь проход раскладки — холст и окно хоста вместе с ним. Элемент ловит его
+    /// на своей границе (ADR 0028): форма перестаёт меряться и занимает нулевой размер, элемент метит
+    /// себя <c>:faulted</c>, а причина — здесь. Новый корень начинает заново. Сбой отрисовки этим не
+    /// ловится: отрисовка идёт мимо раскладки.
+    /// </remarks>
+    public string? FaultMessage
+    {
+        get => _faultMessage;
+        private set => SetAndRaise(FaultMessageProperty, ref _faultMessage, value);
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// Форма, а не области элемента: области — его служебные части, и выбирать их нечего. Содержимое,
     /// которое не контрол, показывает обёртка элемента — авторской разметки в ней нет.
     /// </remarks>
     internal override Control? AuthoredRoot => _authored;
+
+    /// <inheritdoc />
+    /// <remarks>Часть шаблона, в которой стоят области формы.</remarks>
+    internal override Visual? ContentHost => _host;
 
     /// <inheritdoc />
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -490,7 +604,7 @@ public class UiDesignerFormItem : UiDesignerItem
 
         _host = e.NameScope.Find<Decorator>(FormHostPart);
         if (_host != null)
-            _host.Child = _application;
+            _host.Child = _barrier;
     }
 
     /// <inheritdoc />
@@ -567,12 +681,18 @@ public class UiDesignerFormItem : UiDesignerItem
         _scope.ClearValue(DataContextProperty);
         _authored = null;
 
+        foreach (var property in InheritedText)
+            _scope.ClearValue(property);
+
         Return();
 
         FormBackground = null;
         IsTopLevel = false;
         HasContent = false;
         UpdateFormThemeVariant();
+
+        // Новый корень начинает заново: упало прежнее содержимое, а не элемент.
+        ClearFault();
     }
 
     /// <summary>
@@ -723,6 +843,16 @@ public class UiDesignerFormItem : UiDesignerItem
         // данных приходят данные хоста.
         _mirrors.Add(_scope.Bind(DataContextProperty, top.GetObservable(DataContextProperty)));
 
+        // Шрифт и цвет текста, объявленные на самом окне: содержимое наследует их от окна, а вынутое из
+        // него — унаследовало бы от того, что стоит выше. Только объявленные документом: значение по
+        // умолчанию у окна вне дерева перебило бы тему приложения, которая лежит на области выше.
+        foreach (var property in InheritedText)
+        {
+            _mirrors.Add(top.GetPropertyChangedObservable(property)
+                .Subscribe(new AnonymousObserver<AvaloniaPropertyChangedEventArgs>(_ => MirrorText(top, property))));
+            MirrorText(top, property);
+        }
+
         if (top is Window window)
         {
             _mirrors.Add(this.Bind(TitleProperty, window.GetObservable(Window.TitleProperty)));
@@ -757,6 +887,209 @@ public class UiDesignerFormItem : UiDesignerItem
             if (!double.IsNaN(height))
                 SetCurrentValue(HeightProperty, height);
         })));
+    }
+
+    /// <summary>Переносит на область корня свойство текста, если его объявил сам корень.</summary>
+    private void MirrorText(TopLevel top, AvaloniaProperty property)
+    {
+        if (top.GetDiagnostic(property).Priority <= BindingPriority.LocalValue)
+            _scope.SetValue(property, top.GetValue(property));
+        else
+            _scope.ClearValue(property);
+    }
+
+    /// <summary>
+    /// Берёт у приложения документа то, во что оно одевает формы, и ставит на область приложения.
+    /// </summary>
+    private void BorrowApplication(Application? application)
+    {
+        if (application is null)
+            return;
+
+        // Стили и шаблоны снимаются у приложения раньше, чем добавляются сюда: коллекция, у которой
+        // забирают владельца, отпускает первой.
+        _applicationStyles.AddRange(application.Styles);
+        application.Styles.Clear();
+        foreach (var style in _applicationStyles)
+            _application.Styles.Add(style);
+
+        // Словарь остаётся приложению: ссылки в его разметке ищут ключ от него самого. Форма спрашивает
+        // его ресурсы через посредника (ApplicationResources).
+        _applicationResources = new ApplicationResources(application);
+        _application.Resources.MergedDictionaries.Add(_applicationResources);
+
+        _applicationTemplates.AddRange(application.DataTemplates);
+        application.DataTemplates.Clear();
+        foreach (var template in _applicationTemplates)
+            _application.DataTemplates.Add(template);
+
+        InheritWindowText();
+    }
+
+    /// <summary>
+    /// Даёт области корня наследуемый текст, который тема приложения даёт окну.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Тема окна ищется только в том, что объявило приложение: выше стоит инструмент, и его тема окна —
+    /// его, а не программы.
+    /// </para>
+    /// <para>
+    /// Ложится текст на область корня, а не приложения: она стоит на месте окна — того, кого тема
+    /// одевает, — и носит запрошенный корнем вариант темы. Значение, данное привязкой —
+    /// <c>{DynamicResource}</c>, как у тем Avalonia, — находит ресурс от неё вверх, в варианте окна. Текст,
+    /// объявленный самим окном, ставится той же области значением и сильнее темы, как при работе.
+    /// </para>
+    /// <para>
+    /// Уровень — шаблонный, как у значений темы окна: стиль инструмента, который одевает саму
+    /// <see cref="ThemeVariantScope"/> — Fluent ставит ей цвет текста, — стоит ниже и формы не перекрасит.
+    /// Без приложения документа его стиль остаётся в силе: цвет текста под вариантом формы лучше, чем цвет
+    /// инструмента.
+    /// </para>
+    /// </remarks>
+    private void InheritWindowText()
+    {
+        if (WindowTheme() is not { } theme)
+            return;
+
+        foreach (var setter in theme.Setters.OfType<Setter>())
+        {
+            if (setter.Property is not { } declared
+                || InheritedText.FirstOrDefault(property => property == declared) is not { } property)
+            {
+                continue;
+            }
+
+            if (setter.Value is BindingBase binding)
+                _applicationText.Add(_scope.Bind(property, binding));
+            else if (_scope.SetValue(property, setter.Value, BindingPriority.Template) is { } set)
+                _applicationText.Add(set);
+        }
+    }
+
+    /// <summary>Тема окна из того, что объявило приложение документа: его ресурсы, затем его стили, последний первым.</summary>
+    private ControlTheme? WindowTheme()
+    {
+        var variant = _application.ActualThemeVariant;
+
+        if (_applicationRoot is { } application
+            && application.TryGetResource(typeof(Window), variant, out var declared)
+            && declared is ControlTheme theme)
+        {
+            return theme;
+        }
+
+        for (var i = _applicationStyles.Count - 1; i >= 0; i--)
+        {
+            if (_applicationStyles[i] is IResourceProvider provider
+                && provider.TryGetResource(typeof(Window), variant, out var styled)
+                && styled is ControlTheme fromStyles)
+            {
+                return fromStyles;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Возвращает приложению документа всё взятое — в порядке, обратном тому, как брали.</summary>
+    private void ReturnApplication()
+    {
+        foreach (var text in _applicationText)
+            text.Dispose();
+
+        _applicationText.Clear();
+
+        if (_applicationRoot is not { } application)
+            return;
+
+        foreach (var template in _applicationTemplates)
+        {
+            _application.DataTemplates.Remove(template);
+            application.DataTemplates.Add(template);
+        }
+
+        _applicationTemplates.Clear();
+
+        if (_applicationResources is not null)
+        {
+            _application.Resources.MergedDictionaries.Remove(_applicationResources);
+            _applicationResources = null;
+        }
+
+        foreach (var style in _applicationStyles)
+        {
+            _application.Styles.Remove(style);
+            application.Styles.Add(style);
+        }
+
+        _applicationStyles.Clear();
+    }
+
+    /// <summary>Записывает сбой содержимого: форма больше не меряется, пока корень не сменят.</summary>
+    private void Fault(Exception error)
+    {
+        if (_faultMessage is not null)
+            return;
+
+        // Сменить содержимое посреди прохода нельзя, а свойство и псевдокласс — можно: перерисовка
+        // элемента просится, а не делается здесь.
+        FaultMessage = error.Message.Length > 0 ? error.Message : error.GetType().Name;
+        PseudoClasses.Set(FaultedPseudoClass, true);
+    }
+
+    private void ClearFault()
+    {
+        if (_faultMessage is null)
+            return;
+
+        FaultMessage = null;
+        PseudoClasses.Set(FaultedPseudoClass, false);
+        _barrier.InvalidateMeasure();
+    }
+
+    /// <summary>
+    /// Граница между раскладкой элемента и раскладкой формы: исключение формы кончается здесь.
+    /// </summary>
+    /// <remarks>
+    /// Отказ процесса ловить нечем: после нехватки памяти дизайнер всё равно не продолжится, и делать вид,
+    /// что форма просто не разложилась, значило бы скрыть настоящую причину.
+    /// </remarks>
+    private sealed class FaultBarrier(UiDesignerFormItem item) : Decorator
+    {
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            if (item._faultMessage is not null)
+                return default;
+
+            try
+            {
+                return base.MeasureOverride(availableSize);
+            }
+            catch (Exception error) when (error is not OutOfMemoryException)
+            {
+                item.Fault(error);
+
+                return default;
+            }
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            if (item._faultMessage is not null)
+                return finalSize;
+
+            try
+            {
+                return base.ArrangeOverride(finalSize);
+            }
+            catch (Exception error) when (error is not OutOfMemoryException)
+            {
+                item.Fault(error);
+
+                return finalSize;
+            }
+        }
     }
 
     private void UpdateKind()

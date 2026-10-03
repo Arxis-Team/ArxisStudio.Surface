@@ -17,6 +17,8 @@
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.Background" Color="#F3F3F3" />
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.Foreground" Color="#1B1B1B" />
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.BorderBrush" Color="#C8C8C8" />
+
+            <SolidColorBrush x:Key="UiDesigner.Form.Fault.Foreground" Color="#B3261E" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -30,6 +32,8 @@
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.Background" Color="#2B2B2B" />
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.Foreground" Color="#F2F2F2" />
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.BorderBrush" Color="#4A4A4A" />
+
+            <SolidColorBrush x:Key="UiDesigner.Form.Fault.Foreground" Color="#FF8A80" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -57,5 +61,12 @@
     <Thickness x:Key="UiDesigner.Form.TitleBar.Padding">10,0,0,0</Thickness>
     <Thickness x:Key="UiDesigner.Form.TitleBar.IconMargin">0,0,8,0</Thickness>
     <Thickness x:Key="UiDesigner.Form.TitleBar.BorderThickness">1,1,1,0</Thickness>
+
+    <!--
+        Сбой формы (ADR 0028): содержимое упало на замере или раскладке, и на его месте — причина. Текст
+        не на холсте, а на карточке хоста, и кисть выбрана читаться на обеих: 6:1 на светлой, 7:1 на тёмной.
+    -->
+    <Thickness x:Key="UiDesigner.Form.Fault.Margin">12</Thickness>
+    <x:Double x:Key="UiDesigner.Form.Fault.FontSize">12</x:Double>
 
 </ResourceDictionary>
