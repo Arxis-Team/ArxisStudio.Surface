@@ -521,11 +521,34 @@ public partial class SurfaceView
     /// <param name="additive">Добавить к текущему выделению, а не заменить его.</param>
     /// <returns><see langword="true"/>, если контрол редактируем и после вызова выбран.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="target"/> равен <see langword="null"/>.</exception>
-    public bool SelectTarget(Control target, bool additive = false)
+    public bool SelectTarget(Control target, bool additive = false) => SelectTarget(target, additive, takeFocus: true);
+
+    /// <summary>
+    /// Выбирает контрол как target и сам решает, брать ли клавиатуру.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="SelectTarget(Control, bool)"/> берёт клавиатуру, как указатель: выделение, заданное
+    /// хостом, без неё нельзя сдвинуть стрелками. Хосту, который сверяет холст с выбором, сделанным в
+    /// другом месте, — в дереве, в коде разметки, — она не нужна: человек работает там, и его следующая
+    /// клавиша — шаг по дереву, а не сдвиг выбранного. Отданная редактору, она уходила бы на холст после
+    /// каждой стрелки в дереве и каждого щелчка в коде.
+    /// </para>
+    /// <para>
+    /// Остальное — как у <see cref="SelectTarget(Control, bool)"/>: те же ворота редактируемости, тот же
+    /// отказ посреди жеста и одно событие на вызов.
+    /// </para>
+    /// </remarks>
+    /// <param name="target">Контрол или контейнер, который нужно выбрать.</param>
+    /// <param name="additive">Добавить к текущему выделению, а не заменить его.</param>
+    /// <param name="takeFocus">Взять ли клавиатуру, если она не у редактора.</param>
+    /// <returns><see langword="true"/>, если контрол редактируем и после вызова выбран.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="target"/> равен <see langword="null"/>.</exception>
+    public bool SelectTarget(Control target, bool additive, bool takeFocus)
     {
         ArgumentNullException.ThrowIfNull(target);
 
-        return ApplySelection(target, additive ? SelectionIntent.Add : SelectionIntent.Replace);
+        return ApplySelection(target, additive ? SelectionIntent.Add : SelectionIntent.Replace, takeFocus);
     }
 
     /// <summary>
@@ -578,7 +601,7 @@ public partial class SurfaceView
     /// </description></item>
     /// </list>
     /// </remarks>
-    private protected bool ApplySelection(Control target, SelectionIntent intent)
+    private protected bool ApplySelection(Control target, SelectionIntent intent, bool takeFocus = true)
     {
         // Жест владеет выделением, пока идёт. Вызов извне посреди него ставит
         // контрол в группу, которую перетаскивают, — он уезжает вместе с ней,
@@ -624,7 +647,8 @@ public partial class SurfaceView
 
         // Тот же жест, что и у указателя: без фокуса клавиатура до редактора
         // не доходит, и выделение, заданное хостом, нельзя сдвинуть стрелками.
-        if (!IsKeyboardFocusWithin)
+        // Хост, сверяющий холст со своим деревом, её не просит.
+        if (takeFocus && !IsKeyboardFocusWithin)
             Focus();
 
         return SelectedTargets.Any(selected => ReferenceEquals(selected.Target, target));

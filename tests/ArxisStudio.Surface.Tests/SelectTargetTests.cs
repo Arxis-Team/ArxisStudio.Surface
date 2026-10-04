@@ -9,7 +9,7 @@ using ArxisStudio.Surface;
 namespace ArxisStudio.Tests;
 
 /// <summary>
-/// Контракт публичного <see cref="SurfaceView.SelectTarget"/>.
+/// Контракт публичного <see cref="SurfaceView.SelectTarget(Control, bool)"/>.
 /// </summary>
 /// <remarks>
 /// Стенд намеренно на <b>двух</b> контейнерах. Прежние тесты этого метода жили в одном,
@@ -193,5 +193,58 @@ public class SelectTargetTests
         // Обход авторской разметки внутрь шаблонов не спускается — именно поэтому
         // клик по кнопке не выбирает её надпись. Публичный вход обязан судить так же.
         Assert.False(harness.Editor.SelectTarget(part));
+    }
+
+    /// <summary>
+    /// Ставит рядом с редактором поле, которое держит клавиатуру, — дерево или код хоста.
+    /// </summary>
+    private static (EditorHarness Harness, TextBox Outline) CreateBesideOutline()
+    {
+        var harness = CreateTwo();
+        var editor = harness.Editor;
+        var outline = new TextBox { Width = 120 };
+
+        harness.Window.Content = null;
+
+        var host = new DockPanel();
+
+        DockPanel.SetDock(outline, Dock.Left);
+        host.Children.Add(outline);
+        host.Children.Add(editor);
+        harness.Window.Content = host;
+        harness.RunLayout();
+
+        Assert.True(outline.Focus(), "поле рядом с редактором не взяло клавиатуру");
+
+        return (harness, outline);
+    }
+
+    [AvaloniaFact]
+    public void A_Host_Selection_Takes_The_Keyboard_By_Default()
+    {
+        var (harness, outline) = CreateBesideOutline();
+
+        Assert.True(harness.Editor.SelectTarget(harness.Nested(0)));
+
+        // Как и указатель: выбранное, заданное хостом, сдвигают стрелками.
+        Assert.True(harness.Editor.IsKeyboardFocusWithin);
+        Assert.False(outline.IsFocused);
+    }
+
+    /// <summary>
+    /// Хост, сверяющий холст с выбором в своём дереве, клавиатуру редактору не отдаёт: следующая
+    /// клавиша — шаг по дереву, а не сдвиг выбранного.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_Host_Can_Select_Without_Taking_The_Keyboard()
+    {
+        var (harness, outline) = CreateBesideOutline();
+
+        Assert.True(harness.Editor.SelectTarget(harness.Nested(0), additive: false, takeFocus: false));
+        Assert.True(harness.Editor.SelectTarget(harness.Named(0, "Sibling"), additive: true, takeFocus: false));
+
+        Assert.Equal(2, harness.Editor.SelectedTargets.Count);
+        Assert.True(outline.IsFocused, "выбор хоста увёл клавиатуру из его дерева");
+        Assert.False(harness.Editor.IsKeyboardFocusWithin);
     }
 }

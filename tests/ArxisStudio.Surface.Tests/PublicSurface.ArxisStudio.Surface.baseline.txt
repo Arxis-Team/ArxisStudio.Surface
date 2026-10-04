@@ -373,6 +373,7 @@ class ArxisStudio.Surface.SurfaceView : SelectingItemsControl
     event EventHandler<SurfaceSelectionChangedEventArgs> SurfaceSelectionChanged
     method Boolean NeedsContainerOverride(Object, Int32, Object&)
     method Boolean SelectTarget(Control, Boolean)
+    method Boolean SelectTarget(Control, Boolean, Boolean)
     method Boolean SetTargetGeometry(Control, Rect)
     method Control CreateContainerForItemOverride(Object, Int32, Object)
     method IDisposable Freeze()
