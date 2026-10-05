@@ -70,6 +70,7 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerFormItem : UiDesignerItem
     avalonia ApplicationRootProperty -> ApplicationRoot : Application (direct)
     avalonia ApplicationThemeVariantProperty -> ApplicationThemeVariant : ThemeVariant (styled) = <ThemeVariant>
     avalonia CanResizeProperty -> CanResize : Boolean (styled) = true
+    avalonia CaptionProperty -> Caption : String (styled) = null
     avalonia DecorationsProperty -> Decorations : WindowDecorations (styled) = Full
     avalonia FaultMessageProperty -> FaultMessage : String (direct)
     avalonia FormBackgroundProperty -> FormBackground : IBrush (direct)
@@ -82,6 +83,8 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerFormItem : UiDesignerItem
     ctor .ctor()
     method IDisposable SuspendRoot()
     method Void OnApplyTemplate(TemplateAppliedEventArgs)
+    method Void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs)
+    method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
     property Application ApplicationRoot { get; set; }
     property Boolean CanResize { get; }
@@ -89,6 +92,7 @@ class ArxisStudio.Surface.UiDesigner.UiDesignerFormItem : UiDesignerItem
     property Boolean IsTopLevel { get; }
     property IBrush FormBackground { get; }
     property Object Root { get; set; }
+    property String Caption { get; set; }
     property String FaultMessage { get; }
     property String Title { get; }
     property ThemeVariant ApplicationThemeVariant { get; set; }

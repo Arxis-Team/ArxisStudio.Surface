@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:surface="clr-namespace:ArxisStudio.Surface;assembly=ArxisStudio.Surface"
                     xmlns:uidesigner="clr-namespace:ArxisStudio.Surface.UiDesigner">
 
     <ResourceDictionary.MergedDictionaries>
@@ -23,6 +24,13 @@
         не отступ: якорь нулевой высоты прижат к верху, заголовок в нём прижат к низу и потому растёт
         вверх на свою высоту — литерала, производного от высоты заголовка, в шаблоне нет. Рамка носит тему
         формы (FormThemeVariant), нажатий не берёт и видна только у окна с полным оформлением (:titled).
+
+        Над рамкой окна — подпись формы (ADR 0029), когда хост её назвал: имя формы экранного размера на
+        любом масштабе. Подпись — ручка контейнера: нажатие по ней берёт форму целиком, мимо содержимого и
+        рамки выделения. Над формой без заголовка она стоит прямо над формой; над окном — над заголовком:
+        место под него отводит часть той же высоты, а не отступ, производный от неё. Якорь — холст нулевой
+        высоты: нижний край подписи он ставит на свой верх, и подпись растёт вверх на свою высоту, какой бы она
+        ни вышла по кеглю; панель с выравниванием по низу дала бы ей высоту якоря — ноль.
 
         Окно с заголовком — один прямоугольник из двух частей, и скругление у него одно: CornerRadius
         элемента. Заголовок берёт верхние углы, форма под ним — нижние, а сходятся они прямой линией.
@@ -107,6 +115,30 @@
                         </ThemeVariantScope>
                     </Panel>
 
+                    <Canvas Name="PART_CaptionAnchor"
+                            Height="0"
+                            VerticalAlignment="Top"
+                            ClipToBounds="False"
+                            IsVisible="False">
+                        <StackPanel Canvas.Left="0" Canvas.Bottom="0">
+                            <Border Name="PART_Caption"
+                                    HorizontalAlignment="Left"
+                                    Background="Transparent"
+                                    Padding="{DynamicResource UiDesigner.Form.Caption.Padding}"
+                                    RenderTransformOrigin="0%,100%"
+                                    surface:SurfaceItem.IsHandle="True">
+                                <TextBlock Name="PART_CaptionText"
+                                           Text="{TemplateBinding Caption}"
+                                           FontSize="{DynamicResource UiDesigner.Form.Caption.FontSize}"
+                                           Foreground="{DynamicResource UiDesigner.Form.Caption.Foreground}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Border>
+                            <Panel Name="PART_CaptionGap"
+                                   Height="{DynamicResource UiDesigner.Form.TitleBar.Height}"
+                                   IsVisible="False" />
+                        </StackPanel>
+                    </Canvas>
+
                     <Border Name="PART_HoverBorder"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="1"
@@ -144,6 +176,20 @@
         -->
         <Style Selector="^:titled /template/ Panel#PART_ChromeAnchor">
             <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- Подпись — у формы, которую хост назвал; над окном она встаёт над заголовком. -->
+        <Style Selector="^:captioned /template/ Canvas#PART_CaptionAnchor">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:titled /template/ Panel#PART_CaptionGap">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- Выбранная форма — та, с которой работают: её подпись — цветом выбора. -->
+        <Style Selector="^:selected /template/ TextBlock#PART_CaptionText">
+            <Setter Property="Foreground" Value="{DynamicResource UiDesigner.Form.Caption.SelectedForeground}" />
         </Style>
 
         <!-- И под ним форма сверху прямая — все три части, которые носят скругление элемента. -->

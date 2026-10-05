@@ -240,6 +240,7 @@ class ArxisStudio.Surface.SurfaceInteractionOptions : AvaloniaObject
 class ArxisStudio.Surface.SurfaceItem : ContentControl
     avalonia AccentProperty -> Accent : IBrush (styled) = null
     avalonia IsDraggableProperty -> IsDraggable : Boolean (styled) = true
+    avalonia IsHandleProperty -> IsHandle : Boolean (attached) = false
     avalonia IsSelectedProperty -> IsSelected : Boolean (attached) = false [TwoWay]
     avalonia LocationProperty -> Location : Point (styled) = 0, 0 [TwoWay]
     ctor .ctor()
@@ -255,12 +256,14 @@ class ArxisStudio.Surface.SurfaceItem : ContentControl
     field RoutedEvent<ResizeDeltaEventArgs> ResizeDeltaEvent
     field RoutedEvent<VectorEventArgs> ResizeCompletedEvent
     field RoutedEvent<VectorEventArgs> ResizeStartedEvent
+    method Boolean GetIsHandle(Control)
     method Void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs)
     method Void OnPointerCaptureLost(PointerCaptureLostEventArgs)
     method Void OnPointerMoved(PointerEventArgs)
     method Void OnPointerPressed(PointerPressedEventArgs)
     method Void OnPointerReleased(PointerReleasedEventArgs)
     method Void OnPropertyChanged(AvaloniaPropertyChangedEventArgs)
+    method Void SetIsHandle(Control, Boolean)
     property Boolean IsDraggable { get; set; }
     property Boolean IsSelected { get; set; }
     property IBrush Accent { get; set; }

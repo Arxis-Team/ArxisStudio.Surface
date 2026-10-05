@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Reactive;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace ArxisStudio.Surface.UiDesigner;
 
@@ -69,10 +70,13 @@ namespace ArxisStudio.Surface.UiDesigner;
 /// ]]></code>
 /// </example>
 [TemplatePart(FormHostPart, typeof(Decorator))]
-[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass, TitledPseudoClass, FaultedPseudoClass)]
+[TemplatePart(CaptionPart, typeof(Control))]
+[PseudoClasses(WindowPseudoClass, ControlPseudoClass, EmptyPseudoClass, TitledPseudoClass, FaultedPseudoClass, CaptionedPseudoClass)]
 public class UiDesignerFormItem : UiDesignerItem
 {
     private const string FormHostPart = "PART_FormHost";
+    private const string CaptionPart = "PART_Caption";
+    private const string CaptionedPseudoClass = ":captioned";
     private const string WindowPseudoClass = ":window";
     private const string ControlPseudoClass = ":control";
     private const string EmptyPseudoClass = ":empty";
@@ -165,6 +169,12 @@ public class UiDesignerFormItem : UiDesignerItem
             nameof(Decorations), defaultValue: WindowDecorations.Full);
 
     /// <summary>
+    /// Идентификатор свойства <see cref="Caption"/>.
+    /// </summary>
+    public static readonly StyledProperty<string?> CaptionProperty =
+        AvaloniaProperty.Register<UiDesignerFormItem, string?>(nameof(Caption));
+
+    /// <summary>
     /// Идентификатор свойства <see cref="ApplicationThemeVariant"/>.
     /// </summary>
     public static readonly StyledProperty<ThemeVariant> ApplicationThemeVariantProperty =
@@ -222,6 +232,8 @@ public class UiDesignerFormItem : UiDesignerItem
     private string? _faultMessage;
 
     private Decorator? _host;
+    private Control? _caption;
+    private SurfaceView? _surface;
     private object? _root;
     private bool _isTopLevel;
     private bool _hasContent;
@@ -498,6 +510,32 @@ public class UiDesignerFormItem : UiDesignerItem
     }
 
     /// <summary>
+    /// Получает или задает подпись формы — имя над ней; <see langword="null"/> или пусто — подписи нет.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ADR 0029. Когда на холсте не одна форма, их надо различать — подпись называет форму, как имя кадра
+    /// в редакторах макетов. Заголовок окна этого не делает: его текст — свойство окна, а не имя формы, и у
+    /// пользовательского элемента заголовка нет вовсе.
+    /// </para>
+    /// <para>
+    /// <b>Подпись — ручка контейнера</b> (<see cref="SurfaceItem.IsHandleProperty"/>): нажатие по ней выбирает
+    /// форму целиком, а протяжка тянет её, — даже когда форма сплошь покрыта своим содержимым и пустого
+    /// места в ней не найти.
+    /// </para>
+    /// <para>
+    /// <b>Размер — экранный.</b> Подпись — часть инструмента, а не формы: на мелком масштабе она не тает, а
+    /// на крупном не растёт, и шире формы на экране не бывает. Стоит над формой, а над окном — над его
+    /// заголовком.
+    /// </para>
+    /// </remarks>
+    public string? Caption
+    {
+        get => GetValue(CaptionProperty);
+        set => SetValue(CaptionProperty, value);
+    }
+
+    /// <summary>
     /// Получает или задает тему, которую дало бы форме приложение документа, когда хост её знает.
     /// </summary>
     /// <remarks>
@@ -606,6 +644,71 @@ public class UiDesignerFormItem : UiDesignerItem
         _host = e.NameScope.Find<Decorator>(FormHostPart);
         if (_host != null)
             _host.Child = _barrier;
+
+        _caption = e.NameScope.Find<Control>(CaptionPart);
+        ScaleCaption();
+    }
+
+    /// <inheritdoc />
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        FollowSurface(this.FindAncestorOfType<SurfaceView>());
+    }
+
+    /// <inheritdoc />
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        FollowSurface(null);
+    }
+
+    /// <summary>
+    /// Следит за масштабом поверхности, на которой стоит: подпись гасит его обратным.
+    /// </summary>
+    /// <remarks>
+    /// Подписка живёт, пока элемент в дереве поверхности, — снятый с неё элемент отписывается и холстом не
+    /// держится.
+    /// </remarks>
+    private void FollowSurface(SurfaceView? surface)
+    {
+        if (ReferenceEquals(_surface, surface))
+            return;
+
+        if (_surface != null)
+            _surface.PropertyChanged -= OnSurfacePropertyChanged;
+
+        _surface = surface;
+
+        if (_surface != null)
+            _surface.PropertyChanged += OnSurfacePropertyChanged;
+
+        ScaleCaption();
+    }
+
+    private void OnSurfacePropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == SurfaceView.ViewportZoomProperty)
+            ScaleCaption();
+    }
+
+    /// <summary>
+    /// Подпись — экранного размера: масштаб холста она гасит обратным и шире формы на экране не встаёт.
+    /// </summary>
+    /// <remarks>
+    /// Обратный масштаб — с угла у формы (<c>RenderTransformOrigin</c> в шаблоне), поэтому подпись остаётся
+    /// прижатой к форме на любом масштабе. Ширина раскладки подписи — экранная, она и ограничивается шириной
+    /// формы на экране.
+    /// </remarks>
+    private void ScaleCaption()
+    {
+        if (_caption == null)
+            return;
+
+        var zoom = _surface is { ViewportZoom: > 0 } surface ? surface.ViewportZoom : 1;
+
+        _caption.RenderTransform = Math.Abs(zoom - 1) < 1e-9 ? null : new ScaleTransform(1 / zoom, 1 / zoom);
+        _caption.MaxWidth = Bounds.Width > 0 ? Bounds.Width * zoom : double.PositiveInfinity;
     }
 
     /// <inheritdoc />
@@ -613,8 +716,17 @@ public class UiDesignerFormItem : UiDesignerItem
     {
         base.OnPropertyChanged(change);
 
+        if (change.Property == CaptionProperty)
+        {
+            PseudoClasses.Set(CaptionedPseudoClass, !string.IsNullOrEmpty(change.GetNewValue<string?>()));
+        }
+        else if (change.Property == BoundsProperty)
+        {
+            ScaleCaption();
+        }
+
         // Хост может узнать тему приложения позже, чем поставил корень.
-        if (change.Property == ApplicationThemeVariantProperty)
+        else if (change.Property == ApplicationThemeVariantProperty)
         {
             if (_donor is { } top)
             {

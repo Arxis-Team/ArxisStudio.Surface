@@ -19,6 +19,9 @@
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.BorderBrush" Color="#C8C8C8" />
 
             <SolidColorBrush x:Key="UiDesigner.Form.Fault.Foreground" Color="#B3261E" />
+
+            <SolidColorBrush x:Key="UiDesigner.Form.Caption.Foreground" Color="#5C5C5C" />
+            <SolidColorBrush x:Key="UiDesigner.Form.Caption.SelectedForeground" Color="#0F6CBD" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -34,6 +37,9 @@
             <SolidColorBrush x:Key="UiDesigner.Form.TitleBar.BorderBrush" Color="#4A4A4A" />
 
             <SolidColorBrush x:Key="UiDesigner.Form.Fault.Foreground" Color="#FF8A80" />
+
+            <SolidColorBrush x:Key="UiDesigner.Form.Caption.Foreground" Color="#B0B0B0" />
+            <SolidColorBrush x:Key="UiDesigner.Form.Caption.SelectedForeground" Color="#4CA5FF" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -61,6 +67,15 @@
     <Thickness x:Key="UiDesigner.Form.TitleBar.Padding">10,0,0,0</Thickness>
     <Thickness x:Key="UiDesigner.Form.TitleBar.IconMargin">0,0,8,0</Thickness>
     <Thickness x:Key="UiDesigner.Form.TitleBar.BorderThickness">1,1,1,0</Thickness>
+
+    <!--
+        Подпись формы (ADR 0029): имя над формой, экранного размера на любом масштабе. Кегль — мелкий, как у
+        подписи слоя в редакторах макетов; отступ снизу отделяет имя от формы или от заголовка окна. Кисти —
+        под холст инструмента, а не под тему формы: подпись — часть инструмента. Подпись читается на холсте
+        6,2:1 в светлой и 7,7:1 в тёмной, выбранная — 5,0:1 и 6,5:1.
+    -->
+    <x:Double x:Key="UiDesigner.Form.Caption.FontSize">12</x:Double>
+    <Thickness x:Key="UiDesigner.Form.Caption.Padding">0,0,0,4</Thickness>
 
     <!--
         Сбой формы (ADR 0028): содержимое упало на замере или раскладке, и на его месте — причина. Текст

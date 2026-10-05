@@ -124,6 +124,55 @@ public class SurfaceItem : ContentControl, ISelectable
         set => SetValue(IsDraggableProperty, value);
     }
 
+    /// <summary>
+    /// Идентификатор присоединённого свойства ручки контейнера.
+    /// </summary>
+    public static readonly AttachedProperty<bool> IsHandleProperty =
+        AvaloniaProperty.RegisterAttached<SurfaceItem, Control, bool>("IsHandle");
+
+    /// <summary>
+    /// Помечена ли часть контейнера ручкой.
+    /// </summary>
+    /// <param name="element">Часть шаблона или содержимого контейнера.</param>
+    /// <returns>Признак ручки.</returns>
+    public static bool GetIsHandle(Control element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return element.GetValue(IsHandleProperty);
+    }
+
+    /// <summary>
+    /// Помечает часть контейнера ручкой: нажатие по ней берёт контейнер целиком.
+    /// </summary>
+    /// <param name="element">Часть шаблона или содержимого контейнера.</param>
+    /// <param name="value">Признак ручки.</param>
+    /// <remarks>
+    /// ADR 0029. Нажатие по ручке не уходит ни вложенному target'у под ней, ни рамке выделения:
+    /// контейнер выбирается сам — как с <see cref="SurfaceInputGestures.ContainerInteractionModifiers"/>,
+    /// — и протяжка тянет его. Так берут форму, целиком покрытую своим содержимым, за подпись над ней.
+    /// </remarks>
+    public static void SetIsHandle(Control element, bool value)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        element.SetValue(IsHandleProperty, value);
+    }
+
+    /// <summary>
+    /// Пришлось ли нажатие на ручку этого контейнера: помечен ли ручкой источник или кто-то между ним и
+    /// контейнером.
+    /// </summary>
+    /// <param name="source">Источник нажатия.</param>
+    internal bool IsOnHandle(object? source)
+    {
+        for (var visual = source as Visual; visual != null && !ReferenceEquals(visual, this); visual = visual.GetVisualParent())
+        {
+            if (visual is Control control && GetIsHandle(control))
+                return true;
+        }
+
+        return false;
+    }
+
     #endregion
 
     #region Routed Events

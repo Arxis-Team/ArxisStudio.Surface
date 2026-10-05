@@ -1328,7 +1328,18 @@ public partial class SurfaceView
         return !TryResolveSelectionTargetAtPoint(container, worldPoint, out _);
     }
 
-    internal void UpdateSelectionTargetFromPoint(SurfaceItem container, Point screenPoint, KeyModifiers modifiers, int clickCount = 1)
+    /// <summary>
+    /// Пишет выбор по нажатию внутри контейнера — оба слоя одной транзакцией.
+    /// </summary>
+    /// <param name="container">Контейнер верхнего уровня, получивший нажатие.</param>
+    /// <param name="screenPoint">Точка нажатия в координатах редактора.</param>
+    /// <param name="modifiers">Модификаторы ввода.</param>
+    /// <param name="clickCount">Номер щелчка подряд.</param>
+    /// <param name="wholeContainer">
+    /// Нажали ручку контейнера (ADR 0029): выбирается сам контейнер — правилом уровня контейнеров, мимо
+    /// правила слоя для вложенных target'ов.
+    /// </param>
+    internal void UpdateSelectionTargetFromPoint(SurfaceItem container, Point screenPoint, KeyModifiers modifiers, int clickCount = 1, bool wholeContainer = false)
     {
         // Оба слоя пишутся одной транзакцией. Раньше индексный слой писало состояние
         // контейнера, а этот метод дописывал слой target'ов уже после — и между двумя
@@ -1345,7 +1356,10 @@ public partial class SurfaceView
                     Selection.Select(ownerIndex);
             }
 
-            ApplyTargetFromPoint(container, screenPoint, modifiers, clickCount);
+            if (wholeContainer)
+                ApplyContainerTarget(container, modifiers);
+            else
+                ApplyTargetFromPoint(container, screenPoint, modifiers, clickCount);
         }
 
         RefreshSelectionOverlay();
@@ -1363,7 +1377,15 @@ public partial class SurfaceView
     /// на её середине публиковала бы состояние, которого пользователь не просил.
     /// </para>
     /// </remarks>
-    private protected virtual void ApplyTargetFromPoint(SurfaceItem container, Point screenPoint, KeyModifiers modifiers, int clickCount)
+    private protected virtual void ApplyTargetFromPoint(SurfaceItem container, Point screenPoint, KeyModifiers modifiers, int clickCount) =>
+        ApplyContainerTarget(container, modifiers);
+
+    /// <summary>
+    /// Правило уровня контейнеров: аддитивный клик добавляет контейнер к выбору или снимает его, обычный —
+    /// выбирает только его.
+    /// </summary>
+    /// <remarks>Им же выбирает нажатие по ручке контейнера — у любого слоя (ADR 0029).</remarks>
+    private protected void ApplyContainerTarget(SurfaceItem container, KeyModifiers modifiers)
     {
         if (ShouldUseAdditiveSelection(modifiers))
         {

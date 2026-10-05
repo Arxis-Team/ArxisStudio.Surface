@@ -94,6 +94,10 @@ internal class ItemIdleState : SurfaceItemState
     private bool _isPressed;
     private bool _shouldSkipSelectionToggle;
 
+    // Нажатие пришлось на ручку контейнера (ADR 0029): берётся контейнер целиком, мимо рамки и мимо
+    // вложенного target'а под ручкой.
+    private bool _onHandle;
+
     /// <summary>
     /// Инициализирует новый экземпляр <see cref="ItemIdleState"/>.
     /// </summary>
@@ -123,10 +127,14 @@ internal class ItemIdleState : SurfaceItemState
         {
             var owningEditor = Container.FindAncestorOfType<SurfaceView>();
 
+            _onHandle = Container.IsOnHandle(e.Source);
+
             // Жест по пустой области может принадлежать рамке выделения.
             // Тогда контейнер не захватывает указатель и не помечает событие
             // обработанным — нажатие всплывает до редактора, который сам решит.
+            // Ручка рамке не уступает: её и берут ради контейнера целиком.
             if (owningEditor != null &&
+                !_onHandle &&
                 owningEditor.ShouldDeferPressToMarquee(Container, e.GetPosition(owningEditor), e.KeyModifiers))
             {
                 return;
@@ -259,7 +267,7 @@ internal class ItemIdleState : SurfaceItemState
         // Признак «владельца выбрали именно сейчас» снимается до записи.
         _shouldSkipSelectionToggle = !owner.IsSelected;
 
-        editor.UpdateSelectionTargetFromPoint(owner, e.GetPosition(editor), e.KeyModifiers, e.ClickCount);
+        editor.UpdateSelectionTargetFromPoint(owner, e.GetPosition(editor), e.KeyModifiers, e.ClickCount, wholeContainer: _onHandle);
     }
 
     private void HandleSelectionOnRelease(PointerReleasedEventArgs e)
