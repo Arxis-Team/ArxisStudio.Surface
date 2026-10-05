@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Xunit;
 using ArxisStudio.Surface.UiDesigner;
 
@@ -47,6 +48,18 @@ public class UiDesignerFormApplicationTests
         "<Setter Property=\"FontSize\" Value=\"21\" />" +
         "<Setter Property=\"Foreground\" Value=\"{DynamicResource Ink}\" />" +
         "</ControlTheme>";
+
+    /// <summary>Тема окна, которая красит фон: светлый и тёмный — разными цветами.</summary>
+    private const string WindowBackdrop =
+        "<ResourceDictionary>" +
+        "<ResourceDictionary.ThemeDictionaries>" +
+        "<ResourceDictionary x:Key=\"Light\"><SolidColorBrush x:Key=\"Paper\">#0000FF</SolidColorBrush></ResourceDictionary>" +
+        "<ResourceDictionary x:Key=\"Dark\"><SolidColorBrush x:Key=\"Paper\">#000080</SolidColorBrush></ResourceDictionary>" +
+        "</ResourceDictionary.ThemeDictionaries>" +
+        "<ControlTheme x:Key=\"{x:Type Window}\" TargetType=\"Window\">" +
+        "<Setter Property=\"Background\" Value=\"{DynamicResource Paper}\" />" +
+        "</ControlTheme>" +
+        "</ResourceDictionary>";
 
     private static Window Host(UiDesignerFormItem item)
     {
@@ -141,6 +154,63 @@ public class UiDesignerFormApplicationTests
         Assert.Single(first.Styles);
         Assert.Empty(second.Styles);
         Assert.Equal(30, Text(view).FontSize);
+    }
+
+    /// <summary>
+    /// Форма-контрол стоит на фоне, которым тема приложения одевает окно: при работе она в окне и будет.
+    /// Без этого контрол без своего фона показывал холст насквозь, и тёмный текст светлой темы терялся на
+    /// тёмном холсте.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_Control_Form_Stands_On_The_Background_The_Application_Gives_A_Window()
+    {
+        var item = new UiDesignerFormItem
+        {
+            Root = View(),
+            ApplicationThemeVariant = ThemeVariant.Light,
+            ApplicationRoot = App(resources: WindowBackdrop),
+        };
+
+        Host(item);
+
+        Assert.Equal(Color.Parse("#0000FF"), ColorOf(item.FormBackground));
+
+        item.ApplicationThemeVariant = ThemeVariant.Dark;
+
+        Assert.Equal(Color.Parse("#000080"), ColorOf(item.FormBackground));
+
+        item.ApplicationRoot = null;
+
+        Assert.Null(item.FormBackground);
+    }
+
+    /// <summary>
+    /// Окно о своём фоне говорит само: объявленный документом фон тема окна приложения не подменяет.
+    /// </summary>
+    [AvaloniaFact]
+    public void A_Window_Keeps_The_Background_It_Declares_Under_An_Application()
+    {
+        var item = new UiDesignerFormItem
+        {
+            Root = Form("Background=\"#FF0000\""),
+            ApplicationThemeVariant = ThemeVariant.Light,
+            ApplicationRoot = App(resources: WindowBackdrop),
+        };
+
+        Host(item);
+
+        Assert.Equal(Color.Parse("#FF0000"), ColorOf(item.FormBackground));
+    }
+
+    /// <summary>Приложение без темы окна фона форме-контролу не даёт: она остаётся прозрачной.</summary>
+    [AvaloniaFact]
+    public void A_Control_Form_Of_An_Application_Without_A_Window_Theme_Has_No_Background()
+    {
+        var item = new UiDesignerFormItem { Root = View(), ApplicationRoot = App() };
+
+        Host(item);
+
+        Assert.Null(item.FormBackground);
     }
 
     [AvaloniaFact]

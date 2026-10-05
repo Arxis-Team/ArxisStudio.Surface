@@ -7,6 +7,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Diagnostics;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Reactive;
 using Avalonia.Styling;
@@ -275,6 +276,7 @@ public class UiDesignerFormItem : UiDesignerItem
         _application.Bind(
             ThemeVariantScope.RequestedThemeVariantProperty,
             this.GetObservable(ApplicationThemeVariantProperty));
+        _scope.ActualThemeVariantChanged += (_, _) => ShowControlBackground();
 
         UpdateKind();
     }
@@ -601,6 +603,7 @@ public class UiDesignerFormItem : UiDesignerItem
             _applicationRoot = value;
             BorrowApplication(value);
             Reenter();
+            ShowControlBackground();
             RaisePropertyChanged(ApplicationRootProperty, old, value);
         }
     }
@@ -767,6 +770,7 @@ public class UiDesignerFormItem : UiDesignerItem
                 _scope.Child = control;
                 _authored = control;
                 FollowSize(control);
+                ShowControlBackground();
                 break;
         }
 
@@ -892,6 +896,48 @@ public class UiDesignerFormItem : UiDesignerItem
             declared.Priority <= BindingPriority.LocalValue || ApplicationThemeVariant != ThemeVariant.Default
                 ? declared.Value as IBrush
                 : null;
+    }
+
+    /// <summary>
+    /// Показывает под формой-контролом фон, которым тема приложения одевает окно: при работе контрол стоит
+    /// в окне, и на этом фоне его и увидят.
+    /// </summary>
+    /// <remarks>
+    /// Только под контролом: окно отражает свой фон само (<see cref="ShowBackground"/>). Тема окна ищется в
+    /// том, что объявило приложение документа (<see cref="WindowTheme"/>), — тема инструмента формы не
+    /// одевает; нет её — фона нет, как прежде, и сквозь форму видна карточка хоста. Ресурс фона ищется в
+    /// варианте формы: светлая и тёмная тема приложения красят окно по-разному. Свой фон контрол рисует сам,
+    /// поверх этого.
+    /// </remarks>
+    private void ShowControlBackground()
+    {
+        if (_donor is not null || _scope.Child is null)
+            return;
+
+        FormBackground = WindowBackground();
+    }
+
+    /// <summary>Фон из темы окна приложения документа; <see langword="null"/> — темы или фона в ней нет.</summary>
+    private IBrush? WindowBackground()
+    {
+        for (var theme = WindowTheme(); theme is not null; theme = theme.BasedOn)
+        {
+            foreach (var setter in theme.Setters.OfType<Setter>())
+            {
+                if (setter.Property != TemplatedControl.BackgroundProperty)
+                    continue;
+
+                return setter.Value switch
+                {
+                    IBrush brush => brush,
+                    DynamicResourceExtension { ResourceKey: { } key }
+                        when _scope.TryFindResource(key, _scope.ActualThemeVariant, out var found) => found as IBrush,
+                    _ => null,
+                };
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -526,6 +526,32 @@ public class UiDesignerFormItemTests
         Assert.Equal(ThemeVariant.Dark, Find<TextBlock>(window, "Text").ActualThemeVariant);
     }
 
+    /// <summary>
+    /// Содержимое, не уместившееся в форму, обрывается на её краю, как у окна при работе: на холсте оно не
+    /// ложится поверх соседей и не ловит нажатий за формой.
+    /// </summary>
+    [AvaloniaFact]
+    public void Content_That_Overflows_The_Form_Stops_At_Its_Edge()
+    {
+        var window = Form(
+            "Width=\"300\" Height=\"200\"",
+            content: "<StackPanel><Border x:Name=\"Tall\" Height=\"600\" Background=\"#FF0000\" /></StackPanel>");
+        var item = new UiDesignerFormItem { ContentMode = SurfaceContentMode.Annotated, Root = window };
+        var host = Host(item);
+
+        // Попадание ищется по сцене отрисовки, а сцену новому окну кладёт только такт.
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var tall = Find<Border>(window, "Tall");
+        var inside = item.TranslatePoint(new Point(150, item.Bounds.Height - 50), host)!.Value;
+        var below = item.TranslatePoint(new Point(150, item.Bounds.Height + 50), host)!.Value;
+
+        Assert.Equal(new Size(300, 200), item.Bounds.Size);
+        Assert.Same(tall, host.InputHitTest(inside));
+        Assert.NotSame(tall, host.InputHitTest(below));
+    }
+
     [AvaloniaFact]
     public void The_Application_Variant_Paints_The_Themed_Window_Background()
     {
