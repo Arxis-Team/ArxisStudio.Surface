@@ -173,7 +173,8 @@ public partial class UiDesignerView : SurfaceView
     }
 
     /// <summary>
-    /// Даёт элементу формы корень его документа привязкой <see cref="ItemRootBinding"/>.
+    /// Ставит созданный контейнер на его место из <see cref="SurfaceView.ItemLocationBinding"/> и даёт
+    /// элементу формы корень его документа привязкой <see cref="ItemRootBinding"/>.
     /// </summary>
     /// <param name="container">Контейнер.</param>
     /// <param name="item">Элемент источника данных.</param>
@@ -181,6 +182,11 @@ public partial class UiDesignerView : SurfaceView
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
         base.PrepareContainerForItemOverride(container, item, index);
+
+        // Место из привязки встаёт в панель сразу: место (0, 0) совпадает с умолчанием и перемены не
+        // поднимает, и контейнер в начале координат иначе вставал бы выравниванием панели.
+        if (container is UiDesignerItem designerItem && !ReferenceEquals(container, item) && ItemLocationBinding != null)
+            designerItem.PlaceAtLocation();
 
         if (container is not UiDesignerFormItem form || ReferenceEquals(container, item) || ItemRootBinding is not { } root)
             return;

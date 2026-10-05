@@ -146,20 +146,32 @@ public class UiDesignerItem : SurfaceItem
         base.OnPropertyChanged(change);
 
         if (change.Property == LocationProperty)
-        {
-            if (_isUpdatingLocation)
-                return;
+            PlaceAtLocation();
+    }
 
-            try
-            {
-                _isUpdatingLocation = true;
-                Layout.SetX(this, Location.X);
-                Layout.SetY(this, Location.Y);
-            }
-            finally
-            {
-                _isUpdatingLocation = false;
-            }
+    /// <summary>
+    /// Ставит контейнер в панель туда, где его место: <see cref="SurfaceItem.Location"/> — в
+    /// <c>Layout.X</c>/<c>Layout.Y</c>, которые читает <see cref="AbsolutePanel"/>.
+    /// </summary>
+    /// <remarks>
+    /// Зовётся на каждую перемену места — и редактором, когда он привязал место контейнера к элементу
+    /// (<see cref="SurfaceView.ItemLocationBinding"/>): место (0, 0) совпадает с умолчанием и перемены не
+    /// поднимает, и без этого контейнер в начале координат вставал бы выравниванием панели, а не в своём месте.
+    /// </remarks>
+    internal void PlaceAtLocation()
+    {
+        if (_isUpdatingLocation)
+            return;
+
+        try
+        {
+            _isUpdatingLocation = true;
+            Layout.SetX(this, Location.X);
+            Layout.SetY(this, Location.Y);
+        }
+        finally
+        {
+            _isUpdatingLocation = false;
         }
     }
 

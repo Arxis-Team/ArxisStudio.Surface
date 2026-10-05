@@ -236,4 +236,34 @@ public class ItemLocationBindingTests
         window.GetLayoutManager()?.ExecuteLayoutPass();
         Assert.Equal(new Point(500, 400), container.Location);
     }
+
+    /// <summary>
+    /// Место (0, 0) совпадает с умолчанием <see cref="SurfaceItem.Location"/>, и перемены привязка не
+    /// поднимает: контейнер обязан встать в начало координат и так, а не туда, куда его поставит
+    /// выравнивание панели.
+    /// </summary>
+    [AvaloniaFact]
+    public void The_Ui_Designer_Puts_A_Container_Bound_To_The_Origin_At_The_Origin()
+    {
+        var items = new ObservableCollection<Place> { new(new Point(0, 0)), new(new Point(300, 100)) };
+        var editor = new UiDesignerView { ItemLocationBinding = new Binding(nameof(Place.Location)), ItemsSource = items };
+        var window = new Window { Width = 800, Height = 600, Content = editor };
+
+        window.Show();
+
+        var manager = window.GetLayoutManager();
+        manager?.ExecuteInitialLayoutPass();
+
+        for (var index = 0; index < items.Count; index++)
+        {
+            var container = (Control)editor.ContainerFromIndex(index)!;
+            container.Width = ItemSize.Width;
+            container.Height = ItemSize.Height;
+        }
+
+        manager?.ExecuteLayoutPass();
+
+        Assert.Equal(new Point(0, 0), editor.ContainerFromIndex(0)!.Bounds.Position);
+        Assert.Equal(new Point(300, 100), editor.ContainerFromIndex(1)!.Bounds.Position);
+    }
 }
